@@ -1,9 +1,0 @@
-@import "tailwindcss";
-
-@theme {
-  --color-legal-dark: #1A1612;
-  --color-legal-panel: #2A241E;
-  --color-legal-gold: #D9C3A3;
-  --color-legal-text-main: #F2E7D5;
-  --color-legal-text-sub: #A39684;
-}
