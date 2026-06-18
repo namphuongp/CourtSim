@@ -1,14 +1,23 @@
-<<<<<<< Updated upstream
+import React from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import LandingPage from "./pages/Home/LandingPage.jsx";
 function App() {
   return (
-    <div>
-      <h1>CourtSim</h1>
-    </div>
-  )
+    <Router>
+      <div>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+        </Routes>
+      </div>
+    </Router>
+  );
 }
 
-export default App
-=======
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LandingPage from './pages/Home/LandingPage';
@@ -77,4 +86,4 @@ function App() {
 }
 
 export default App;
->>>>>>> Stashed changes
+
