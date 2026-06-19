@@ -1,70 +1,47 @@
-
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LandingPage from './pages/Home/LandingPage';
-import AuthPage from './pages/Auth/AuthPage';
 import Dashboard from './pages/Home/Dashboard';
 
-// Hàm kiểm tra xem user đã đăng nhập chưa (dựa vào localStorage)
+// Import 2 file bạn vừa tạo (Nhớ trỏ đúng đường dẫn thư mục của bạn)
+import LoginPage from './pages/Auth/LoginPage'; 
+import RegisterPage from './pages/Auth/RegisterPage';
+
+// Hàm kiểm tra xem user đã đăng nhập chưa
 const isAuthenticated = () => {
   return localStorage.getItem('userToken') !== null;
 };
 
-// Component bảo vệ các trang chỉ dành cho user chưa đăng nhập (Landing, Auth)
+// Component bảo vệ các trang chỉ dành cho user chưa đăng nhập
 const PublicOnlyRoute = ({ children }) => {
   return isAuthenticated() ? <Navigate to="/dashboard" /> : children;
 };
 
-// Component bảo vệ các trang nội bộ (Dashboard, Setup, Simulation)
+// Component bảo vệ các trang nội bộ
 const ProtectedRoute = ({ children }) => {
-  return isAuthenticated() ? children : <Navigate to="/auth" />;
+  return isAuthenticated() ? children : <Navigate to="/login" />;
 };
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* PUBLIC ROUTES: Chỉ cho khách xem */}
-        <Route 
-          path="/" 
-          element={
-            <PublicOnlyRoute>
-              <LandingPage />
-            </PublicOnlyRoute>
-          } 
-        />
-        <Route 
-          path="/auth" 
-          element={
-            <PublicOnlyRoute>
-              <AuthPage />
-            </PublicOnlyRoute>
-          } 
-        />
-
-        {/* PROTECTED ROUTES: Bắt buộc đăng nhập */}
-        <Route 
-          path="/dashboard" 
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          } 
-        />
+        {/* PUBLIC ROUTES */}
+        <Route path="/" element={ <PublicOnlyRoute><LandingPage /></PublicOnlyRoute> } />
         
-        {/* Trang Setup (Sẽ làm sau) */}
-        <Route 
-          path="/setup" 
-          element={
-            <ProtectedRoute>
-              <div className="text-white p-10 text-center">Trang Setup Môi trường sẽ nằm ở đây</div>
-            </ProtectedRoute>
-          } 
-        />
+        {/* Định tuyến mới cho Login và Register */}
+        <Route path="/login" element={ <PublicOnlyRoute><LoginPage /></PublicOnlyRoute> } />
+        <Route path="/register" element={ <PublicOnlyRoute><RegisterPage /></PublicOnlyRoute> } />
+        
+        {/* Redirect nút "/auth" cũ từ LandingPage sang "/login" */}
+        <Route path="/auth" element={<Navigate to="/login" />} />
+
+        {/* PROTECTED ROUTES */}
+        <Route path="/dashboard" element={ <ProtectedRoute><Dashboard /></ProtectedRoute> } />
+        <Route path="/setup" element={ <ProtectedRoute><div className="text-white p-10 text-center">Trang Setup Môi trường</div></ProtectedRoute> } />
       </Routes>
     </BrowserRouter>
   );
 }
 
 export default App;
-

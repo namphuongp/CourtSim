@@ -2,14 +2,17 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
-
 dotenv.config();
+import AuthRoutes from './routes/AuthRoutes.js'; // Đảm bảo đường dẫn tới AuthRoutes.js là chính xác
+
+
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
+
 // --- KẾT NỐI MONGODB ---
 if (process.env.MONGO_URI) {
   mongoose.connect(process.env.MONGO_URI)
@@ -19,10 +22,14 @@ if (process.env.MONGO_URI) {
   console.log('⚠️ Cảnh báo: Chưa tìm thấy chuỗi kết nối MONGO_URI trong file .env');
 }
 
-// --- API ---
+// --- API ROUTES ---
 app.get('/', (req, res) => {
   res.send('Server CourtSim đang chạy!');
 });
+
+// THÊM DÒNG NÀY ĐỂ KẾT NỐI API LOGIN/REGISTER
+app.use('/api/auth', AuthRoutes); 
+
 app.listen(PORT, () => {
   console.log(`🚀 Server Backend đang chạy tại port: ${PORT}`);
 });
