@@ -25,6 +25,7 @@ router.post('/register', async (req, res) => {
             username: full_name, // Giao diện gửi full_name, DB lưu vào username
             email,
             password_hash,
+            system_role: 'user',
             subscription_type: 'free' // Khớp với enum trong User.js
         });
 
@@ -65,7 +66,8 @@ router.post('/login', async (req, res) => {
                 id: user._id,
                 full_name: user.username,
                 email: user.email,
-                tier: user.subscription_type
+                tier: user.subscription_type,
+                role: user.system_role
             }
         });
 

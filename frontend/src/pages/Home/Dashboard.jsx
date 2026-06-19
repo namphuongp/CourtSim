@@ -7,7 +7,8 @@ const Dashboard = () => {
 
   const handleLogout = () => {
     localStorage.removeItem('userToken'); // Xóa token giả lập
-    navigate('/'); // Đẩy về Landing Page
+    localStorage.removeItem('userRole');
+    navigate('/login'); // Đẩy về login Page
   };
 
   return (
@@ -19,7 +20,7 @@ const Dashboard = () => {
              <Gavel className="w-6 h-6 text-[#D9C3A3]" />
           </div>
           <span className="font-bold text-xl tracking-tighter">
-            Trang Chủ <span className="text-[#D9C3A3]">Workspace</span>
+            Trang Chủ <span className="text-[#D9C3A3]"></span>
           </span>
         </div>
         
