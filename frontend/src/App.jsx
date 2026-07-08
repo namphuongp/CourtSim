@@ -3,6 +3,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LandingPage from './pages/Home/LandingPage';
 import Dashboard from './pages/Home/Dashboard';
 import AdminDashboard from './pages/Home/AdminDashboard';
+import SetupPage from './pages/Home/SetupPage';
+import SimulationPage from './pages/Home/SimulationPage';
+import ResultPage from './pages/Home/ResultPage';
 
 import LoginPage from './pages/Auth/LoginPage'; 
 import RegisterPage from './pages/Auth/RegisterPage';
@@ -52,7 +55,31 @@ function App() {
         {/* PROTECTED ROUTES */}
         <Route path="/dashboard" element={ <ProtectedRoute>{getUserRole() === 'admin' ? <Navigate to="/admin" /> : <Dashboard />}</ProtectedRoute> } />
         <Route path="/admin" element={ <AdminRoute><AdminDashboard /></AdminRoute> } />
-        <Route path="/setup" element={ <ProtectedRoute><div className="text-white p-10 text-center">Trang Setup Môi trường</div></ProtectedRoute> } />
+        <Route
+  path="/setup"
+  element={
+    <ProtectedRoute>
+      <SetupPage />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/simulation"
+  element={
+    <ProtectedRoute>
+      <SimulationPage />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/result"
+  element={
+    <ProtectedRoute>
+      <ResultPage />
+    </ProtectedRoute>
+  }
+/>
       </Routes>
     </BrowserRouter>
   );
