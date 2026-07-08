@@ -3,25 +3,13 @@ import { Award } from "lucide-react";
 
 const ScoreCard = ({ score = 8.6 }) => {
 
-  let level = "Khá";
-
-  if (score >= 9) {
-
-    level = "Xuất sắc";
-
-  } else if (score >= 8) {
-
-    level = "Tốt";
-
-  } else if (score >= 6.5) {
-
-    level = "Khá";
-
-  } else {
-
-    level = "Cần cải thiện";
-
-  }
+  const level = score >= 9
+    ? "Xuất sắc"
+    : score >= 8
+      ? "Tốt"
+      : score >= 6.5
+        ? "Khá"
+        : "Cần cải thiện";
 
   return (
 

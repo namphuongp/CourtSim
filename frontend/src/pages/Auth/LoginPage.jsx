@@ -3,6 +3,11 @@ import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { Gavel, Mail, Lock, AlertCircle, CheckCircle2 } from 'lucide-react';
 
+const DEMO_ACCOUNT = {
+    email: 'test@courtsim.local',
+    password: '123456',
+};
+
 const LoginPage = () => {
     const [formData, setFormData] = useState({ email: '', password: '' });
     const [status, setStatus] = useState({ type: '', message: '' });
@@ -17,6 +22,16 @@ const LoginPage = () => {
         e.preventDefault();
         setLoading(true);
         setStatus({ type: '', message: '' });
+
+        if (formData.email === DEMO_ACCOUNT.email && formData.password === DEMO_ACCOUNT.password) {
+            localStorage.setItem('userToken', 'demo-token');
+            localStorage.setItem('userRole', 'user');
+            setStatus({ type: 'success', message: 'Đăng nhập tài khoản test thành công!' });
+            setLoading(false);
+            setTimeout(() => navigate('/dashboard'), 300);
+            return;
+        }
+
         try {
             const res = await axios.post('http://localhost:5000/api/auth/login', formData);
             localStorage.setItem('userToken', res.data.token);
