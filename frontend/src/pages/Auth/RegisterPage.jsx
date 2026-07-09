@@ -30,20 +30,20 @@ const RegisterPage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#1A1612] text-[#F2E7D5] font-sans flex items-center justify-center p-4 relative overflow-hidden">
+        <div className="min-h-screen bg-slate-950 text-slate-300 font-sans flex items-center justify-center p-4 relative overflow-hidden">
             {/* Background Decor */}
-            <div className="absolute inset-0 bg-[#D9C3A3]/5 blur-3xl rounded-full translate-x-1/3 translate-y-1/3"></div>
+            <div className="absolute inset-0 bg-blue-600/10 blur-3xl rounded-full translate-x-1/3 translate-y-1/3 pointer-events-none"></div>
 
-            <div className="relative w-full max-w-md bg-[#2A241E] border border-white/5 rounded-3xl p-8 shadow-2xl transition-all">
+            <div className="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl transition-all">
                 {/* Logo / Header */}
                 <div className="flex flex-col items-center mb-8">
-                    <div className="p-3.5 rounded-2xl bg-[#1A1612] border border-white/5 shadow-inner mb-4">
-                        <Gavel className="w-8 h-8 text-[#D9C3A3]" />
+                    <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 shadow-inner mb-4">
+                        <Gavel className="w-8 h-8 text-blue-400" />
                     </div>
-                    <h2 className="text-3xl font-bold tracking-tight text-[#F2E7D5] font-serif">
-                        COURT <span className="text-[#D9C3A3]">SIM</span>
+                    <h2 className="text-3xl font-bold tracking-tight text-white">
+                        COURT <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-violet-400">SIM</span>
                     </h2>
-                    <p className="text-sm text-[#A39684] mt-2">Gia nhập nền tảng mô phỏng diễn án AI đầu tiên</p>
+                    <p className="text-sm text-slate-400 mt-2">Gia nhập nền tảng mô phỏng diễn án AI đầu tiên</p>
                 </div>
 
                 {/* Status Message */}
@@ -60,10 +60,10 @@ const RegisterPage = () => {
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="space-y-5">
                     {/* Họ và Tên */}
-                    <div> {/* Bỏ space-y đi để tự kiểm soát */}
-                        <label className="block text-xs font-semibold text-[#A39684] uppercase tracking-wider mb-2.5">Họ và Tên</label>
+                    <div>
+                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2.5">Họ và Tên</label>
                         <div className="relative">
-                            <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-[#A39684]">
+                            <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-500">
                                 <User className="w-5 h-5" />
                             </span>
                             <input
@@ -72,16 +72,16 @@ const RegisterPage = () => {
                                 onChange={handleChange}
                                 required
                                 placeholder="Họ và tên của bạn"
-                                className="w-full bg-[#1A1612] border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-sm text-[#F2E7D5] placeholder-[#A39684]/50 focus:outline-none focus:border-[#D9C3A3] focus:ring-1 focus:ring-[#D9C3A3] transition-all"
+                                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3.5 pl-12 pr-4 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
                             />
                         </div>
                     </div>
 
                     {/* Email */}
                     <div>
-                        <label className="block text-xs font-semibold text-[#A39684] uppercase tracking-wider mb-2.5">Email liên hệ</label>
+                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2.5">Email liên hệ</label>
                         <div className="relative">
-                            <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-[#A39684]">
+                            <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-500">
                                 <Mail className="w-5 h-5" />
                             </span>
                             <input
@@ -90,16 +90,16 @@ const RegisterPage = () => {
                                 onChange={handleChange}
                                 required
                                 placeholder="name@example.com"
-                                className="w-full bg-[#1A1612] border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-sm text-[#F2E7D5] placeholder-[#A39684]/50 focus:outline-none focus:border-[#D9C3A3] focus:ring-1 focus:ring-[#D9C3A3] transition-all"
+                                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3.5 pl-12 pr-4 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
                             />
                         </div>
                     </div>
 
                     {/* Mật khẩu */}
                     <div>
-                        <label className="block text-xs font-semibold text-[#A39684] uppercase tracking-wider mb-2.5">Mật khẩu</label>
+                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2.5">Mật khẩu</label>
                         <div className="relative">
-                            <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-[#A39684]">
+                            <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-500">
                                 <Lock className="w-5 h-5" />
                             </span>
                             <input
@@ -108,7 +108,7 @@ const RegisterPage = () => {
                                 onChange={handleChange}
                                 required
                                 placeholder="••••••••"
-                                className="w-full bg-[#1A1612] border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-sm text-[#F2E7D5] placeholder-[#A39684]/50 focus:outline-none focus:border-[#D9C3A3] focus:ring-1 focus:ring-[#D9C3A3] transition-all"
+                                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3.5 pl-12 pr-4 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
                             />
                         </div>
                     </div>
@@ -117,15 +117,15 @@ const RegisterPage = () => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-[#D9C3A3] text-[#1A1612] font-bold py-3.5 rounded-xl hover:brightness-110 active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none transition-all shadow-lg text-sm tracking-wide mt-2"
+                        className="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl hover:bg-blue-500 hover:shadow-[0_0_15px_rgba(37,99,235,0.4)] active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none transition-all text-sm tracking-wide mt-2"
                     >
                         {loading ? 'Đang khởi tạo...' : 'TẠO TÀI KHOẢN'}
                     </button>
 
                     {/* Navigation Link */}
-                    <p className="text-center text-sm text-[#A39684] mt-6">
+                    <p className="text-center text-sm text-slate-400 mt-6">
                         Đã có tài khoản?{' '}
-                        <Link to="/login" className="text-[#D9C3A3] font-semibold hover:underline transition-all">
+                        <Link to="/login" className="text-blue-400 font-semibold hover:underline transition-all">
                             Đăng nhập tại đây
                         </Link>
                     </p>
