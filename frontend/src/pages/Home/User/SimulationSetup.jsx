@@ -10,7 +10,8 @@ const SimulationSetup = () => {
     const [selectedCase, setSelectedCase] = useState(null);
     const roles = [
         { id: 'judge', name: 'Thẩm phán', icon: Gavel },
-        { id: 'defense_lawyer', name: 'Luật sư bào chữa', icon: Briefcase },
+        { id: 'lawyer1', name: 'Luật sư bào chữa', icon: Briefcase },
+        { id: 'lawyer2', name: 'Luật sư bảo vệ', icon: ShieldCheck },
         { id: 'prosecutor', name: 'Kiểm sát viên', icon: ShieldCheck },
     ];
 
@@ -18,8 +19,8 @@ const SimulationSetup = () => {
         { id: 'lenient', name: 'Khoan dung', desc: 'Mức độ dễ dành cho người mới làm quen', icon: Users },
         { id: 'balanced', name: 'Cân bằng', desc: 'Mức độ trung bình, phù hợp để luyện tập', icon: Brain },
         { id: 'strict', name: 'Nghiêm khắc', desc: 'Mức độ khó, phù hợp cho người có kinh nghiệm', icon: Scale },
-        
-        
+
+
     ];
     const caseLibrary = [
         { id: 'LIB-001', name: 'Tranh chấp hợp đồng thuê mặt bằng', difficulty: 'Trung bình' },
@@ -92,7 +93,7 @@ const SimulationSetup = () => {
                             <span className="bg-blue-600 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold">2</span>
                             Chọn vai trò của bạn
                         </h3>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             {roles.map((role) => (
                                 <div
                                     key={role.id}
@@ -111,14 +112,16 @@ const SimulationSetup = () => {
                     <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6">
                         <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                             <span className="bg-blue-600 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold">3</span>
-                            Cấu hình AI 
+                            Cấu hình AI
                         </h3>
                         <div className="grid md:grid-cols-3 gap-4">
                             {judgeStyles.map((style) => (
                                 <div
                                     key={style.id}
                                     onClick={() => setJudgeStyle(style.name)}
-                                    className={`p-4 rounded-2xl border cursor-pointer transition-all ${judgeStyle === style.id ? 'bg-blue-600/10 border-blue-500' : 'bg-slate-950 border-slate-800 hover:border-slate-600'
+                                    className={`p-4 rounded-2xl border cursor-pointer transition-all ${judgeStyle === style.name
+                                            ? 'bg-blue-600/10 border-blue-500'
+                                            : 'bg-slate-950 border-slate-800 hover:border-slate-600'
                                         }`}
                                 >
                                     <style.icon className="w-6 h-6 text-slate-400 mb-2" />
@@ -166,15 +169,15 @@ const SimulationSetup = () => {
                                     }
                                 })}
                                 className={`w-full font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all ${!selectedRole || !selectedCase
-                                        ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                                        : 'bg-blue-600 text-white hover:bg-blue-500 hover:shadow-[0_0_15px_rgba(37,99,235,0.4)]'
+                                    ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                                    : 'bg-blue-600 text-white hover:bg-blue-500 hover:shadow-[0_0_15px_rgba(37,99,235,0.4)]'
                                     }`}
                             >
                                 BẮT ĐẦU PHIÊN TÒA <ChevronRight className="w-5 h-5" />
                             </button>
                         </div>
                     </div>
-                    </div>
+                </div>
             </div>
         </div>
     );

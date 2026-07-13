@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { Gavel, Mail, Lock, AlertCircle, CheckCircle2 } from 'lucide-react';
 
@@ -17,23 +16,43 @@ const LoginPage = () => {
         e.preventDefault();
         setLoading(true);
         setStatus({ type: '', message: '' });
-        try {
-            const res = await axios.post('http://localhost:5000/api/auth/login', formData);
-            localStorage.setItem('userToken', res.data.token);
-            localStorage.setItem('userRole', res.data.user.role || 'user');
 
-            setStatus({ type: 'success', message: `Chào mừng ${res.data.user.full_name} đã đăng nhập thành công!` });
+        // Giả lập thời gian chờ gửi request 500ms để trải nghiệm mượt mà hơn
+        setTimeout(() => {
+            try {
+                // Kiểm tra nếu email có chữ 'admin' thì cho làm admin, còn lại là user thường
+                const isAdmin = formData.email.includes('admin');
+                
+                const mockResponse = {
+                    token: 'mock-jwt-token-for-testing',
+                    user: {
+                        full_name: formData.email.split('@')[0] || 'Người dùng Test',
+                        role: isAdmin ? 'admin' : 'user'
+                    }
+                };
 
-            const redirectPath = res.data.user.role === 'admin' ? '/admin' : '/dashboard';
-            setTimeout(() => navigate(redirectPath), 1000);
-        } catch (error) {
-            setStatus({
-                type: 'error',
-                message: error.response?.data?.message || 'Đăng nhập thất bại. Sai tài khoản hoặc mật khẩu!'
-            });
-        } finally {
-            setLoading(false);
-        }
+                // Lưu vào localStorage giống như code cũ của bạn
+                localStorage.setItem('userToken', mockResponse.token);
+                localStorage.setItem('userRole', mockResponse.user.role);
+
+                setStatus({ 
+                    type: 'success', 
+                    message: `Chào mừng ${mockResponse.user.full_name} đã đăng nhập thành công! (Chế độ Test)` 
+                });
+
+                const redirectPath = mockResponse.user.role === 'admin' ? '/admin' : '/dashboard';
+                
+                // Chuyển hướng sau 1 giây
+                setTimeout(() => navigate(redirectPath), 1000);
+            } catch (error) {
+                setStatus({
+                    type: 'error',
+                    message: 'Đã xảy ra lỗi trong quá trình test!'
+                });
+            } finally {
+                setLoading(false);
+            }
+        }, 500);
     };
 
     return (
@@ -50,6 +69,7 @@ const LoginPage = () => {
                     <h2 className="text-3xl font-bold tracking-tight text-white">
                         ĐĂNG NHẬP <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-violet-400">COURT SIM</span>
                     </h2>
+                    
                 </div>
 
                 {/* Status Message */}
