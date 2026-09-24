@@ -12,8 +12,9 @@ const Dashboard = () => {
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">Chào buổi tối, Người dùng!</h1>
-          <p className="text-slate-400 mt-1 text-sm">Sẵn sàng để rèn luyện kỹ năng tranh tụng hôm nay chưa?</p>
+          <p className="mb-2 text-sm font-semibold text-blue-600">Không gian luyện tập của bạn</p>
+          <h1 className="text-3xl font-bold text-white tracking-tight">Rèn tư duy pháp lý, từng lượt một</h1>
+          <p className="text-slate-400 mt-1 text-sm">Chọn một hồ sơ, xây dựng lập luận và nhận phản hồi để cải thiện kỹ năng tranh tụng.</p>
         </div>
         <button
           onClick={() => navigate('/dashboard/setup')} 
@@ -29,7 +30,7 @@ const Dashboard = () => {
             <Scale className="w-8 h-8 text-blue-400" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-slate-500 uppercase">Tổng số vụ án</p>
+            <p className="text-sm font-semibold text-slate-500 uppercase">Phiên đã luyện</p>
             <p className="text-2xl font-bold text-white mt-1">{userStats.totalCases}</p>
           </div>
         </div>
@@ -38,7 +39,7 @@ const Dashboard = () => {
             <BarChart3 className="w-8 h-8 text-violet-400" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-slate-500 uppercase">Điểm kỹ năng</p>
+            <p className="text-sm font-semibold text-slate-500 uppercase">Điểm tự đánh giá</p>
             <p className="text-2xl font-bold text-white mt-1">{userStats.skillScore}/10</p>
           </div>
         </div>
@@ -47,7 +48,7 @@ const Dashboard = () => {
             <Clock className="w-8 h-8 text-emerald-400" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-slate-500 uppercase">Giờ thực hành</p>
+            <p className="text-sm font-semibold text-slate-500 uppercase">Thời gian luyện tập</p>
             <p className="text-2xl font-bold text-white mt-1">{userStats.practiceHours}</p>
           </div>
         </div>
@@ -55,7 +56,7 @@ const Dashboard = () => {
 
       <div className="bg-slate-900 rounded-3xl border border-slate-800 overflow-hidden">
         <div className="px-6 py-5 border-b border-slate-800 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-white">Phiên tòa gần đây</h2>
+          <div><h2 className="text-lg font-bold text-white">Phiên luyện tập gần đây</h2><p className="mt-1 text-xs text-slate-500">Dữ liệu minh hoạ sẽ được thay bằng lịch sử học tập của bạn.</p></div>
           <button onClick={() => navigate('/dashboard/history')} className="text-sm text-blue-400 font-medium hover:underline flex items-center">
             Xem tất cả <ChevronRight className="w-4 h-4" />
           </button>

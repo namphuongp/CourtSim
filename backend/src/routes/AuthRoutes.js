@@ -1,79 +1,42 @@
-import express from 'express';
+import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import User from '../models/User.js'; 
+import User from '../models/User.js';
+import { env } from '../config/env.js';
+import { authRateLimit } from '../middlewares/rateLimit.js';
+import { AppError } from '../utils/AppError.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
 
-const router = express.Router();
+const router = Router();
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// 1. API ĐĂNG KÝ (REGISTER)
-router.post('/register', async (req, res) => {
-    try {
-        const { full_name, email, password } = req.body;
+router.use(authRateLimit);
 
-        // Kiểm tra xem email đã tồn tại chưa
-        let user = await User.findOne({ email });
-        if (user) {
-            return res.status(400).json({ message: 'Email này đã được sử dụng!' });
-        }
+router.post('/register', asyncHandler(async (request, response) => {
+  const fullName = request.body?.full_name?.trim();
+  const email = request.body?.email?.trim().toLowerCase();
+  const password = request.body?.password;
 
-        // Mã hóa mật khẩu
-        const salt = await bcrypt.genSalt(10);
-        const password_hash = await bcrypt.hash(password, salt);
+  if (!fullName || fullName.length < 2 || fullName.length > 100) throw new AppError('Họ tên phải có từ 2 đến 100 ký tự.');
+  if (!email || !emailPattern.test(email) || email.length > 254) throw new AppError('Email không hợp lệ.');
+  if (typeof password !== 'string' || password.length < 8 || password.length > 128) throw new AppError('Mật khẩu phải có từ 8 đến 128 ký tự.');
+  if (await User.exists({ email })) throw new AppError('Email đã tồn tại.', 409, 'USER_EXISTS');
 
-        // Tạo user mới (Map dữ liệu cho khớp với userSchema)
-        user = new User({
-            username: full_name, // Giao diện gửi full_name, DB lưu vào username
-            email,
-            password_hash,
-            system_role: 'user',
-            subscription_type: 'free' // Khớp với enum trong User.js
-        });
+  const user = await User.create({ username: fullName, email, password_hash: await bcrypt.hash(password, 12) });
+  response.status(201).json({ message: 'Đăng ký thành công.', data: { id: user.id, full_name: user.username, email: user.email } });
+}));
 
-        await user.save();
-        res.status(201).json({ message: 'Đăng ký tài khoản thành công!' });
+router.post('/login', asyncHandler(async (request, response) => {
+  const email = request.body?.email?.trim().toLowerCase();
+  const password = request.body?.password;
+  if (!email || typeof password !== 'string') throw new AppError('Email và mật khẩu là bắt buộc.');
 
-    } catch (error) {
-        res.status(500).json({ message: 'Lỗi máy chủ!', error: error.message });
-    }
-});
+  const user = await User.findOne({ email }).select('+password_hash');
+  if (!user || !(await bcrypt.compare(password, user.password_hash))) throw new AppError('Email hoặc mật khẩu không chính xác.', 401, 'INVALID_CREDENTIALS');
+  if (user.status !== 'active') throw new AppError('Tài khoản đã bị khóa.', 403, 'ACCOUNT_DISABLED');
 
-// 2. API ĐĂNG NHẬP (LOGIN)
-router.post('/login', async (req, res) => {
-    try {
-        const { email, password } = req.body;
-
-        const user = await User.findOne({ email });
-        if (!user) {
-            return res.status(400).json({ message: 'Tài khoản hoặc mật khẩu không chính xác!' });
-        }
-
-        // So sánh mật khẩu
-        const isMatch = await bcrypt.compare(password, user.password_hash);
-        if (!isMatch) {
-            return res.status(400).json({ message: 'Tài khoản hoặc mật khẩu không chính xác!' });
-        }
-
-        // Tạo Token JWT
-        const token = jwt.sign(
-            { userId: user._id, role: user.system_role, tier: user.subscription_type },
-            process.env.JWT_SECRET || 'SECRET_KEY_MAC_DINH',
-            { expiresIn: '1d' }
-        );
-
-        res.json({
-            token,
-            user: {
-                id: user._id,
-                full_name: user.username,
-                email: user.email,
-                tier: user.subscription_type,
-                role: user.system_role
-            }
-        });
-
-    } catch (error) {
-        res.status(500).json({ message: 'Lỗi máy chủ!', error: error.message });
-    }
-});
+  const token = jwt.sign({ sub: user.id, role: user.system_role, tier: user.subscription_type }, env.JWT_SECRET, { expiresIn: '1d', issuer: 'courtsim-api', audience: 'courtsim-web' });
+  response.json({ token, user: { id: user.id, full_name: user.username, email: user.email, tier: user.subscription_type, role: user.system_role } });
+}));
 
 export default router;

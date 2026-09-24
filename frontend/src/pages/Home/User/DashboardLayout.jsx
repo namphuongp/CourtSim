@@ -10,6 +10,7 @@ const DashboardLayout = () => {
   const location = useLocation();
 
   const navItems = [
+    { name: 'Hướng dẫn sử dụng', icon: Gavel, path: '/guide' },
     { name: 'Tổng quan', icon: LayoutDashboard, path: '/dashboard' },
     { name: 'Phiên diễn án', icon: Gavel, path: '/dashboard/sessions' },
     { name: 'Lịch sử', icon: History, path: '/dashboard/history' },
@@ -23,10 +24,10 @@ const DashboardLayout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-300 font-sans flex overflow-hidden">
+    <div className="min-h-screen bg-[#f5f8fc] text-[#334e68] font-sans flex overflow-hidden">
       
       {/* Sidebar */}
-      <aside className="w-64 bg-slate-900/50 border-r border-slate-800 flex flex-col justify-between hidden md:flex z-20 relative">
+      <aside className="w-64 bg-white border-r border-[#d9e2ec] flex flex-col justify-between hidden md:flex z-20 relative shadow-[4px_0_24px_rgba(15,43,67,0.04)]">
         <div>
           <div className="h-20 flex items-center px-8 border-b border-slate-800">
             <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/dashboard')}>
@@ -48,7 +49,7 @@ const DashboardLayout = () => {
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all ${
                     isActive
                       ? 'bg-blue-600/10 text-blue-400 border border-blue-500/20'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                      : 'text-slate-500 hover:text-blue-700 hover:bg-blue-50'
                   }`}
                 >
                   <item.icon className="w-5 h-5" /> {item.name}
@@ -58,7 +59,7 @@ const DashboardLayout = () => {
           </nav>
         </div>
         <div className="p-4 border-t border-slate-800">
-          <button className="w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-xl font-medium transition-all">
+          <button className="w-full flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-blue-700 hover:bg-blue-50 rounded-xl font-medium transition-all">
             <Settings className="w-5 h-5" /> Cài đặt tài khoản
           </button>
           <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 text-rose-400 hover:bg-rose-500/10 rounded-xl font-medium transition-all mt-1">
@@ -73,17 +74,17 @@ const DashboardLayout = () => {
         <div className="absolute top-0 right-1/4 w-[400px] h-[400px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
 
         {/* Top Header */}
-        <header className="h-20 border-b border-slate-800 flex items-center justify-between px-8 bg-slate-950/80 backdrop-blur-md sticky top-0 z-10">
+        <header className="h-20 border-b border-[#d9e2ec] flex items-center justify-between px-8 bg-white/95 backdrop-blur-md sticky top-0 z-10 shadow-[0_4px_20px_rgba(15,43,67,0.05)]">
           <div className="relative w-96 hidden md:block">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
             <input 
               type="text" 
               placeholder="Tìm kiếm vụ án, tài liệu..." 
-              className="w-full bg-slate-900 border border-slate-800 rounded-full py-2 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+              className="w-full bg-[#f8fbfe] border border-[#cbdbe7] rounded-full py-2 pl-10 pr-4 text-sm text-[#243b53] placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:bg-white"
             />
           </div>
           <div className="flex items-center gap-4">
-            <button className="p-2 text-slate-400 hover:text-white relative">
+            <button className="p-2 text-slate-500 hover:text-blue-700 hover:bg-blue-50 rounded-full relative">
               <Bell className="w-5 h-5" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full"></span>
             </button>

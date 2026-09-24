@@ -1,146 +1,47 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import { Gavel } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Gavel, Mail, Lock, AlertCircle, CheckCircle2 } from 'lucide-react';
+import api, { getApiError } from '../../services/api';
 
-const LoginPage = () => {
-    const [formData, setFormData] = useState({ email: '', password: '' });
-    const [status, setStatus] = useState({ type: '', message: '' });
-    const [loading, setLoading] = useState(false);
-    const navigate = useNavigate();
+export default function LoginPage() {
+  const navigate = useNavigate();
+  const [form, setForm] = useState({ email: '', password: '' });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-    const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-    };
+  async function submit(event) {
+    event.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      // Đọc từ form để tương thích với trình quản lý mật khẩu tự điền.
+      const values = new FormData(event.currentTarget);
+      const credentials = {
+        email: String(values.get('email') ?? '').trim(),
+        password: String(values.get('password') ?? ''),
+      };
+      const { data } = await api.post('/auth/login', credentials);
+      localStorage.setItem('userToken', data.token);
+      localStorage.setItem('userRole', data.user.role);
+      localStorage.setItem('currentUser', JSON.stringify(data.user));
+      navigate(data.user.role === 'admin' ? '/admin' : '/dashboard', { replace: true });
+    } catch (requestError) {
+      setError(getApiError(requestError, 'Đăng nhập thất bại.'));
+    } finally {
+      setLoading(false);
+    }
+  }
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setStatus({ type: '', message: '' });
-
-        // Giả lập thời gian chờ gửi request 500ms để trải nghiệm mượt mà hơn
-        setTimeout(() => {
-            try {
-                // Kiểm tra nếu email có chữ 'admin' thì cho làm admin, còn lại là user thường
-                const isAdmin = formData.email.includes('admin');
-                
-                const mockResponse = {
-                    token: 'mock-jwt-token-for-testing',
-                    user: {
-                        full_name: formData.email.split('@')[0] || 'Người dùng Test',
-                        role: isAdmin ? 'admin' : 'user'
-                    }
-                };
-
-                // Lưu vào localStorage giống như code cũ của bạn
-                localStorage.setItem('userToken', mockResponse.token);
-                localStorage.setItem('userRole', mockResponse.user.role);
-
-                setStatus({ 
-                    type: 'success', 
-                    message: `Chào mừng ${mockResponse.user.full_name} đã đăng nhập thành công! (Chế độ Test)` 
-                });
-
-                const redirectPath = mockResponse.user.role === 'admin' ? '/admin' : '/dashboard';
-                
-                // Chuyển hướng sau 1 giây
-                setTimeout(() => navigate(redirectPath), 1000);
-            } catch (error) {
-                setStatus({
-                    type: 'error',
-                    message: 'Đã xảy ra lỗi trong quá trình test!'
-                });
-            } finally {
-                setLoading(false);
-            }
-        }, 500);
-    };
-
-    return (
-        <div className="min-h-screen bg-slate-950 text-slate-300 font-sans flex items-center justify-center p-4 relative overflow-hidden">
-            {/* Background Decor */}
-            <div className="absolute inset-0 bg-blue-600/10 blur-3xl rounded-full -translate-x-1/3 -translate-y-1/3 pointer-events-none"></div>
-
-            <div className="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl transition-all">
-                {/* Logo / Header */}
-                <div className="flex flex-col items-center mb-8">
-                    <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 shadow-inner mb-4">
-                        <Gavel className="w-8 h-8 text-blue-400" />
-                    </div>
-                    <h2 className="text-3xl font-bold tracking-tight text-white">
-                        ĐĂNG NHẬP <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-violet-400">COURT SIM</span>
-                    </h2>
-                    
-                </div>
-
-                {/* Status Message */}
-                {status.message && (
-                    <div className={`p-4 rounded-xl mb-6 flex items-start gap-3 text-sm border ${status.type === 'success'
-                            ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                            : 'bg-rose-500/10 border-rose-500/20 text-rose-400'
-                        }`}>
-                        {status.type === 'success' ? <CheckCircle2 className="w-5 h-5 shrink-0" /> : <AlertCircle className="w-5 h-5 shrink-0" />}
-                        <span>{status.message}</span>
-                    </div>
-                )}
-
-                {/* Form */}
-                <form onSubmit={handleSubmit} className="space-y-5">
-                    {/* Email */}
-                    <div>
-                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2.5">Email</label>
-                        <div className="relative">
-                            <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-500">
-                                <Mail className="w-5 h-5" />
-                            </span>
-                            <input
-                                type="email"
-                                name="email"
-                                onChange={handleChange}
-                                required
-                                placeholder="admin@gmail.com"
-                                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3.5 pl-12 pr-4 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Password */}
-                    <div>
-                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2.5">Mật khẩu</label>
-                        <div className="relative">
-                            <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-500">
-                                <Lock className="w-5 h-5" />
-                            </span>
-                            <input
-                                type="password"
-                                name="password"
-                                onChange={handleChange}
-                                required
-                                placeholder="••••••••"
-                                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3.5 pl-12 pr-4 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Submit Button */}
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl hover:bg-blue-500 hover:shadow-[0_0_15px_rgba(37,99,235,0.4)] active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none transition-all text-sm tracking-wide mt-2"
-                    >
-                        {loading ? 'Đang chứng thực...' : 'VÀO PHIÊN TÒA'}
-                    </button>
-
-                    {/* Navigation Link */}
-                    <p className="text-center text-sm text-slate-400 mt-6">
-                        Bạn chưa có tài khoản?{' '}
-                        <Link to="/register" className="text-blue-400 font-semibold hover:underline transition-all">
-                            Đăng ký ngay
-                        </Link>
-                    </p>
-                </form>
-            </div>
-        </div>
-    );
-};
-
-export default LoginPage;
+  return (
+    <main className="min-h-screen bg-slate-950 text-slate-200 grid place-items-center p-4">
+      <form onSubmit={submit} className="w-full max-w-md rounded-3xl border border-slate-800 bg-slate-900 p-8 space-y-5 shadow-2xl">
+        <div className="text-center"><Gavel className="mx-auto mb-3 text-blue-400" /><h1 className="text-3xl font-bold text-white">Đăng nhập CourtSim</h1></div>
+        {error && <p className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-300">{error}</p>}
+        <label className="block text-sm">Email<input name="email" className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 p-3" type="email" required value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} /></label>
+        <label className="block text-sm">Mật khẩu<input name="password" className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 p-3" type="password" required value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} /></label>
+        <button disabled={loading} className="w-full rounded-xl bg-blue-600 p-3 font-bold text-white disabled:opacity-50">{loading ? 'Đang đăng nhập...' : 'Đăng nhập'}</button>
+        <p className="text-center text-sm text-slate-400">Chưa có tài khoản? <Link className="text-blue-400" to="/register">Đăng ký</Link></p>
+      </form>
+    </main>
+  );
+}

@@ -15,6 +15,7 @@ import Analytics from './pages/Home/User/Analytics';
 import SimulationSetup from './pages/Home/User/SimulationSetup';
 import SimulationRoom from './pages/Home/User/SimulationRoom';
 import SimulationResult from './pages/Home/User/SimulationResult';
+import GuidePage from './pages/Guide/GuidePage';
 // -- TRANG ADMIN --
 import AdminDashboard from './pages/Home/Admin/AdminDashboard';
 
@@ -73,6 +74,7 @@ function App() {
         <Route path="/login" element={ <PublicOnlyRoute><LoginPage /></PublicOnlyRoute> } />
         <Route path="/register" element={ <PublicOnlyRoute><RegisterPage /></PublicOnlyRoute> } />
         <Route path="/auth" element={<Navigate to="/login" replace />} />
+        <Route path="/guide" element={<GuidePage />} />
 
         {/* ADMIN ROUTES */}
         <Route path="/admin" element={ <AdminRoute><AdminDashboard /></AdminRoute> } />
@@ -94,8 +96,8 @@ function App() {
           <Route path="setup" element={<SimulationSetup />} />
         </Route>
 
-        <Route path="/simulation" element={<ProtectedUserRoute><SimulationRoom /></ProtectedUserRoute>} />
-        <Route path="/simulation-result" element={<SimulationResult />} />
+        <Route path="/simulation/:sessionId" element={<ProtectedUserRoute><SimulationRoom /></ProtectedUserRoute>} />
+        <Route path="/simulation/:sessionId/result" element={<ProtectedUserRoute><SimulationResult /></ProtectedUserRoute>} />
         {/* Bắt lỗi 404 - Nếu nhập sai URL thì đưa về mặc định */}
         <Route path="*" element={<Navigate to="/" replace />} />
         

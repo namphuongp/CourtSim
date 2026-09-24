@@ -1,35 +1,32 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import mongoose from 'mongoose';
-dotenv.config();
-import AuthRoutes from './routes/AuthRoutes.js'; // Đảm bảo đường dẫn tới AuthRoutes.js là chính xác
+import 'dotenv/config';
+import { createApp } from './app.js';
+import { connectDatabase, disconnectDatabase } from './config/database.js';
+import { env } from './config/env.js';
 
+const app = createApp();
+let server;
 
-
-const app = express();
-const PORT = process.env.PORT || 5000;
-
-app.use(cors());
-app.use(express.json());
-
-// --- KẾT NỐI MONGODB ---
-if (process.env.MONGO_URI) {
-  mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log('🍃 MongoDB đã kết nối thành công qua Cloud!'))
-    .catch((err) => console.error('❌ Lỗi kết nối MongoDB:', err));
-} else {
-  console.log('⚠️ Cảnh báo: Chưa tìm thấy chuỗi kết nối MONGO_URI trong file .env');
+async function start() {
+  // Chỉ nhận request sau khi MongoDB sẵn sàng.
+  await connectDatabase();
+  server = app.listen(env.PORT, () => console.log(`CourtSim API đang chạy tại http://localhost:${env.PORT}`));
 }
 
-// --- API ROUTES ---
-app.get('/', (req, res) => {
-  res.send('Server CourtSim đang chạy!');
-});
+async function shutdown(signal) {
+  console.log(`Nhận ${signal}, đang dừng server...`);
+  if (server) await new Promise((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
+  await disconnectDatabase();
+  process.exit(0);
+}
 
-// THÊM DÒNG NÀY ĐỂ KẾT NỐI API LOGIN/REGISTER
-app.use('/api/auth', AuthRoutes); 
+for (const signal of ['SIGINT', 'SIGTERM']) {
+  process.on(signal, () => shutdown(signal).catch((error) => {
+    console.error('Không thể dừng server an toàn:', error);
+    process.exit(1);
+  }));
+}
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server Backend đang chạy tại port: ${PORT}`);
+start().catch((error) => {
+  console.error('Không thể khởi động CourtSim API:', error.message);
+  process.exit(1);
 });

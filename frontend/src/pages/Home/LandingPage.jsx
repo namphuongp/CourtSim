@@ -8,23 +8,23 @@ const LandingPage = () => {
   const features = [
     {
       icon: Scale,
-      title: "TUỲ CHỈNH AI",
-      description: "Chọn AI Thẩm Phán và cấu hình phong cách của Bồi thẩm đoàn."
+      title: "LUYỆN TẬP CÓ HƯỚNG DẪN",
+      description: "Chọn hồ sơ, vai tranh tụng và mức độ phản biện phù hợp với trình độ của bạn."
     },
     {
       icon: Users,
-      title: "MÔ PHỎNG SINH ĐỘNG",
-      description: "Chất vấn và tương tác thời gian thực với AI, phản ứng linh hoạt và thực tế."
+      title: "THỰC HÀNH TRANH TỤNG",
+      description: "Trình bày lập luận, nhận phản biện và rèn cách sử dụng chứng cứ theo từng lượt."
     },
     {
       icon: Zap,
-      title: "PHÂN TÍCH LEGAL AI",
-      description: "Nhận gợi ý legal AI, phát hiện sơ hở lập luận và phân tích chiến thuật trong khi tranh tụng."
+      title: "PHẢN HỒI CÓ CẤU TRÚC",
+      description: "Nhận góp ý về lập luận, chứng cứ và kỹ năng trình bày sau khi hoàn thành phiên học."
     },
     {
       icon: History,
-      title: "BÁO CÁO HIỆU SUẤT",
-      description: "Báo cáo chấm điểm kỹ năng và phân tích tiến bộ của bạn sau mỗi vụ án, với Radar chart cụ thể."
+      title: "THEO DÕI TIẾN BỘ",
+      description: "Xem lại các phiên đã học và xác định kỹ năng cần cải thiện ở lần luyện tập sau."
     }
   ];
 
@@ -63,18 +63,18 @@ const LandingPage = () => {
         <div className="space-y-8 relative z-10">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-sm font-medium text-blue-400">
             <Target className="w-4 h-4" />
-            <span>Nền tảng đầu tiên tại Việt Nam</span>
+            <span>Không gian thực hành pháp lý dành cho người học</span>
           </div>
           
           <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight leading-tight text-white">
-            MÔ PHỎNG DIỄN ÁN <br />
+            HỌC TRANH TỤNG <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-violet-400">
               SỬ DỤNG TRÍ TUỆ NHÂN TẠO
             </span>
           </h1>
           
           <p className="text-lg md:text-xl text-slate-400 max-w-2xl leading-relaxed">
-             Trải nghiệm không gian tòa án toàn diện - Từ cấu hình vụ án đến kết quả chi tiết, nâng tầm kỹ năng pháp lý chỉ qua 5 bước đơn giản.
+             Luyện lập luận pháp lý trong môi trường mô phỏng an toàn: đọc hồ sơ, bảo vệ quan điểm, nhận phản biện và tự đánh giá tiến bộ.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center gap-5 pt-4">
@@ -82,7 +82,7 @@ const LandingPage = () => {
               onClick={() => navigate('/auth')}
               className="w-full sm:w-auto bg-blue-600 text-white font-bold px-8 py-4 rounded-xl hover:bg-blue-500 hover:shadow-[0_0_20px_rgba(37,99,235,0.4)] hover:-translate-y-1 transition-all text-base flex items-center justify-center gap-2"
             >
-               THỬ NGAY <ArrowRight className="w-5 h-5" />
+               BẮT ĐẦU LUYỆN TẬP <ArrowRight className="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -141,7 +141,7 @@ const LandingPage = () => {
             Đầu Tư Cho <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-violet-400">Sự Nghiệp Pháp Lý</span>
           </h2>
           <p className="text-slate-400 max-w-xl mx-auto text-lg">
-            Các gói cước được thiết kế tối ưu và đa dạng cho bạn lựa chọn.
+            Lộ trình luyện tập linh hoạt theo nhu cầu học tập của bạn.
           </p>
         </div>
 
@@ -182,15 +182,15 @@ const LandingPage = () => {
           </div>
 
           {/* TIER 2: PLUS (SWEET SPOT) */}
-          <div className="p-8 rounded-3xl bg-gradient-to-b from-blue-900/40 to-violet-900/40 shadow-[0_0_40px_rgba(37,99,235,0.15)] flex flex-col relative overflow-hidden transform lg:-translate-y-4 h-full z-10 border border-blue-500/50 backdrop-blur-xl">
+          <div className="p-8 rounded-3xl bg-gradient-to-b from-blue-50 to-violet-50 shadow-[0_18px_48px_rgba(37,99,235,0.14)] flex flex-col relative overflow-hidden transform lg:-translate-y-4 h-full z-10 border border-blue-400 backdrop-blur-xl">
             <div className="absolute top-0 right-0 bg-blue-500 text-white text-[10px] font-bold px-4 py-1.5 rounded-bl-xl uppercase tracking-wider">
               Phổ Biến Nhất
             </div>
             <h3 className="text-2xl font-bold text-white mb-2">Court Plus</h3>
-            <p className="text-blue-200/80 mb-6 min-h-[48px]">Rèn luyện kỹ năng thực chiến với bộ LLM cao cấp.</p>
+            <p className="text-slate-600 mb-6 min-h-[48px]">Rèn luyện kỹ năng thực chiến với bộ AI phản biện nâng cao.</p>
             <div className="mb-8">
               <span className="text-4xl font-extrabold text-white">199k</span>
-              <span className="text-blue-200/60 font-medium"> / tháng</span>
+              <span className="text-slate-500 font-medium"> / tháng</span>
             </div>
             
             <ul className="space-y-4 mb-8 flex-grow">
@@ -201,7 +201,7 @@ const LandingPage = () => {
                 'Thư viện 20 vụ án thực tế đa dạng',
                 'Đánh giá và báo cáo chi tiết sau mỗi phiên tòa'
               ].map((item, i) => (
-                <li key={i} className="flex items-start gap-3 text-blue-50 text-sm font-medium">
+                <li key={i} className="flex items-start gap-3 text-slate-700 text-sm font-medium">
                   <Check className="w-5 h-5 text-blue-400 shrink-0" />
                   <span>{item}</span>
                 </li>
@@ -262,7 +262,7 @@ const LandingPage = () => {
              COURT<span className="text-blue-500">SIM</span>
            </span>
         </div>
-        <p>© 2026 COURT SIM. Tất cả quyền được bảo lưu. Nền tảng mô phỏng pháp lý hàng đầu.</p>
+        <p>© 2026 COURT SIM. Công cụ hỗ trợ học tập, không thay thế tư vấn pháp lý chuyên môn.</p>
       </footer>
     </div>
   );

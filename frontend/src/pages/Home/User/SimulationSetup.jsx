@@ -1,186 +1,58 @@
-import React, { useState } from 'react';
-import { Gavel, FileText, Upload, Brain, ChevronRight, Scale, Users, ShieldCheck, UserPlus, UserMinus, Briefcase, CheckCircle2, Book } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { BookOpen, CircleHelp, Gavel } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import api, { getApiError } from '../../../services/api';
 
-const SimulationSetup = () => {
-    const navigate = useNavigate();
-    const [judgeStyle, setJudgeStyle] = useState('Chưa chọn');
-    const [selectedRole, setSelectedRole] = useState(null); // State mới cho Role
-    const [mode, setMode] = useState('upload'); // 'upload' hoặc 'library'
-    const [selectedCase, setSelectedCase] = useState(null);
-    const roles = [
-        { id: 'judge', name: 'Thẩm phán', icon: Gavel },
-        { id: 'lawyer1', name: 'Luật sư bào chữa', icon: Briefcase },
-        { id: 'lawyer2', name: 'Luật sư bảo vệ', icon: ShieldCheck },
-        { id: 'prosecutor', name: 'Kiểm sát viên', icon: ShieldCheck },
-    ];
+const roles = [
+  { id: 'defense_lawyer', label: 'Luật sư bảo vệ bị đơn/bị cáo' },
+  { id: 'plaintiff_lawyer', label: 'Luật sư bảo vệ nguyên đơn/người bị hại' },
+];
+const difficulties = [
+  { id: 'beginner', label: 'Cơ bản', note: 'AI gợi mở nhiều hơn' },
+  { id: 'balanced', label: 'Cân bằng', note: 'Phản biện ở mức thực hành' },
+  { id: 'advanced', label: 'Nâng cao', note: 'Phản biện chặt và ít gợi ý' },
+];
 
-    const judgeStyles = [
-        { id: 'lenient', name: 'Khoan dung', desc: 'Mức độ dễ dành cho người mới làm quen', icon: Users },
-        { id: 'balanced', name: 'Cân bằng', desc: 'Mức độ trung bình, phù hợp để luyện tập', icon: Brain },
-        { id: 'strict', name: 'Nghiêm khắc', desc: 'Mức độ khó, phù hợp cho người có kinh nghiệm', icon: Scale },
+export default function SimulationSetup() {
+  const navigate = useNavigate();
+  const [cases, setCases] = useState([]);
+  const [form, setForm] = useState({ case_id: '', user_court_role: '', difficulty: 'balanced' });
+  const [state, setState] = useState({ loading: true, submitting: false, error: '' });
 
+  useEffect(() => {
+    api.get('/v1/cases').then(({ data }) => {
+      setCases(data.data);
+      setState((current) => ({ ...current, loading: false }));
+    }).catch((error) => setState({ loading: false, submitting: false, error: getApiError(error) }));
+  }, []);
 
-    ];
-    const caseLibrary = [
-        { id: 'LIB-001', name: 'Tranh chấp hợp đồng thuê mặt bằng', difficulty: 'Trung bình' },
-        { id: 'LIB-002', name: 'Vụ án dân sự: Chia tài sản thừa kế', difficulty: 'Khó' },
-        { id: 'LIB-003', name: 'Vi phạm quy định giao thông gây hậu quả', difficulty: 'Dễ' },
-    ];
-    return (
-        <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
-            <div>
-                <h1 className="text-3xl font-bold text-white">Thiết lập phiên mô phỏng</h1>
-                <p className="text-slate-400 mt-2">Cấu hình vai trò và tham số AI để bắt đầu tranh tụng.</p>
-            </div>
+  async function startSession() {
+    setState((current) => ({ ...current, submitting: true, error: '' }));
+    try {
+      const { data } = await api.post('/v1/sessions', form);
+      navigate(`/simulation/${data.data.session._id}`);
+    } catch (error) {
+      setState((current) => ({ ...current, submitting: false, error: getApiError(error, 'Không thể tạo phiên.') }));
+    }
+  }
 
-            <div className="grid lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 space-y-6">
-
-                    {/* Step 1: Thông tin vụ án */}
-                    <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6">
-                        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                            <span className="bg-blue-600 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold">1</span>
-                            Nguồn dữ liệu vụ án
-                        </h3>
-
-                        {/* Tab Switcher */}
-                        <div className="flex gap-2 mb-6 bg-slate-950 p-1 rounded-xl">
-                            <button
-                                onClick={() => setMode('upload')}
-                                className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${mode === 'upload' ? 'bg-slate-800 text-white' : 'text-slate-500 hover:text-slate-300'}`}
-                            >
-                                Tải lên file cá nhân
-                            </button>
-                            <button
-                                onClick={() => setMode('library')}
-                                className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${mode === 'library' ? 'bg-slate-800 text-white' : 'text-slate-500 hover:text-slate-300'}`}
-                            >
-                                Chọn từ thư viện
-                            </button>
-                        </div>
-
-                        {mode === 'upload' ? (
-                            <div className="border-2 border-dashed border-slate-800 rounded-2xl p-8 flex flex-col items-center justify-center text-slate-500 hover:border-blue-500/50 transition-colors cursor-pointer">
-                                <Upload className="w-8 h-8 mb-2 text-blue-400" />
-                                <p>Kéo thả tệp vào đây hoặc nhấn để tải lên</p>
-                                <p className="text-xs mt-1">Hỗ trợ PDF, Word (tối đa 20MB)</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-3">
-                                {caseLibrary.map(item => (
-                                    <div
-                                        key={item.id}
-                                        onClick={() => setSelectedCase(item.id)}
-                                        className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all ${selectedCase === item.id ? 'bg-blue-600/10 border-blue-500' : 'bg-slate-950 border-slate-800 hover:border-slate-700'}`}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <Book className="w-5 h-5 text-slate-400" />
-                                            <div>
-                                                <p className="text-sm font-bold text-white">{item.name}</p>
-                                                <p className="text-[10px] text-slate-500">Độ khó: {item.difficulty}</p>
-                                            </div>
-                                        </div>
-                                        {selectedCase === item.id && <CheckCircle2 className="w-5 h-5 text-blue-400" />}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                    {/* Step 2: Chọn vai trò (MỚI) */}
-                    <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6">
-                        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                            <span className="bg-blue-600 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold">2</span>
-                            Chọn vai trò của bạn
-                        </h3>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            {roles.map((role) => (
-                                <div
-                                    key={role.id}
-                                    onClick={() => setSelectedRole(role.id)}
-                                    className={`p-4 rounded-2xl border cursor-pointer transition-all flex flex-col items-center text-center ${selectedRole === role.id ? 'bg-blue-600/10 border-blue-500' : 'bg-slate-950 border-slate-800 hover:border-slate-600'
-                                        }`}
-                                >
-                                    <role.icon className={`w-6 h-6 mb-2 ${selectedRole === role.id ? 'text-blue-400' : 'text-slate-400'}`} />
-                                    <p className="font-bold text-xs text-white">{role.name}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Step 3: AI Judge */}
-                    <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6">
-                        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                            <span className="bg-blue-600 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold">3</span>
-                            Cấu hình AI
-                        </h3>
-                        <div className="grid md:grid-cols-3 gap-4">
-                            {judgeStyles.map((style) => (
-                                <div
-                                    key={style.id}
-                                    onClick={() => setJudgeStyle(style.name)}
-                                    className={`p-4 rounded-2xl border cursor-pointer transition-all ${judgeStyle === style.name
-                                            ? 'bg-blue-600/10 border-blue-500'
-                                            : 'bg-slate-950 border-slate-800 hover:border-slate-600'
-                                        }`}
-                                >
-                                    <style.icon className="w-6 h-6 text-slate-400 mb-2" />
-                                    <p className="font-bold text-sm text-white">{style.name}</p>
-                                    <p className="text-[10px] text-slate-400 mt-1">{style.desc}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Sidebar Tóm tắt */}
-                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sticky top-24">
-                    <h3 className="font-bold text-white mb-4">Tóm tắt thiết lập</h3>
-                    <div className="space-y-3 text-sm text-slate-400">
-                        <p>
-                            Vụ án:
-                            <span className="text-white font-semibold ml-1">
-                                {/* Tìm vụ án dựa trên ID đã chọn */}
-                                {selectedCase
-                                    ? caseLibrary.find(c => c.id === selectedCase)?.name
-                                    : 'Chưa chọn'}
-                            </span>
-                        </p>
-                        <p>
-                            Vai trò:
-                            <span className="text-white font-semibold ml-1">
-                                {selectedRole
-                                    ? roles.find(r => r.id === selectedRole)?.name
-                                    : 'Chưa chọn'}
-                            </span>
-                        </p>
-                        <p>
-                            Thẩm phán:
-                            <span className="text-white font-semibold ml-1">{judgeStyle}</span>
-                        </p>
-
-                        <div className="pt-4 border-t border-slate-400">
-                            <button
-                                // Điều kiện để bắt đầu: Phải chọn Role VÀ đã chọn Case (hoặc upload)
-                                disabled={!selectedRole || !selectedCase}
-                                onClick={() => navigate('/simulation', {
-                                    state: {
-                                        caseId: selectedCase
-                                    }
-                                })}
-                                className={`w-full font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all ${!selectedRole || !selectedCase
-                                    ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                                    : 'bg-blue-600 text-white hover:bg-blue-500 hover:shadow-[0_0_15px_rgba(37,99,235,0.4)]'
-                                    }`}
-                            >
-                                BẮT ĐẦU PHIÊN TÒA <ChevronRight className="w-5 h-5" />
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+  return (
+    <section className="mx-auto max-w-5xl space-y-6">
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div><h1 className="text-3xl font-bold text-white">Thiết lập phiên tòa</h1><p className="mt-2 text-slate-400">Chọn hồ sơ, vai luật sư và mức độ phản biện.</p></div>
+        <Link to="/guide" className="flex items-center gap-2 rounded-xl border border-slate-700 px-4 py-2 text-sm text-blue-300"><CircleHelp size={18} /> Xem hướng dẫn</Link>
+      </header>
+      {state.error && <p className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-rose-300">{state.error}</p>}
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
+          <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6"><h2 className="mb-4 flex items-center gap-2 font-bold text-white"><BookOpen size={20} /> 1. Chọn vụ án</h2>
+            {state.loading ? <p>Đang tải...</p> : <div className="space-y-3">{cases.map((item) => <button key={item._id} onClick={() => setForm({ ...form, case_id: item._id })} className={`w-full rounded-2xl border p-4 text-left ${form.case_id === item._id ? 'border-blue-500 bg-blue-500/10' : 'border-slate-800 bg-slate-950'}`}><strong className="text-white">{item.title}</strong><p className="mt-1 text-sm text-slate-400">{item.summary}</p><span className="mt-2 inline-block text-xs text-blue-300">{item.category}</span></button>)}</div>}
+          </div>
+          <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6"><h2 className="mb-4 font-bold text-white">2. Chọn vai của bạn</h2><div className="grid gap-3 md:grid-cols-2">{roles.map((role) => <button key={role.id} onClick={() => setForm({ ...form, user_court_role: role.id })} className={`rounded-2xl border p-4 text-left ${form.user_court_role === role.id ? 'border-blue-500 bg-blue-500/10' : 'border-slate-800 bg-slate-950'}`}>{role.label}</button>)}</div></div>
+          <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6"><h2 className="mb-4 font-bold text-white">3. Chọn mức độ</h2><div className="grid gap-3 md:grid-cols-3">{difficulties.map((item) => <button key={item.id} onClick={() => setForm({ ...form, difficulty: item.id })} className={`rounded-2xl border p-4 text-left ${form.difficulty === item.id ? 'border-blue-500 bg-blue-500/10' : 'border-slate-800 bg-slate-950'}`}><strong>{item.label}</strong><p className="mt-1 text-xs text-slate-400">{item.note}</p></button>)}</div></div>
         </div>
-    );
-};
-
-export default SimulationSetup;
+        <aside className="h-fit rounded-3xl border border-slate-800 bg-slate-900 p-6 lg:sticky lg:top-24"><Gavel className="mb-3 text-blue-400" /><h2 className="font-bold text-white">Sẵn sàng tranh tụng?</h2><p className="my-4 text-sm text-slate-400">Mỗi lượt của bạn sẽ được bên đối lập phản biện, sau đó Thẩm phán AI điều hành.</p><button onClick={startSession} disabled={!form.case_id || !form.user_court_role || state.submitting} className="w-full rounded-xl bg-blue-600 p-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">{state.submitting ? 'Đang khởi tạo...' : 'Bắt đầu phiên tòa'}</button></aside>
+      </div>
+    </section>
+  );
+}
