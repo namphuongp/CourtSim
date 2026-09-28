@@ -4,6 +4,8 @@ import { authenticate, requireAdmin } from '../middlewares/auth.js';
 import { AppError } from '../utils/AppError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { validateTimeline } from '../services/legalTimeline.js';
+import { learnerCase } from '../services/learnerPresentation.js';
+import { validateCaseDetails } from '../services/caseEvidence.js';
 
 const router = Router();
 
@@ -15,13 +17,13 @@ router.get('/', asyncHandler(async (request, response) => {
     Case.find(filter).select('title summary category created_at').sort({ created_at: -1 }).skip((page - 1) * limit).limit(limit).lean(),
     Case.countDocuments(filter),
   ]);
-  response.json({ data: items, pagination: { page, limit, total } });
+  response.json({ data: items.map(learnerCase), pagination: { page, limit, total } });
 }));
 
 router.get('/:caseId', asyncHandler(async (request, response) => {
   const item = await Case.findById(request.params.caseId).lean();
   if (!item) throw new AppError('Không tìm thấy vụ án.', 404, 'CASE_NOT_FOUND');
-  response.json({ data: item });
+  response.json({ data: learnerCase(item) });
 }));
 
 router.post('/', authenticate, requireAdmin, asyncHandler(async (request, response) => {
@@ -34,8 +36,9 @@ router.post('/', authenticate, requireAdmin, asyncHandler(async (request, respon
   }
   const timeline = validateTimeline(request.body.timeline);
   if (timeline.some((event) => !document.includes(event.source_quote))) throw new AppError('Trích đoạn của mốc thời gian phải có trong nội dung hồ sơ.');
-  const item = await Case.create({ title: title.trim(), summary: summary.trim(), full_document: document.trim(), category: category.trim(), timeline });
-  response.status(201).json({ data: item });
+  const details = validateCaseDetails(request.body);
+  const item = await Case.create({ title: title.trim(), summary: summary.trim(), full_document: document.trim(), category: category.trim(), timeline, ...details });
+  response.status(201).json({ data: learnerCase(item) });
 }));
 
 export default router;

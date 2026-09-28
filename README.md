@@ -1,5 +1,7 @@
 # CourtSim
 
+Cập nhật: [Hồ sơ mở theo yêu cầu, viện dẫn chứng cứ và trợ lý tra cứu độc lập](docs/CASE_DOSSIER_AND_ASSISTANT.md).
+
 Cập nhật mới: [Chấm điểm theo DOCX và tra cứu luật theo mốc/phiên bản](docs/SCORING_AND_LEGAL_RESEARCH.md). Rubric mới có 6 nhóm, 23 tiêu chí con; điểm được quy đổi về /100 từ phần đủ dữ liệu và hiển thị tỷ lệ trọng số đã đánh giá. Kết quả cũ giữ nguyên.
 
 Web mô phỏng phiên tòa phục vụ học tập pháp luật Việt Nam. Frontend sử dụng React; backend sử dụng Node.js, Express và MongoDB local.

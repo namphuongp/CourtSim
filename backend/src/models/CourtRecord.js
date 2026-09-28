@@ -13,6 +13,8 @@ const courtRecordSchema = new mongoose.Schema({
   sender_type: { type: String, enum: ['user', 'ai_judge', 'ai_prosecutor', 'ai_opponent'], required: true },
   sender_name: { type: String, required: true },
   content: { type: String, required: true },
+  evidence_ids: { type: [String], default: [] },
+  legal_reference_ids: { type: [String], default: [] },
   fact_analysis: { type: factAnalysisSchema, default: () => ({}) },
   citations: { type: [legalCitationSchema], default: [] },
   citation_warnings: { type: [String], default: [] },

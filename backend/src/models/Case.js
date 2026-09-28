@@ -10,12 +10,14 @@ const caseSchema = new mongoose.Schema({
   reference_date: String,
   reference_date_note: String,
   legal_scope_note: String,
+  parties: { type: [new mongoose.Schema({ side: { type: String, enum: ['plaintiff', 'defendant', 'other'] }, name: String, claims: [String] }, { _id: false })], default: [] },
   timeline: { type: [new mongoose.Schema({
     kind: { type: String, enum: ['conduct', 'transaction', 'dispute', 'filing', 'hearing'], required: true },
     date: String, date_to: String, description: String, source_quote: String,
     status: { type: String, enum: ['reported', 'assumed'], default: 'reported' },
   }, { _id: false })], default: [] },
   evidence_inventory: { type: [new mongoose.Schema({
+    id: String, summary: String, content: String, provided_by: String, date: String,
     name: String, availability: { type: String, enum: ['provided', 'mentioned_only'], required: true },
     source_quote: String,
   }, { _id: false })], default: [] },

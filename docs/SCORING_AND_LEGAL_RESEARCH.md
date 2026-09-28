@@ -19,7 +19,7 @@ Theo yêu cầu bổ sung của người dùng: `score = round(earned_score / as
 
 ## Các điểm chưa rõ và quyết định triển khai
 
-- Tài liệu ghi đây là **đề xuất chờ chuyên gia xác nhận**. Sản phẩm lưu/hiển thị trạng thái đề xuất, không tuyên bố đã được chuyên gia duyệt.
+- Tài liệu ghi đây là **đề xuất chờ chuyên gia xác nhận**. Sản phẩm lưu trạng thái đề xuất trong dữ liệu và tài liệu vận hành (không hiện ghi chú cấu hình trong luồng người học), không tuyên bố đã được chuyên gia duyệt.
 - Bảng tổng là 100, ví dụ cuối dùng /10. Chọn thang 100 theo bảng và chỉ đạo mới nhất, giữ hai chữ số thập phân khi cần.
 - Tài liệu chưa quy định mức điểm chi tiết từng mức năng lực; không sáng tác thang mô tả mới. AI giải thích số điểm trong trần điểm từng mục, cần giảng viên kiểm định chất lượng thực tế.
 - Thiếu căn cứ được xác minh: tạm không chấm nhóm 2 và mục 4.2. Các mục khác chỉ chấm trong phạm vi lời trình bày/chứng cứ, không kết luận chắc chắn đúng/sai pháp luật.

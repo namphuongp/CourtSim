@@ -1,3 +1,4 @@
+import { learnerPayload, learnerText } from '../../../shared/learnerText.mjs';
 import axios from 'axios';
 import { clearAuth } from './auth';
 
@@ -14,7 +15,7 @@ api.interceptors.request.use((config) => {
 });
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => ({ ...response, data: learnerPayload(response.data) }),
   (error) => {
     if (error.response?.status === 401 && !error.config?.url?.startsWith('/auth/')) {
       clearAuth();
@@ -30,7 +31,7 @@ export function getApiError(error, fallback = 'Không thể kết nối máy ch�
   if (code?.startsWith('AI_INVALID') || code === 'AI_UNGROUNDED_FACT' || code === 'AI_UNVERIFIED_CITATION') return 'Phản hồi chưa đáp ứng yêu cầu kiểm chứng. Biên bản và bản nháp được giữ lại; hãy thử lại.';
   const message = error.response?.data?.error?.message ?? error.response?.data?.message;
   if (typeof message !== 'string' || /stack|TypeError|MongoServer|Cannot (GET|POST|PATCH)|Không tìm thấy (GET|POST|PATCH)|<html/i.test(message)) return fallback;
-  return message;
+  return learnerText(message, fallback);
 }
 
 export default api;

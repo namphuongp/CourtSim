@@ -69,6 +69,7 @@ async function login(page) {
 async function setup(page) {
   await page.getByRole('link',{name:'Tạo phiên mới',exact:true}).click();
   await page.getByRole('button',{name:/Tranh chấp hợp đồng vay tài sản/}).click();
+  await page.getByText('Đọc toàn bộ nội dung hồ sơ',{exact:true}).click();
   await expect(page.getByText(courtCase.full_document)).toBeVisible();
   await page.getByRole('button',{name:'Luật sư bảo vệ bị đơn',exact:true}).click();
   await page.getByLabel('4. Ngày sự kiện làm phát sinh tranh chấp').fill('2025-01-01');
@@ -96,9 +97,10 @@ test('đăng ký → chọn hồ sơ → giữ bản nháp khi lỗi/reload → 
   await page.reload();
   await expect(page.getByLabel('Lập luận của bạn')).toHaveValue(text);
   if(info.project.name==='mobile') {
-    await page.getByText('Hồ sơ và giới hạn nguồn luật',{exact:true}).click();
+    await page.getByRole('button',{name:'Hồ sơ vụ án',exact:true}).click();
+    await page.getByText('Đọc toàn bộ nội dung hồ sơ',{exact:true}).click();
     await expect(page.locator('details').getByText(courtCase.full_document)).toBeVisible();
-    await page.getByText('Hồ sơ và giới hạn nguồn luật',{exact:true}).click();
+    await page.getByRole('button',{name:'Đóng hồ sơ vụ án',exact:true}).click();
   }
   await page.getByRole('button',{name:'Gửi lập luận'}).click();
   await expect(page.getByText('Mời làm rõ chứng cứ thanh toán.',{exact:true})).toBeVisible();
@@ -152,7 +154,7 @@ test('hồ sơ lịch sử giữ mốc tra cứu và cảnh báo nguồn', async
   const date=page.getByLabel('4. Mốc tra cứu của bài tập');
   await expect(date).toHaveValue('2024-03-29');
   await expect(date).toHaveAttribute('readonly','');
-  await expect(page.getByText(sample.legal_scope_note)).toBeVisible();
+  await expect(page.getByText(sample.legal_scope_note)).toHaveCount(0);
   await page.getByRole('button',{name:'Luật sư bảo vệ bị đơn',exact:true}).click();
   const submitted=page.waitForRequest(r=>r.url().endsWith('/v1/sessions')&&r.method()==='POST');
   await page.getByRole('button',{name:'Bắt đầu phiên tòa',exact:true}).click();
@@ -208,10 +210,77 @@ test('đang chấm chống gửi lặp và khôi phục kết quả sau reload',
   expect(requests.completions).toBe(1);
 });
 
-test('tra cứu mất kết nối không chặn tranh luận', async ({page},info) => {
+test('tra cứu mất kết nối không chặn tranh luận', async ({page}) => {
   await readyToEnd(page,{});
-  if(info.project.name==='mobile') await page.getByText('Hồ sơ và giới hạn nguồn luật',{exact:true}).click();
-  await page.getByRole('button',{name:'Tra cứu theo hồ sơ và các mốc'}).filter({visible:true}).click();
-  await expect(page.getByText('Chưa xác minh được căn cứ pháp luật. Bạn có thể thử tra cứu lại và tiếp tục phiên.').filter({visible:true})).toBeVisible();
+  await page.getByRole('button',{name:'Trợ lý tra cứu luật',exact:true}).click();
+  await expect(page.getByRole('alert')).toContainText('Chưa tải được phần tra cứu');
+  await page.getByRole('button',{name:'Đóng trợ lý tra cứu luật',exact:true}).click();
   await expect(page.getByLabel('Lập luận của bạn')).toBeEnabled();
+});
+
+const evidenceCase = {...courtCase, parties:[{side:'plaintiff',name:'A',claims:['Yêu cầu trả khoản vay']}],timeline:[{kind:'transaction',date:'2020-01-01',description:'Ký hợp đồng'}],evidence_inventory:[{id:'EV-test-evidence1',code:'CC01',name:'Hợp đồng vay',summary:'Khoản vay theo hợp đồng.',availability:'provided',content:'Nội dung hợp đồng kiểm thử',provided_by:'Nguyên đơn',date:'2020-01-01'},{id:'EV-test-evidence2',code:'CC02',name:'Biên nhận',summary:'Bản án đề cập biên nhận.',availability:'mentioned_only'}]};
+
+test('hồ sơ đóng mặc định, chèn chứng cứ bằng nút/bàn phím và giữ ID sau reload', async ({page},info) => {
+  const calls=await mockApi(page,{sample:evidenceCase});
+  await login(page); await setup(page);
+  const open=page.getByRole('button',{name:'Hồ sơ vụ án',exact:true});
+  await expect(page.getByRole('region',{name:'Hồ sơ vụ án'})).toHaveCount(0);
+  await open.click();
+  await expect(page.getByText('Yêu cầu trả khoản vay')).toBeVisible();
+  if(info.project.name==='mobile') {
+    await page.keyboard.press('Shift+Tab');
+    await expect(page.getByText('Đọc toàn bộ nội dung hồ sơ',{exact:true})).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('button',{name:'Đóng hồ sơ vụ án',exact:true})).toBeFocused();
+  }
+  await page.screenshot({path:'test-results/dossier-'+info.project.name+'.png',fullPage:true});
+  await expect(page.getByText('Chỉ được nhắc đến — chưa có nội dung tài liệu')).toBeVisible();
+  await page.keyboard.press('Escape'); await expect(open).toBeFocused();
+  await open.click();
+  await page.getByRole('button',{name:'Đưa vào lập luận: Hợp đồng vay',exact:true}).click();
+  const input=page.getByLabel('Lập luận của bạn');
+  await expect(input).toBeFocused();
+  await expect(input).toHaveValue(/\[CC:EV-test-evidence1\]/);
+  await expect(page.getByRole('region',{name:'Hồ sơ vụ án'})).toHaveCount(0);
+  await page.reload(); await expect(input).toHaveValue(/\[CC:EV-test-evidence1\]/);
+  if(info.project.name==='desktop') {
+    await open.click();
+    const transfer=await page.evaluateHandle(()=>new DataTransfer());
+    await page.locator('article[draggable="true"]').last().dispatchEvent('dragstart',{dataTransfer:transfer});
+    await input.dispatchEvent('drop',{dataTransfer:transfer});
+    await expect(input).toHaveValue(/\[CC:EV-test-evidence2\]/);
+  }
+  await page.getByRole('button',{name:'Gửi lập luận'}).click();
+  await expect(page.getByText('Mời làm rõ chứng cứ thanh toán.',{exact:true})).toBeVisible();
+  expect(calls[0].evidence_ids).toContain('EV-test-evidence1');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+});
+
+for(const verified of [true,false]) test('trợ lý riêng: nguồn '+(verified?'đã xác minh':'chưa xác minh')+', chèn chủ động và giữ lịch sử',async({page})=>{
+  const calls=await mockApi(page);
+  let history=[];
+  await page.route('**/assistant',async route=>{
+    if(route.request().method()==='POST') history=[{_id:'answer1',...route.request().postDataJSON(),status:'completed',answer:verified?'Cần đối chiếu điều kiện áp dụng. Cấu hình nội bộ không hiển thị.':'Chưa xác minh được căn cứ pháp luật. Cần kiểm tra thêm.',citations:verified?[{id:'c1',reference_id:'LAW-test-reference1',law_number:'45/2013/QH13',locator:'Điều 202',version:'Bản kiểm thử',application_date:'2020-01-01',verification_status:'verified',text:'Trích đoạn nguồn kiểm thử.',source_url:'https://vbpl.vn/'}]:[{id:'c2',law_number:'45/2013/QH13',locator:'Điều 202',verification_status:'unverified',source_url:'https://vbpl.vn/'}]}];
+    await route.fulfill({json:{data:route.request().method()==='POST'?history[0]:history}});
+  });
+  await login(page); await setup(page);
+  await page.getByRole('button',{name:'Trợ lý tra cứu luật',exact:true}).click();
+  await page.getByLabel('Câu hỏi tra cứu luật').fill('Căn cứ nào cần xem xét?');
+  await page.getByRole('button',{name:'Hỏi trợ lý',exact:true}).click();
+  await expect(page.getByRole('link',{name:'Xem nguồn văn bản'})).toHaveAttribute('href','https://vbpl.vn/');
+  await expect(page.getByText('Cấu hình nội bộ không hiển thị.',{exact:false})).toHaveCount(0);
+  expect(calls.length).toBe(0); expect(calls.completions).toBe(0);
+  if(verified) {
+    await page.getByRole('button',{name:'Đưa trích dẫn vào lập luận'}).click();
+    await expect(page.getByLabel('Lập luận của bạn')).toHaveValue(/\[PL:LAW-test-reference1\]/);
+    await page.getByRole('button',{name:'Gửi lập luận'}).click();
+    await expect(page.getByText('Mời làm rõ chứng cứ thanh toán.',{exact:true})).toBeVisible();
+    expect(calls[0].legal_reference_ids).toEqual(['LAW-test-reference1']);
+  } else {
+    await expect(page.getByText('Cần kiểm tra hiệu lực của điều luật này.')).toBeVisible();
+    await expect(page.getByRole('button',{name:'Đưa trích dẫn vào lập luận'})).toHaveCount(0);
+  }
+  await page.reload();
+  await page.getByRole('button',{name:'Trợ lý tra cứu luật',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Căn cứ nào cần xem xét?'})).toBeVisible();
 });

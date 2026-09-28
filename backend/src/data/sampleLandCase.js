@@ -2,6 +2,10 @@
 export const sampleLandCase = {
   title: 'Tranh chấp quyền sử dụng đất — bài tập từ bản án 51/2024/DS-ST',
   category: 'đất đai',
+  parties: [
+    { side: 'plaintiff', name: 'A (đã ẩn danh)', claims: ['Yêu cầu trả 229,7 m² đất; viện dẫn giấy chứng nhận cấp cho hộ gia đình năm 1996.'] },
+    { side: 'defendant', name: 'B (đã ẩn danh)', claims: ['Cho rằng đất có nguồn gốc từ gia đình mình và đã sử dụng lâu dài.'] },
+  ],
   summary: 'Hai bên tranh chấp 229,7 m² đất mương và bờ mương. Luyện đối chiếu giấy chứng nhận với lời khai về quá trình sử dụng.',
   full_document: [
     'Hồ sơ lược biên, ẩn danh A (nguyên đơn), B (bị đơn); không thay thế hồ sơ tố tụng gốc.',
@@ -19,5 +23,10 @@ export const sampleLandCase = {
     { kind: 'filing', date: '2022-07-18', date_to: '2022-07-18', status: 'reported', description: 'Ngày đơn khởi kiện được bản án đề cập.', source_quote: 'Theo đơn khởi kiện ngày 18 tháng 7 năm 2022' },
     { kind: 'hearing', date: '2024-03-29', date_to: '2024-03-29', status: 'reported', description: 'Ngày xét xử sơ thẩm được bản án đề cập.', source_quote: 'BẢN ÁN 51/2024/DS-ST NGÀY 29/03/2024' },
   ],
-  evidence_inventory: ['Giấy chứng nhận', 'Thông tin cơ quan đăng ký đất đai', 'Lời khai nhân chứng', 'Hòa giải'].map((name) => ({ name, availability: 'mentioned_only', source_quote: 'Tài liệu được bản án thuật lại; không có bản gốc trong bài tập.' })),
+  evidence_inventory: [
+    { name: 'Giấy chứng nhận', summary: 'Bản án đề cập giấy chứng nhận cấp cho hộ gia đình năm 1996; A viện dẫn để yêu cầu trả đất.' },
+    { name: 'Thông tin cơ quan đăng ký đất đai', summary: 'Bản án đề cập thông tin cơ quan đăng ký đất đai; bài tập chưa cung cấp nội dung tài liệu.' },
+    { name: 'Lời khai nhân chứng', summary: 'Lời khai về nguồn gốc, sử dụng đất không thống nhất; một số nhân chứng có quan hệ với các bên.' },
+    { name: 'Hòa giải', summary: 'Bản án đề cập quá trình hòa giải; bài tập chưa cung cấp biên bản.' },
+  ].map((item) => ({ ...item, availability: 'mentioned_only', source_quote: 'Tài liệu được bản án thuật lại; không có bản gốc trong bài tập.' })),
 };

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { CourtRecord, SimulationSession } from '../models/index.js';
 import { AppError } from '../utils/AppError.js';
+import { learnerCase } from './learnerPresentation.js';
 
 export const MAX_TURNS = 20;
 const LEASE_MS = 10 * 60_000;
@@ -45,6 +46,6 @@ export async function withSessionLock(session, action) {
 export function publicSession(session) {
   const value = session.toObject ? session.toObject() : session;
   const { operation, turns, evaluation, opening, case_snapshot, creation_request_id, ...safe } = value;
-  return { ...safe, ...(case_snapshot ? { case_id: case_snapshot } : {}), max_turns: MAX_TURNS,
+  return { ...safe, ...(case_snapshot ? { case_id: learnerCase(case_snapshot) } : typeof safe.case_id === 'object' && safe.case_id?.title ? { case_id: learnerCase(safe.case_id) } : {}), max_turns: MAX_TURNS,
     processing: Boolean(operation && new Date(operation.expires_at) > new Date()) };
 }
