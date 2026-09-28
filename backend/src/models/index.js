@@ -9,6 +9,8 @@ import UserActionLog from './UserActionLog.js';
 import UserReport from './UserReport.js';
 import UserUsageQuota from './UserUsageQuota.js';
 import AiPersonal from './AiPersonal.js';
+import LegalDocument from './LegalDocument.js';
+import LegalProvision from './LegalProvision.js';
 
 // Gom tất cả lại thành một cụm để export
 export {
@@ -22,5 +24,7 @@ export {
   UserActionLog,
   UserReport,
   UserUsageQuota,
-  AiPersonal
+  AiPersonal,
+  LegalDocument,
+  LegalProvision
 };

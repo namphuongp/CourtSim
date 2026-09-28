@@ -1,10 +1,20 @@
 import mongoose from 'mongoose';
+import { legalCitationSchema } from '../schemas/legalCitationSchema.js';
+
+const factAnalysisSchema = new mongoose.Schema({
+  established_facts: { type: [String], default: [] },
+  inferences: { type: [String], default: [] },
+  missing_facts: { type: [String], default: [] },
+}, { _id: false });
 
 const courtRecordSchema = new mongoose.Schema({
   session_id: { type: mongoose.Schema.Types.ObjectId, ref: 'SimulationSession', required: true },
   sender_type: { type: String, enum: ['user', 'ai_judge', 'ai_prosecutor', 'ai_opponent'], required: true },
   sender_name: { type: String, required: true },
   content: { type: String, required: true },
+  fact_analysis: { type: factAnalysisSchema, default: () => ({}) },
+  citations: { type: [legalCitationSchema], default: [] },
+  citation_warnings: { type: [String], default: [] },
   audio_url: { type: String, default: null },
   created_at: { type: Date, default: Date.now }
 });

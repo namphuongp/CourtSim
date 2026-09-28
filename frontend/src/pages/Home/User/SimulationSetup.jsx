@@ -16,7 +16,7 @@ const difficulties = [
 export default function SimulationSetup() {
   const navigate = useNavigate();
   const [cases, setCases] = useState([]);
-  const [form, setForm] = useState({ case_id: '', user_court_role: '', difficulty: 'balanced' });
+  const [form, setForm] = useState({ case_id: '', user_court_role: '', difficulty: 'balanced', case_event_date: '' });
   const [state, setState] = useState({ loading: true, submitting: false, error: '' });
 
   useEffect(() => {
@@ -50,8 +50,13 @@ export default function SimulationSetup() {
           </div>
           <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6"><h2 className="mb-4 font-bold text-white">2. Chọn vai của bạn</h2><div className="grid gap-3 md:grid-cols-2">{roles.map((role) => <button key={role.id} onClick={() => setForm({ ...form, user_court_role: role.id })} className={`rounded-2xl border p-4 text-left ${form.user_court_role === role.id ? 'border-blue-500 bg-blue-500/10' : 'border-slate-800 bg-slate-950'}`}>{role.label}</button>)}</div></div>
           <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6"><h2 className="mb-4 font-bold text-white">3. Chọn mức độ</h2><div className="grid gap-3 md:grid-cols-3">{difficulties.map((item) => <button key={item.id} onClick={() => setForm({ ...form, difficulty: item.id })} className={`rounded-2xl border p-4 text-left ${form.difficulty === item.id ? 'border-blue-500 bg-blue-500/10' : 'border-slate-800 bg-slate-950'}`}><strong>{item.label}</strong><p className="mt-1 text-xs text-slate-400">{item.note}</p></button>)}</div></div>
+          <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6">
+            <label htmlFor="case-event-date" className="mb-2 block font-bold text-white">4. Ngày sự kiện làm phát sinh tranh chấp</label>
+            <p className="mb-4 text-sm text-slate-400">Ngày này được dùng để lọc phiên bản văn bản pháp luật có hiệu lực cho vụ việc.</p>
+            <input id="case-event-date" type="date" required value={form.case_event_date} onChange={(event) => setForm({ ...form, case_event_date: event.target.value })} className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white" />
+          </div>
         </div>
-        <aside className="h-fit rounded-3xl border border-slate-800 bg-slate-900 p-6 lg:sticky lg:top-24"><Gavel className="mb-3 text-blue-400" /><h2 className="font-bold text-white">Sẵn sàng tranh tụng?</h2><p className="my-4 text-sm text-slate-400">Mỗi lượt của bạn sẽ được bên đối lập phản biện, sau đó Thẩm phán AI điều hành.</p><button onClick={startSession} disabled={!form.case_id || !form.user_court_role || state.submitting} className="w-full rounded-xl bg-blue-600 p-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">{state.submitting ? 'Đang khởi tạo...' : 'Bắt đầu phiên tòa'}</button></aside>
+        <aside className="h-fit rounded-3xl border border-slate-800 bg-slate-900 p-6 lg:sticky lg:top-24"><Gavel className="mb-3 text-blue-400" /><h2 className="font-bold text-white">Sẵn sàng tranh tụng?</h2><p className="my-4 text-sm text-slate-400">Mỗi lượt của bạn sẽ được bên đối lập phản biện, sau đó Thẩm phán AI điều hành.</p><button onClick={startSession} disabled={!form.case_id || !form.user_court_role || !form.case_event_date || state.submitting} className="w-full rounded-xl bg-blue-600 p-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">{state.submitting ? 'Đang khởi tạo...' : 'Bắt đầu phiên tòa'}</button></aside>
       </div>
     </section>
   );

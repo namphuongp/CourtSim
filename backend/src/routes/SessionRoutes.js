@@ -4,6 +4,7 @@ import { authenticate } from '../middlewares/auth.js';
 import { AppError } from '../utils/AppError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { evaluateSession, generateDebateTurn } from '../services/simulationService.js';
+import { getLegalCoverageWarnings, isValidDateOnly } from '../services/legalRetrievalService.js';
 
 const router = Router();
 const allowedRoles = ['defense_lawyer', 'plaintiff_lawyer'];
@@ -20,13 +21,20 @@ router.post('/', asyncHandler(async (request, response) => {
   const caseId = request.body?.case_id;
   const role = request.body?.user_court_role;
   const difficulty = request.body?.difficulty ?? 'balanced';
-  if (typeof caseId !== 'string' || !allowedRoles.includes(role) || !allowedDifficulties.includes(difficulty)) {
-    throw new AppError('case_id, user_court_role hoặc difficulty không hợp lệ.');
+  const eventDate = request.body?.case_event_date;
+  if (typeof caseId !== 'string' || !allowedRoles.includes(role) || !allowedDifficulties.includes(difficulty) || !isValidDateOnly(eventDate)) {
+    throw new AppError('case_id, user_court_role, difficulty hợp lệ và case_event_date theo YYYY-MM-DD là bắt buộc.');
   }
   const courtCase = await Case.findById(caseId).lean();
   if (!courtCase) throw new AppError('Không tìm thấy vụ án.', 404, 'CASE_NOT_FOUND');
 
-  const session = await SimulationSession.create({ user_id: request.auth.userId, case_id: caseId, user_court_role: role, difficulty });
+  const session = await SimulationSession.create({
+    user_id: request.auth.userId,
+    case_id: caseId,
+    user_court_role: role,
+    difficulty,
+    case_event_date: eventDate,
+  });
   const opening = await CourtRecord.create({
     session_id: session._id,
     sender_type: 'ai_judge',
@@ -44,7 +52,8 @@ router.get('/', asyncHandler(async (request, response) => {
 router.get('/:sessionId', asyncHandler(async (request, response) => {
   const session = await getOwnedSession(request.params.sessionId, request.auth.userId);
   await session.populate('case_id');
-  response.json({ data: session });
+  const legalCoverageWarnings = await getLegalCoverageWarnings(session.case_event_date);
+  response.json({ data: { ...session.toObject(), legal_coverage_warnings: legalCoverageWarnings } });
 }));
 
 router.get('/:sessionId/records', asyncHandler(async (request, response) => {

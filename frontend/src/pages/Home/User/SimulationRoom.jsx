@@ -3,6 +3,42 @@ import { BookOpen, Gavel, LogOut, Send } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api, { getApiError } from '../../../services/api';
 
+function CitationList({ citations }) {
+  if (!citations?.length) return null;
+  return (
+    <section className="mt-4 border-t border-slate-700/70 pt-3">
+      <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-blue-300">Căn cứ đã kiểm tra</h3>
+      <ul className="space-y-2">
+        {citations.map((citation) => (
+          <li key={citation.id} className="rounded-lg bg-slate-950/70 p-3 text-xs">
+            <a href={citation.source_url} target="_blank" rel="noreferrer" className="font-semibold text-blue-300 underline">
+              {citation.title}, {citation.locator} ({citation.law_number})
+            </a>
+            <p className="mt-1 text-slate-400">Nguồn: {citation.page_source_file ?? citation.source_files.join(', ')}{citation.page_from ? `, tr. ${citation.page_from}${citation.page_to !== citation.page_from ? `-${citation.page_to}` : ''}` : ''}</p>
+            <p className="mt-1 text-slate-500">Hiệu lực từ {citation.effective_from}; phiên bản đã đối chiếu đến {citation.verified_through}.</p>
+            <p className="mt-2 whitespace-pre-wrap leading-5 text-slate-300">{citation.text}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function FactAnalysis({ analysis }) {
+  if (!analysis) return null;
+  const groups = [
+    ['Dữ kiện trong hồ sơ', analysis.established_facts],
+    ['Suy luận', analysis.inferences],
+    ['Còn thiếu/chưa được chứng minh', analysis.missing_facts],
+  ].filter(([, values]) => values?.length);
+  if (!groups.length) return null;
+  return (
+    <div className="mt-3 space-y-2 rounded-xl bg-slate-950/50 p-3 text-sm">
+      {groups.map(([label, values]) => <p key={label}><strong className="text-slate-300">{label}:</strong> <span className="text-slate-400">{values.join('; ')}</span></p>)}
+    </div>
+  );
+}
+
 export default function SimulationRoom() {
   const { sessionId } = useParams();
   const navigate = useNavigate();
@@ -54,13 +90,13 @@ export default function SimulationRoom() {
   const hasUserArgument = records.some((item) => item.sender_type === 'user');
   return (
     <main className="flex h-screen flex-col bg-slate-950 text-slate-200">
-      <header className="flex items-center justify-between border-b border-slate-800 p-4"><div><h1 className="flex items-center gap-2 font-bold text-white"><Gavel className="text-blue-400" /> {session?.case_id?.title}</h1><p className="text-xs text-slate-500">Lượt tranh luận: {records.filter((item) => item.sender_type === 'user').length}</p></div><button disabled={state.ending || state.sending || !hasUserArgument} onClick={complete} title={!hasUserArgument ? 'Cần gửi ít nhất một lập luận trước khi kết thúc.' : undefined} className="flex items-center gap-2 rounded-xl border border-rose-500/40 px-4 py-2 text-rose-300 disabled:cursor-not-allowed disabled:opacity-40"><LogOut size={17} /> {state.ending ? 'Đang chấm...' : 'Kết thúc'}</button></header>
+      <header className="flex items-center justify-between border-b border-slate-800 p-4"><div><h1 className="flex items-center gap-2 font-bold text-white"><Gavel className="text-blue-400" /> {session?.case_id?.title}</h1><p className="text-xs text-slate-500">Ngày sự kiện: {session?.case_event_date} · Lượt tranh luận: {records.filter((item) => item.sender_type === 'user').length}</p></div><button disabled={state.ending || state.sending || !hasUserArgument} onClick={complete} title={!hasUserArgument ? 'Cần gửi ít nhất một lập luận trước khi kết thúc.' : undefined} className="flex items-center gap-2 rounded-xl border border-rose-500/40 px-4 py-2 text-rose-300 disabled:cursor-not-allowed disabled:opacity-40"><LogOut size={17} /> {state.ending ? 'Đang chấm...' : 'Kết thúc'}</button></header>
       {state.error && <p role="alert" className="border-b border-rose-500/30 bg-rose-500/10 px-5 py-3 text-sm text-rose-300">{state.error}</p>}
       <div className="grid min-h-0 flex-1 lg:grid-cols-[1fr_320px]">
-        <section className="flex min-h-0 flex-col"><div className="flex-1 space-y-4 overflow-y-auto p-5">{records.map((item) => <article key={item._id} className={`max-w-3xl rounded-2xl border p-4 ${item.sender_type === 'user' ? 'ml-auto border-blue-500/30 bg-blue-500/10' : item.sender_type === 'ai_judge' ? 'border-amber-500/30 bg-amber-500/10' : 'border-rose-500/30 bg-rose-500/10'}`}><p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">{item.sender_name}</p><p className="whitespace-pre-wrap leading-7">{item.content}</p></article>)}{state.sending && <p className="text-sm text-slate-400">Bên đối lập và Thẩm phán đang phân tích...</p>}<div ref={endRef} /></div>
+        <section className="flex min-h-0 flex-col"><div className="flex-1 space-y-4 overflow-y-auto p-5">{records.map((item) => <article key={item._id} className={`max-w-3xl rounded-2xl border p-4 ${item.sender_type === 'user' ? 'ml-auto border-blue-500/30 bg-blue-500/10' : item.sender_type === 'ai_judge' ? 'border-amber-500/30 bg-amber-500/10' : 'border-rose-500/30 bg-rose-500/10'}`}><p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">{item.sender_name}</p><p className="whitespace-pre-wrap leading-7">{item.content}</p><FactAnalysis analysis={item.fact_analysis} /><CitationList citations={item.citations} />{item.citation_warnings?.length > 0 && <p className="mt-3 rounded-lg border border-amber-500/20 bg-amber-500/5 p-2 text-xs text-amber-200">{item.citation_warnings.join(' ')}</p>}</article>)}{state.sending && <p className="text-sm text-slate-400">Bên đối lập và Thẩm phán đang phân tích...</p>}<div ref={endRef} /></div>
           <form onSubmit={send} className="border-t border-slate-800 p-4"><textarea maxLength="4000" value={argument} onChange={(event) => setArgument(event.target.value)} placeholder="Trình bày luận điểm, viện dẫn chứng cứ và yêu cầu của bạn..." className="min-h-28 w-full resize-none rounded-2xl border border-slate-700 bg-slate-900 p-4 outline-none focus:border-blue-500" /><div className="mt-2 flex items-center justify-between"><span className="text-xs text-slate-500">{argument.length}/4000 ký tự</span><button disabled={state.sending || argument.trim().length < 10} className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 font-bold text-white disabled:opacity-40"><Send size={17} /> Gửi lập luận</button></div></form>
         </section>
-        <aside className="hidden overflow-y-auto border-l border-slate-800 bg-slate-900/50 p-5 lg:block"><h2 className="mb-3 flex items-center gap-2 font-bold text-white"><BookOpen size={18} /> Hồ sơ vụ án</h2><p className="mb-4 text-sm text-slate-400">{session?.case_id?.summary}</p><pre className="whitespace-pre-wrap font-sans text-sm leading-6 text-slate-300">{session?.case_id?.full_document}</pre></aside>
+        <aside className="hidden overflow-y-auto border-l border-slate-800 bg-slate-900/50 p-5 lg:block"><h2 className="mb-3 flex items-center gap-2 font-bold text-white"><BookOpen size={18} /> Hồ sơ vụ án</h2><p className="mb-2 text-xs text-slate-500">Ngày sự kiện: {session?.case_event_date}</p><p className="mb-4 text-sm text-slate-400">{session?.case_id?.summary}</p>{session?.legal_coverage_warnings?.map((warning) => <p key={warning} className="mb-3 rounded-lg border border-amber-500/20 bg-amber-500/5 p-3 text-xs text-amber-200">{warning}</p>)}<pre className="whitespace-pre-wrap font-sans text-sm leading-6 text-slate-300">{session?.case_id?.full_document}</pre></aside>
       </div>
     </main>
   );
