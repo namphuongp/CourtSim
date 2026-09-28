@@ -1,27 +1,26 @@
-import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import { env } from '../config/env.js';
+import { AuthSession } from '../models/AuthState.js';
+import { cookie, hash, SESSION_COOKIE } from '../services/authSession.js';
 import { AppError } from '../utils/AppError.js';
 
-export async function authenticate(request, _response, next) {
-  const [scheme, token] = request.headers.authorization?.split(' ') ?? [];
-  if (scheme !== 'Bearer' || !token) return next(new AppError('Vui lòng đăng nhập để tiếp tục.', 401, 'UNAUTHORIZED'));
-  let payload;
+export async function authenticate(request, response, next) {
   try {
-    payload = jwt.verify(token, env.JWT_SECRET, { algorithms: ['HS256'], issuer: 'courtsim-api', audience: 'courtsim-web' });
-    if (typeof payload.sub !== 'string' || !/^[a-f\d]{24}$/i.test(payload.sub)) throw new Error();
-  } catch {
-    return next(new AppError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', 401, 'INVALID_TOKEN'));
-  }
-  try {
-    const user = await User.findById(payload.sub).select('status system_role subscription_type').lean();
-    if (!user) return next(new AppError('Tài khoản không còn tồn tại.', 401, 'UNAUTHORIZED'));
-    if (user.status !== 'active') return next(new AppError('Tài khoản đã bị khóa.', 403, 'ACCOUNT_DISABLED'));
-    request.auth = { userId: payload.sub, role: user.system_role, tier: user.subscription_type };
+    const token = cookie(request, SESSION_COOKIE);
+    if (!token) throw new AppError('Vui lòng đăng nhập để tiếp tục.', 401, 'UNAUTHORIZED');
+    const now = new Date();
+    const session = await AuthSession.findOneAndUpdate({ tokenHash: hash(token), expiresAt: { $gt: now }, idleExpiresAt: { $gt: now } }, { $set: { idleExpiresAt: new Date(Date.now() + 30 * 60000) } }, { returnDocument: 'after' }).lean();
+    if (!session) throw new AppError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', 401, 'INVALID_TOKEN');
+    const user = await User.findById(session.userId).lean();
+    if (!user) throw new AppError('Vui lòng đăng nhập lại.', 401, 'UNAUTHORIZED');
+    if (user.status !== 'active') throw new AppError('Tài khoản đã bị khóa.', 403, 'ACCOUNT_DISABLED');
+    if (!user.email_verified && !env.AUTH_EMAIL_VERIFICATION_DISABLED) throw new AppError('Vui lòng xác thực email để tiếp tục.', 403, 'EMAIL_NOT_VERIFIED');
+    request.auth = { userId: String(user._id), role: user.system_role, tier: user.subscription_type };
+    request.authUser = user;
+    response.setHeader('Cache-Control', 'no-store');
     next();
   } catch (error) { next(error); }
 }
-
 export function requireAdmin(request, _response, next) {
   if (request.auth?.role !== 'admin') return next(new AppError('Bạn không có quyền thực hiện thao tác này.', 403, 'FORBIDDEN'));
   next();

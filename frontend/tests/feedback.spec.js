@@ -10,6 +10,7 @@ async function mockFeedback(page, { failSend = false, failGrade = false } = {}) 
   const courtCase = { title: 'Bài luyện lập luận', category: 'dân sự', evidence_inventory: [] };
   await page.route('**/api/**', async route => {
     const path = new URL(route.request().url()).pathname;
+    if(path.endsWith('/auth/me')) return route.fallback();
     const send = (data, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(data) });
     if (path.endsWith('/feedback/prompt')) { calls.prompts++; const show = !prompted; prompted = true; return send({ data: { show } }); }
     if (path.endsWith('/feedback')) {
@@ -129,4 +130,11 @@ test('người học không vào được màn hình admin góp ý', async ({ pa
   await page.goto('/admin/feedback');
   await expect(page).toHaveURL(/dashboard$/);
   await expect(page.getByRole('heading', { name: 'Góp ý của người học' })).toHaveCount(0);
+});
+
+test.beforeEach(async ({ page }) => {
+  await page.route('**/api/auth/me', async route => {
+    const user = await page.evaluate(() => { const cached = JSON.parse(localStorage.getItem('currentUser') || 'null'); const role = localStorage.getItem('userRole') || 'user'; return cached ? {...cached,role} : localStorage.getItem('userToken') ? {id:'user-1',role} : null; });
+    await route.fulfill({status:user ? 200 : 401,contentType:'application/json',body:JSON.stringify(user ? {user} : {error:{code:'UNAUTHORIZED'}})});
+  });
 });

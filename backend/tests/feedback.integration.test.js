@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import mongoose from 'mongoose';
-import jwt from 'jsonwebtoken';
+import { randomBytes, createHash } from 'node:crypto';
 
 test('góp ý: một lần, gửi trùng, riêng tư, phân quyền và quản trị', { skip: !process.env.COURTSIM_TEST_MONGO_URI, timeout: 60000 }, async t => {
   process.env.JWT_SECRET = 'feedback-test-secret-isolated-database';
@@ -17,14 +17,15 @@ test('góp ý: một lần, gửi trùng, riêng tư, phân quyền và quản t
   });
   await mongoose.connect(process.env.COURTSIM_TEST_MONGO_URI, { dbName: db, serverSelectionTimeoutMS: 5000 });
   await Promise.all([User.init(), SimulationSession.init()]);
-  const users = await User.create(['user', 'user', 'admin'].map((role, i) => ({ username: `Người ${i}`, email: `feedback${i}@example.com`, password_hash: 'test-only', system_role: role })));
-  const tokens = users.map(user => jwt.sign({}, process.env.JWT_SECRET, { algorithm: 'HS256', subject: String(user._id), issuer: 'courtsim-api', audience: 'courtsim-web', expiresIn: '1h' }));
+  const users = await User.create(['user', 'user', 'admin'].map((role, i) => ({ username: `Người ${i}`, email: `feedback${i}@example.com`, password_hash: 'test-only', email_verified: true, system_role: role })));
+  const { AuthSession } = await import('../src/models/AuthState.js');
+  const tokens = await Promise.all(users.map(async user => { const token = randomBytes(32).toString('base64url'); await AuthSession.create({tokenHash:createHash('sha256').update(token).digest('hex'),userId:user._id,expiresAt:new Date(Date.now()+3600000),idleExpiresAt:new Date(Date.now()+1800000)}); return `courtsim=${token}`; }));
   const session = await SimulationSession.create({ user_id: users[0]._id, case_id: new mongoose.Types.ObjectId(), user_court_role: 'defense_lawyer', status: 'completed', evaluation: { score: 70, feedback: 'Không sao chép' }, turns: [{ content: 'Riêng tư' }] });
   const ongoing = await SimulationSession.create({ user_id: users[0]._id, case_id: new mongoose.Types.ObjectId(), user_court_role: 'defense_lawyer' });
   server = createApp().listen(0, '127.0.0.1'); await new Promise(resolve => server.once('listening', resolve));
   const base = `http://127.0.0.1:${server.address().port}/api/v1`;
   async function request(path, method = 'GET', body, token = tokens[0]) {
-    const res = await fetch(base + path, { method, headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+    const res = await fetch(base + path, { method, headers: { 'Content-Type': 'application/json', Origin: 'http://localhost:5173', 'X-CourtSim-Request':'1', ...(token ? { Cookie: token } : {}) }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
     return { status: res.status, body: await res.json() };
   }
   const path = `/sessions/${session._id}/feedback`;

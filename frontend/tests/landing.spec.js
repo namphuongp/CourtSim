@@ -42,9 +42,11 @@ test('CTA đi qua đăng nhập đến danh sách vụ án, không tạo phiên'
   await page.route('**/api/**', route => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
+    if(path.endsWith('/auth/me')) return route.fallback();
     const send = data => route.fulfill({ contentType: 'application/json', body: JSON.stringify(data) });
     if (request.method() === 'POST' && path.includes('/sessions')) creations++;
-    if (path.endsWith('/auth/register')) return send({ message: 'Đã tạo tài khoản' });
+    if (path.endsWith('/auth/register')) return send({data:{challenge:'test-challenge',expiresAt:new Date(Date.now()+300000).toISOString(),resendAt:new Date(Date.now()+60000).toISOString()}});
+    if (path.endsWith('/auth/verify-email')) return send({user:{id:'user-1',full_name:'Người học',role:'user'}});
     if (path.endsWith('/auth/login')) return send({ token: 'landing-test', user: { id: 'user-1', full_name: 'Người học', role: 'user' } });
     if (path.endsWith('/cases')) return send({ data: [{ ...sampleLandCase, _id: 'sample-land' }], pagination: { total: 1 } });
     return send({ data: [] });
@@ -56,9 +58,12 @@ test('CTA đi qua đăng nhập đến danh sách vụ án, không tạo phiên'
   await expect(page).toHaveURL(/register\?returnTo=%2Fdashboard%2Fsetup/);
   await page.getByLabel('Họ và tên').fill('Người học');
   await page.getByLabel('Email').fill('learner@example.com');
-  await page.getByLabel('Mật khẩu').fill('Password123!');
+  await page.getByLabel('Mật khẩu', {exact:true}).fill('Password123!');
+  await page.getByLabel('Nhập lại mật khẩu', {exact:true}).fill('Password123!');
   await page.getByRole('button', { name: 'Đăng ký', exact: true }).click();
-  await expect(page).toHaveURL(/login\?registered=1&returnTo=%2Fdashboard%2Fsetup/);
+  await expect(page).toHaveURL(/verify-email/);
+  await page.getByRole('link',{name:'Quay lại đăng nhập'}).click();
+  await page.goto('/login?returnTo=%2Fdashboard%2Fsetup');
   await page.getByLabel('Email').fill('learner@example.com');
   await page.getByLabel('Mật khẩu', { exact: true }).fill('Password123!');
   await page.getByRole('button', { name: 'Đăng nhập', exact: true }).click();
@@ -70,6 +75,7 @@ test('CTA đi qua đăng nhập đến danh sách vụ án, không tạo phiên'
 test('trang chủ dùng bàn phím, giảm chuyển động và không tràn ngang', async ({ page }, testInfo) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
+  await expect(page.getByRole('heading', {level:1})).toBeVisible();
   await page.keyboard.press('Tab');
   await expect(page.getByRole('link', { name: 'Đến nội dung chính' })).toBeFocused();
   await page.keyboard.press('Enter');
@@ -96,4 +102,11 @@ test('chuyển động chạy một lần, footer mở được hướng dẫn',
   await page.getByRole('contentinfo').getByRole('link', { name: 'Hướng dẫn sử dụng' }).click();
   await expect(page).toHaveURL(/\/guide$/);
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+});
+
+test.beforeEach(async ({ page }) => {
+  await page.route('**/api/auth/me', async route => {
+    const user = await page.evaluate(() => { const cached = JSON.parse(localStorage.getItem('currentUser') || 'null'); const role = localStorage.getItem('userRole') || 'user'; return cached ? {...cached,role} : localStorage.getItem('userToken') ? {id:'user-1',role} : null; });
+    await route.fulfill({status:user ? 200 : 401,contentType:'application/json',body:JSON.stringify(user ? {user} : {error:{code:'UNAUTHORIZED'}})});
+  });
 });

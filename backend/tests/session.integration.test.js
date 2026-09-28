@@ -42,19 +42,24 @@ test('luồng HTTP với MongoDB: xác thực, lượt nguyên tử, gửi trùn
   await Promise.all([User.init(),SimulationSession.init(),TrialResult.init(),LegalAssistantExchange.init()]);
   await AiPersonal.insertMany(['judge','prosecutor','evaluator'].map(role_name=>({role_name,system_prompt:'Bám hồ sơ và giữ đúng vai.',model_id:'test',temperature:0.1})));
   const courtCase=await Case.create({title:'Hồ sơ kiểm thử',category:'dân sự',summary:'Tranh chấp vay',full_document:'Có hợp đồng vay. Chưa có biên nhận trả tiền. Cấu hình chấm điểm nội bộ.',evidence_inventory:[{name:'Hợp đồng vay',availability:'provided',content:'Hai bên ký hợp đồng vay.',summary:'Hợp đồng vay giữa hai bên.'}]});
-  api=createApp().listen(0,'127.0.0.1');
+  const sentEmails = [];
+  api=createApp({ sendEmail: async mail => sentEmails.push(mail) }).listen(0,'127.0.0.1');
   await new Promise(resolve=>api.once('listening',resolve));
   const base=`http://127.0.0.1:${api.address().port}/api`;
   async function request(path,{method='GET',body,token}={}) {
-    const response=await fetch(base+path,{method,headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},...(body!==undefined?{body:JSON.stringify(body)}:{})});
-    return {status:response.status,body:await response.json()};
+    const response=await fetch(base+path,{method,headers:{'Content-Type':'application/json',Origin:'http://localhost:5173','X-CourtSim-Request':'1',...(token?{Cookie:token}:{})},...(body!==undefined?{body:JSON.stringify(body)}:{})});
+    return {status:response.status,body:await response.json(),cookie:response.headers.get('set-cookie')?.split(';')[0]};
   }
   assert.equal((await request('/auth/register',{method:'POST',body:{full_name:{x:1},email:[],password:'12345678'}})).status,400);
   const password=randomUUID();
-  for(const email of ['one@test.local','two@test.local']) assert.equal((await request('/auth/register',{method:'POST',body:{full_name:'Người kiểm thử',email,password}})).status,201);
+  for(const email of ['one@test.local','two@test.local']) {
+    const registered = await request('/auth/register',{method:'POST',body:{full_name:'Người kiểm thử',email,password,confirm_password:password}});
+    assert.equal(registered.status,202);
+    assert.equal((await request('/auth/verify-email',{method:'POST',body:{challenge:registered.body.data.challenge,otp:sentEmails.at(-1).otp}})).status,200);
+  }
   const login=await request('/auth/login',{method:'POST',body:{email:'one@test.local',password}});
-  const token=login.body.token;
-  const other=(await request('/auth/login',{method:'POST',body:{email:'two@test.local',password}})).body.token;
+  const token=login.cookie;
+  const other=(await request('/auth/login',{method:'POST',body:{email:'two@test.local',password}})).cookie;
   const setup={case_id:String(courtCase._id),user_court_role:'defense_lawyer',difficulty:'beginner',case_event_date:'2025-01-01',request_id:randomUUID()};
   const creations=await Promise.all([request('/v1/sessions',{method:'POST',token,body:setup}),request('/v1/sessions',{method:'POST',token,body:setup})]);
   assert.deepEqual(creations.map(r=>r.status),[201,201]);

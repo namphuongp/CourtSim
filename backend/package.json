@@ -11,7 +11,8 @@
     "legal:import": "node src/scripts/importLegalDocuments.js",
     "sample:import": "node src/scripts/importSampleCase.js",
     "legal:check": "node src/scripts/checkLegalSources.js",
-    "legal:review": "node src/scripts/reviewLegalVersion.js"
+    "legal:review": "node src/scripts/reviewLegalVersion.js",
+    "auth:migrate": "node src/scripts/migrateAuth.js"
   },
   "keywords": [],
   "author": "",

@@ -4,6 +4,13 @@ export function getCurrentUser() {
 export function clearAuth() {
   for (const key of ['userToken', 'userRole', 'currentUser']) localStorage.removeItem(key);
 }
+export function setCurrentUser(user) {
+  clearAuth();
+  if (user?.id) {
+    localStorage.setItem('currentUser', JSON.stringify(user));
+    localStorage.setItem('userRole', user.role);
+  }
+}
 export function safeReturnPath(value) {
   return typeof value === 'string' && /^\/(?:dashboard|simulation|admin)(?:\/|$)/.test(value) ? value : '/dashboard';
 }

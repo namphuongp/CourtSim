@@ -1,5 +1,7 @@
 # CourtSim
 
+Authentication: [Email OTP, Google, cookie session và hướng dẫn chuyển đổi](docs/AUTHENTICATION.md).
+
 Cập nhật: [AI tranh luận theo hồ sơ, phân biệt nguồn và tránh cảnh báo lặp](docs/AI_DIALOGUE_BEHAVIOR.md).
 
 Cập nhật: [Hồ sơ mở theo yêu cầu, viện dẫn chứng cứ và trợ lý tra cứu độc lập](docs/CASE_DOSSIER_AND_ASSISTANT.md).
@@ -40,7 +42,7 @@ Mặc định backend kết nối `mongodb://127.0.0.1:27017/courtsim` và chạ
 - `POST /api/v1/sessions/:sessionId/complete`: kết thúc và chấm điểm
 - `GET /api/v1/sessions/:sessionId/result`: lấy kết quả chấm điểm
 
-Các API phiên mô phỏng yêu cầu header `Authorization: Bearer <token>`.
+Các API phiên mô phỏng dùng cookie HttpOnly; API ghi yêu cầu Origin được cho phép và header `X-CourtSim-Request: 1`. JWT đăng nhập cũ không còn được chấp nhận; cần đăng nhập lại và xác minh email.
 
 ## Luồng sử dụng chính
 

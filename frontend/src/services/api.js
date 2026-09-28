@@ -6,18 +6,18 @@ import { clearAuth } from './auth';
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:5000/api',
   timeout: 480_000,
-  headers: { 'Content-Type': 'application/json' },
+  withCredentials: true,
+  headers: { 'Content-Type': 'application/json', 'X-CourtSim-Request': '1' },
 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('userToken');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  if (config.url?.startsWith('/auth/')) config.timeout = 15000;
   return config;
 });
 
 api.interceptors.response.use(
   // Góp ý là nguyên văn người dùng, có thể chứa lỗi kỹ thuật cần admin đọc.
-  (response) => response.config.url?.startsWith('/v1/admin/feedback') ? response : ({ ...response, data: learnerPayload(response.data) }),
+  (response) => response.config.url?.startsWith('/v1/admin/feedback') || response.config.url?.startsWith('/auth/') ? response : ({ ...response, data: learnerPayload(response.data) }),
   (error) => {
     if (error.response?.status === 401 && !error.config?.url?.startsWith('/auth/')) {
       clearAuth();
