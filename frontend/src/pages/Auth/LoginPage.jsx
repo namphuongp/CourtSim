@@ -29,7 +29,7 @@ export default function LoginPage() {
       localStorage.setItem('currentUser', JSON.stringify(data.user));
       navigate(params.get('returnTo') ? safeReturnPath(params.get('returnTo')) : data.user.role === 'admin' ? '/admin' : '/dashboard', { replace: true });
     } catch (requestError) {
-      setError(getApiError(requestError, 'Đăng nhập thất bại.'));
+      setError(getApiError(requestError, 'Chưa thể đăng nhập. Kiểm tra kết nối và thử lại.'));
     } finally {
       setLoading(false);
     }
@@ -44,7 +44,7 @@ export default function LoginPage() {
         <label className="block text-sm">Email<input name="email" autoComplete="email" className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 p-3" type="email" required value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} /></label>
         <label className="block text-sm">Mật khẩu<input name="password" autoComplete="current-password" className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 p-3" type="password" required value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} /></label>
         <button disabled={loading} className="w-full rounded-xl bg-blue-600 p-3 font-bold text-white disabled:opacity-50">{loading ? 'Đang đăng nhập...' : 'Đăng nhập'}</button>
-        <p className="text-center text-sm text-slate-400">Chưa có tài khoản? <Link className="text-blue-400" to="/register">Đăng ký</Link></p>
+        <p className="text-center text-sm text-slate-400">Chưa có tài khoản? <Link className="text-blue-400" to={params.get('returnTo') ? `/register?returnTo=${encodeURIComponent(safeReturnPath(params.get('returnTo')))}` : '/register'}>Đăng ký</Link></p>
       </form>
     </main>
   );

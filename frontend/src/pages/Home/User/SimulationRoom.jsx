@@ -1,6 +1,9 @@
-import { dialogueText } from '../../../../../shared/dialogueText.mjs';
+import DossierTabs from '../../../components/courtroom/DossierTabs';
+import CourtroomGuide from '../../../components/courtroom/CourtroomGuide';
+import CourtroomStage from '../../../components/courtroom/CourtroomStage';
+import Transcript from '../../../components/courtroom/Transcript';
+import { courtroomView } from '../../../services/courtroom';
 import ConfirmEndDialog from '../../../components/ConfirmEndDialog';
-import { LegalCitations } from '../../../components/LegalBasis';
 import CaseDossier from '../../../components/CaseDossier';
 import { EVIDENCE_MIME, evidenceText, evidenceIds } from '../../../services/references';
 import StudyPanel from '../../../components/StudyPanel';
@@ -18,7 +21,9 @@ export default function SimulationRoom() {
 
 function Room({ sessionId }) {
   const navigate = useNavigate();
-  const endRef = useRef(null);
+  const [selectedId, setSelectedId] = useState(null);
+  const [fullRecord, setFullRecord] = useState(null);
+  const [submittedContent, setSubmittedContent] = useState('');
   const argumentRef = useRef(null);
   const [panel, setPanel] = useState(null);
   const [insertError, setInsertError] = useState('');
@@ -45,12 +50,14 @@ function Room({ sessionId }) {
       }
       if (readDraft(completionKey) && !a.data.data.processing && a.data.data.status === 'ongoing') saveDraft(completionKey, null);
       setRecords(b.data.data);
+      if (window.location.hash === '#transcript') setPanel('history');
+      const linked = window.location.hash.replace('#record-', '');
+      if (b.data.data.some((r) => r._id === linked)) setSelectedId(linked);
       setDraft((current) => b.data.data.some((r) => r.request_id === current.request_id) ? { content: '', request_id: crypto.randomUUID() } : current);
       setState((current) => ({ ...current, loading: false, error: '' }));
     }).catch((error) => { if (active) setState((current) => ({ ...current, loading: false, error: getApiError(error) })); });
     return () => { active = false; };
   }, [sessionId, reload, completionKey, storageKey, navigate]);
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [records, state.sending]);
   const userTurns = records.filter((r) => r.sender_type === 'user').length;
   const completed = session?.status === 'completed';
   const disabled = state.sending || state.ending || completed || !session || !session.case_event_date || session.processing;
@@ -65,7 +72,7 @@ function Room({ sessionId }) {
         setSession(data.data);
         if (data.data.status === 'completed') navigate(`/simulation/${sessionId}/result`, { replace: true });
         else if (!data.data.processing) setReload((value) => value + 1);
-      } catch { /* Lỗi mạng tạm thời: giữ trạng thái và nút tải lại. */ }
+      } catch { if (active) setState((current) => ({ ...current, error: 'Chưa kiểm tra được tiến trình. Kiểm tra kết nối và chọn Tải lại dữ liệu.' })); }
     }, 3000);
     return () => { active = false; clearInterval(timer); };
   }, [session?.processing, sessionId, state.ending, state.sending, navigate]);
@@ -88,7 +95,7 @@ function Room({ sessionId }) {
     if (!id) return;
     event.preventDefault();
     const item = session?.case_id?.evidence_inventory?.find((entry) => entry.id === id);
-    if (!item) { setInsertError('Tài liệu không thuộc hồ sơ này. Hãy chọn lại trong Hồ sơ vụ án.'); return; }
+    if (!item) { setInsertError('Tài liệu không thuộc hồ sơ này. Hãy chọn lại trong Hồ sơ phiên tòa.'); return; }
     insertIntoArgument(evidenceText(item));
   }
 
@@ -100,7 +107,7 @@ function Room({ sessionId }) {
     try {
       await api.patch(`/v1/sessions/${sessionId}`, { case_event_date: eventDate });
       setReload((n) => n + 1);
-    } catch (error) { setState((s) => ({ ...s, error: getApiError(error) })); }
+    } catch (error) { setState((s) => ({ ...s, error: getApiError(error, 'Chưa lưu được ngày sự kiện. Vui lòng thử lại.') })); }
     finally { busy.current = false; setState((s) => ({ ...s, sending: false })); }
   }
 
@@ -108,13 +115,15 @@ function Room({ sessionId }) {
     event.preventDefault();
     if (busy.current || disabled || draft.content.trim().length < 10) return;
     busy.current = true;
+    setSubmittedContent(draft.content);
     setState((s) => ({ ...s, sending: true, error: '' }));
     try {
       const { data } = await api.post(`/v1/sessions/${sessionId}/messages`, { ...draft, expected_turn_count: userTurns, evidence_ids: evidenceIds(draft.content, session.case_id.evidence_inventory), legal_reference_ids: [...new Set([...draft.content.matchAll(/\[PL:([^\]\s]+)\]/gu)].map((match) => match[1]))] });
       setRecords((current) => [...new Map([...current, ...data.data].map((r) => [r._id, r])).values()]);
+      setSelectedId(null);
       setDraft({ content: '', request_id: crypto.randomUUID() });
     } catch (error) {
-      setState((s) => ({ ...s, error: getApiError(error, 'AI chưa thể phản hồi. Bản nháp được giữ lại.') }));
+      setState((s) => ({ ...s, error: getApiError(error, 'Chưa thể gửi lập luận. Nội dung bạn viết vẫn được giữ lại. Vui lòng thử lại.') }));
       // Kiểm tra lần ghi đã thành công nhưng mất phản hồi; không gửi thêm lượt mới.
       try {
         const [a, b] = await Promise.all([api.get(`/v1/sessions/${sessionId}`), api.get(`/v1/sessions/${sessionId}/records`)]);
@@ -126,6 +135,7 @@ function Room({ sessionId }) {
       } catch { /* Giữ bản nháp để thử lại cùng mã yêu cầu khi có mạng. */ }
     } finally {
       busy.current = false;
+      setSubmittedContent('');
       setState((s) => ({ ...s, sending: false }));
     }
   }
@@ -142,7 +152,7 @@ function Room({ sessionId }) {
       navigate(`/simulation/${sessionId}/result`);
     } catch (error) {
       setConfirmEnd(false);
-      setState((s) => ({ ...s, error: getApiError(error, 'Chưa thể chấm điểm. Biên bản vẫn được giữ; bạn có thể thử lại.') }));
+      setState((s) => ({ ...s, error: getApiError(error, 'Chưa thể chấm điểm. Các lượt đã gửi vẫn được giữ lại. Vui lòng thử lại.') }));
       try {
         const { data } = await api.get(`/v1/sessions/${sessionId}`);
         setSession(data.data);
@@ -154,22 +164,36 @@ function Room({ sessionId }) {
     }
   }
 
-  if (state.loading) return <main className="min-h-screen bg-slate-950 p-8" role="status">Đang tải phiên tòa...</main>;
-  return <main className="flex h-dvh flex-col bg-slate-950 text-slate-200">
-    <StudyPanel open={Boolean(panel)} title={panel === 'case' ? 'Hồ sơ vụ án' : 'Trợ lý tra cứu luật'} onClose={() => setPanel(null)}>
+  function selectRecord(id) { setSelectedId(id); setPanel(null); }
+  const view = courtroomView({ records, selectedId, sending: state.sending && Boolean(submittedContent), pendingContent: submittedContent, processing: session?.processing, ending: state.ending });
+  const panelTitles = { guide: 'Hướng dẫn phiên tòa', case: 'Hồ sơ phiên tòa', assistant: 'Trợ lý luật', history: 'Hồ sơ phiên tòa', speech: 'Lời trình bày đầy đủ' };
+  const ready = !disabled && userTurns < (session?.max_turns ?? 20);
+  const status = state.ending ? 'Đang chấm điểm' : state.sending ? (submittedContent ? 'Đang chờ phản hồi' : 'Đang lưu ngày') : session?.processing ? (readDraft(completionKey)?.requested ? 'Đang chấm điểm' : 'Đang xử lý lượt trước') : completed ? 'Phiên đã kết thúc' : userTurns >= (session?.max_turns ?? 20) ? 'Đã đủ số lượt' : ready ? 'Đến lượt bạn' : 'Kiểm tra thông tin phiên';
+  if (state.loading) return <main className="courtroom-page" role="status">Đang tải phiên tòa...</main>;
+  return <main className="courtroom-page">
+    {panel === 'guide' && <CourtroomGuide completed={completed} hasDialogue={Boolean(view.record)} onClose={() => setPanel(null)} />}
+    <StudyPanel open={Boolean(panel) && panel !== 'guide'} compact={panel === 'speech'} title={panelTitles[panel] ?? 'Hồ sơ vụ án'} onClose={() => setPanel(null)}>
       {insertError && <p role="alert" className="mb-3 text-rose-400">{insertError}</p>}
-      {panel === 'case' ? <CaseDossier courtCase={session?.case_id} role={session?.user_court_role} onInsert={(item) => insertIntoArgument(evidenceText(item))} insertionDisabled={disabled} /> : <LegalAssistant sessionId={sessionId} open={panel === 'assistant'} onInsert={insertIntoArgument} insertionDisabled={disabled} />}
+      {(panel === 'case' || panel === 'history') && <>
+        <DossierTabs value={panel} onChange={setPanel} />
+        <div id="dossier-content" role="tabpanel" aria-labelledby={'dossier-tab-' + panel} tabIndex={0}>
+          {panel === 'case' ? <CaseDossier courtCase={session?.case_id} role={session?.user_court_role} onInsert={(item) => insertIntoArgument(evidenceText(item))} insertionDisabled={!ready} /> : <Transcript session={session} records={records} selected={view.record?._id} onSelect={selectRecord} />}
+        </div>
+      </>}
+      {panel === 'assistant' && <LegalAssistant sessionId={sessionId} open onInsert={insertIntoArgument} insertionDisabled={!ready} />}
+      {panel === 'speech' && <Transcript session={session} records={records} selected={view.record?._id} fullRecord={panel === 'speech' ? fullRecord : null} onSelect={selectRecord} />}
     </StudyPanel>
     <ConfirmEndDialog open={confirmEnd} pending={state.ending} hasDraft={Boolean(draft.content.trim())} onCancel={() => setConfirmEnd(false)} onConfirm={complete} />
-    <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 p-4"><div><Link className="text-sm text-blue-400 underline" to="/dashboard/sessions">← Danh sách phiên</Link><h1 className="mt-1 font-bold text-white">{session?.case_id?.title ?? 'Phiên mô phỏng'}</h1><p className="text-xs text-slate-500">{roleLabel(session?.user_court_role, session?.case_id?.category)} · Ngày tra cứu: {session?.case_event_date ?? 'Chưa xác định'} · {userTurns}/{session?.max_turns ?? 20} lượt</p></div><div className="flex flex-wrap gap-2"><button aria-expanded={panel === 'case'} onClick={() => setPanel(panel === 'case' ? null : 'case')} className="rounded-xl border border-blue-400 px-4 py-2 text-blue-400">Hồ sơ vụ án</button><button aria-expanded={panel === 'assistant'} onClick={() => setPanel(panel === 'assistant' ? null : 'assistant')} className="rounded-xl border border-slate-600 px-4 py-2">Trợ lý tra cứu luật</button>{completed ? <Link to={`/simulation/${sessionId}/result`} className="rounded-xl bg-blue-600 px-4 py-2">Xem kết quả</Link> : <button disabled={disabled || !userTurns} onClick={() => setConfirmEnd(true)} className="rounded-xl border border-rose-500/40 px-4 py-2 text-rose-300 disabled:opacity-40">{state.ending ? 'Đang chấm điểm...' : 'Kết thúc và chấm điểm'}</button>}</div></header>
-    {insertError && !panel && <p role="alert" className="p-3 text-rose-300">{insertError}</p>}
-    {state.error && <div role="alert" className="border-b border-rose-500/30 p-3 text-sm text-rose-300">{state.error} <button disabled={state.sending || state.ending} onClick={() => setReload((n) => n + 1)} className="ml-2 underline">Tải lại dữ liệu</button></div>}
-    {session && !session.case_event_date && !completed && <form onSubmit={saveEventDate} className="border-b border-slate-800 p-3 text-sm"><p>Phiên cũ chưa có ngày tra cứu luật. Bổ sung ngày trong hồ sơ, hoặc một ngày giả định cho bài tập, để tiếp tục.</p><label>Ngày tra cứu <input required type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} className="m-2 rounded border border-slate-700 p-2" /></label><button disabled={state.sending || !eventDate} className="rounded bg-blue-600 px-3 py-2">Lưu ngày</button></form>}
-    {session?.processing && !state.sending && !state.ending && <p role="status" className="p-3 text-sm">Một yêu cầu đang được xử lý. Chờ rồi <button onClick={() => setReload((n) => n + 1)} className="text-blue-400 underline">cập nhật phiên</button>.</p>}
-    <div className="flex min-h-0 flex-1 flex-col">
-      <section className="flex min-h-0 min-w-0 flex-1 flex-col"><div className="flex-1 space-y-4 overflow-y-auto p-4">{records.map((item) => <article id={`record-${item._id}`} key={item._id} className={`max-w-3xl break-words rounded-2xl border p-4 ${item.sender_type === 'user' ? 'ml-auto border-blue-500/30 bg-blue-500/10' : item.sender_type === 'ai_judge' ? 'border-amber-500/30 bg-amber-500/10' : 'border-rose-500/30 bg-rose-500/10'}`}><p className="mb-2 text-xs font-bold text-slate-400">{item.sender_name}</p><p className="whitespace-pre-wrap leading-7">{dialogueText(item.display_content ?? item.content, session?.case_id?.evidence_inventory)}</p><LegalCitations citations={item.citations} /></article>)}{state.sending && <p role="status">Bên đối lập và Thẩm phán đang phân tích lập luận của bạn.</p>}{state.ending && <p role="status">Đang đánh giá toàn bộ phiên. Quá trình có thể mất vài phút.</p>}<div ref={endRef} /></div>
-      {completed ? <p className="border-t border-slate-800 p-4 text-sm">Phiên đã kết thúc. Đây là biên bản chỉ đọc.</p> : <form onSubmit={send} className="border-t border-slate-800 p-4"><label htmlFor="argument" className="text-sm font-semibold">Lập luận của bạn</label><textarea ref={argumentRef} onDrop={dropEvidence} onDragOver={(event) => { if (event.dataTransfer.types.includes(EVIDENCE_MIME)) { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; } }} id="argument" disabled={disabled} maxLength={4000} value={draft.content} onChange={(e) => setDraft({ content: e.target.value, request_id: crypto.randomUUID() })} placeholder="Nêu yêu cầu → chứng cứ trong hồ sơ → giải thích → trả lời phản biện..." className="mt-2 min-h-24 w-full resize-y rounded-xl border border-slate-700 bg-slate-900 p-3" /><div className="mt-2 flex flex-wrap items-center justify-between gap-2"><span className="text-xs text-slate-500">{draft.content.length}/4000 · Bản nháp lưu trong tab này</span><button disabled={disabled || userTurns >= (session?.max_turns ?? 20) || draft.content.trim().length < 10} className="rounded-xl bg-blue-600 px-5 py-2 disabled:opacity-40">Gửi lập luận</button></div>{userTurns >= (session?.max_turns ?? 20) && <p className="mt-2 text-sm">Đã đủ số lượt. Chọn Kết thúc để nhận đánh giá.</p>}</form>}
-      </section>
+    <header className="courtroom-header"><div><Link className="courtroom-back" to="/dashboard/sessions">← Danh sách phiên</Link><h1>{session?.case_id?.title ?? 'Phiên mô phỏng'}</h1><p className="courtroom-meta"><span>{roleLabel(session?.user_court_role, session?.case_id?.category)}</span><span>· Ngày sự kiện: {session?.case_event_date ?? 'Chưa xác định'}</span><span>· {userTurns}/{session?.max_turns ?? 20} lượt</span></p></div><nav className="courtroom-controls" aria-label="Công cụ phiên tòa"><button className="tool-guide" aria-expanded={panel === 'guide'} onClick={() => setPanel(panel === 'guide' ? null : 'guide')}>Hướng dẫn</button><button className="tool-case" aria-expanded={panel === 'case' || panel === 'history'} onClick={() => setPanel(panel === 'case' || panel === 'history' ? null : 'case')}>Hồ sơ phiên tòa</button><button className="tool-law" aria-expanded={panel === 'assistant'} onClick={() => setPanel(panel === 'assistant' ? null : 'assistant')}>Trợ lý luật</button>{completed ? <Link to={'/simulation/' + sessionId + '/result'}>Xem kết quả</Link> : <button className="end-session" disabled={disabled || !userTurns} onClick={() => setConfirmEnd(true)}>{state.ending ? 'Đang chấm điểm...' : 'Kết thúc và chấm điểm'}</button>}</nav></header>
+    {insertError && !panel && <p role="alert" className="courtroom-notice">{insertError}</p>}
+    {state.error && <div role="alert" className="courtroom-notice">{state.error}<button disabled={state.sending || state.ending} onClick={() => setReload((n) => n + 1)}>Tải lại dữ liệu</button></div>}
+    {session && !session.case_event_date && !completed && <form onSubmit={saveEventDate} className="courtroom-notice"><p>Bổ sung ngày trong hồ sơ hoặc một ngày giả định cho bài tập để tiếp tục.</p><label>Ngày tra cứu <input required type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} className="m-2 rounded border p-2" /></label><button disabled={state.sending || !eventDate}>Lưu ngày</button></form>}
+    <div className="courtroom-workspace"><CourtroomStage session={session} view={view} records={records} onSelect={setSelectedId} onReadFull={(record) => { setFullRecord(record); setPanel('speech'); }} />
     </div>
+    {completed ? <p className="courtroom-notice">Phiên đã kết thúc. Đây là biên bản chỉ đọc.</p> : <form onSubmit={send} className="courtroom-composer">
+      <div className="composer-heading"><label htmlFor="argument">Lập luận của bạn</label><span role="status" className={'turn-indicator' + (ready ? '' : ' is-busy')}>{status}</span></div>
+      <div className="composer-fields"><textarea ref={argumentRef} onDrop={dropEvidence} onDragOver={(event) => { if (event.dataTransfer.types.includes(EVIDENCE_MIME)) { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; } }} id="argument" disabled={!ready} maxLength={4000} value={draft.content} onChange={(e) => setDraft({ content: e.target.value, request_id: crypto.randomUUID() })} placeholder="Trình bày luận điểm, liên hệ chứng cứ và trả lời vấn đề chủ tọa đặt ra…" /><button className="composer-send" disabled={!ready || draft.content.trim().length < 10}>Gửi lập luận <span aria-hidden="true">↗</span></button></div>
+      <div className="composer-foot"><span>{draft.content.length}/4000 · Bản nháp được giữ khi tải lại trang</span></div>{userTurns >= (session?.max_turns ?? 20) && <p>Đã đủ số lượt. Chọn Kết thúc và chấm điểm để xem kết quả.</p>}
+    </form>}
   </main>;
 }

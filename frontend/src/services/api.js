@@ -1,3 +1,4 @@
+import { publicErrorMessage } from '../../../shared/userCopy.mjs';
 import { learnerPayload, learnerText } from '../../../shared/learnerText.mjs';
 import axios from 'axios';
 import { clearAuth } from './auth';
@@ -15,7 +16,8 @@ api.interceptors.request.use((config) => {
 });
 
 api.interceptors.response.use(
-  (response) => ({ ...response, data: learnerPayload(response.data) }),
+  // Góp ý là nguyên văn người dùng, có thể chứa lỗi kỹ thuật cần admin đọc.
+  (response) => response.config.url?.startsWith('/v1/admin/feedback') ? response : ({ ...response, data: learnerPayload(response.data) }),
   (error) => {
     if (error.response?.status === 401 && !error.config?.url?.startsWith('/auth/')) {
       clearAuth();
@@ -25,13 +27,13 @@ api.interceptors.response.use(
   },
 );
 
-export function getApiError(error, fallback = 'Không thể kết nối máy chủ.') {
-  if (error.code === 'ECONNABORTED') return 'Xử lý lâu hơn dự kiến. Nội dung nhập được giữ lại; hãy thử lại để kiểm tra kết quả.';
+export function getApiError(error, fallback = 'Chưa thể tải nội dung. Kiểm tra kết nối và thử lại.') {
+  const status = error.response?.status;
   const code = error.response?.data?.error?.code;
-  if (code?.startsWith('AI_INVALID') || code === 'AI_UNGROUNDED_FACT' || code === 'AI_UNVERIFIED_CITATION') return 'Phản hồi chưa đáp ứng yêu cầu kiểm chứng. Biên bản và bản nháp được giữ lại; hãy thử lại.';
   const message = error.response?.data?.error?.message ?? error.response?.data?.message;
-  if (typeof message !== 'string' || /stack|TypeError|MongoServer|Cannot (GET|POST|PATCH)|Không tìm thấy (GET|POST|PATCH)|<html/i.test(message)) return fallback;
-  return learnerText(message, fallback);
+  if (import.meta.env.DEV) console.warn('Request failed', { status, code: typeof code === 'string' && /^[A-Z0-9_]{1,64}$/.test(code) ? code : undefined });
+  if (!error.response || error.code === 'ECONNABORTED') return fallback;
+  return learnerText(publicErrorMessage(message, code, status, fallback), fallback).replace(/\s+/gu, ' ');
 }
 
 export default api;

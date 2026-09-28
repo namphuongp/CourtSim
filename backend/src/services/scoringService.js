@@ -11,7 +11,7 @@ export function scoringEligibility(records, legalAvailable) {
   }
   return Object.fromEntries(SCORING_RUBRIC.groups.flatMap((group) => group.items.map((item) => {
     let reason = null;
-    if ((item.id.startsWith('2.') || item.id === '4.2') && !legalAvailable) reason = 'Chưa xác minh được căn cứ pháp luật theo vấn đề và mốc thời gian; chưa chấm độ chính xác pháp luật.';
+    if ((item.id.startsWith('2.') || item.id === '4.2') && !legalAvailable) reason = 'Chưa xác minh được căn cứ phù hợp với thời điểm vụ án nên chưa chấm độ chính xác pháp luật.';
     if ((item.id.startsWith('5.') || item.id.startsWith('6.')) && !responses) reason = 'Chưa có lượt người học trả lời lập luận mới của bên đối lập.';
     if (item.id === '5.4' && responses < 2) reason = 'Chưa có lượt bảo vệ lập luận sau phản biện tiếp theo.';
     return [item.id, reason];
@@ -50,6 +50,6 @@ export function calculateEvaluation(entries, records, legalAvailable) {
   return { rubric_version: SCORING_RUBRIC.version, rubric_source: SCORING_RUBRIC.source, rubric_source_sha256: SCORING_RUBRIC.source_sha256,
     rubric_status: 'proposal', criteria, score: assessedMax > 0 ? round(earned / assessedMax * 100) : null,
     assessment_status: assessedMax === 100 ? 'complete' : 'partial', earned_score: earned, assessed_max: assessedMax,
-    score_scope: assessedMax === 100 ? 'Tổng điểm theo rubric 100 điểm.' : `Điểm quy đổi từ ${earned}/${assessedMax}; đã đánh giá ${assessedMax}% trọng số. Phần chưa đủ dữ liệu không tính là 0.`,
+    score_scope: assessedMax === 100 ? 'Điểm theo thang 100.' : `Điểm quy đổi từ ${earned}/${assessedMax}; đã đánh giá ${assessedMax}% trọng số. Tiêu chí chưa đủ dữ liệu không bị tính 0 điểm.`,
     rubric_scores: Object.fromEntries(criteria.map((group) => [group.id, group.score === null ? null : round(group.score / group.max * 100)])) };
 }

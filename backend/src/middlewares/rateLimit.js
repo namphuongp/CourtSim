@@ -12,7 +12,7 @@ export function authRateLimit(request, _response, next) {
     attempts.set(key, { count: 1, resetAt: now + windowMs });
     return next();
   }
-  if (current.count >= 20) return next(new AppError('Quá nhiều yêu cầu xác thực. Vui lòng thử lại sau.', 429, 'RATE_LIMITED'));
+  if (current.count >= 20) return next(new AppError('Bạn đã thử nhiều lần liên tiếp. Vui lòng chờ một lúc rồi thử lại.', 429, 'RATE_LIMITED'));
   current.count += 1;
   next();
 }

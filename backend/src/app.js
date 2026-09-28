@@ -5,6 +5,7 @@ import { errorHandler, notFoundHandler } from './middlewares/errorHandler.js';
 import authRoutes from './routes/AuthRoutes.js';
 import caseRoutes from './routes/CaseRoutes.js';
 import healthRoutes from './routes/HealthRoutes.js';
+import { learnerFeedbackRoutes, adminFeedbackRoutes } from './routes/FeedbackRoutes.js';
 import sessionRoutes from './routes/SessionRoutes.js';
 
 export function createApp() {
@@ -17,6 +18,8 @@ export function createApp() {
   app.use('/api/v1/health', healthRoutes);
   app.use('/api/auth', authRoutes); // Giữ tương thích với frontend hiện tại.
   app.use('/api/v1/cases', caseRoutes);
+  app.use('/api/v1/sessions/:sessionId/feedback', learnerFeedbackRoutes);
+  app.use('/api/v1/admin/feedback', adminFeedbackRoutes);
   app.use('/api/v1/sessions', sessionRoutes);
 
   app.use(notFoundHandler);

@@ -17,6 +17,7 @@ import SimulationRoom from './pages/Home/User/SimulationRoom';
 import SimulationResult from './pages/Home/User/SimulationResult';
 import GuidePage from './pages/Guide/GuidePage';
 // -- TRANG ADMIN --
+import AdminFeedback from './pages/Home/Admin/AdminFeedback';
 import AdminDashboard from './pages/Home/Admin/AdminDashboard';
 
 // ==========================================
@@ -75,6 +76,7 @@ function App() {
         <Route path="/guide" element={<GuidePage />} />
 
         {/* ADMIN ROUTES */}
+        <Route path="/admin/feedback" element={<AdminRoute><AdminFeedback /></AdminRoute>} />
         <Route path="/admin" element={ <AdminRoute><AdminDashboard /></AdminRoute> } />
         
         {/* USER DASHBOARD ROUTES (Sử dụng Nested Route với Layout) */}

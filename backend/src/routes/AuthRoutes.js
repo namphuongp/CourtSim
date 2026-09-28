@@ -19,8 +19,8 @@ router.post('/register', asyncHandler(async (request, response) => {
 
   if (!fullName || fullName.length < 2 || fullName.length > 100) throw new AppError('Họ tên phải có từ 2 đến 100 ký tự.');
   if (!email || !emailPattern.test(email) || email.length > 254) throw new AppError('Email không hợp lệ.');
-  if (typeof password !== 'string' || password.length < 8 || Buffer.byteLength(password, 'utf8') > 72) throw new AppError('Mật khẩu cần ít nhất 8 ký tự và tối đa 72 byte UTF-8.');
-  if (await User.exists({ email })) throw new AppError('Email đã tồn tại.', 409, 'USER_EXISTS');
+  if (typeof password !== 'string' || password.length < 8 || Buffer.byteLength(password, 'utf8') > 72) throw new AppError('Mật khẩu cần ít nhất 8 ký tự. Nếu dùng ký tự có dấu, hãy chọn mật khẩu ngắn hơn.');
+  if (await User.exists({ email })) throw new AppError('Email này đã được đăng ký. Bạn có thể đăng nhập bằng tài khoản đã có.', 409, 'USER_EXISTS');
 
   const user = await User.create({ username: fullName, email, password_hash: await bcrypt.hash(password, 12) });
   response.status(201).json({ message: 'Đăng ký thành công.', data: { id: user.id, full_name: user.username, email: user.email } });

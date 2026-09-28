@@ -96,3 +96,46 @@ test('AI vẫn lặp sau lần sửa: tiếp tục có điều kiện từ hồ 
   assert.equal((turns[1].content.match(/\?/g)??[]).length,1);
   assert.equal(learnerRecord(turns[0],courtCase).generation_mode,undefined);
 });
+
+for (const recover of [true, false]) {
+  test(`dữ kiện sai nguồn: ${recover ? 'sửa được ở lần hai' : 'tiếp tục từ hồ sơ sau hai lần bị loại'}`, async () => {
+    const content = 'Tôi bảo vệ bị đơn đối với 229,7 m² và đề nghị đối chiếu phạm vi giấy chứng nhận.';
+    const records = [{ sender_type: 'user', content }];
+    const calls = new Map();
+    const turns = await generateDebateTurn({ session: { case_event_date: '2024-03-29', user_court_role: 'defense_lawyer' }, courtCase, records }, {
+      persona: async role => ({ model_id: role, system_prompt: '' }), research: async () => noLaw,
+      complete: async input => {
+        const count = (calls.get(input.model) ?? 0) + 1;
+        calls.set(input.model, count);
+        if (count === 2) assert.match(input.messages[0].content, /fact_analysis không khớp nguồn/);
+        const invalid = !recover || count === 1;
+        const question = 'Bạn đối chiếu phạm vi giấy chứng nhận với diện tích tranh chấp như thế nào?';
+        return JSON.stringify({
+          content: invalid ? 'Biên bản bí mật xác nhận đất thuộc B.' : input.model === 'judge' ? question : 'Phạm vi giấy chứng nhận cần được đối chiếu với 229,7 m²; thời gian sử dụng chưa tự chứng minh quyền đối với diện tích đó.',
+          citation_ids: [],
+          fact_analysis: { ...emptyFacts, established_facts: invalid ? ['Biên bản bí mật xác nhận đất thuộc B.'] : [], learner_claims: [content] },
+          dialogue_focus: { learner_quote: content, dossier_quote: courtCase.summary, next_question: input.model === 'judge' ? question : '' },
+        });
+      },
+    });
+    assert.deepEqual([...calls.values()], [2, 2]);
+    for (const turn of turns) {
+      assert.equal(turn.generation_mode, recover ? undefined : 'guided_continuation');
+      assert.doesNotMatch(turn.content, /bí mật|\[CC:|mentioned_only/);
+      assert.deepEqual(turn.citations, []);
+      validateFactAnchors(turn.fact_analysis, courtCase, records);
+    }
+    assert.equal((turns[1].content.match(/\?/g) ?? []).length, 1);
+  });
+}
+
+test('sửa dữ kiện không che lỗi dịch vụ AI hoặc JSON sai định dạng', async () => {
+  for (const failure of ['provider', 'json']) {
+    let calls = 0;
+    await assert.rejects(generateDebateTurn({ session: { case_event_date: '2024-03-29' }, courtCase, records: [] }, {
+      persona: async () => ({}), research: async () => noLaw,
+      complete: async () => { calls++; if (failure === 'provider') throw Object.assign(new Error('Unavailable'), { code: 'AI_UNAVAILABLE' }); return 'null'; },
+    }), error => error.code === (failure === 'provider' ? 'AI_UNAVAILABLE' : 'AI_INVALID_STRUCTURED_RESPONSE'));
+    assert.equal(calls, 1);
+  }
+});

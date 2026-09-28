@@ -10,10 +10,10 @@ export default function ConfirmEndDialog({ open, pending, hasDraft, onCancel, on
     return () => { dialog.close(); previous?.focus?.(); };
   }, [open]);
   return <dialog ref={ref} aria-labelledby="end-title" aria-describedby="end-description" onCancel={(event) => { event.preventDefault(); if (!pending) onCancel(); }} className="m-auto w-[calc(100%-2rem)] max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-6 text-slate-200 backdrop:bg-black/70">
-    <h2 id="end-title" className="text-xl font-bold">{pending ? 'Đang chấm phiên mô phỏng' : 'Kết thúc và nhận đánh giá?'}</h2>
-    <p id="end-description" className="my-4 leading-7">{pending ? 'Hệ thống đang đọc toàn bộ biên bản. Bạn không cần bấm lại. Nếu tải lại trang, tiến trình và kết quả đã lưu sẽ được kiểm tra tự động.' : 'Các lượt đã gửi sẽ được chấm theo 6 nhóm tiêu chí. Sau khi hoàn thành, bạn có thể xem lại biên bản và kết quả.'}</p>
+    <h2 id="end-title" className="text-xl font-bold">{pending ? 'Đang chấm điểm' : 'Kết thúc và nhận đánh giá?'}</h2>
+    <p id="end-description" className="my-4 leading-7">{pending ? 'Đang đánh giá các lượt đã gửi. Bạn không cần gửi lại yêu cầu; kết quả sẽ hiện khi chấm xong.' : 'Các lượt đã gửi sẽ được chấm theo 6 nhóm tiêu chí. Sau khi hoàn thành, bạn có thể xem lại biên bản và kết quả.'}</p>
     {hasDraft && !pending && <p className="mb-4 text-amber-300">Bạn còn bản nháp chưa gửi. Bản nháp không được tính vào kết quả.</p>}
-    {pending && <p role="status" className="mb-4 text-blue-300">Đang phân tích và tổng hợp điểm...</p>}
-    <div className="flex flex-wrap justify-end gap-3"><button autoFocus disabled={pending} onClick={onCancel} className="rounded-lg border border-slate-600 px-4 py-2 disabled:opacity-50">Tiếp tục tranh luận</button><button disabled={pending} onClick={onConfirm} className="rounded-lg bg-blue-600 px-4 py-2 disabled:opacity-50">{pending ? 'Đang chấm...' : 'Xác nhận kết thúc'}</button></div>
+    {pending && <p role="status" className="mb-4 text-blue-300">Đang chấm điểm...</p>}
+    <div className="flex flex-wrap justify-end gap-3"><button autoFocus disabled={pending} onClick={onCancel} className="rounded-lg border border-slate-600 px-4 py-2 disabled:opacity-50">Tiếp tục tranh luận</button><button disabled={pending} onClick={onConfirm} className="rounded-lg bg-blue-600 px-4 py-2 disabled:opacity-50">{pending ? 'Đang chấm điểm...' : 'Xác nhận kết thúc'}</button></div>
   </dialog>;
 }

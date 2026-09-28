@@ -15,10 +15,20 @@ const simulationSessionSchema = new mongoose.Schema({
   evaluation: { type: mongoose.Schema.Types.Mixed, default: null },
   operation: { type: mongoose.Schema.Types.Mixed, default: null },
   status: { type: String, enum: ['ongoing', 'completed'], default: 'ongoing' },
+  feedback_prompted_at: { type: Date, default: null },
+  feedback_submitted_at: { type: Date, default: null },
+  feedback: { type: new mongoose.Schema({
+    content: { type: String, required: true, maxlength: 2000 },
+    status: { type: String, enum: ['new', 'viewed', 'resolved'], default: 'new' },
+    notes: { type: String, maxlength: 2000, default: '' },
+    created_at: { type: Date, required: true },
+    updated_at: { type: Date, required: true },
+  }, { _id: false }), default: undefined },
   completed_at: { type: Date, default: null },
   created_at: { type: Date, default: Date.now }
 });
 
+simulationSessionSchema.index({ 'feedback.status': 1, 'feedback.created_at': -1 }, { partialFilterExpression: { 'feedback.created_at': { $exists: true } } });
 simulationSessionSchema.index({ user_id: 1, created_at: -1 });
 simulationSessionSchema.index({ user_id: 1, creation_request_id: 1 }, { unique: true, partialFilterExpression: { creation_request_id: { $type: 'string' } } });
 

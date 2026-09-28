@@ -1,6 +1,8 @@
+import { publicErrorMessage } from '../../../shared/userCopy.mjs';
+
 export function notFoundHandler(request, response) {
   response.status(404).json({
-      error: { code: 'NOT_FOUND', message: 'Chức năng này chưa sẵn sàng. Hãy tải lại trang hoặc liên hệ người quản trị.' },
+      error: { code: 'NOT_FOUND', message: 'Không tìm thấy nội dung này. Vui lòng tải lại trang.' },
   });
 }
 
@@ -34,5 +36,5 @@ export function errorHandler(error, _request, response, _next) {
     if (!isOperationalError) message = 'Đã xảy ra lỗi máy chủ.';
   }
 
-  response.status(status).json({ error: { code, message } });
+  response.status(status).json({ error: { code, message: publicErrorMessage(message, code, status) } });
 }

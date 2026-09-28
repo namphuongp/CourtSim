@@ -16,11 +16,11 @@ export function learnerCase(value) {
     _id: c._id, title: learnerText(c.title, 'Hồ sơ vụ án'), category: learnerText(c.category),
     summary: learnerText(c.summary), full_document: learnerText(c.full_document),
     reference_date: c.reference_date, source_url: safeUrl(c.source_url), created_at: c.created_at,
-    recorded_events: caseKnowledge(c).recorded_events.map((f) => ({ text: learnerText(f.quote), source: f.source_type === 'judgment' ? 'Theo nội dung bản án' : 'Theo hồ sơ bài tập' })),
+    recorded_events: caseKnowledge(c).recorded_events.map((f) => ({ text: f.quote, source_quote: f.quote, source: f.source_type === 'judgment' ? 'Theo nội dung bản án' : 'Theo hồ sơ bài tập' })),
     parties: (c.parties ?? []).map((p) => ({ side: p.side, name: learnerText(p.name), claims: (p.claims ?? []).map((v) => learnerText(v)).filter(Boolean) })),
     timeline: (c.timeline ?? []).map((e) => ({ kind: e.kind, date: e.date, date_to: e.date_to, description: learnerText(e.description) })),
     evidence_inventory: evidenceInventory(c).map((e) => ({ id: e.id, code: e.code, name: learnerText(e.name, 'Tài liệu trong hồ sơ'), availability: e.availability,
-      summary: learnerText(evidenceSummary(e.summary)), content: learnerText(e.content), provided_by: learnerText(e.provided_by), date: e.date || null })),
+      summary: e.summary === e.source_quote ? e.summary : learnerText(evidenceSummary(e.summary)), source_quote: e.source_quote, content: e.content, provided_by: learnerText(e.provided_by), date: e.date || null })),
   };
 }
 
@@ -47,16 +47,16 @@ function presentationTree(value, inventory = []) {
   if (typeof value === 'string') return learnerText(dialogueText(value, inventory));
   if (Array.isArray(value)) return value.map((child) => presentationTree(child, inventory));
   if (!value || typeof value !== 'object') return value;
-  return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, presentationTree(child, inventory)]));
+  return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, key === 'quote' ? child : presentationTree(child, inventory)]));
 }
 
 export function learnerRecord(record, courtCase = {}) {
   const r = record.toObject ? record.toObject() : record;
   const inventory = evidenceInventory(courtCase);
   const displayed = dialogueText(r.content, inventory);
-  return { _id: r._id, sender_type: r.sender_type, sender_name: r.sender_name, created_at: r.created_at, request_id: r.request_id,
-    content: r.sender_type === 'user' ? r.content : learnerText(displayed, 'Mời bạn giải thích mối liên hệ giữa thông tin vừa viện dẫn và kết luận của mình.'),
-    display_content: r.sender_type === 'user' ? displayed : learnerText(displayed),
+  return { _id: r._id, sender_type: r.sender_type, sender_name: ({ user: 'Bạn', ai_judge: 'Chủ tọa', ai_prosecutor: 'Bên đối lập' })[r.sender_type] ?? 'Người tham gia', created_at: r.created_at, request_id: r.request_id,
+    content: r.sender_type === 'user' ? r.content : learnerText(displayed, 'Chưa hiển thị được phản hồi này. Hãy tải lại phiên.'),
+    display_content: r.sender_type === 'user' ? displayed : learnerText(displayed, 'Chưa hiển thị được phản hồi này. Hãy tải lại phiên.'),
     evidence_ids: r.evidence_ids ?? [], legal_reference_ids: r.legal_reference_ids ?? [],
     citations: (r.citations ?? []).map(learnerCitation) };
 }
@@ -68,7 +68,7 @@ export function learnerEvaluation(result, courtCase = {}) {
     earned_score: r.earned_score, assessed_max: r.assessed_max, assessment_status: r.assessment_status,
     rubric_scores: r.rubric_scores, rubric_version: r.rubric_version,
     criteria: presentationTree(r.criteria, inventory), rubric_feedback: presentationTree(r.rubric_feedback, inventory),
-    verdict: learnerText(r.verdict, 'Đã hoàn thành phiên luyện tập.'), feedback: learnerText(dialogueText(r.feedback, inventory)),
+    verdict: learnerText(dialogueText(r.verdict, inventory), 'Đã hoàn thành phiên luyện tập.'), feedback: learnerText(dialogueText(r.feedback, inventory)),
     improvement_suggestions: learnerText(dialogueText(r.improvement_suggestions, inventory)),
     citations: (r.citations ?? []).map(learnerCitation), legal_research: learnerResearch(r.legal_research) };
 }

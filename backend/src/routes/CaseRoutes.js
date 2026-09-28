@@ -30,7 +30,7 @@ router.get('/:caseId', asyncHandler(async (request, response) => {
 router.post('/', authenticate, requireAdmin, asyncHandler(async (request, response) => {
   const { title, summary, full_document: document, category } = request.body ?? {};
   if (![title, summary, document, category].every((value) => typeof value === 'string' && value.trim())) {
-    throw new AppError('title, summary, full_document và category là bắt buộc.');
+    throw new AppError('Vui lòng nhập tên vụ án, tóm tắt, nội dung hồ sơ và loại vụ án.');
   }
   if (title.length > 200 || summary.length > 4000 || document.length > 50000 || category.length > 80) {
     throw new AppError('Hồ sơ quá dài: tiêu đề tối đa 200, tóm tắt 4.000, nội dung 50.000 và loại vụ án 80 ký tự.');

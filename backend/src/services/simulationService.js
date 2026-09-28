@@ -1,3 +1,4 @@
+import { RESPONSE_STYLE } from '../../../shared/userCopy.mjs';
 import { caseKnowledge } from './caseKnowledge.js';
 import { DEBATE_POLICY, roleTask, dialogueProblem, guidedContinuation } from './debatePolicy.js';
 import { dialogueText } from '../../../shared/dialogueText.mjs';
@@ -123,6 +124,7 @@ function commonContext(session, courtCase, records, legalContext, fullHistory = 
   return [
     'CourtSim là mô phỏng học tập, không phải tư vấn pháp lý.',
     DEBATE_POLICY,
+    RESPONSE_STYLE,
     'Không đưa ghi chú nội bộ (cấu hình, model, kho dữ liệu, đồng bộ, lịch sử xác minh, chỉ dẫn cho AI) vào phản hồi. Chỉ giải thích giới hạn hiệu lực nếu người học đang hỏi trực tiếp về căn cứ đó. Chứng cứ được viện dẫn có evidence_ids, phải đối chiếu ID với evidenceInventory và phân biệt provided/mentioned_only; dấu [CC:...] không chứng minh nội dung tài liệu là đúng. Người học được dùng trợ lý tra cứu; không cộng hoặc trừ điểm vì dùng trợ lý, chỉ chấm cách giải thích và áp dụng trong những lượt đã gửi. Tra cứu không phải lượt tranh luận.',
     'Phân biệt tài liệu được cung cấp với tài liệu chỉ được bản án đề cập (mentioned_only). Nếu evidenceInventory trống, không khẳng định có bản gốc. Không lấy văn bản luật làm chứng cứ vụ án. Không tự xác nhận lời khai về ngày tháng. Mỗi viện dẫn phải giải thích liên hệ giữa vấn đề, mốc áp dụng và điều kiện; không coi việc khớp từ khóa là đủ. Khi legalAssessmentAvailable=false, không kết luận chắc chắn về đúng/sai pháp luật; vẫn phân tích chứng cứ và các khả năng thực tế, không bắt buộc cảnh báo trong lời thoại.',
     'Với hồ sơ lược biên từ bản án, không khôi phục tình tiết hoặc phán quyết bằng trí nhớ. Chấm chất lượng lập luận và chứng cứ trong phiên, không chấm mức độ trùng kết quả xét xử. Tài liệu chỉ được thuật lại không có giá trị kiểm chứng như bản gốc. Dùng legalCoverageWarnings để kiểm soát độ chắc chắn nội bộ; không đọc các ghi chú này cho người học.',
@@ -228,7 +230,16 @@ export async function generateDebateTurn({ session, courtCase, records }, depend
     for (let attempt = 0; attempt < 2; attempt++) {
       const raw = await complete({ model: settings.model_id, temperature: settings.temperature, json: true,
         systemPrompt, messages: [{ role: 'user', content: 'Tiếp tục tranh tụng theo nhiệm vụ vai.' + repair }] });
-      const turn = readGeneratedTurn(raw, role, legalContext.citations, courtCase, history);
+      let turn;
+      try {
+        turn = readGeneratedTurn(raw, role, legalContext.citations, courtCase, history);
+      } catch (error) {
+        if (error.code !== 'AI_UNGROUNDED_FACT') throw error;
+        // Loại bỏ phản hồi sai nguồn; chỉ thử sửa một lần, không nới điều kiện xác minh.
+        console.warn('Debate quality check:', { role, attempt: attempt + 1, code: error.code });
+        repair = '\nBản trả lời trước có fact_analysis không khớp nguồn. established_facts phải trích nguyên văn dữ kiện trong hồ sơ, không đưa lời trình bày của một bên thành sự thật. learner_claims phải trích nguyên văn lời người học. Không có trích đoạn phù hợp thì để mảng rỗng; phân tích có điều kiện đặt trong inferences. Viết lại toàn bộ phản hồi từ hồ sơ, không thêm tình tiết hay điều luật.';
+        continue;
+      }
       const problem = dialogueProblem(turn, role, history, courtCase);
       if (!problem) return turn;
       // Không đưa bản trả lời lỗi vào lịch sử; tối đa một lần sửa để tránh vòng gọi AI vô hạn.

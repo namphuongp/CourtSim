@@ -39,7 +39,7 @@ router.post('/', asyncHandler(async (request, response) => {
   const { case_id: caseId, user_court_role: role, difficulty = 'balanced', case_event_date: eventDate } = request.body ?? {};
   const requestId = readRequestId(request.body?.request_id);
   if (!mongoose.isObjectIdOrHexString(caseId) || !allowedRoles.includes(role) || !allowedDifficulties.includes(difficulty) || !isValidDateOnly(eventDate)) {
-    throw new AppError('Vui lòng chọn hồ sơ, vai, độ khó và ngày sự kiện hợp lệ.');
+    throw new AppError('Vui lòng kiểm tra hồ sơ, vai luật sư và ngày sự kiện.');
   }
   const filter = { user_id: request.auth.userId, creation_request_id: requestId };
   let session = await SimulationSession.findOne(filter);
@@ -51,8 +51,8 @@ router.post('/', asyncHandler(async (request, response) => {
     }
     const id = new mongoose.Types.ObjectId();
     const opening = record(id, {
-      sender_type: 'ai_judge', sender_name: 'Thẩm phán AI',
-      content: `Phiên mô phỏng “${courtCase.title}” bắt đầu. Bạn bảo vệ phía ${/hình sự/iu.test(courtCase.category) ? (role === 'defense_lawyer' ? 'bị cáo' : 'người bị hại') : (role === 'defense_lawyer' ? 'bị đơn' : 'nguyên đơn')}. Mời trình bày yêu cầu, luận điểm mở đầu và chứng cứ có trong hồ sơ. Phân biệt lời khai với dữ kiện đã được chứng minh. Ngày ${eventDate} là mốc ${courtCase.reference_date ? 'cố định của bài tập lịch sử' : 'do người học chọn'} để tra cứu, không phải tình tiết bổ sung vào hồ sơ.`,
+      sender_type: 'ai_judge', sender_name: 'Chủ tọa',
+      content: `Phiên mô phỏng “${courtCase.title}” bắt đầu. Bạn bảo vệ phía ${/hình sự/iu.test(courtCase.category) ? (role === 'defense_lawyer' ? 'bị cáo' : 'người bị hại') : (role === 'defense_lawyer' ? 'bị đơn' : 'nguyên đơn')}. Mời trình bày yêu cầu, luận điểm mở đầu và chứng cứ có trong hồ sơ.`,
     });
     try {
       session = await SimulationSession.create({ ...filter, _id: id, case_id: caseId, case_snapshot: courtCase,
@@ -63,7 +63,7 @@ router.post('/', asyncHandler(async (request, response) => {
     }
   }
   if (String(session.case_id) !== caseId || session.user_court_role !== role || session.difficulty !== difficulty || session.case_event_date !== eventDate) {
-    throw new AppError('Yêu cầu khởi tạo đã được dùng cho thiết lập khác.', 409, 'REQUEST_CONFLICT');
+    throw new AppError('Thiết lập phiên đã thay đổi. Hãy chọn lại vụ án hoặc vai rồi thử lại.', 409, 'REQUEST_CONFLICT');
   }
   response.status(201).json({ data: { session: publicSession(session), opening: learnerRecord(session.opening, session.case_snapshot ?? {}) } });
 }));
@@ -164,7 +164,7 @@ router.post('/:sessionId/complete', asyncHandler(async (request, response) => {
     if (locked.evaluation) return locked.evaluation;
     if (locked.status === 'completed') {
       const existing = await TrialResult.findOne({ session_id: locked._id }).lean();
-      if (!existing) throw new AppError('Kết quả cũ chưa có dữ liệu. Vui lòng liên hệ người quản trị.', 409, 'RESULT_UNAVAILABLE');
+      if (!existing) throw new AppError('Chưa tải được kết quả của phiên này. Vui lòng thử lại sau.', 409, 'RESULT_UNAVAILABLE');
       return existing;
     }
     if (locked.turn_count < 1) throw new AppError('Cần ít nhất một lượt tranh luận trước khi kết thúc phiên.');
