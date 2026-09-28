@@ -8,7 +8,10 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "seed": "node src/scripts/seed.js",
-    "legal:import": "node src/scripts/importLegalDocuments.js"
+    "legal:import": "node src/scripts/importLegalDocuments.js",
+    "sample:import": "node src/scripts/importSampleCase.js",
+    "legal:check": "node src/scripts/checkLegalSources.js",
+    "legal:review": "node src/scripts/reviewLegalVersion.js"
   },
   "keywords": [],
   "author": "",

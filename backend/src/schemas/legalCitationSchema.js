@@ -1,6 +1,16 @@
 import mongoose from 'mongoose';
 
 export const legalCitationSchema = new mongoose.Schema({
+  provision_id: String,
+  version: String,
+  source_fingerprint: String,
+  verification_status: { type: String, enum: ['verified', 'unverified'] },
+  application_date: String,
+  application_date_to: String,
+  application_reason: String,
+  event_kind: String,
+  history_url: String,
+  review_sources: [String],
   id: { type: String, required: true },
   law_number: { type: String, required: true },
   title: { type: String, required: true },

@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
 // -- CÁC TRANG PUBLIC & AUTH --
 import LandingPage from './pages/Home/LandingPage';
@@ -53,11 +53,9 @@ const AdminRoute = ({ children }) => {
 
 // 3. Dành cho User nội bộ (Bảo vệ nguyên cụm User Dashboard)
 const ProtectedUserRoute = ({ children }) => {
+  const location = useLocation();
   if (!isAuthenticated()) {
-    return <Navigate to="/login" replace />;
-  }
-  if (getUserRole() === 'admin') {
-    return <Navigate to="/admin" replace />;
+    return <Navigate to={`/login?returnTo=${encodeURIComponent(location.pathname)}`} replace />;
   }
   return children;
 };

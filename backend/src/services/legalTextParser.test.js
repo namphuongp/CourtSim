@@ -53,6 +53,13 @@ test('source fingerprints are stable across repeated imports and input ordering'
   assert.notEqual(getSourceFingerprint(first), getSourceFingerprint([{ name: 'part_1.pdf', sha256: 'changed' }]));
 });
 
+test('không gán nhầm khoản khi điều sửa đổi trích lại các khoản cùng số', () => {
+  const [article] = parseLegalArticles('Điều 10. Sửa đổi\n1. Sửa nội dung sau:\n1. Khoản được trích lại.\n2. Khoản tiếp theo.');
+  const units = createProvisionUnits(article);
+  assert.equal(units.length, 1);
+  assert.equal(units[0].text, article.text);
+});
+
 test('validates real calendar dates and applies inclusive effective dates', () => {
   assert.equal(isValidDateOnly('2024-02-29'), true);
   assert.equal(isValidDateOnly('2025-02-29'), false);
@@ -115,4 +122,20 @@ test('rejects citations not retrieved and article references not backed by the c
     citationIds: ['allowed'],
     availableCitations,
   }).valid, false);
+});
+
+test('điều đầy đủ bao phủ khoản có thật, không chấp nhận khoản bịa hoặc tráo luật', () => {
+  const availableCitations = [{ id:'civil',law_number:'91/2015/QH13',article:'3',paragraph:null,point:null,text:'Điều 3. Nguyên tắc\n1. Nội dung khoản một.\n2. Nội dung khoản hai.' }, { id:'other',law_number:'92/2015/QH13',article:'4',paragraph:null,point:null,text:'Điều 4. Nội dung' }];
+  assert.equal(validateCitationIds({content:'Theo khoản 2 Điều 3 Bộ luật Dân sự số 91/2015/QH13.',citationIds:['civil'],availableCitations}).valid,true);
+  assert.equal(validateCitationIds({content:'Theo khoản 9 Điều 3.',citationIds:['civil'],availableCitations}).valid,false);
+  assert.equal(validateCitationIds({content:'Theo Điều 3 của Bộ luật số 92/2015/QH13.',citationIds:['civil','other'],availableCitations}).valid,false);
+});
+
+test('không gắn tiêu đề chương và thông tin xuất bản vào điều luật', () => {
+  const text = 'Điều 1. Một\n1. Nội dung đúng.\nChương II\nPHẦN HAI\nĐiều 2. Hai\nNội dung cuối.\nLuật này đã được Quốc hội thông qua.\nVĂN PHÒNG CHÍNH PHỦ XUẤT BẢN';
+  const articles = parseLegalArticles(text);
+  assert.equal(articles.length, 2);
+  assert.ok(!articles[0].text.includes('Chương II'));
+  assert.ok(!articles[1].text.includes('XUẤT BẢN'));
+  assert.ok(articles[1].text.includes('Nội dung cuối.'));
 });

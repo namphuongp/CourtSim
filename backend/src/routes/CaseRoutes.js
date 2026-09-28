@@ -3,6 +3,7 @@ import Case from '../models/Case.js';
 import { authenticate, requireAdmin } from '../middlewares/auth.js';
 import { AppError } from '../utils/AppError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { validateTimeline } from '../services/legalTimeline.js';
 
 const router = Router();
 
@@ -28,7 +29,12 @@ router.post('/', authenticate, requireAdmin, asyncHandler(async (request, respon
   if (![title, summary, document, category].every((value) => typeof value === 'string' && value.trim())) {
     throw new AppError('title, summary, full_document và category là bắt buộc.');
   }
-  const item = await Case.create({ title: title.trim(), summary: summary.trim(), full_document: document.trim(), category: category.trim() });
+  if (title.length > 200 || summary.length > 4000 || document.length > 50000 || category.length > 80) {
+    throw new AppError('Hồ sơ quá dài: tiêu đề tối đa 200, tóm tắt 4.000, nội dung 50.000 và loại vụ án 80 ký tự.');
+  }
+  const timeline = validateTimeline(request.body.timeline);
+  if (timeline.some((event) => !document.includes(event.source_quote))) throw new AppError('Trích đoạn của mốc thời gian phải có trong nội dung hồ sơ.');
+  const item = await Case.create({ title: title.trim(), summary: summary.trim(), full_document: document.trim(), category: category.trim(), timeline });
   response.status(201).json({ data: item });
 }));
 

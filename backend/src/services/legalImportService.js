@@ -63,8 +63,14 @@ export async function importLegalDocument({ lawNumber, filePaths }) {
   }
 
   const { text: sourceText, pages } = buildPageOffsets(pageGroups);
+  if (!sourceText.slice(0, 2000).includes(lawNumber)) throw new Error('Số hiệu trong đầu văn bản không khớp metadata.');
   const articles = parseLegalArticles(sourceText, pages);
   if (!articles.length) throw new Error(`Không tìm thấy cấu trúc "Điều" trong văn bản ${lawNumber}.`);
+  const expectedArticles = { '45/2013/QH13': 212, '31/2024/QH15': 260, '91/2015/QH13': 689, '92/2015/QH13': 517 }[lawNumber];
+  // Chặn tệp thiếu phần hoặc sai thứ tự trước khi ghi bất kỳ dữ liệu nào.
+  if (expectedArticles && (articles.length !== expectedArticles || articles.some((article, index) => article.article !== String(index + 1)))) {
+    throw new Error('Văn bản thiếu điều, trùng điều hoặc sai thứ tự. Hãy cung cấp đầy đủ các phần của bản gốc.');
+  }
 
   const fingerprint = getSourceFingerprint(sourceFiles);
   const document = await LegalDocument.findOneAndUpdate(
@@ -84,6 +90,8 @@ export async function importLegalDocument({ lawNumber, filePaths }) {
         source_status: authority.sourceStatus,
         temporal_note: authority.temporalNote,
         source_url: authority.sourceUrl,
+        history_url: authority.historyUrl,
+        version_label: `Bản gốc ${authority.lawNumber} — ${authority.promulgatedAt}`,
         consolidated_source_url: authority.consolidatedSourceUrl ?? null,
         amendments: authority.amendments.map((amendment) => ({
           law_number: amendment.lawNumber,
@@ -103,7 +111,7 @@ export async function importLegalDocument({ lawNumber, filePaths }) {
       },
       $setOnInsert: { law_number: lawNumber, source_fingerprint: fingerprint },
     },
-    { new: true, upsert: true, runValidators: true },
+    { returnDocument: 'after', upsert: true, runValidators: true },
   );
 
   const operations = articles.flatMap((article) => createProvisionUnits(article).map((unit) => {
@@ -139,6 +147,11 @@ export async function importLegalDocument({ lawNumber, filePaths }) {
   }));
 
   if (operations.length) await LegalProvision.bulkWrite(operations, { ordered: true });
+  // Giữ bản ghi cũ để đối chiếu, nhưng không cho viện dẫn locator parser mới không còn xác định chắc chắn.
+  await LegalProvision.updateMany({
+    document_id: document._id,
+    locator_key: { $nin: operations.map((operation) => operation.updateOne.filter.locator_key) },
+  }, { $set: { citation_eligible: false } });
   return {
     lawNumber,
     sourceFingerprint: fingerprint,

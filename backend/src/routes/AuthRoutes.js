@@ -13,13 +13,13 @@ const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 router.use(authRateLimit);
 
 router.post('/register', asyncHandler(async (request, response) => {
-  const fullName = request.body?.full_name?.trim();
-  const email = request.body?.email?.trim().toLowerCase();
+  const fullName = (typeof request.body?.full_name === 'string' ? request.body.full_name.trim() : '');
+  const email = (typeof request.body?.email === 'string' ? request.body.email.trim().toLowerCase() : '');
   const password = request.body?.password;
 
   if (!fullName || fullName.length < 2 || fullName.length > 100) throw new AppError('Họ tên phải có từ 2 đến 100 ký tự.');
   if (!email || !emailPattern.test(email) || email.length > 254) throw new AppError('Email không hợp lệ.');
-  if (typeof password !== 'string' || password.length < 8 || password.length > 128) throw new AppError('Mật khẩu phải có từ 8 đến 128 ký tự.');
+  if (typeof password !== 'string' || password.length < 8 || Buffer.byteLength(password, 'utf8') > 72) throw new AppError('Mật khẩu cần ít nhất 8 ký tự và tối đa 72 byte UTF-8.');
   if (await User.exists({ email })) throw new AppError('Email đã tồn tại.', 409, 'USER_EXISTS');
 
   const user = await User.create({ username: fullName, email, password_hash: await bcrypt.hash(password, 12) });
@@ -27,9 +27,10 @@ router.post('/register', asyncHandler(async (request, response) => {
 }));
 
 router.post('/login', asyncHandler(async (request, response) => {
-  const email = request.body?.email?.trim().toLowerCase();
+  const email = (typeof request.body?.email === 'string' ? request.body.email.trim().toLowerCase() : '');
   const password = request.body?.password;
-  if (!email || typeof password !== 'string') throw new AppError('Email và mật khẩu là bắt buộc.');
+  // Giữ khả năng đăng nhập mật khẩu cũ; giới hạn byte chỉ áp dụng khi tạo mật khẩu mới.
+  if (!emailPattern.test(email) || email.length > 254 || typeof password !== 'string' || password.length > 128) throw new AppError('Email và mật khẩu không hợp lệ.');
 
   const user = await User.findOne({ email }).select('+password_hash');
   if (!user || !(await bcrypt.compare(password, user.password_hash))) throw new AppError('Email hoặc mật khẩu không chính xác.', 401, 'INVALID_CREDENTIALS');

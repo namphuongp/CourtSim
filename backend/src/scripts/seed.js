@@ -2,6 +2,7 @@ import 'dotenv/config';
 import bcrypt from 'bcryptjs';
 import { connectDatabase, disconnectDatabase } from '../config/database.js';
 import { AiPersonal, Case, User } from '../models/index.js';
+import { sampleLandCase } from '../data/sampleLandCase.js';
 
 const adminEmail = (process.env.SEED_ADMIN_EMAIL ?? 'admin@courtsim.local').trim().toLowerCase();
 const adminPassword = process.env.SEED_ADMIN_PASSWORD;
@@ -16,7 +17,7 @@ const aiPersonals = [
   },
   {
     role_name: 'prosecutor',
-    system_prompt: 'Bạn đóng vai Kiểm sát viên trong phiên tòa mô phỏng. Lập luận dựa trên hồ sơ được cung cấp, nêu rõ chứng cứ và căn cứ pháp luật; không tự tạo tình tiết mới.',
+    system_prompt: 'Bạn đóng vai phía đối lập theo loại vụ án và vai được chỉ định trong ngữ cảnh. Lập luận dựa trên hồ sơ được cung cấp, nêu rõ chứng cứ và căn cứ pháp luật; không tự tạo tình tiết mới.',
     model_id: process.env.AI_OPPONENT_MODEL ?? defaultAiModel,
     temperature: 0.5,
   },
@@ -29,6 +30,7 @@ const aiPersonals = [
 ];
 
 const cases = [
+  sampleLandCase,
   {
     title: 'Tranh chấp hợp đồng vay tài sản',
     category: 'dân sự',
@@ -54,8 +56,8 @@ const cases = [
 ];
 
 function validateSeedEnvironment() {
-  if (!adminPassword || adminPassword.length < 5 || adminPassword.length > 128) {
-    throw new Error('SEED_ADMIN_PASSWORD phải có từ 5 đến 128 ký tự.');
+  if (!adminPassword || adminPassword.length < 8 || Buffer.byteLength(adminPassword, 'utf8') > 72) {
+    throw new Error('SEED_ADMIN_PASSWORD phải có ít nhất 8 ký tự và tối đa 72 byte UTF-8.');
   }
 }
 

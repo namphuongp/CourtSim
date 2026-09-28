@@ -1,19 +1,13 @@
+import { isValidDateOnly } from './legalTimeline.js';
+export { isValidDateOnly } from './legalTimeline.js';
 import { legalAuthorities } from '../data/legalAuthorities.js';
 import { LegalDocument, LegalProvision } from '../models/index.js';
-import { getLegalSearchTerms } from './legalTextSearch.js';
+import { getLegalSearchTerms, normalizeLegalSearchText } from './legalTextSearch.js';
+import { createProvisionUnits, parseLegalArticles } from './legalTextParser.js';
 
 const MAX_PROVISIONS = 8;
 const MAX_CONTEXT_CHARACTERS = 8_000;
-const MAX_PROVISION_CHARACTERS = 1_500;
-
-export function isValidDateOnly(value) {
-  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-  const [year, month, day] = value.split('-').map(Number);
-  if (year < 1 || month < 1 || month > 12) return false;
-  const leapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
-  const daysInMonth = [31, leapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-  return day >= 1 && day <= daysInMonth[month - 1];
-}
+const MAX_PROVISION_CHARACTERS = 8_000;
 
 export function isProvisionEffectiveOn(provision, eventDate) {
   return isValidDateOnly(eventDate)
@@ -31,14 +25,23 @@ export function isCitationEligibleOnDate(authority, eventDate) {
     }, eventDate);
 }
 
-function scoreProvision(provision, terms) {
-  const searchTokens = provision.search_tokens ?? [];
-  let score = 0;
-  for (const term of terms) {
-    const occurrences = searchTokens.filter((token) => token === term).length;
-    if (occurrences) score += 1 + Math.min(3, occurrences - 1) * 0.15;
-  }
-  return score;
+export function rankProvisions(provisions, courtCase, records = []) {
+  const titleTerms = getLegalSearchTerms(normalizeLegalSearchText(courtCase.title ?? '').replace(/^(tranh chap|vu an)\s+/, ''));
+  const recentTerms = getLegalSearchTerms(records.filter((r) => r.sender_type === 'user').slice(-2).map((r) => r.content).join(' '));
+  const terms = [...new Set([...titleTerms, ...recentTerms, ...getLegalSearchTerms(courtCase.summary ?? '')])];
+  const frequencies = new Map(terms.map((term) => [term, provisions.filter((p) => p.search_tokens.includes(term)).length]));
+  return provisions.map((provision) => {
+    const tokens = new Set(provision.search_tokens);
+    const heading = normalizeLegalSearchText(provision.text.split('\n')[0]);
+    let score = 0;
+    for (const term of terms) {
+      if (!tokens.has(term)) continue;
+      // Từ hiếm và tiêu đề có trọng số cao hơn, tránh chọn điều dài chỉ vì nhiều từ chung.
+      const idf = Math.log(1 + provisions.length / (1 + frequencies.get(term)));
+      score += idf * (titleTerms.includes(term) ? 4 : recentTerms.includes(term) ? 2 : 1) * (heading.includes(term) ? 3 : 1);
+    }
+    return { provision, score: score / (1 + 0.25 * Math.log(1 + provision.text.length / 1000)) };
+  }).sort((a, b) => b.score - a.score);
 }
 
 function toCitation(provision, document) {
@@ -86,41 +89,47 @@ export async function getLegalCoverageWarnings(eventDate) {
 
 export async function retrieveRelevantProvisions({ eventDate, courtCase, records = [] }) {
   const warnings = await getLegalCoverageWarnings(eventDate);
+  if (courtCase?.legal_scope_note) warnings.unshift(courtCase.legal_scope_note);
+  const category = normalizeLegalSearchText(courtCase?.category ?? '');
+  if (!/dan su|dat dai|hon nhan|kinh doanh|thuong mai/.test(category)) {
+    return { citations: [], warnings: [...warnings, 'Chưa có nguồn luật chuyên ngành đã xác minh cho loại vụ án này. Phiên chỉ luyện lập luận và chứng cứ, không kết luận quy định pháp luật áp dụng.'] };
+  }
   const documents = await LegalDocument.find({
     source_status: 'verified_current',
     effective_from: { $lte: eventDate },
     verified_through: { $gte: eventDate },
     $or: [{ effective_to: null }, { effective_to: { $gte: eventDate } }],
-  }).lean();
-  if (!documents.length) return { citations: [], warnings };
+  }).select('-source_text').lean();
+  if (!documents.length) return { citations: [], warnings: [...warnings, 'Chưa có văn bản đủ điều kiện viện dẫn cho ngày tra cứu này.'] };
 
   const documentById = new Map(documents.map((document) => [String(document._id), document]));
-  const recentContext = records.slice(-8).map((record) => record.content ?? '').join('\n');
+  const recentContext = records.filter((record) => record.sender_type === 'user').slice(-2).map((record) => record.content ?? '').join('\n');
   const terms = getLegalSearchTerms([
     courtCase?.title,
     courtCase?.category,
     courtCase?.summary,
-    courtCase?.full_document,
     recentContext,
   ].filter(Boolean).join('\n'));
   if (!terms.length) return { citations: [], warnings };
   const provisions = await LegalProvision.find({
     document_id: { $in: documents.map((document) => document._id) },
     citation_eligible: true,
+    paragraph: null,
+    point: null,
     effective_from: { $lte: eventDate },
     $or: [{ effective_to: null }, { effective_to: { $gte: eventDate } }],
     search_tokens: { $in: terms },
   }).lean();
 
-  const ranked = provisions
-    .map((provision) => {
+  const ranked = rankProvisions(provisions, courtCase, records)
+    .map(({ provision, score }) => {
       const document = documentById.get(String(provision.document_id));
       return document && isCitationEligibleOnDate({
         source_status: document.source_status,
         effective_from: provision.effective_from,
         effective_to: provision.effective_to ?? document.effective_to,
       }, eventDate)
-        ? { provision, document, score: scoreProvision(provision, terms) }
+        ? { provision, document, score }
         : null;
     })
     .filter((item) => item && item.score > 0)
@@ -133,7 +142,8 @@ export async function retrieveRelevantProvisions({ eventDate, courtCase, records
     const articleKey = `${item.document.law_number}:${item.provision.article}`;
     if (selectedArticles.has(articleKey)) continue;
     const citation = toCitation(item.provision, item.document);
-    const excerpt = citation.text.slice(0, MAX_PROVISION_CHARACTERS);
+    if (citation.text.length > MAX_PROVISION_CHARACTERS) continue;
+    const excerpt = citation.text;
     if (contextCharacters + excerpt.length > MAX_CONTEXT_CHARACTERS) continue;
     selected.push({ ...citation, context_text: excerpt });
     selectedArticles.add(articleKey);
@@ -152,15 +162,21 @@ function getCitationReferences(content) {
       article: match[3],
       paragraph: match[2] ?? match[4] ?? null,
       point: (match[1] ?? match[5])?.toLowerCase() ?? null,
+      lawNumber: content.slice(match.index + match[0].length).split(/Điều\s+\d|[\n.;]/iu)[0].match(/\b\d{1,4}\/\d{4}\/QH\d+\b/iu)?.[0] ?? null,
     });
   }
   return references;
 }
 
 function citationCoversReference(citation, reference) {
-  return citation.article === reference.article
-    && (!reference.paragraph || citation.paragraph === reference.paragraph)
-    && (!reference.point || citation.point === reference.point);
+  if (reference.lawNumber && citation.law_number.toLowerCase() !== reference.lawNumber.toLowerCase()) return false;
+  if (citation.article !== reference.article) return false;
+  if ((!reference.paragraph || citation.paragraph === reference.paragraph)
+      && (!reference.point || citation.point === reference.point)) return true;
+  if (citation.paragraph || !citation.text) return false;
+  const article = parseLegalArticles(citation.text)[0];
+  return Boolean(article && createProvisionUnits(article).some((unit) =>
+    (!reference.paragraph || unit.paragraph === reference.paragraph) && (!reference.point || unit.point === reference.point)));
 }
 
 export function validateCitationIds({ content, citationIds, availableCitations }) {

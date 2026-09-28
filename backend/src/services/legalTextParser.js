@@ -41,10 +41,10 @@ function getPdfLineText(items) {
     return text.trimEnd();
   }).join('\n');
   return pageText.split('\n')
-    .filter((line) => !/^(?:\d+\s+)?CÔNG BÁO\/Số\b/iu.test(line.trim())
+    .filter((line) => !/^(?:\d+\s+)?CÔNG BÁO\/Số\s/iu.test(line.trim())
       && !/^VĂN BẢN QUY PHẠM PHÁP LUẬT\b/iu.test(line.trim())
       && !/^Luật số 31\/2024\/QH15 ngày .*Luật Đất đai \(Tiếp theo\b/iu.test(line.trim())
-      && !/^\(Xem tiếp Công báo số\b/iu.test(line.trim()))
+      && !/^\(Xem tiếp Công báo số\s/iu.test(line.trim()))
     .join('\n');
 }
 
@@ -82,7 +82,10 @@ export function parseLegalArticles(sourceText, pages = []) {
   return matches.map((match, index) => {
     const start = match.index + (match[0].startsWith('\n') ? 1 : 0);
     const contentStart = match.index + match[0].length;
-    const end = index + 1 < matches.length ? matches[index + 1].index : sourceText.length;
+    let end = index + 1 < matches.length ? matches[index + 1].index : sourceText.length;
+    // Tiêu đề chương tiếp theo và phần ký/xuất bản không thuộc nội dung điều cuối.
+    const tail = sourceText.slice(contentStart, end).search(/\n\s*(?:Chương\s+[IVX]+\b|Luật này đã được Quốc hội|VĂN PHÒNG CHÍNH PHỦ XUẤT BẢN)/u);
+    if (tail >= 0) end = contentStart + tail;
     const text = sourceText.slice(start, end).trim();
     const sourcePages = pages
       .filter((page) => page.start < end && page.end > start)
@@ -139,7 +142,9 @@ export function createProvisionUnits(article) {
     }
   }
 
-  return units;
+  // Phần sửa luật có thể trích lại khoản/điểm trùng số: giữ nguyên điều thay vì gán sai locator.
+  const keys = units.map(getProvisionLocatorKey);
+  return new Set(keys).size === keys.length ? units : [articleUnit];
 }
 
 export function getProvisionLocator({ article, paragraph, point }) {

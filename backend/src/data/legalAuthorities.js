@@ -1,6 +1,16 @@
 const gazetteSearch = (lawNumber) => `https://congbao.chinhphu.vn/tim-kiem-van-ban.html?keyword=${encodeURIComponent(lawNumber)}`;
 
 export const legalAuthorities = Object.freeze({
+  '45/2013/QH13': {
+    lawNumber: '45/2013/QH13', title: 'Luật Đất đai', issuingBody: 'Quốc hội',
+    promulgatedAt: '2013-11-29', originalEffectiveFrom: '2014-07-01', effectiveFrom: '2014-07-01',
+    effectiveTo: '2024-07-31', verifiedThrough: '2026-09-28', scopeLocator: 'Điều 1',
+    sourceStatus: 'unverified',
+    sourceUrl: 'https://vbpl.vn/bonoivu/Pages/vbpq-toanvan.aspx?ItemID=32833',
+    historyUrl: 'https://vbpl.vn/TW/Pages/vbpq-lichsu.aspx?ItemID=32833',
+    amendments: [], effectiveRules: [],
+    temporalNote: 'Bản gốc trong LawDoc; chưa xác minh đầy đủ lịch sử sửa đổi và chuyển tiếp. Khoảng hiệu lực chung chỉ dùng tìm ứng viên, không chứng nhận từng điều. Trang thuộc tính VBPL còn thể hiện mốc 01/01/2025 khác với mốc thay thế đã được sửa bởi Luật 43/2024/QH15; không tự chấp nhận metadata trên một trang.',
+  },
   '31/2024/QH15': {
     lawNumber: '31/2024/QH15',
     title: 'Luật Đất đai',
@@ -39,7 +49,7 @@ export const legalAuthorities = Object.freeze({
     scopeLocator: 'Điều 1',
     effectiveRules: [],
     sourceStatus: 'verified_current',
-    sourceUrl: gazetteSearch('91/2015/QH13'),
+    sourceUrl: 'https://congbao.chinhphu.vn/van-ban/luat-so-91-2015-qh13-18397.htm',
     amendments: [],
     temporalNote: 'Điều 689 trong tệp đính kèm ghi hiệu lực từ 01/01/2017. Cơ sở dữ liệu VBPL được tra cứu ngày 28/09/2026 ghi văn bản còn hiệu lực; không tìm thấy văn bản sửa đổi trực tiếp trong phạm vi tra cứu.',
   },

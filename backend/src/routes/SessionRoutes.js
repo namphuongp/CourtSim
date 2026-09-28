@@ -1,10 +1,13 @@
 import { Router } from 'express';
-import { Case, CourtRecord, SimulationSession, TrialResult } from '../models/index.js';
+import mongoose from 'mongoose';
+import { Case, SimulationSession, TrialResult } from '../models/index.js';
 import { authenticate } from '../middlewares/auth.js';
 import { AppError } from '../utils/AppError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { evaluateSession, generateDebateTurn } from '../services/simulationService.js';
 import { getLegalCoverageWarnings, isValidDateOnly } from '../services/legalRetrievalService.js';
+import { MAX_TURNS, getRecords, publicSession, readRequestId, replayTurn, withSessionLock } from '../services/sessionStore.js';
+import { researchLegalBasis } from '../services/legalResearchService.js';
 
 const router = Router();
 const allowedRoles = ['defense_lawyer', 'plaintiff_lawyer'];
@@ -12,99 +15,152 @@ const allowedDifficulties = ['beginner', 'balanced', 'advanced'];
 router.use(authenticate);
 
 async function getOwnedSession(sessionId, userId) {
+  if (!mongoose.isObjectIdOrHexString(sessionId)) throw new AppError('Mã phiên không hợp lệ.', 400);
   const session = await SimulationSession.findOne({ _id: sessionId, user_id: userId });
   if (!session) throw new AppError('Không tìm thấy phiên mô phỏng.', 404, 'SESSION_NOT_FOUND');
   return session;
 }
 
-router.post('/', asyncHandler(async (request, response) => {
-  const caseId = request.body?.case_id;
-  const role = request.body?.user_court_role;
-  const difficulty = request.body?.difficulty ?? 'balanced';
-  const eventDate = request.body?.case_event_date;
-  if (typeof caseId !== 'string' || !allowedRoles.includes(role) || !allowedDifficulties.includes(difficulty) || !isValidDateOnly(eventDate)) {
-    throw new AppError('case_id, user_court_role, difficulty hợp lệ và case_event_date theo YYYY-MM-DD là bắt buộc.');
-  }
-  const courtCase = await Case.findById(caseId).lean();
-  if (!courtCase) throw new AppError('Không tìm thấy vụ án.', 404, 'CASE_NOT_FOUND');
+async function getCase(session) {
+  const courtCase = session.case_snapshot ?? await Case.findById(session.case_id).lean();
+  if (!courtCase) throw new AppError('Hồ sơ của phiên này không còn tồn tại.', 409, 'CASE_UNAVAILABLE');
+  return courtCase;
+}
 
-  const session = await SimulationSession.create({
-    user_id: request.auth.userId,
-    case_id: caseId,
-    user_court_role: role,
-    difficulty,
-    case_event_date: eventDate,
-  });
-  const opening = await CourtRecord.create({
-    session_id: session._id,
-    sender_type: 'ai_judge',
-    sender_name: 'Thẩm phán AI',
-    content: `Phiên tòa mô phỏng “${courtCase.title}” bắt đầu. Mời luật sư trình bày luận điểm mở đầu, yêu cầu bảo vệ và căn cứ từ hồ sơ.`,
-  });
-  response.status(201).json({ data: { session, opening } });
+function record(sessionId, value) {
+  return { ...value, _id: new mongoose.Types.ObjectId(), session_id: sessionId, created_at: new Date() };
+}
+
+router.post('/', asyncHandler(async (request, response) => {
+  const { case_id: caseId, user_court_role: role, difficulty = 'balanced', case_event_date: eventDate } = request.body ?? {};
+  const requestId = readRequestId(request.body?.request_id);
+  if (!mongoose.isObjectIdOrHexString(caseId) || !allowedRoles.includes(role) || !allowedDifficulties.includes(difficulty) || !isValidDateOnly(eventDate)) {
+    throw new AppError('Vui lòng chọn hồ sơ, vai, độ khó và ngày sự kiện hợp lệ.');
+  }
+  const filter = { user_id: request.auth.userId, creation_request_id: requestId };
+  let session = await SimulationSession.findOne(filter);
+  if (!session) {
+    const courtCase = await Case.findById(caseId).lean();
+    if (!courtCase) throw new AppError('Không tìm thấy vụ án.', 404, 'CASE_NOT_FOUND');
+    if (courtCase.reference_date && eventDate !== courtCase.reference_date) {
+      throw new AppError(`Hồ sơ lịch sử này dùng mốc tra cứu cố định ${courtCase.reference_date}.`, 400, 'CASE_DATE_MISMATCH');
+    }
+    const id = new mongoose.Types.ObjectId();
+    const opening = record(id, {
+      sender_type: 'ai_judge', sender_name: 'Thẩm phán AI',
+      content: `Phiên mô phỏng “${courtCase.title}” bắt đầu. Bạn bảo vệ phía ${/hình sự/iu.test(courtCase.category) ? (role === 'defense_lawyer' ? 'bị cáo' : 'người bị hại') : (role === 'defense_lawyer' ? 'bị đơn' : 'nguyên đơn')}. Mời trình bày yêu cầu, luận điểm mở đầu và chứng cứ có trong hồ sơ. Phân biệt lời khai với dữ kiện đã được chứng minh. Ngày ${eventDate} là mốc ${courtCase.reference_date ? 'cố định của bài tập lịch sử' : 'do người học chọn'} để tra cứu, không phải tình tiết bổ sung vào hồ sơ.`,
+    });
+    try {
+      session = await SimulationSession.create({ ...filter, _id: id, case_id: caseId, case_snapshot: courtCase,
+        user_court_role: role, difficulty, case_event_date: eventDate, opening });
+    } catch (error) {
+      if (error.code !== 11000) throw error;
+      session = await SimulationSession.findOne(filter);
+    }
+  }
+  if (String(session.case_id) !== caseId || session.user_court_role !== role || session.difficulty !== difficulty || session.case_event_date !== eventDate) {
+    throw new AppError('Yêu cầu khởi tạo đã được dùng cho thiết lập khác.', 409, 'REQUEST_CONFLICT');
+  }
+  response.status(201).json({ data: { session: publicSession(session), opening: session.opening } });
 }));
 
 router.get('/', asyncHandler(async (request, response) => {
-  const sessions = await SimulationSession.find({ user_id: request.auth.userId }).sort({ created_at: -1 }).populate('case_id', 'title category').lean();
-  response.json({ data: sessions });
+  const sessions = await SimulationSession.find({ user_id: request.auth.userId })
+    .select('-turns -opening -case_snapshot -evaluation.feedback -evaluation.fact_analysis -evaluation.citations -evaluation.rubric_feedback -evaluation.criteria -evaluation.legal_research -evaluation.citation_warnings -evaluation.improvement_suggestions')
+    .sort({ created_at: -1 }).populate('case_id', 'title category').lean();
+  const legacyResults = await TrialResult.find({ session_id: { $in: sessions.filter((s) => !s.evaluation).map((s) => s._id) } }).select('session_id score rubric_scores').lean();
+  const bySession = new Map(legacyResults.map((result) => [String(result.session_id), result]));
+  response.json({ data: sessions.map((session) => {
+    const result = session.evaluation ?? bySession.get(String(session._id));
+    return { ...publicSession(session), result: result ? { score: result.score, rubric_scores: result.rubric_scores, rubric_version: result.rubric_version, assessed_max: result.assessed_max, score_scope: result.score_scope } : null };
+  }) });
 }));
 
 router.get('/:sessionId', asyncHandler(async (request, response) => {
   const session = await getOwnedSession(request.params.sessionId, request.auth.userId);
-  await session.populate('case_id');
-  const legalCoverageWarnings = await getLegalCoverageWarnings(session.case_event_date);
-  response.json({ data: { ...session.toObject(), legal_coverage_warnings: legalCoverageWarnings } });
+  const courtCase = session.case_snapshot ?? await Case.findById(session.case_id).lean()
+    ?? { title: 'Hồ sơ không còn trong thư viện', full_document: 'Không thể tải hồ sơ gốc. Biên bản đã lưu vẫn có thể xem lại.' };
+  const warnings = await getLegalCoverageWarnings(session.case_event_date);
+  if (courtCase.legal_scope_note) warnings.unshift(courtCase.legal_scope_note);
+  response.json({ data: { ...publicSession(session), case_id: courtCase, legal_coverage_warnings: warnings } });
+}));
+
+router.patch('/:sessionId', asyncHandler(async (request, response) => {
+  const eventDate = request.body?.case_event_date;
+  if (!isValidDateOnly(eventDate)) throw new AppError('Ngày tra cứu không hợp lệ.');
+  const session = await getOwnedSession(request.params.sessionId, request.auth.userId);
+  await withSessionLock(session, async (locked, fence) => {
+    if (locked.status !== 'ongoing' || locked.case_event_date) throw new AppError('Chỉ bổ sung ngày cho phiên cũ đang học và chưa có ngày tra cứu.', 409, 'SESSION_DATE_LOCKED');
+    const saved = await SimulationSession.updateOne(fence, { $set: { case_event_date: eventDate } });
+    if (!saved.matchedCount) throw new AppError('Phiên đã thay đổi. Vui lòng tải lại.', 409);
+  });
+  response.json({ data: { case_event_date: eventDate } });
 }));
 
 router.get('/:sessionId/records', asyncHandler(async (request, response) => {
   const session = await getOwnedSession(request.params.sessionId, request.auth.userId);
-  const records = await CourtRecord.find({ session_id: session._id }).sort({ created_at: 1 }).lean();
-  response.json({ data: records });
+  response.json({ data: await getRecords(session) });
+}));
+
+router.get('/:sessionId/legal-basis', asyncHandler(async (request, response) => {
+  const session = await getOwnedSession(request.params.sessionId, request.auth.userId);
+  const courtCase = await getCase(session);
+  response.json({ data: await researchLegalBasis({ courtCase, eventDate: session.case_event_date, records: await getRecords(session) }) });
 }));
 
 router.post('/:sessionId/messages', asyncHandler(async (request, response) => {
-  const content = request.body?.content?.trim();
-  if (!content || content.length < 10 || content.length > 4_000) throw new AppError('Lập luận phải có từ 10 đến 4.000 ký tự.');
+  const content = typeof request.body?.content === 'string' ? request.body.content.trim() : '';
+  if (content.length < 10 || content.length > 4_000) throw new AppError('Lập luận phải có từ 10 đến 4.000 ký tự.');
+  const requestId = readRequestId(request.body?.request_id);
   const session = await getOwnedSession(request.params.sessionId, request.auth.userId);
-  if (session.status !== 'ongoing') throw new AppError('Phiên mô phỏng đã kết thúc.', 409, 'SESSION_COMPLETED');
-  const courtCase = await Case.findById(session.case_id).lean();
-
-  const history = await CourtRecord.find({ session_id: session._id }).sort({ created_at: 1 }).lean();
-  // Chỉ ghi DB khi AI phản hồi thành công, tránh tạo lượt tranh luận dở dang.
-  const aiMessages = await generateDebateTurn({
-    session,
-    courtCase,
-    records: [...history, { sender_name: 'Luật sư', content }],
+  const replay = replayTurn(session, requestId, content);
+  if (replay) return response.json({ data: replay });
+  const records = await withSessionLock(session, async (locked, fence) => {
+    const existing = replayTurn(locked, requestId, content);
+    if (existing) return existing;
+    if (locked.status !== 'ongoing') throw new AppError('Phiên đã kết thúc. Bạn có thể xem lại biên bản và kết quả.', 409, 'SESSION_COMPLETED');
+    if (request.body.expected_turn_count !== undefined && request.body.expected_turn_count !== locked.turn_count) {
+      throw new AppError('Phiên đã có lượt mới ở cửa sổ khác. Hãy xem lại biên bản trước khi gửi.', 409, 'STALE_TURN');
+    }
+    if (locked.turn_count >= MAX_TURNS) throw new AppError(`Phiên đã đủ ${MAX_TURNS} lượt. Hãy kết thúc để nhận đánh giá.`, 409, 'TURN_LIMIT');
+    const courtCase = await getCase(locked);
+    const history = await getRecords(locked);
+    const userRecord = record(locked._id, { sender_type: 'user', sender_name: 'Luật sư (người học)', content, request_id: requestId });
+    const generated = await generateDebateTurn({ session: locked, courtCase, records: [...history, userRecord] });
+    const completeTurn = [userRecord, ...generated.map((message) => record(locked._id, message))];
+    const saved = await SimulationSession.updateOne(fence, {
+      $push: { turns: { request_id: requestId, records: completeTurn } }, $inc: { turn_count: 1 },
+    });
+    if (!saved.matchedCount) throw new AppError('Yêu cầu đã hết thời gian xử lý. Vui lòng tải lại phiên.', 409, 'SESSION_LOCK_EXPIRED');
+    return completeTurn;
   });
-  const userRecord = await CourtRecord.create({ session_id: session._id, sender_type: 'user', sender_name: 'Luật sư', content });
-  const createdAiMessages = await CourtRecord.insertMany(aiMessages.map((message) => ({ ...message, session_id: session._id })));
-  session.turn_count += 1;
-  await session.save();
-  response.status(201).json({ data: [userRecord, ...createdAiMessages] });
+  response.status(201).json({ data: records });
 }));
 
 router.post('/:sessionId/complete', asyncHandler(async (request, response) => {
   const session = await getOwnedSession(request.params.sessionId, request.auth.userId);
-  if (session.status === 'completed') {
-    const existing = await TrialResult.findOne({ session_id: session._id }).lean();
-    return response.json({ data: existing });
-  }
-  if (session.turn_count < 1) throw new AppError('Cần ít nhất một lượt tranh luận trước khi kết thúc phiên.');
-  const [courtCase, records] = await Promise.all([
-    Case.findById(session.case_id).lean(),
-    CourtRecord.find({ session_id: session._id }).sort({ created_at: 1 }).lean(),
-  ]);
-  const result = await evaluateSession({ session, courtCase, records });
-  session.status = 'completed';
-  session.completed_at = new Date();
-  await session.save();
+  const result = await withSessionLock(session, async (locked, fence) => {
+    if (locked.evaluation) return locked.evaluation;
+    if (locked.status === 'completed') {
+      const existing = await TrialResult.findOne({ session_id: locked._id }).lean();
+      if (!existing) throw new AppError('Kết quả cũ chưa có dữ liệu. Vui lòng liên hệ người quản trị.', 409, 'RESULT_UNAVAILABLE');
+      return existing;
+    }
+    if (locked.turn_count < 1) throw new AppError('Cần ít nhất một lượt tranh luận trước khi kết thúc phiên.');
+    const [courtCase, records] = await Promise.all([getCase(locked), getRecords(locked)]);
+    const evaluation = await evaluateSession({ session: locked, courtCase, records });
+    const result = { ...evaluation, session_id: locked._id, created_at: new Date() };
+    const saved = await SimulationSession.updateOne(fence, { $set: { evaluation: result, status: 'completed', completed_at: new Date() } });
+    if (!saved.matchedCount) throw new AppError('Yêu cầu đã hết thời gian xử lý. Vui lòng tải lại phiên.', 409, 'SESSION_LOCK_EXPIRED');
+    return result;
+  });
   response.json({ data: result });
 }));
 
 router.get('/:sessionId/result', asyncHandler(async (request, response) => {
   const session = await getOwnedSession(request.params.sessionId, request.auth.userId);
-  const result = await TrialResult.findOne({ session_id: session._id }).lean();
-  if (!result) throw new AppError('Phiên chưa có kết quả.', 404, 'RESULT_NOT_FOUND');
+  const result = session.evaluation ?? await TrialResult.findOne({ session_id: session._id }).lean();
+  if (!result) throw new AppError('Phiên chưa có kết quả. Hãy trở lại phiên và chọn Kết thúc.', 404, 'RESULT_NOT_FOUND');
   response.json({ data: result });
 }));
 

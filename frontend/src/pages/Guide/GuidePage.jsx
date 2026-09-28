@@ -5,7 +5,7 @@ const steps = [
   { icon: BookOpen, title: '1. Chọn hồ sơ', text: 'Đọc tóm tắt và toàn bộ hồ sơ. Chỉ sử dụng tình tiết có trong hồ sơ; đừng tự thêm chứng cứ.' },
   { icon: Scale, title: '2. Chọn vai luật sư', text: 'Chọn phía bạn bảo vệ. Các AI còn lại sẽ đảm nhiệm phía đối lập, Thẩm phán và giám khảo.' },
   { icon: MessageSquare, title: '3. Tranh luận theo lượt', text: 'Mỗi lượt nên có yêu cầu, căn cứ, chứng cứ và kết luận. AI đối lập sẽ phản biện trước khi Thẩm phán điều hành.' },
-  { icon: Trophy, title: '4. Nhận chấm điểm', text: 'Kết thúc sau ít nhất một lượt. Giám khảo AI chấm kiến thức, lập luận, chứng cứ và kỹ năng tranh tụng.' },
+  { icon: Trophy, title: '4. Nhận chấm điểm', text: 'Kết thúc sau ít nhất một lượt. Giám khảo dùng 6 nhóm tiêu chí: vấn đề và mục tiêu (15), pháp luật (20), chứng cứ (20), lập luận (20), phản biện (15), ứng biến (10). Điểm quy đổi về 100 từ phần đủ dữ liệu, kèm tỷ lệ trọng số đã đánh giá.' },
 ];
 
 export default function GuidePage() {

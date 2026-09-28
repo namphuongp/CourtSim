@@ -24,7 +24,7 @@ function getRetryDelay(response, responseBody, attempt) {
 
 export async function createChatCompletion({ model, systemPrompt, messages, temperature = 0.4, json = false }) {
   if (!model || model === 'configure-me') {
-    throw new AppError('Model AI chưa được cấu hình. Hãy cập nhật model_id trong AiPersonal.', 503, 'AI_NOT_CONFIGURED');
+    throw new AppError('Dịch vụ mô phỏng chưa sẵn sàng. Vui lòng liên hệ người quản trị.', 503, 'AI_NOT_CONFIGURED');
   }
   const headers = { 'Content-Type': 'application/json' };
   if (env.AI_API_KEY) headers.Authorization = `Bearer ${env.AI_API_KEY}`;
@@ -61,7 +61,9 @@ export async function createChatCompletion({ model, systemPrompt, messages, temp
       } catch {
         throw new AppError('AI trả về dữ liệu không hợp lệ.', 502, 'AI_INVALID_RESPONSE');
       }
-      const content = data.choices?.[0]?.message?.content?.trim();
+      const raw = data?.choices?.[0]?.message?.content;
+      const content = typeof raw === 'string' ? raw.trim() : '';
+      if (content.length > 40_000) throw new AppError('Phản hồi AI quá dài. Vui lòng thử lại.', 502, 'AI_INVALID_RESPONSE');
       if (!content) throw new AppError('AI không trả về nội dung.', 502, 'AI_EMPTY_RESPONSE');
       return content;
     }
@@ -73,10 +75,10 @@ export async function createChatCompletion({ model, systemPrompt, messages, temp
 
     console.error(`AI provider failed with status ${response.status}.`);
     if (response.status === 429) {
-      throw new AppError('Gemini đang giới hạn số lượt gọi. Vui lòng chờ khoảng một phút rồi gửi lại.', 429, 'AI_RATE_LIMITED');
+      throw new AppError('Dịch vụ AI đang giới hạn số lượt gọi. Vui lòng chờ khoảng một phút rồi gửi lại.', 429, 'AI_RATE_LIMITED');
     }
     if (response.status === 401 || response.status === 403) {
-      throw new AppError('Khóa Gemini không hợp lệ hoặc không có quyền sử dụng model.', 503, 'AI_AUTH_FAILED');
+      throw new AppError('Dịch vụ AI chưa sẵn sàng. Vui lòng liên hệ người quản trị.', 503, 'AI_AUTH_FAILED');
     }
     throw new AppError('Dịch vụ AI tạm thời gặp lỗi. Vui lòng thử lại.', 502, 'AI_PROVIDER_ERROR');
   }
