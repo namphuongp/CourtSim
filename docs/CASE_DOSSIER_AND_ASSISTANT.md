@@ -4,7 +4,7 @@
 
 1. Chọn vụ án: đọc phần Giới thiệu vụ án, các bên/yêu cầu, mốc thời gian và tài liệu. Chọn vai để xem vai của mình trong hồ sơ.
 2. Trong phiên, nút **Hồ sơ vụ án** mở panel; đóng bằng nút Đóng hoặc Escape. Khi đóng, hồ sơ không chiếm diện tích khung lập luận. Desktop kéo thả tài liệu vào ô viết; điện thoại/bàn phím dùng **Đưa vào lập luận**.
-3. Nội dung chèn có `[CC:ID]`, tên và trích yếu. Người học sửa bài trước khi gửi; xóa marker cũng bỏ viện dẫn có cấu trúc. Không tự gửi bài khi chèn.
+3. Nội dung chèn có `[Chứng cứ: Tên]` và trích yếu; ID đi riêng trong payload. Marker `[CC:ID]` cũ vẫn được nhận để tương thích. Người học sửa bài trước khi gửi; xóa marker cũng bỏ viện dẫn có cấu trúc. Không tự gửi bài khi chèn.
 4. **Trợ lý tra cứu luật** có lịch sử riêng. Chỉ nguồn đủ điều kiện mới có nút **Đưa trích dẫn vào lập luận** (`[PL:ID]`). Nguồn thiếu xác minh được báo ngắn và không biến thành căn cứ chắc chắn. Tra cứu không tự gửi lượt, không chấm điểm.
 
 ## API và lưu trữ

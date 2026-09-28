@@ -1,7 +1,8 @@
+import { dialogueText } from '../../../../../shared/dialogueText.mjs';
 import ConfirmEndDialog from '../../../components/ConfirmEndDialog';
 import { LegalCitations } from '../../../components/LegalBasis';
 import CaseDossier from '../../../components/CaseDossier';
-import { EVIDENCE_MIME, evidenceText } from '../../../services/references';
+import { EVIDENCE_MIME, evidenceText, evidenceIds } from '../../../services/references';
 import StudyPanel from '../../../components/StudyPanel';
 import LegalAssistant from '../../../components/LegalAssistant';
 import { useEffect, useRef, useState } from 'react';
@@ -9,22 +10,6 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import api, { getApiError } from '../../../services/api';
 import { roleLabel } from '../../../services/simulation';
 import { draftKey, readDraft, saveDraft } from '../../../services/auth';
-
-function FactAnalysis({ analysis }) {
-  if (!analysis) return null;
-  const groups = [
-    ['Dữ kiện trong hồ sơ', analysis.established_facts],
-    ['Lời trình bày của người học', analysis.learner_claims],
-    ['Suy luận', analysis.inferences],
-    ['Còn thiếu/chưa được chứng minh', analysis.missing_facts],
-  ].filter(([, values]) => values?.length);
-  if (!groups.length) return null;
-  return (
-    <div className="mt-3 space-y-2 rounded-xl bg-slate-950/50 p-3 text-sm">
-      {groups.map(([label, values]) => <p key={label}><strong className="text-slate-300">{label}:</strong> <span className="text-slate-400">{values.join('; ')}</span></p>)}
-    </div>
-  );
-}
 
 export default function SimulationRoom() {
   const { sessionId } = useParams();
@@ -125,7 +110,7 @@ function Room({ sessionId }) {
     busy.current = true;
     setState((s) => ({ ...s, sending: true, error: '' }));
     try {
-      const { data } = await api.post(`/v1/sessions/${sessionId}/messages`, { ...draft, expected_turn_count: userTurns, evidence_ids: [...new Set([...draft.content.matchAll(/\[CC:([^\]\s]+)\]/gu)].map((match) => match[1]))], legal_reference_ids: [...new Set([...draft.content.matchAll(/\[PL:([^\]\s]+)\]/gu)].map((match) => match[1]))] });
+      const { data } = await api.post(`/v1/sessions/${sessionId}/messages`, { ...draft, expected_turn_count: userTurns, evidence_ids: evidenceIds(draft.content, session.case_id.evidence_inventory), legal_reference_ids: [...new Set([...draft.content.matchAll(/\[PL:([^\]\s]+)\]/gu)].map((match) => match[1]))] });
       setRecords((current) => [...new Map([...current, ...data.data].map((r) => [r._id, r])).values()]);
       setDraft({ content: '', request_id: crypto.randomUUID() });
     } catch (error) {
@@ -182,7 +167,7 @@ function Room({ sessionId }) {
     {session && !session.case_event_date && !completed && <form onSubmit={saveEventDate} className="border-b border-slate-800 p-3 text-sm"><p>Phiên cũ chưa có ngày tra cứu luật. Bổ sung ngày trong hồ sơ, hoặc một ngày giả định cho bài tập, để tiếp tục.</p><label>Ngày tra cứu <input required type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} className="m-2 rounded border border-slate-700 p-2" /></label><button disabled={state.sending || !eventDate} className="rounded bg-blue-600 px-3 py-2">Lưu ngày</button></form>}
     {session?.processing && !state.sending && !state.ending && <p role="status" className="p-3 text-sm">Một yêu cầu đang được xử lý. Chờ rồi <button onClick={() => setReload((n) => n + 1)} className="text-blue-400 underline">cập nhật phiên</button>.</p>}
     <div className="flex min-h-0 flex-1 flex-col">
-      <section className="flex min-h-0 min-w-0 flex-1 flex-col"><div className="flex-1 space-y-4 overflow-y-auto p-4">{records.map((item) => <article id={`record-${item._id}`} key={item._id} className={`max-w-3xl break-words rounded-2xl border p-4 ${item.sender_type === 'user' ? 'ml-auto border-blue-500/30 bg-blue-500/10' : item.sender_type === 'ai_judge' ? 'border-amber-500/30 bg-amber-500/10' : 'border-rose-500/30 bg-rose-500/10'}`}><p className="mb-2 text-xs font-bold text-slate-400">{item.sender_name}</p><p className="whitespace-pre-wrap leading-7">{item.content}</p><FactAnalysis analysis={item.fact_analysis} /><LegalCitations citations={item.citations} /></article>)}{state.sending && <p role="status">Bên đối lập và Thẩm phán đang phân tích lập luận của bạn.</p>}{state.ending && <p role="status">Đang đánh giá toàn bộ phiên. Quá trình có thể mất vài phút.</p>}<div ref={endRef} /></div>
+      <section className="flex min-h-0 min-w-0 flex-1 flex-col"><div className="flex-1 space-y-4 overflow-y-auto p-4">{records.map((item) => <article id={`record-${item._id}`} key={item._id} className={`max-w-3xl break-words rounded-2xl border p-4 ${item.sender_type === 'user' ? 'ml-auto border-blue-500/30 bg-blue-500/10' : item.sender_type === 'ai_judge' ? 'border-amber-500/30 bg-amber-500/10' : 'border-rose-500/30 bg-rose-500/10'}`}><p className="mb-2 text-xs font-bold text-slate-400">{item.sender_name}</p><p className="whitespace-pre-wrap leading-7">{dialogueText(item.display_content ?? item.content, session?.case_id?.evidence_inventory)}</p><LegalCitations citations={item.citations} /></article>)}{state.sending && <p role="status">Bên đối lập và Thẩm phán đang phân tích lập luận của bạn.</p>}{state.ending && <p role="status">Đang đánh giá toàn bộ phiên. Quá trình có thể mất vài phút.</p>}<div ref={endRef} /></div>
       {completed ? <p className="border-t border-slate-800 p-4 text-sm">Phiên đã kết thúc. Đây là biên bản chỉ đọc.</p> : <form onSubmit={send} className="border-t border-slate-800 p-4"><label htmlFor="argument" className="text-sm font-semibold">Lập luận của bạn</label><textarea ref={argumentRef} onDrop={dropEvidence} onDragOver={(event) => { if (event.dataTransfer.types.includes(EVIDENCE_MIME)) { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; } }} id="argument" disabled={disabled} maxLength={4000} value={draft.content} onChange={(e) => setDraft({ content: e.target.value, request_id: crypto.randomUUID() })} placeholder="Nêu yêu cầu → chứng cứ trong hồ sơ → giải thích → trả lời phản biện..." className="mt-2 min-h-24 w-full resize-y rounded-xl border border-slate-700 bg-slate-900 p-3" /><div className="mt-2 flex flex-wrap items-center justify-between gap-2"><span className="text-xs text-slate-500">{draft.content.length}/4000 · Bản nháp lưu trong tab này</span><button disabled={disabled || userTurns >= (session?.max_turns ?? 20) || draft.content.trim().length < 10} className="rounded-xl bg-blue-600 px-5 py-2 disabled:opacity-40">Gửi lập luận</button></div>{userTurns >= (session?.max_turns ?? 20) && <p className="mt-2 text-sm">Đã đủ số lượt. Chọn Kết thúc để nhận đánh giá.</p>}</form>}
       </section>
     </div>

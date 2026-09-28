@@ -1,3 +1,5 @@
+import { dialogueText, evidenceSummary } from '../../../shared/dialogueText.mjs';
+import { caseKnowledge } from './caseKnowledge.js';
 import { evidenceInventory } from './caseEvidence.js';
 
 import { learnerText } from '../../../shared/learnerText.mjs';
@@ -14,10 +16,11 @@ export function learnerCase(value) {
     _id: c._id, title: learnerText(c.title, 'Hồ sơ vụ án'), category: learnerText(c.category),
     summary: learnerText(c.summary), full_document: learnerText(c.full_document),
     reference_date: c.reference_date, source_url: safeUrl(c.source_url), created_at: c.created_at,
+    recorded_events: caseKnowledge(c).recorded_events.map((f) => ({ text: learnerText(f.quote), source: f.source_type === 'judgment' ? 'Theo nội dung bản án' : 'Theo hồ sơ bài tập' })),
     parties: (c.parties ?? []).map((p) => ({ side: p.side, name: learnerText(p.name), claims: (p.claims ?? []).map((v) => learnerText(v)).filter(Boolean) })),
     timeline: (c.timeline ?? []).map((e) => ({ kind: e.kind, date: e.date, date_to: e.date_to, description: learnerText(e.description) })),
     evidence_inventory: evidenceInventory(c).map((e) => ({ id: e.id, code: e.code, name: learnerText(e.name, 'Tài liệu trong hồ sơ'), availability: e.availability,
-      summary: learnerText(e.summary), content: learnerText(e.content), provided_by: learnerText(e.provided_by), date: e.date || null })),
+      summary: learnerText(evidenceSummary(e.summary)), content: learnerText(e.content), provided_by: learnerText(e.provided_by), date: e.date || null })),
   };
 }
 
@@ -40,28 +43,32 @@ export function learnerResearch(research) {
   };
 }
 
-function presentationTree(value) {
-  if (typeof value === 'string') return learnerText(value);
-  if (Array.isArray(value)) return value.map(presentationTree);
+function presentationTree(value, inventory = []) {
+  if (typeof value === 'string') return learnerText(dialogueText(value, inventory));
+  if (Array.isArray(value)) return value.map((child) => presentationTree(child, inventory));
   if (!value || typeof value !== 'object') return value;
-  return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, presentationTree(child)]));
+  return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, presentationTree(child, inventory)]));
 }
 
-export function learnerRecord(record) {
+export function learnerRecord(record, courtCase = {}) {
   const r = record.toObject ? record.toObject() : record;
+  const inventory = evidenceInventory(courtCase);
+  const displayed = dialogueText(r.content, inventory);
   return { _id: r._id, sender_type: r.sender_type, sender_name: r.sender_name, created_at: r.created_at, request_id: r.request_id,
-    content: r.sender_type === 'user' ? r.content : learnerText(r.content, 'Cần kiểm tra thêm căn cứ trước khi kết luận.'),
+    content: r.sender_type === 'user' ? r.content : learnerText(displayed, 'Mời bạn giải thích mối liên hệ giữa thông tin vừa viện dẫn và kết luận của mình.'),
+    display_content: r.sender_type === 'user' ? displayed : learnerText(displayed),
     evidence_ids: r.evidence_ids ?? [], legal_reference_ids: r.legal_reference_ids ?? [],
-    fact_analysis: presentationTree(r.fact_analysis), citations: (r.citations ?? []).map(learnerCitation) };
+    citations: (r.citations ?? []).map(learnerCitation) };
 }
 
-export function learnerEvaluation(result) {
+export function learnerEvaluation(result, courtCase = {}) {
   const r = result.toObject ? result.toObject() : result;
+  const inventory = evidenceInventory(courtCase);
   return { session_id: r.session_id, created_at: r.created_at, score: r.score, score_scope: learnerText(r.score_scope),
     earned_score: r.earned_score, assessed_max: r.assessed_max, assessment_status: r.assessment_status,
     rubric_scores: r.rubric_scores, rubric_version: r.rubric_version,
-    criteria: presentationTree(r.criteria), rubric_feedback: presentationTree(r.rubric_feedback),
-    verdict: learnerText(r.verdict, 'Đã hoàn thành phiên luyện tập.'), feedback: learnerText(r.feedback),
-    improvement_suggestions: learnerText(r.improvement_suggestions), fact_analysis: presentationTree(r.fact_analysis),
+    criteria: presentationTree(r.criteria, inventory), rubric_feedback: presentationTree(r.rubric_feedback, inventory),
+    verdict: learnerText(r.verdict, 'Đã hoàn thành phiên luyện tập.'), feedback: learnerText(dialogueText(r.feedback, inventory)),
+    improvement_suggestions: learnerText(dialogueText(r.improvement_suggestions, inventory)),
     citations: (r.citations ?? []).map(learnerCitation), legal_research: learnerResearch(r.legal_research) };
 }

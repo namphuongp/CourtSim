@@ -6,6 +6,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { validateTimeline } from '../services/legalTimeline.js';
 import { learnerCase } from '../services/learnerPresentation.js';
 import { validateCaseDetails } from '../services/caseEvidence.js';
+import { validateCaseFacts } from '../services/caseKnowledge.js';
 
 const router = Router();
 
@@ -37,7 +38,8 @@ router.post('/', authenticate, requireAdmin, asyncHandler(async (request, respon
   const timeline = validateTimeline(request.body.timeline);
   if (timeline.some((event) => !document.includes(event.source_quote))) throw new AppError('Trích đoạn của mốc thời gian phải có trong nội dung hồ sơ.');
   const details = validateCaseDetails(request.body);
-  const item = await Case.create({ title: title.trim(), summary: summary.trim(), full_document: document.trim(), category: category.trim(), timeline, ...details });
+  const case_facts = validateCaseFacts(request.body);
+  const item = await Case.create({ title: title.trim(), summary: summary.trim(), full_document: document.trim(), category: category.trim(), timeline, case_facts, ...details });
   response.status(201).json({ data: learnerCase(item) });
 }));
 

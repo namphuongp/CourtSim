@@ -16,6 +16,12 @@ export const sampleLandCase = {
   source_url: 'https://thuvienphapluat.vn/banan/ban-an/ban-an-ve-tranh-chap-quyen-su-dung-dat-so-512024dsst-331384',
   source_note: 'Nguồn đăng lại: Thư Viện Pháp Luật; bản án sơ thẩm 51/2024/DS-ST, TAND thị xã Vĩnh Châu, Sóc Trăng. Chưa xác minh tình trạng kháng cáo hoặc hiệu lực; không giới thiệu là án lệ.',
   reference_date: '2024-03-29',
+  case_facts: [
+    { kind: 'party_statement', party: 'A', source_type: 'judgment', quote: 'A yêu cầu trả 229,7 m²; viện dẫn giấy chứng nhận cấp cho hộ gia đình năm 1996.' },
+    { kind: 'party_statement', party: 'B', source_type: 'judgment', quote: 'B cho rằng đất có nguồn gốc từ gia đình mình và đã sử dụng lâu dài.' },
+    { kind: 'recorded_event', source_type: 'judgment', quote: 'Hai bên tranh chấp 229,7 m² đất mương và bờ mương.' },
+    { kind: 'unproven', source_type: 'judgment', quote: 'B cho rằng đất có nguồn gốc từ gia đình mình và đã sử dụng lâu dài.' },
+  ],
   reference_date_note: 'Mốc tra cứu cố định theo ngày xét xử, không phải ngày phát sinh tranh chấp. Việc áp dụng luật còn phụ thuộc thời điểm từng sự kiện và quy định chuyển tiếp.',
   legal_scope_note: 'Bài tập ưu tiên lập luận và đánh giá chứng cứ. Bản gốc Luật Đất đai 2013 đã được bổ sung; lịch sử sửa đổi và căn cứ cho từng mốc cần được xác minh trước khi chấm pháp luật. Không thay bằng Luật Đất đai 2024 hoặc chấm theo kết quả bản án gốc.',
   timeline: [
@@ -25,8 +31,8 @@ export const sampleLandCase = {
   ],
   evidence_inventory: [
     { name: 'Giấy chứng nhận', summary: 'Bản án đề cập giấy chứng nhận cấp cho hộ gia đình năm 1996; A viện dẫn để yêu cầu trả đất.' },
-    { name: 'Thông tin cơ quan đăng ký đất đai', summary: 'Bản án đề cập thông tin cơ quan đăng ký đất đai; bài tập chưa cung cấp nội dung tài liệu.' },
+    { name: 'Thông tin cơ quan đăng ký đất đai', summary: 'Thông tin cơ quan đăng ký đất đai được bản án đề cập.' },
     { name: 'Lời khai nhân chứng', summary: 'Lời khai về nguồn gốc, sử dụng đất không thống nhất; một số nhân chứng có quan hệ với các bên.' },
-    { name: 'Hòa giải', summary: 'Bản án đề cập quá trình hòa giải; bài tập chưa cung cấp biên bản.' },
+    { name: 'Hòa giải', summary: 'Quá trình hòa giải được bản án đề cập.' },
   ].map((item) => ({ ...item, availability: 'mentioned_only', source_quote: 'Tài liệu được bản án thuật lại; không có bản gốc trong bài tập.' })),
 };

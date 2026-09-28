@@ -65,7 +65,7 @@ router.post('/', asyncHandler(async (request, response) => {
   if (String(session.case_id) !== caseId || session.user_court_role !== role || session.difficulty !== difficulty || session.case_event_date !== eventDate) {
     throw new AppError('Yêu cầu khởi tạo đã được dùng cho thiết lập khác.', 409, 'REQUEST_CONFLICT');
   }
-  response.status(201).json({ data: { session: publicSession(session), opening: learnerRecord(session.opening) } });
+  response.status(201).json({ data: { session: publicSession(session), opening: learnerRecord(session.opening, session.case_snapshot ?? {}) } });
 }));
 
 router.get('/', asyncHandler(async (request, response) => {
@@ -101,7 +101,8 @@ router.patch('/:sessionId', asyncHandler(async (request, response) => {
 
 router.get('/:sessionId/records', asyncHandler(async (request, response) => {
   const session = await getOwnedSession(request.params.sessionId, request.auth.userId);
-  response.json({ data: (await getRecords(session)).map(learnerRecord) });
+  const courtCase = session.case_snapshot ?? await Case.findById(session.case_id).lean() ?? {};
+  response.json({ data: (await getRecords(session)).map((r) => learnerRecord(r, courtCase)) });
 }));
 
 router.get('/:sessionId/legal-basis', asyncHandler(async (request, response) => {
@@ -134,7 +135,7 @@ router.post('/:sessionId/messages', asyncHandler(async (request, response) => {
   const evidenceIds = validateEvidenceReferences(caseForReferences, content, request.body.evidence_ids);
   const legalCitations = await validateLegalReferences(session, content, request.body.legal_reference_ids);
   const replay = replayTurn(session, requestId, content);
-  if (replay) return response.json({ data: replay.map(learnerRecord) });
+  if (replay) return response.json({ data: replay.map((r) => learnerRecord(r, caseForReferences)) });
   const records = await withSessionLock(session, async (locked, fence) => {
     const existing = replayTurn(locked, requestId, content);
     if (existing) return existing;
@@ -154,7 +155,7 @@ router.post('/:sessionId/messages', asyncHandler(async (request, response) => {
     if (!saved.matchedCount) throw new AppError('Yêu cầu đã hết thời gian xử lý. Vui lòng tải lại phiên.', 409, 'SESSION_LOCK_EXPIRED');
     return completeTurn;
   });
-  response.status(201).json({ data: records.map(learnerRecord) });
+  response.status(201).json({ data: records.map((r) => learnerRecord(r, caseForReferences)) });
 }));
 
 router.post('/:sessionId/complete', asyncHandler(async (request, response) => {
@@ -174,7 +175,7 @@ router.post('/:sessionId/complete', asyncHandler(async (request, response) => {
     if (!saved.matchedCount) throw new AppError('Yêu cầu đã hết thời gian xử lý. Vui lòng tải lại phiên.', 409, 'SESSION_LOCK_EXPIRED');
     return result;
   });
-  response.json({ data: learnerEvaluation(result) });
+  response.json({ data: learnerEvaluation(result, session.case_snapshot ?? await Case.findById(session.case_id).lean() ?? {}) });
 }));
 
 router.get('/:sessionId/result', asyncHandler(async (request, response) => {

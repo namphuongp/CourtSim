@@ -234,21 +234,23 @@ test('hồ sơ đóng mặc định, chèn chứng cứ bằng nút/bàn phím v
     await expect(page.getByRole('button',{name:'Đóng hồ sơ vụ án',exact:true})).toBeFocused();
   }
   await page.screenshot({path:'test-results/dossier-'+info.project.name+'.png',fullPage:true});
-  await expect(page.getByText('Chỉ được nhắc đến — chưa có nội dung tài liệu')).toBeVisible();
+  await expect(page.getByText('Theo tài liệu được bản án/hồ sơ đề cập; CourtSim chưa có bản gốc.')).not.toBeVisible();
+  await page.getByText('Chi tiết chứng cứ: Biên nhận',{exact:true}).click();
+  await expect(page.getByText('Theo tài liệu được bản án/hồ sơ đề cập; CourtSim chưa có bản gốc.')).toBeVisible();
   await page.keyboard.press('Escape'); await expect(open).toBeFocused();
   await open.click();
   await page.getByRole('button',{name:'Đưa vào lập luận: Hợp đồng vay',exact:true}).click();
   const input=page.getByLabel('Lập luận của bạn');
   await expect(input).toBeFocused();
-  await expect(input).toHaveValue(/\[CC:EV-test-evidence1\]/);
+  await expect(input).toHaveValue(/\[Chứng cứ: Hợp đồng vay\]/);
   await expect(page.getByRole('region',{name:'Hồ sơ vụ án'})).toHaveCount(0);
-  await page.reload(); await expect(input).toHaveValue(/\[CC:EV-test-evidence1\]/);
+  await page.reload(); await expect(input).toHaveValue(/\[Chứng cứ: Hợp đồng vay\]/);
   if(info.project.name==='desktop') {
     await open.click();
     const transfer=await page.evaluateHandle(()=>new DataTransfer());
     await page.locator('article[draggable="true"]').last().dispatchEvent('dragstart',{dataTransfer:transfer});
     await input.dispatchEvent('drop',{dataTransfer:transfer});
-    await expect(input).toHaveValue(/\[CC:EV-test-evidence2\]/);
+    await expect(input).toHaveValue(/\[Chứng cứ: Biên nhận\]/);
   }
   await page.getByRole('button',{name:'Gửi lập luận'}).click();
   await expect(page.getByText('Mời làm rõ chứng cứ thanh toán.',{exact:true})).toBeVisible();
@@ -283,4 +285,17 @@ for(const verified of [true,false]) test('trợ lý riêng: nguồn '+(verified?
   await page.reload();
   await page.getByRole('button',{name:'Trợ lý tra cứu luật',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Căn cứ nào cần xem xét?'})).toBeVisible();
+});
+
+test('biên bản cũ: tên chứng cứ tự nhiên, không lộ mã/trạng thái hoặc khung phân tích sau reload',async({page})=>{
+  await mockApi(page,{sample:evidenceCase});
+  await login(page); await setup(page);
+  await page.route('**/records',route=>route.fulfill({json:{data:[{_id:'old-ai',sender_type:'ai_judge',sender_name:'Thẩm phán AI',content:'Cần đối chiếu [CC:EV-test-evidence1] (mentioned_only) với kết luận về thanh toán.',fact_analysis:{established_facts:['Dữ kiện nội bộ'],learner_claims:[],inferences:[],missing_facts:[]}}]}}));
+  await page.reload();
+  const record=page.locator('#record-old-ai');
+  await expect(record).toContainText('Hợp đồng vay');
+  await expect(record).not.toContainText('EV-test-evidence1');
+  await expect(record).not.toContainText('mentioned_only');
+  await expect(page.getByText('Dữ kiện nội bộ')).toHaveCount(0);
+  await expect(page.getByText('Dữ kiện trong hồ sơ:',{exact:true})).toHaveCount(0);
 });

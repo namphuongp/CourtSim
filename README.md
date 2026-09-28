@@ -1,5 +1,7 @@
 # CourtSim
 
+Cập nhật: [AI tranh luận theo hồ sơ, phân biệt nguồn và tránh cảnh báo lặp](docs/AI_DIALOGUE_BEHAVIOR.md).
+
 Cập nhật: [Hồ sơ mở theo yêu cầu, viện dẫn chứng cứ và trợ lý tra cứu độc lập](docs/CASE_DOSSIER_AND_ASSISTANT.md).
 
 Cập nhật mới: [Chấm điểm theo DOCX và tra cứu luật theo mốc/phiên bản](docs/SCORING_AND_LEGAL_RESEARCH.md). Rubric mới có 6 nhóm, 23 tiêu chí con; điểm được quy đổi về /100 từ phần đủ dữ liệu và hiển thị tỷ lệ trọng số đã đánh giá. Kết quả cũ giữ nguyên.

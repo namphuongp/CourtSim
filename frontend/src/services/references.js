@@ -1,7 +1,11 @@
 export const EVIDENCE_MIME = 'application/x-courtsim-evidence';
 
 export function evidenceText(item) {
-  return `[CC:${item.id}] ${item.code ? `${item.code} — ` : ''}${item.name}: ${item.summary || 'Chưa có trích yếu.'}${item.availability !== 'provided' ? ' (Chỉ được nhắc đến; chưa có nội dung tài liệu.)' : ''}`;
+  return `[Chứng cứ: ${item.name}] ${item.summary || ''}`.trim();
+}
+
+export function evidenceIds(content, inventory = []) {
+  return [...new Set([...content.matchAll(/\[CC:([^\]\s]+)\]/gu)].map((m) => m[1]).concat(inventory.filter((e) => content.includes(`[Chứng cứ: ${e.name}]`)).map((e) => e.id)))];
 }
 
 export function legalReferenceText(item) {

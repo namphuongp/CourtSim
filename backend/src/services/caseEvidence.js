@@ -23,8 +23,11 @@ export function readReferenceIds(content, kind, supplied) {
 }
 
 export function validateEvidenceReferences(courtCase, content, supplied) {
-  const ids = readReferenceIds(content, 'CC', supplied);
   const inventory = evidenceInventory(courtCase);
+  const ids = [...new Set([...readReferenceIds(content, 'CC'), ...inventory.filter((e) => content.includes(`[Chứng cứ: ${e.name}]`)).map((e) => e.id)])].sort();
+  if (supplied !== undefined && (!Array.isArray(supplied) || supplied.length > 30 || supplied.some((id) => typeof id !== 'string')
+    || JSON.stringify([...new Set(supplied)].sort()) !== JSON.stringify(ids))) throw new AppError('Danh sách tài liệu không khớp bài viết. Hãy chọn lại tài liệu muốn viện dẫn.');
+  if (ids.length > 30) throw new AppError('Mỗi bài viết chỉ được viện dẫn tối đa 30 tài liệu.');
   if (ids.some((id) => !inventory.some((item) => item.id === id))) throw new AppError('Tài liệu viện dẫn không thuộc hồ sơ của phiên này.', 400, 'EVIDENCE_NOT_IN_CASE');
   return ids;
 }
