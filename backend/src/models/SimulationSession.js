@@ -14,6 +14,7 @@ const simulationSessionSchema = new mongoose.Schema({
   turns: { type: [mongoose.Schema.Types.Mixed], default: [] },
   evaluation: { type: mongoose.Schema.Types.Mixed, default: null },
   operation: { type: mongoose.Schema.Types.Mixed, default: null },
+  conversation: { type: mongoose.Schema.Types.Mixed, default: null },
   status: { type: String, enum: ['ongoing', 'completed'], default: 'ongoing' },
   feedback_prompted_at: { type: Date, default: null },
   feedback_submitted_at: { type: Date, default: null },
@@ -32,5 +33,8 @@ simulationSessionSchema.index({ 'feedback.status': 1, 'feedback.created_at': -1 
 simulationSessionSchema.index({ user_id: 1, created_at: -1 });
 simulationSessionSchema.index({ user_id: 1, creation_request_id: 1 }, { unique: true, partialFilterExpression: { creation_request_id: { $type: 'string' } } });
 
+simulationSessionSchema.index({ created_at: -1 });
+simulationSessionSchema.index({ status: 1, created_at: -1 });
+simulationSessionSchema.index({ completed_at: -1 });
 const SimulationSession = mongoose.model('SimulationSession', simulationSessionSchema);
 export default SimulationSession;

@@ -11,6 +11,12 @@ import { validateCaseFacts } from '../services/caseKnowledge.js';
 const router = Router();
 
 router.get('/', asyncHandler(async (request, response) => {
+  const query = request.query;
+  if (Object.keys(query).some(key => !['page', 'limit', 'category'].includes(key))
+    || ['page', 'limit'].some(key => query[key] !== undefined && (typeof query[key] !== 'string' || !/^[1-9]\d{0,4}$/.test(query[key])))
+    || (query.category !== undefined && (typeof query.category !== 'string' || query.category.length > 80))) {
+    throw new AppError('Bộ lọc danh sách vụ án không hợp lệ.');
+  }
   const page = Math.max(Number.parseInt(request.query.page, 10) || 1, 1);
   const limit = Math.min(Math.max(Number.parseInt(request.query.limit, 10) || 20, 1), 50);
   const filter = request.query.category ? { category: String(request.query.category).trim() } : {};

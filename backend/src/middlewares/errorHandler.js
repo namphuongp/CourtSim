@@ -7,6 +7,8 @@ export function notFoundHandler(request, response) {
 }
 
 export function errorHandler(error, _request, response, _next) {
+  if (response.headersSent) return _next(error);
+  if (Number.isInteger(error.retryAfter)) response.setHeader('Retry-After', String(error.retryAfter));
   let status = error.statusCode ?? 500;
   let code = error.code ?? 'INTERNAL_ERROR';
   let message = error.message;

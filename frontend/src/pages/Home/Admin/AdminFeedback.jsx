@@ -4,7 +4,7 @@ import api, { getApiError } from '../../../services/api';
 import FeedbackModal from '../../../components/feedback/FeedbackModal';
 import '../../../components/feedback/feedback.css';
 
-const statuses = { new: 'Mới', viewed: 'Đã xem', resolved: 'Đã xử lý' };
+const statuses = { new: 'Mới', viewed: 'Đã xem / đang xử lý', resolved: 'Đã xử lý' };
 const date = value => new Date(value).toLocaleString('vi-VN');
 
 export default function AdminFeedback() {
@@ -58,7 +58,7 @@ export default function AdminFeedback() {
     finally { busy.current = false; setPending(false); }
   }
   const close = () => { if (!pending) { if (confirmDelete) setConfirmDelete(false); else setSelected(null); } };
-  return <main className="feedback-admin">
+  return <section className="feedback-admin">
     <header><h1>Góp ý của người học</h1><Link to="/admin">← Quản trị CourtSim</Link></header>
     <form className="feedback-filters" onSubmit={event => { event.preventDefault(); setFilter(value => ({ ...value, q: search.trim(), page: 1 })); }}>
       <label>Tìm nội dung hoặc mã phiên<input maxLength={100} value={search} onChange={event => setSearch(event.target.value)} placeholder="Nhập nội dung cần tìm…" /></label>
@@ -87,5 +87,5 @@ export default function AdminFeedback() {
       {detailError && <p role="alert" className="feedback-error">{detailError}</p>}
       <div className="feedback-actions">{confirmDelete ? <><button autoFocus disabled={pending} onClick={() => setConfirmDelete(false)}>Giữ lại</button><button disabled={pending} className="feedback-delete" onClick={() => update(true)}>{pending ? 'Đang xóa…' : 'Xác nhận xóa'}</button></> : <><button disabled={pending} onClick={() => setConfirmDelete(true)}>Xóa góp ý</button><button disabled={pending} className="feedback-primary" onClick={() => update()}>{pending ? 'Đang lưu…' : 'Lưu thay đổi'}</button></>}</div>
     </FeedbackModal>}
-  </main>;
+  </section>;
 }

@@ -1,3 +1,4 @@
+import AdminAudit from '../models/AdminAudit.js';
 import { Router } from 'express';
 import mongoose from 'mongoose';
 import { SimulationSession, TrialResult } from '../models/index.js';
@@ -79,10 +80,12 @@ adminFeedbackRoutes.patch('/:id', asyncHandler(async (request, response) => {
   if (!statuses.includes(status)) throw new AppError('Trạng thái góp ý không hợp lệ.');
   const result = await SimulationSession.updateOne({ _id: id(request.params.id), 'feedback.created_at': { $exists: true } }, { $set: { 'feedback.status': status, 'feedback.notes': text(notes, 2000), 'feedback.updated_at': new Date() } }, { runValidators: true });
   if (!result.matchedCount) throw new AppError('Góp ý không còn tồn tại.', 404);
+  await AdminAudit.create({ admin_user_id: request.auth.userId, action: 'FEEDBACK_STATUS_CHANGED', target_type: 'feedback', target_id: request.params.id });
   response.json({ data: { updated: true } });
 }));
 adminFeedbackRoutes.delete('/:id', asyncHandler(async (request, response) => {
-  await SimulationSession.updateOne({ _id: id(request.params.id) }, { $unset: { feedback: 1 } });
+  const removed = await SimulationSession.updateOne({ _id: id(request.params.id) }, { $unset: { feedback: 1 } });
   // Giữ dấu đã gửi để không hỏi lại hoặc khôi phục góp ý bị quản trị viên xóa.
+  if (removed.modifiedCount) await AdminAudit.create({ admin_user_id: request.auth.userId, action: 'FEEDBACK_DELETED', target_type: 'feedback', target_id: request.params.id });
   response.json({ data: { deleted: true } });
 }));

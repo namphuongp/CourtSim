@@ -1,19 +1,21 @@
 import { SCORING_RUBRIC } from '../data/scoringRubric.js';
 import { AppError } from '../utils/AppError.js';
+import { isSubstantiveRecord } from './dialogueInput.js';
 
 const round = (number) => Math.round((number + Number.EPSILON) * 100) / 100;
 
 export function scoringEligibility(records, legalAvailable) {
   let opponents = 0; let responses = 0;
   for (const record of records) {
-    if (['ai_prosecutor', 'ai_opponent'].includes(record.sender_type)) opponents++;
-    if (record.sender_type === 'user' && opponents > 0) responses++;
+    if (['ai_prosecutor', 'ai_opponent'].includes(record.sender_type) && record.generation_mode !== 'guided_continuation') opponents++;
+    if (isSubstantiveRecord(record) && opponents > 0) responses++;
   }
   return Object.fromEntries(SCORING_RUBRIC.groups.flatMap((group) => group.items.map((item) => {
     let reason = null;
     if ((item.id.startsWith('2.') || item.id === '4.2') && !legalAvailable) reason = 'Chưa xác minh được căn cứ phù hợp với thời điểm vụ án nên chưa chấm độ chính xác pháp luật.';
     if ((item.id.startsWith('5.') || item.id.startsWith('6.')) && !responses) reason = 'Chưa có lượt người học trả lời lập luận mới của bên đối lập.';
     if (item.id === '5.4' && responses < 2) reason = 'Chưa có lượt bảo vệ lập luận sau phản biện tiếp theo.';
+    if (!records.some(isSubstantiveRecord)) reason = 'Chưa có ý kiến về nội dung vụ án để đánh giá; lời chào và câu hỏi thủ tục không phải bài lập luận.';
     return [item.id, reason];
   })));
 }
@@ -28,7 +30,7 @@ export function calculateEvaluation(entries, records, legalAvailable) {
   for (const item of definitions) {
     const value = entries.find((entry) => entry.id === item.id);
     if (eligibility[item.id]) {
-      evaluated.set(item.id, { ...item, score: null, status: 'not_assessed', reason: eligibility[item.id], strength: 'Chưa đủ dữ liệu đánh giá.', improvement: item.id.startsWith('2.') || item.id === '4.2' ? 'Bổ sung nguồn luật và mốc thời gian được xác minh.' : 'Tiếp tục luyện trả lời phản biện ở phiên tiếp theo.', record_id: null, quote: null });
+      evaluated.set(item.id, { ...item, score: null, status: 'not_assessed', reason: eligibility[item.id], strength: 'Chưa đủ dữ liệu đánh giá.', improvement: item.id.startsWith('2.') || item.id === '4.2' ? 'CourtSim cần xác minh nguồn luật trước khi đánh giá phần này; đây không phải lỗi của người học.' : 'Tiếp tục luyện trả lời phản biện ở phiên tiếp theo.', record_id: null, quote: null });
       continue;
     }
     if (typeof value.score !== 'number' || !Number.isFinite(value.score) || value.score < 0 || value.score > item.max
@@ -48,8 +50,9 @@ export function calculateEvaluation(entries, records, legalAvailable) {
   const earned = round(criteria.reduce((sum, group) => sum + group.earned, 0));
   const assessedMax = criteria.reduce((sum, group) => sum + group.assessed_max, 0);
   return { rubric_version: SCORING_RUBRIC.version, rubric_source: SCORING_RUBRIC.source, rubric_source_sha256: SCORING_RUBRIC.source_sha256,
-    rubric_status: 'proposal', criteria, score: assessedMax > 0 ? round(earned / assessedMax * 100) : null,
+    rubric_status: 'proposal', criteria, score: assessedMax === 100 ? earned : null,
+    assessed_percentage: assessedMax > 0 ? round(earned / assessedMax * 100) : null,
     assessment_status: assessedMax === 100 ? 'complete' : 'partial', earned_score: earned, assessed_max: assessedMax,
-    score_scope: assessedMax === 100 ? 'Điểm theo thang 100.' : `Điểm quy đổi từ ${earned}/${assessedMax}; đã đánh giá ${assessedMax}% trọng số. Tiêu chí chưa đủ dữ liệu không bị tính 0 điểm.`,
+    score_scope: assessedMax === 100 ? 'Điểm theo thang 100.' : `${earned}/${assessedMax} điểm ở phần đã đánh giá. ${100 - assessedMax}% trọng số chưa chấm; chưa có điểm toàn bài. Phần chưa chấm không bị tính 0 điểm.`,
     rubric_scores: Object.fromEntries(criteria.map((group) => [group.id, group.score === null ? null : round(group.score / group.max * 100)])) };
 }

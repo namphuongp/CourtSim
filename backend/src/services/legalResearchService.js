@@ -3,13 +3,19 @@ import { buildLegalPlan, assessVersion } from './legalTimeline.js';
 import { rankProvisions } from './legalRetrievalService.js';
 import { checkOfficialSources } from './officialLegalSources.js';
 import { getLegalSearchTerms } from './legalTextSearch.js';
+import VbplSnapshot from '../models/VbplSnapshot.js';
+import { hasVerifiedSource } from '../../../shared/legalSourcePolicy.mjs';
+import { parseLegalArticles, createProvisionUnits } from './legalTextParser.js';
 
 const MAX_CONTEXT = 8000;
 
 // Hàm thuần để kiểm thử quyết định phiên bản, không cần MongoDB hoặc dịch vụ ngoài.
-export function resolveLegalResearch({ courtCase, eventDate, learnerTimeline = [], records = [], documents, provisions }) {
+export function resolveLegalResearch({ courtCase, eventDate, learnerTimeline = [], records = [], documents, provisions, snapshots = [] }) {
   const plans = buildLegalPlan(courtCase, eventDate, learnerTimeline);
   const byId = new Map(documents.map((document) => [String(document._id), document]));
+  const compact = text => (text ?? '').replace(/\s+/gu, ' ').trim();
+  const sourceUnits = snapshots.filter(hasVerifiedSource).map(snapshot => ({ snapshot,
+    units: parseLegalArticles(snapshot.source_text).flatMap(createProvisionUnits) }));
   const citations = []; const candidates = []; const warnings = [];
   let size = 0; let candidateSize = 0;
   const issues = plans.map((plan) => {
@@ -21,6 +27,11 @@ export function resolveLegalResearch({ courtCase, eventDate, learnerTimeline = [
     for (const { provision, score } of ranked.filter((item) => item.score > 0).slice(0, 5)) {
       const document = byId.get(String(provision.document_id));
       let assessment = assessVersion(document, provision, plan);
+      // Bản nhập cũ chỉ có cờ duyệt không đủ: nguyên văn phải khớp đúng đơn vị trên vbpl.vn.
+      const snapshot = sourceUnits.find(({ snapshot: s, units }) => s.law_number === document.law_number && s.source_url === document.source_url
+        && units.some(p => p.article === provision.article && p.paragraph === (provision.paragraph ?? null)
+          && p.point === (provision.point ?? null) && compact(p.text) === compact(provision.text)))?.snapshot;
+      if (!snapshot) assessment = { verified: false, reason: 'Chưa đối chiếu được nguyên văn điều khoản với bản lưu vbpl.vn.' };
       if (assessment.verified && provisions.some((other) => {
         const otherDoc = byId.get(String(other.document_id));
         return String(other.document_id) !== String(provision.document_id) && other.article === provision.article
@@ -33,6 +44,9 @@ export function resolveLegalResearch({ courtCase, eventDate, learnerTimeline = [
         paragraph: provision.paragraph, point: provision.point, locator: provision.locator,
         text: provision.text, context_text: provision.text,
         source_url: document.source_url, history_url: document.history_url,
+        source_verification: snapshot ? 'verified' : 'unverified', source_sha256: snapshot?.source_sha256,
+        checked_at: snapshot?.checked_at, retrieval_mode: 'cache', document_type: snapshot?.document_type,
+        application_status: assessment.verified ? 'verified' : 'unverified',
         source_files: document.source_files?.map((f) => f.name) ?? [],
         page_source_file: provision.page_source_file, page_from: provision.page_from, page_to: provision.page_to,
         effective_from: provision.effective_from, effective_to: provision.effective_to,
@@ -68,7 +82,8 @@ export async function researchLegalBasis({ courtCase, eventDate, learnerTimeline
     const documents = await LegalDocument.find({ law_number: { $in: numbers } }).select('-source_text').lean();
     const terms = getLegalSearchTerms([courtCase.title, courtCase.summary, ...records.filter((r) => r.sender_type === 'user').slice(-2).map((r) => r.content)].join(' '));
     const provisions = await LegalProvision.find({ document_id: { $in: documents.map((d) => d._id) }, paragraph: null, point: null, search_tokens: { $in: terms } }).lean();
-    const result = resolveLegalResearch({ courtCase, eventDate, learnerTimeline, records, documents, provisions });
+    const snapshots = await VbplSnapshot.find({ law_number: { $in: numbers } }).lean();
+    const result = resolveLegalResearch({ courtCase, eventDate, learnerTimeline, records, documents, provisions, snapshots });
     const missing = [...new Set(result.issues.flatMap((issue) => issue.missing_laws))];
     if (online && missing.length) {
       // Chỉ gửi số hiệu công khai; không gửi hồ sơ hoặc lời người học ra nguồn tra cứu.

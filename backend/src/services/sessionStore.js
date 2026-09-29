@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { CourtRecord, SimulationSession } from '../models/index.js';
 import { AppError } from '../utils/AppError.js';
 import { learnerCase } from './learnerPresentation.js';
+import { publicConversation } from './conversationPolicy.js';
 
 export const MAX_TURNS = 20;
 const LEASE_MS = 10 * 60_000;
@@ -27,13 +28,13 @@ export async function getRecords(session) {
   return [...legacy, ...(session.opening ? [session.opening] : []), ...(session.turns ?? []).flatMap((turn) => turn.records)];
 }
 
-export async function withSessionLock(session, action) {
+export async function withSessionLock(session, action, { leaseMs = LEASE_MS } = {}) {
   const token = randomUUID();
   const locked = await SimulationSession.findOneAndUpdate({
     _id: session._id,
     user_id: session.user_id,
     $or: [{ operation: null }, { 'operation.expires_at': { $lte: new Date() } }],
-  }, { $set: { operation: { token, expires_at: new Date(Date.now() + LEASE_MS) } } }, { returnDocument: 'after' });
+  }, { $set: { operation: { token, expires_at: new Date(Date.now() + leaseMs) } } }, { returnDocument: 'after' });
   if (!locked) throw new AppError('Phiên đang xử lý một yêu cầu. Vui lòng chờ rồi thử lại.', 409, 'SESSION_BUSY');
   try {
     return await action(locked, { _id: locked._id, 'operation.token': token });
@@ -46,6 +47,6 @@ export async function withSessionLock(session, action) {
 export function publicSession(session) {
   const value = session.toObject ? session.toObject() : session;
   const { feedback, feedback_prompted_at, feedback_submitted_at, operation, turns, evaluation, opening, case_snapshot, creation_request_id, ...safe } = value;
-  return { ...safe, ...(case_snapshot ? { case_id: learnerCase(case_snapshot) } : typeof safe.case_id === 'object' && safe.case_id?.title ? { case_id: learnerCase(safe.case_id) } : {}), max_turns: MAX_TURNS,
+  return { ...safe, conversation: publicConversation(value, Boolean(operation && new Date(operation.expires_at) > new Date())), ...(case_snapshot ? { case_id: learnerCase(case_snapshot) } : typeof safe.case_id === 'object' && safe.case_id?.title ? { case_id: learnerCase(safe.case_id) } : {}), max_turns: MAX_TURNS,
     processing: Boolean(operation && new Date(operation.expires_at) > new Date()) };
 }

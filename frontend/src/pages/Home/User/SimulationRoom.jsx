@@ -11,6 +11,7 @@ import LegalAssistant from '../../../components/LegalAssistant';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import api, { getApiError } from '../../../services/api';
+import { postDialogue } from '../../../services/dialogueStream';
 import { roleLabel } from '../../../services/simulation';
 import { draftKey, readDraft, saveDraft } from '../../../services/auth';
 
@@ -24,6 +25,7 @@ function Room({ sessionId }) {
   const [selectedId, setSelectedId] = useState(null);
   const [fullRecord, setFullRecord] = useState(null);
   const [submittedContent, setSubmittedContent] = useState('');
+  const [streamedSpeech, setStreamedSpeech] = useState(null);
   const argumentRef = useRef(null);
   const [panel, setPanel] = useState(null);
   const [insertError, setInsertError] = useState('');
@@ -36,6 +38,8 @@ function Room({ sessionId }) {
   const [confirmEnd, setConfirmEnd] = useState(false);
   const [reload, setReload] = useState(0);
   const [eventDate, setEventDate] = useState('');
+  const [slow, setSlow] = useState(false);
+  const [waitExpired, setWaitExpired] = useState(false);
   const [state, setState] = useState({ loading: true, sending: false, ending: false, error: '' });
   useEffect(() => { saveDraft(storageKey, draft); }, [storageKey, draft]);
   useEffect(() => {
@@ -61,20 +65,36 @@ function Room({ sessionId }) {
   const userTurns = records.filter((r) => r.sender_type === 'user').length;
   const completed = session?.status === 'completed';
   const disabled = state.sending || state.ending || completed || !session || !session.case_event_date || session.processing;
+  const conversation = session?.conversation;
+  useEffect(() => {
+    if (conversation?.status !== 'awaiting_continue' || selectedId || state.sending) return;
+    api.post(`/v1/sessions/${sessionId}/dialogue/seen`, { record_id: conversation.current_record_id }).catch(() => { /* Không tiến lượt nếu mất mạng khi ghi nhận hiển thị. */ });
+  }, [conversation?.status, conversation?.current_record_id, selectedId, state.sending, sessionId]);
+  const preparing = state.sending || conversation?.status === 'generating';
+  useEffect(() => {
+    if (!preparing) return;
+    const timer = setTimeout(() => setSlow(true), 30_000);
+    const deadline = setTimeout(() => setWaitExpired(true), 150_000);
+    return () => { clearTimeout(timer); clearTimeout(deadline); setSlow(false); setWaitExpired(false); };
+  }, [preparing]);
 
   useEffect(() => {
-    if (!session?.processing || state.ending || state.sending) return;
+    if ((!session?.processing && !state.sending) || state.ending) return;
     let active = true;
-    const timer = setInterval(async () => {
+    let timer;
+    async function poll() {
       try {
-        const { data } = await api.get(`/v1/sessions/${sessionId}`);
+        const [{ data }, history] = await Promise.all([api.get(`/v1/sessions/${sessionId}`), api.get(`/v1/sessions/${sessionId}/records`)]);
         if (!active) return;
         setSession(data.data);
+        setRecords(history.data.data);
         if (data.data.status === 'completed') navigate(`/simulation/${sessionId}/result`, { replace: true });
-        else if (!data.data.processing) setReload((value) => value + 1);
+        else if (!data.data.processing && !state.sending) setReload((value) => value + 1);
       } catch { if (active) setState((current) => ({ ...current, error: 'Chưa kiểm tra được tiến trình. Kiểm tra kết nối và chọn Tải lại dữ liệu.' })); }
-    }, 3000);
-    return () => { active = false; clearInterval(timer); };
+      if (active) timer = setTimeout(poll, 3000);
+    }
+    timer = setTimeout(poll, 3000);
+    return () => { active = false; clearTimeout(timer); };
   }, [session?.processing, sessionId, state.ending, state.sending, navigate]);
 
   function insertIntoArgument(text) {
@@ -113,13 +133,15 @@ function Room({ sessionId }) {
 
   async function send(event) {
     event.preventDefault();
-    if (busy.current || disabled || draft.content.trim().length < 10) return;
+    if (busy.current || disabled || (conversation && conversation.status !== 'learner') || draft.content.trim().length < 1) return;
     busy.current = true;
     setSubmittedContent(draft.content);
     setState((s) => ({ ...s, sending: true, error: '' }));
     try {
-      const { data } = await api.post(`/v1/sessions/${sessionId}/messages`, { ...draft, expected_turn_count: userTurns, evidence_ids: evidenceIds(draft.content, session.case_id.evidence_inventory), legal_reference_ids: [...new Set([...draft.content.matchAll(/\[PL:([^\]\s]+)\]/gu)].map((match) => match[1]))] });
-      setRecords((current) => [...new Map([...current, ...data.data].map((r) => [r._id, r])).values()]);
+      const command = { ...draft, ...(conversation ? { action: 'submit', revision: conversation.revision } : {}), expected_turn_count: userTurns, evidence_ids: evidenceIds(draft.content, session.case_id.evidence_inventory), legal_reference_ids: draft.content.includes('[PL:') ? [...new Set([...draft.content.matchAll(/\[PL:([^\]\s]+)\]/gu)].map((match) => match[1]))] : undefined };
+      const { data } = conversation ? await postDialogue(sessionId, command, setStreamedSpeech) : await api.post(`/v1/sessions/${sessionId}/messages`, command);
+      if (conversation) { setSession(data.data.session); setRecords(data.data.records); }
+      else setRecords((current) => [...new Map([...current, ...data.data].map((r) => [r._id, r])).values()]);
       setSelectedId(null);
       setDraft({ content: '', request_id: crypto.randomUUID() });
     } catch (error) {
@@ -130,14 +152,33 @@ function Room({ sessionId }) {
         setSession(a.data.data); setRecords(b.data.data);
         if (b.data.data.some((r) => r.request_id === draft.request_id)) {
           setDraft({ content: '', request_id: crypto.randomUUID() });
-          setState((s) => ({ ...s, error: '' }));
+          if (a.data.data.conversation?.status !== 'failed') setState((s) => ({ ...s, error: '' }));
         }
       } catch { /* Giữ bản nháp để thử lại cùng mã yêu cầu khi có mạng. */ }
     } finally {
       busy.current = false;
       setSubmittedContent('');
+      setStreamedSpeech(null);
       setState((s) => ({ ...s, sending: false }));
     }
+  }
+
+  async function continueDialogue(action) {
+    if (busy.current || disabled) return;
+    busy.current = true;
+    setSelectedId(null);
+    setState(s => ({ ...s, sending: true, error: '' }));
+    try {
+      const { data } = await postDialogue(sessionId, { action, revision: conversation.revision }, setStreamedSpeech);
+      setSession(data.data.session); setRecords(data.data.records);
+      requestAnimationFrame(() => {
+        if (data.data.session.conversation.status === 'learner') argumentRef.current?.focus();
+        else document.querySelector('.speech-content')?.focus();
+      });
+    } catch (error) {
+      setState(s => ({ ...s, error: getApiError(error, 'Chưa tạo được lời thoại tiếp theo. Các lượt đã lưu vẫn được giữ lại; hãy thử lại.') }));
+      setReload(n => n + 1);
+    } finally { busy.current = false; setStreamedSpeech(null); setState(s => ({ ...s, sending: false })); }
   }
 
   async function complete() {
@@ -152,11 +193,18 @@ function Room({ sessionId }) {
       navigate(`/simulation/${sessionId}/result`);
     } catch (error) {
       setConfirmEnd(false);
-      setState((s) => ({ ...s, error: getApiError(error, 'Chưa thể chấm điểm. Các lượt đã gửi vẫn được giữ lại. Vui lòng thử lại.') }));
+      // Thoát trạng thái chấm ngay khi POST lỗi, không đợi thêm lần đọc trạng thái.
+      setState((s) => ({ ...s, ending: false, error: getApiError(error, 'Chưa thể chấm điểm. Vui lòng thử lại.') }));
+      if (error.response?.status >= 500 && /^AI_/u.test(error.response.data?.error?.code ?? '')) {
+        saveDraft(completionKey, null);
+        setSession(current => ({ ...current, processing: false }));
+        return;
+      }
       try {
         const { data } = await api.get(`/v1/sessions/${sessionId}`);
         setSession(data.data);
         if (data.data.status === 'completed') navigate(`/simulation/${sessionId}/result`, { replace: true });
+        else if (!data.data.processing) saveDraft(completionKey, null);
       } catch { /* Giữ thông báo và cho phép tải lại để kiểm tra kết quả đã lưu. */ }
     } finally {
       busy.current = false;
@@ -165,10 +213,23 @@ function Room({ sessionId }) {
   }
 
   function selectRecord(id) { setSelectedId(id); setPanel(null); }
-  const view = courtroomView({ records, selectedId, sending: state.sending && Boolean(submittedContent), pendingContent: submittedContent, processing: session?.processing, ending: state.ending });
+  function returnToCurrent() {
+    setSelectedId(null);
+    requestAnimationFrame(() => document.querySelector('.speech-content')?.focus());
+  }
+  const view = streamedSpeech?.content && state.sending ? { record: { _id: 'streaming', content: streamedSpeech.content, sender_type: streamedSpeech.role === 'judge' ? 'ai_judge' : 'ai_prosecutor' }, actor: streamedSpeech.role, streaming: true }
+    : courtroomView({ records, selectedId: selectedId ?? conversation?.current_record_id, sending: state.sending && Boolean(submittedContent) && !session?.processing, pendingContent: submittedContent, processing: session?.processing, ending: state.ending });
   const panelTitles = { guide: 'Hướng dẫn phiên tòa', case: 'Hồ sơ phiên tòa', assistant: 'Trợ lý luật', history: 'Hồ sơ phiên tòa', speech: 'Lời trình bày đầy đủ' };
-  const ready = !disabled && userTurns < (session?.max_turns ?? 20);
-  const status = state.ending ? 'Đang chấm điểm' : state.sending ? (submittedContent ? 'Đang chờ phản hồi' : 'Đang lưu ngày') : session?.processing ? (readDraft(completionKey)?.requested ? 'Đang chấm điểm' : 'Đang xử lý lượt trước') : completed ? 'Phiên đã kết thúc' : userTurns >= (session?.max_turns ?? 20) ? 'Đã đủ số lượt' : ready ? 'Đến lượt bạn' : 'Kiểm tra thông tin phiên';
+  const ready = !disabled && (!conversation || conversation.status === 'learner') && userTurns < (session?.max_turns ?? 20);
+  const reviewing = Boolean(selectedId && selectedId !== (conversation?.current_record_id ?? records.at(-1)?._id));
+  const nextSpeaker = conversation?.next_speaker === 'judge' ? 'Chủ tọa' : conversation?.next_speaker === 'opponent' ? 'Bên đối lập' : 'Bạn';
+  const status = state.ending ? 'Đang chấm điểm' : state.sending ? (conversation ? 'Đang chuẩn bị lượt tiếp theo' : submittedContent ? 'Đang chờ phản hồi' : 'Đang lưu ngày') : session?.processing ? (readDraft(completionKey)?.requested ? 'Đang chấm điểm' : 'Đang xử lý lượt trước') : completed ? 'Phiên đã kết thúc' : userTurns >= (session?.max_turns ?? 20) ? 'Đã đủ số lượt' : ready ? 'Đến lượt bạn' : conversation?.status === 'awaiting_continue' ? 'Đọc lời thoại rồi bấm Tiếp tục' : conversation?.status === 'failed' ? 'Có thể thử lại lời thoại' : 'Kiểm tra thông tin phiên';
+  const speechControls = reviewing ? <div className="speech-controls"><button type="button" className="dialogue-next" onClick={returnToCurrent}>Trở về lượt hiện tại</button></div> : conversation && !completed ? <div className="speech-controls">
+      {preparing && <p role="status" aria-live="polite">{streamedSpeech?.content ? 'Đang nhận lời thoại. Bạn có thể đọc phần đã hiện.' : conversation.next_speaker === 'judge' ? 'Chủ tọa đang chuẩn bị câu hỏi…' : conversation.next_speaker === 'opponent' ? 'Bên đối lập đang chuẩn bị lời đáp…' : 'Đang gửi lập luận…'}</p>}
+      {slow && preparing && <p role="status">{waitExpired ? 'Chưa xác nhận được kết quả. Kiểm tra kết nối và tiến trình trước khi thử lại để tránh gửi trùng.' : 'Phản hồi đang lâu hơn thường lệ.'} <button type="button" onClick={() => setReload(n => n + 1)}>Kiểm tra tiến trình</button></p>}
+      {conversation.status === 'awaiting_continue' && <button type="button" className="dialogue-next" disabled={disabled} onClick={() => continueDialogue('advance')}>{nextSpeaker === 'Bạn' ? 'Trình bày ý kiến' : `Tiếp tục: ${nextSpeaker}`} <span aria-hidden="true">→</span></button>}
+      {conversation.status === 'failed' && <button type="button" className="dialogue-next" disabled={disabled} onClick={() => continueDialogue('resume')}>Thử lại lời thoại</button>}
+    </div> : null;
   if (state.loading) return <main className="courtroom-page" role="status">Đang tải phiên tòa...</main>;
   return <main className="courtroom-page">
     {panel === 'guide' && <CourtroomGuide completed={completed} hasDialogue={Boolean(view.record)} onClose={() => setPanel(null)} />}
@@ -188,12 +249,12 @@ function Room({ sessionId }) {
     {insertError && !panel && <p role="alert" className="courtroom-notice">{insertError}</p>}
     {state.error && <div role="alert" className="courtroom-notice">{state.error}<button disabled={state.sending || state.ending} onClick={() => setReload((n) => n + 1)}>Tải lại dữ liệu</button></div>}
     {session && !session.case_event_date && !completed && <form onSubmit={saveEventDate} className="courtroom-notice"><p>Bổ sung ngày trong hồ sơ hoặc một ngày giả định cho bài tập để tiếp tục.</p><label>Ngày tra cứu <input required type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} className="m-2 rounded border p-2" /></label><button disabled={state.sending || !eventDate}>Lưu ngày</button></form>}
-    <div className="courtroom-workspace"><CourtroomStage session={session} view={view} records={records} onSelect={setSelectedId} onReadFull={(record) => { setFullRecord(record); setPanel('speech'); }} />
+    <div className="courtroom-workspace"><CourtroomStage speechControls={speechControls} session={session} preparationStalled={waitExpired} pendingSpeaker={state.sending && !submittedContent && ['judge', 'opponent'].includes(conversation?.next_speaker) ? conversation.next_speaker : null} view={view} records={records} onHistory={() => setPanel('history')} onReadFull={(record) => { setFullRecord(record); setPanel('speech'); }} />
     </div>
     {completed ? <p className="courtroom-notice">Phiên đã kết thúc. Đây là biên bản chỉ đọc.</p> : <form onSubmit={send} className="courtroom-composer">
-      <div className="composer-heading"><label htmlFor="argument">Lập luận của bạn</label><span role="status" className={'turn-indicator' + (ready ? '' : ' is-busy')}>{status}</span></div>
-      <div className="composer-fields"><textarea ref={argumentRef} onDrop={dropEvidence} onDragOver={(event) => { if (event.dataTransfer.types.includes(EVIDENCE_MIME)) { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; } }} id="argument" disabled={!ready} maxLength={4000} value={draft.content} onChange={(e) => setDraft({ content: e.target.value, request_id: crypto.randomUUID() })} placeholder="Trình bày luận điểm, liên hệ chứng cứ và trả lời vấn đề chủ tọa đặt ra…" /><button className="composer-send" disabled={!ready || draft.content.trim().length < 10}>Gửi lập luận <span aria-hidden="true">↗</span></button></div>
-      <div className="composer-foot"><span>{draft.content.length}/4000 · Bản nháp được giữ khi tải lại trang</span></div>{userTurns >= (session?.max_turns ?? 20) && <p>Đã đủ số lượt. Chọn Kết thúc và chấm điểm để xem kết quả.</p>}
+      <div className="composer-heading"><label htmlFor="argument">Lập luận của bạn</label>{!conversation && !ready && <span role="status" className="turn-indicator is-busy">{status}</span>}</div>
+      <div className="composer-fields"><textarea ref={argumentRef} onDrop={dropEvidence} onDragOver={(event) => { if (event.dataTransfer.types.includes(EVIDENCE_MIME)) { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; } }} id="argument" disabled={!ready} maxLength={4000} value={draft.content} onChange={(e) => setDraft({ content: e.target.value, request_id: crypto.randomUUID() })} placeholder="Trình bày luận điểm, liên hệ chứng cứ và trả lời vấn đề chủ tọa đặt ra…" /><button className="composer-send" disabled={!ready || draft.content.trim().length < 1}>Gửi lập luận <span aria-hidden="true">↗</span></button></div>
+      <div className="composer-foot"><span>{draft.content.length}/4000</span></div>{userTurns >= (session?.max_turns ?? 20) && <p>Đã đủ số lượt. Chọn Kết thúc và chấm điểm để xem kết quả.</p>}
     </form>}
   </main>;
 }

@@ -1,4 +1,3 @@
-const gazetteSearch = (lawNumber) => `https://congbao.chinhphu.vn/tim-kiem-van-ban.html?keyword=${encodeURIComponent(lawNumber)}`;
 
 export const legalAuthorities = Object.freeze({
   '45/2013/QH13': {
@@ -27,13 +26,13 @@ export const legalAuthorities = Object.freeze({
       note: 'Tệp gốc quy định Điều 190 và Điều 248 có hiệu lực từ 01/04/2024.',
     }],
     sourceStatus: 'amended_text_unavailable',
-    sourceUrl: gazetteSearch('31/2024/QH15'),
+    sourceUrl: '',
     amendments: [{
       lawNumber: '43/2024/QH15',
       title: 'Luật sửa đổi, bổ sung một số điều của Luật Đất đai số 31/2024/QH15, Luật Nhà ở số 27/2023/QH15, Luật Kinh doanh bất động sản số 29/2023/QH15 và Luật Các tổ chức tín dụng số 32/2024/QH15',
       promulgatedAt: '2024-06-29',
       effectiveFrom: '2024-08-01',
-      sourceUrl: gazetteSearch('43/2024/QH15'),
+      sourceUrl: '',
       note: 'Điều 1 Luật 43/2024/QH15 sửa khoản 1 Điều 252 để đưa ngày hiệu lực chung lên 01/08/2024. Chưa nhập đầy đủ nội dung sửa đổi và chuyển tiếp; không dùng tệp gốc làm căn cứ hiện hành.',
     }],
     temporalNote: 'Tệp gốc ghi ngày hiệu lực chung 01/01/2025 và ngoại lệ tại Điều 252. Luật 43/2024/QH15 thay đổi ngày hiệu lực và có sửa đổi nội dung; cần bản hợp nhất hoặc văn bản sửa đổi để xác định phiên bản điều khoản.',
@@ -48,8 +47,8 @@ export const legalAuthorities = Object.freeze({
     verifiedThrough: '2026-09-28',
     scopeLocator: 'Điều 1',
     effectiveRules: [],
-    sourceStatus: 'verified_current',
-    sourceUrl: 'https://congbao.chinhphu.vn/van-ban/luat-so-91-2015-qh13-18397.htm',
+    sourceStatus: 'unverified',
+    sourceUrl: '',
     amendments: [],
     temporalNote: 'Điều 689 trong tệp đính kèm ghi hiệu lực từ 01/01/2017. Cơ sở dữ liệu VBPL được tra cứu ngày 28/09/2026 ghi văn bản còn hiệu lực; không tìm thấy văn bản sửa đổi trực tiếp trong phạm vi tra cứu.',
   },
@@ -70,14 +69,14 @@ export const legalAuthorities = Object.freeze({
     }],
     sourceStatus: 'amended_text_unavailable',
     consolidatedSourceUrl: 'https://vbpl.vn/van-ban/chi-tiet/van-ban-hop-nhat-so-11-vbhn-vpqh-to-tung-dan-su--175590',
-    sourceUrl: gazetteSearch('92/2015/QH13'),
+    sourceUrl: '',
     amendments: [
       {
         lawNumber: '45/2019/QH14',
         title: 'Bộ luật Lao động',
         promulgatedAt: '2019-11-20',
         effectiveFrom: '2021-01-01',
-        sourceUrl: gazetteSearch('45/2019/QH14'),
+        sourceUrl: '',
         note: 'Bản hợp nhất 11/VBHN-VPQH liệt kê là văn bản sửa đổi Bộ luật Tố tụng dân sự.',
       },
       {
@@ -85,7 +84,7 @@ export const legalAuthorities = Object.freeze({
         title: 'Luật Doanh nghiệp',
         promulgatedAt: '2020-06-17',
         effectiveFrom: '2021-01-01',
-        sourceUrl: gazetteSearch('59/2020/QH14'),
+        sourceUrl: '',
         note: 'Bản hợp nhất 11/VBHN-VPQH liệt kê là văn bản sửa đổi Bộ luật Tố tụng dân sự.',
       },
       {
@@ -93,7 +92,7 @@ export const legalAuthorities = Object.freeze({
         title: 'Luật Phòng, chống bạo lực gia đình',
         promulgatedAt: '2022-11-14',
         effectiveFrom: '2023-07-01',
-        sourceUrl: gazetteSearch('13/2022/QH15'),
+        sourceUrl: '',
         note: 'Bản hợp nhất 11/VBHN-VPQH liệt kê là văn bản sửa đổi Bộ luật Tố tụng dân sự.',
       },
       {
@@ -101,7 +100,7 @@ export const legalAuthorities = Object.freeze({
         title: 'Luật Bảo vệ quyền lợi người tiêu dùng',
         promulgatedAt: '2023-06-20',
         effectiveFrom: '2024-07-01',
-        sourceUrl: gazetteSearch('19/2023/QH15'),
+        sourceUrl: '',
         note: 'Bản hợp nhất 11/VBHN-VPQH liệt kê là văn bản sửa đổi Bộ luật Tố tụng dân sự.',
       },
       {
@@ -109,7 +108,7 @@ export const legalAuthorities = Object.freeze({
         title: 'Luật Tổ chức Tòa án nhân dân',
         promulgatedAt: '2024-06-24',
         effectiveFrom: '2025-01-01',
-        sourceUrl: gazetteSearch('34/2024/QH15'),
+        sourceUrl: '',
         note: 'Bản hợp nhất 11/VBHN-VPQH liệt kê là văn bản sửa đổi Bộ luật Tố tụng dân sự.',
       },
       {
@@ -117,7 +116,7 @@ export const legalAuthorities = Object.freeze({
         title: 'Luật sửa đổi, bổ sung một số điều của Bộ luật Tố tụng dân sự, Luật Tố tụng hành chính, Luật Tư pháp người chưa thành niên, Luật Phá sản và Luật Hòa giải, đối thoại tại Tòa án',
         promulgatedAt: null,
         effectiveFrom: '2025-07-01',
-        sourceUrl: gazetteSearch('85/2025/QH15'),
+        sourceUrl: '',
         note: 'VBPL xác nhận sửa đổi trực tiếp và hiệu lực 01/07/2025. Chưa nhập đủ nội dung sửa đổi hoặc điều khoản chuyển tiếp.',
       },
     ],

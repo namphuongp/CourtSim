@@ -1,27 +1,39 @@
 import { createHash } from 'node:crypto';
 import LegalSourceCheck from '../models/LegalSourceCheck.js';
 import { legalAuthorities } from '../data/legalAuthorities.js';
+import { isVbplUrl } from '../../../shared/legalSourcePolicy.mjs';
 
-const ALLOWED_HOSTS = new Set(['vbpl.vn', 'congbao.chinhphu.vn', 'chinhphu.vn', 'datafiles.chinhphu.vn']);
 const inFlight = new Map();
 const TTL = 6 * 60 * 60 * 1000;
-export function isOfficialUrl(value) {
-  try { const url = new URL(value); return url.protocol === 'https:' && !url.username && !url.password && !url.port && ALLOWED_HOSTS.has(url.hostname); } catch { return false; }
-}
+export const isOfficialUrl = isVbplUrl;
 
-export async function fetchOfficialPage(url, fetcher = fetch) {
+export async function fetchOfficialPage(url, fetcher = fetch, { timeoutMs = 6000, maxBytes = 2_000_000 } = {}) {
   if (!isOfficialUrl(url)) throw new Error('Nguồn không được phép.');
-  // Không theo redirect để chặn chuyển sang host ngoài danh sách cho phép.
-  const response = await fetcher(url, { redirect: 'error', signal: AbortSignal.timeout(4000), headers: { Accept: 'text/html' } });
+  const signal = AbortSignal.timeout(timeoutMs);
+  const redirectsFollowed = [];
+  let response;
+  // Kiểm tra từng đích trước khi kết nối, dùng chung hạn chờ cho cả chuỗi chuyển hướng.
+  for (let redirects = 0; redirects <= 3; redirects++) {
+    if (!isOfficialUrl(url)) throw new Error('Nguồn không được phép.');
+    response = await fetcher(url, { redirect: 'manual', signal, headers: { Accept: 'text/html' } });
+    if (response.url && !isOfficialUrl(response.url)) throw new Error('Nguồn không được phép.');
+    if (![301, 302, 303, 307, 308].includes(response.status)) break;
+    await response.body?.cancel();
+    const location = response.headers.get('location');
+    if (!location || redirects === 3) throw new Error('Chuyển hướng nguồn không hợp lệ.');
+    const next = new URL(location, url).href;
+    redirectsFollowed.push({ url, status: response.status, location: next });
+    url = next;
+  }
   if (!response.ok || !/text\/html|text\/plain/i.test(response.headers.get('content-type') ?? '')) throw new Error('Nguồn không truy cập được.');
   const chunks = []; let length = 0;
   for await (const chunk of response.body) {
     length += chunk.length;
-    if (length > 2_000_000) throw new Error('Nguồn vượt giới hạn dung lượng.');
+    if (length > maxBytes) throw new Error('Nguồn vượt giới hạn dung lượng.');
     chunks.push(Buffer.from(chunk));
   }
   const bytes = Buffer.concat(chunks);
-  return { url, content: bytes.toString('utf8'), sha256: createHash('sha256').update(bytes).digest('hex'), http_status: response.status };
+  return { url, content: bytes.toString('utf8'), sha256: createHash('sha256').update(bytes).digest('hex'), http_status: response.status, redirects: redirectsFollowed };
 }
 
 export async function inspectOfficialSources(lawNumber, { fetcher = fetch, enabled = process.env.LEGAL_ONLINE_LOOKUP !== 'false' } = {}) {

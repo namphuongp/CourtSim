@@ -1,0 +1,5 @@
+:root { --courtsim-ink:#142e46; --courtsim-muted:#526b80; --courtsim-blue:#2459cf; --courtsim-background:#f7fafc; }
+.courtsim-brand { display:flex; align-items:center; font-size:25px; font-weight:800; letter-spacing:-1px; color:var(--courtsim-ink); text-decoration:none; }
+.courtsim-brand svg { margin-right:10px; color:var(--courtsim-blue); }
+.courtsim-brand span { color:var(--courtsim-blue); }
+@media(max-width:760px) { .courtsim-brand { font-size:23px; } }

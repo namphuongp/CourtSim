@@ -11,7 +11,7 @@ export function courtroomRoles(session) {
   };
 }
 
-// Backend trả cả lượt nguyên tử. Không suy đoán vai đang sinh nội dung trong lúc chờ.
+// Chọn lời đang đọc; người đang chuẩn bị do trạng thái backend quyết định ở Stage.
 export function courtroomView({ records, selectedId, sending, pendingContent, processing, ending }) {
   if (sending) return { record: { _id: 'pending', sender_type: 'user', content: pendingContent }, actor: 'learner', pending: true };
   const record = records.find((r) => r._id === selectedId) ?? records.at(-1);

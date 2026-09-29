@@ -1,4 +1,4 @@
-.landing-page { --lp-ink:#142e46; --lp-muted:#526b80; --lp-blue:#2459cf; background:#f7fafc; color:var(--lp-ink); overflow-x:clip; }
+.landing-page { --lp-ink:var(--courtsim-ink); --lp-muted:var(--courtsim-muted); --lp-blue:var(--courtsim-blue); background:#f7fafc; color:var(--lp-ink); overflow-x:clip; }
 .landing-page a { text-decoration:none; }
 .landing-page a:focus-visible { outline:3px solid #2459cf; outline-offset:5px; border-radius:5px; }
 .landing-page p { color:var(--lp-muted); line-height:1.75; }

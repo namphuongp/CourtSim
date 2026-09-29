@@ -17,6 +17,14 @@ try {
   const legacy = await User.countDocuments({ email_verified: { $exists: false } });
   console.log({ mode: apply ? 'apply' : 'dry-run', legacyAccounts: legacy });
   if (apply) {
+    // Tính lại phương thức từ thông tin đăng nhập thực, không suy ra quyền từ mảng cũ.
+    await User.collection.updateMany({}, [{ $set: {
+      auth_version: { $ifNull: ['$auth_version', 0] },
+      auth_providers: { $concatArrays: [
+        { $cond: [{ $gt: [{ $strLenCP: { $ifNull: ['$password_hash', ''] } }, 0] }, ['password'], []] },
+        { $cond: [{ $gt: [{ $strLenCP: { $ifNull: ['$google_id', ''] } }, 0] }, ['google'], []] },
+      ] },
+    } }]);
     await User.collection.updateMany({}, [{ $set: { email: { $toLower: { $trim: { input: '$email' } } }, email_verified: { $ifNull: ['$email_verified', false] }, auth_providers: { $ifNull: ['$auth_providers', { $cond: [{ $ne: [{ $ifNull: ['$password_hash', null] }, null] }, ['password'], []] }] } } }]);
     await User.collection.updateMany({ google_id: null }, { $unset: { google_id: '' } });
     for (const model of [User, PendingRegistration, AuthSession, AuthRateBucket, OAuthAttempt]) await model.createIndexes();

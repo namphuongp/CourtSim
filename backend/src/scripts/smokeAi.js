@@ -13,8 +13,8 @@ const courtCase = {
 const session = {case_event_date:'2025-01-01',user_court_role:'defense_lawyer',difficulty:'beginner'};
 const user = {_id:randomUUID(),sender_type:'user',sender_name:'Người học giả định',content:'Tôi bảo vệ bên vay. Hợp đồng và sao kê thể hiện việc cho vay, nhưng chưa chứng minh đã trả tiền. Tôi đề nghị đối chiếu biên nhận và lời khai, không khẳng định khoản vay đã được hoàn trả khi chưa có chứng cứ.'};
 
-if (new URL(env.AI_BASE_URL).hostname !== 'generativelanguage.googleapis.com') {
-  throw new Error('Bài kiểm thử này chỉ được cấu hình cho endpoint Gemini chính thức.');
+if (!['https://generativelanguage.googleapis.com', 'https://api.openai.com'].includes(new URL(env.AI_BASE_URL).origin)) {
+  throw new Error('Bài kiểm thử này chỉ dùng endpoint Gemini hoặc OpenAI chính thức.');
 }
 try {
   await mongoose.connect(env.MONGO_URI,{serverSelectionTimeoutMS:5000});

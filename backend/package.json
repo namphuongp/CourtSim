@@ -11,8 +11,11 @@
     "legal:import": "node src/scripts/importLegalDocuments.js",
     "sample:import": "node src/scripts/importSampleCase.js",
     "legal:check": "node src/scripts/checkLegalSources.js",
+    "legal:smoke": "node src/scripts/smokeVbpl.js",
+    "legal:verify": "node src/scripts/verifyVbplDocument.js",
     "legal:review": "node src/scripts/reviewLegalVersion.js",
-    "auth:migrate": "node src/scripts/migrateAuth.js"
+    "auth:migrate": "node src/scripts/migrateAuth.js",
+    "admin:indexes": "node src/scripts/createAdminIndexes.js"
   },
   "keywords": [],
   "author": "",
@@ -25,7 +28,6 @@
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.7.0",
-    "multer": "^2.1.1",
     "pdfjs-dist": "^4.10.38",
     "word-extractor": "^1.0.4"
   },

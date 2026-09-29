@@ -1,3 +1,4 @@
+import { scoreSummary } from '../../../shared/scorePresentation.mjs';
 import LegalAssistantExchange from '../models/LegalAssistantExchange.js';
 import { askLegalAssistant, publicAssistantExchange, validateLegalReferences } from '../services/legalAssistantService.js';
 import { validateEvidenceReferences } from '../services/caseEvidence.js';
@@ -12,6 +13,8 @@ import { evaluateSession, generateDebateTurn } from '../services/simulationServi
 import { isValidDateOnly } from '../services/legalRetrievalService.js';
 import { MAX_TURNS, getRecords, publicSession, readRequestId, replayTurn, withSessionLock } from '../services/sessionStore.js';
 import { researchLegalBasis } from '../services/legalResearchService.js';
+import { consumeAuthLimit } from '../middlewares/rateLimit.js';
+import { runConversation } from '../services/conversationService.js';
 
 const router = Router();
 const allowedRoles = ['defense_lawyer', 'plaintiff_lawyer'];
@@ -44,6 +47,7 @@ router.post('/', asyncHandler(async (request, response) => {
   const filter = { user_id: request.auth.userId, creation_request_id: requestId };
   let session = await SimulationSession.findOne(filter);
   if (!session) {
+    await consumeAuthLimit(`session-create:${request.auth.userId}`, 20);
     const courtCase = await Case.findById(caseId).lean();
     if (!courtCase) throw new AppError('Không tìm thấy vụ án.', 404, 'CASE_NOT_FOUND');
     if (courtCase.reference_date && eventDate !== courtCase.reference_date) {
@@ -76,7 +80,7 @@ router.get('/', asyncHandler(async (request, response) => {
   const bySession = new Map(legacyResults.map((result) => [String(result.session_id), result]));
   response.json({ data: sessions.map((session) => {
     const result = session.evaluation ?? bySession.get(String(session._id));
-    return { ...publicSession(session), result: result ? { score: result.score, rubric_scores: result.rubric_scores, rubric_version: result.rubric_version, assessed_max: result.assessed_max, score_scope: result.score_scope } : null };
+    return { ...publicSession(session), result: result ? { score: scoreSummary(result).score, earned_score: result.earned_score, assessment_status: result.assessment_status, rubric_scores: result.rubric_scores, rubric_version: result.rubric_version, assessed_max: result.assessed_max, score_scope: result.score_scope } : null };
   }) });
 }));
 
@@ -107,6 +111,8 @@ router.get('/:sessionId/records', asyncHandler(async (request, response) => {
 
 router.get('/:sessionId/legal-basis', asyncHandler(async (request, response) => {
   const session = await getOwnedSession(request.params.sessionId, request.auth.userId);
+  await consumeAuthLimit(`legal-basis:${request.auth.userId}`, 30);
+  await consumeAuthLimit('legal-assistant:outbound', 120);
   const courtCase = await getCase(session);
   response.json({ data: learnerResearch(await researchLegalBasis({ courtCase, eventDate: session.case_event_date, records: await getRecords(session) })) });
 }));
@@ -114,7 +120,7 @@ router.get('/:sessionId/legal-basis', asyncHandler(async (request, response) => 
 router.get('/:sessionId/assistant', asyncHandler(async (request, response) => {
   const session = await getOwnedSession(request.params.sessionId, request.auth.userId);
   const items = await LegalAssistantExchange.find({ session_id: session._id, user_id: session.user_id }).sort({ created_at: 1 }).limit(40).lean();
-  response.json({ data: items.map(publicAssistantExchange) });
+  response.json({ data: items.map(item => publicAssistantExchange(item)) });
 }));
 
 router.post('/:sessionId/assistant', asyncHandler(async (request, response) => {
@@ -123,20 +129,24 @@ router.post('/:sessionId/assistant', asyncHandler(async (request, response) => {
   const requestId = readRequestId(request.body?.request_id);
   const session = await getOwnedSession(request.params.sessionId, request.auth.userId);
   const courtCase = await getCase(session);
+  await consumeAuthLimit(`legal-assistant:${request.auth.userId}`, 30);
+  await consumeAuthLimit('legal-assistant:outbound', 120);
   response.json({ data: await askLegalAssistant({ session, courtCase, question, requestId }) });
 }));
 
 router.post('/:sessionId/messages', asyncHandler(async (request, response) => {
   const content = typeof request.body?.content === 'string' ? request.body.content.trim() : '';
-  if (content.length < 10 || content.length > 4_000) throw new AppError('Lập luận phải có từ 10 đến 4.000 ký tự.');
+  if (content.length < 1 || content.length > 4_000) throw new AppError('Vui lòng nhập ý kiến, tối đa 4.000 ký tự.');
   const requestId = readRequestId(request.body?.request_id);
   const session = await getOwnedSession(request.params.sessionId, request.auth.userId);
+  if (session.conversation && session.conversation.status !== 'learner') throw new AppError('Hãy đọc hết lượt hiện tại trước khi gửi lập luận mới.', 409, 'TURN_NOT_INVITED');
   const caseForReferences = await getCase(session);
   const evidenceIds = validateEvidenceReferences(caseForReferences, content, request.body.evidence_ids);
   const legalCitations = await validateLegalReferences(session, content, request.body.legal_reference_ids);
   const replay = replayTurn(session, requestId, content);
   if (replay) return response.json({ data: replay.map((r) => learnerRecord(r, caseForReferences)) });
   const records = await withSessionLock(session, async (locked, fence) => {
+    if (locked.conversation && locked.conversation.status !== 'learner') throw new AppError('Hãy đọc hết lượt hiện tại trước khi gửi lập luận mới.', 409, 'TURN_NOT_INVITED');
     const existing = replayTurn(locked, requestId, content);
     if (existing) return existing;
     if (locked.status !== 'ongoing') throw new AppError('Phiên đã kết thúc. Bạn có thể xem lại biên bản và kết quả.', 409, 'SESSION_COMPLETED');
@@ -158,6 +168,52 @@ router.post('/:sessionId/messages', asyncHandler(async (request, response) => {
   response.status(201).json({ data: records.map((r) => learnerRecord(r, caseForReferences)) });
 }));
 
+router.post('/:sessionId/dialogue/seen', asyncHandler(async (request, response) => {
+  const session = await getOwnedSession(request.params.sessionId, request.auth.userId);
+  const state = session.conversation;
+  const recordId = request.body?.record_id;
+  if (state?.status === 'awaiting_continue' && recordId === state.current_record_id && state.cursor > 0) {
+    // Chỉ xác nhận lời đang hiện, không thay cursor hoặc gọi model khi xem lịch sử.
+    const path = `turns.${state.turn_index}.records.${state.cursor}.displayed_at`;
+    await SimulationSession.updateOne({ _id: session._id, user_id: session.user_id,
+      'conversation.current_record_id': recordId, [path]: null }, { $set: { [path]: new Date() } });
+  }
+  response.sendStatus(204);
+}));
+
+router.post('/:sessionId/dialogue', asyncHandler(async (request, response) => {
+  const session = await getOwnedSession(request.params.sessionId, request.auth.userId);
+  const { action, revision } = request.body ?? {};
+  if (!['submit', 'advance', 'resume'].includes(action) || !Number.isSafeInteger(revision) || revision < 0) throw new AppError('Thao tác phiên không hợp lệ.');
+  const command = { action, revision };
+  if (action === 'submit') {
+    const content = typeof request.body.content === 'string' ? request.body.content.trim() : '';
+    if (content.length < 1 || content.length > 4000) throw new AppError('Vui lòng nhập ý kiến, tối đa 4.000 ký tự.');
+    Object.assign(command, { content, requestId: readRequestId(request.body.request_id),
+      evidenceIds: validateEvidenceReferences(await getCase(session), content, request.body.evidence_ids),
+      citations: await validateLegalReferences(session, content, request.body.legal_reference_ids) });
+  }
+  if (!session.case_snapshot) session.case_snapshot = await getCase(session);
+  const streaming = request.get('accept')?.includes('text/event-stream');
+  const started = performance.now();
+  const emit = value => { if (!response.destroyed && !response.writableEnded) response.write(`data: ${JSON.stringify(value)}\n\n`); };
+  if (streaming) {
+    response.set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache, no-transform', 'X-Accel-Buffering': 'no' });
+    response.flushHeaders();
+  }
+  try {
+    const timings = await runConversation(session, command, streaming ? { onProgress: speech => emit({ type: 'speech', ...speech }) } : {});
+    const saved = await getOwnedSession(session._id, request.auth.userId);
+    const result = { data: { session: publicSession(saved), records: (await getRecords(saved)).map(r => learnerRecord(r, session.case_snapshot)) } };
+    if (streaming) { emit({ type: 'complete', result, timings: { ...timings, total_ms: performance.now() - started } }); response.end(); }
+    else response.json(result);
+  } catch (error) {
+    if (!streaming) throw error;
+    emit({ type: 'error', error: { code: error.code ?? 'INTERNAL_ERROR', message: error instanceof AppError ? error.message : 'Chưa tạo được lời thoại. Các lượt đã gửi vẫn được giữ lại.' } });
+    response.end();
+  }
+}));
+
 router.post('/:sessionId/complete', asyncHandler(async (request, response) => {
   const session = await getOwnedSession(request.params.sessionId, request.auth.userId);
   const result = await withSessionLock(session, async (locked, fence) => {
@@ -174,7 +230,7 @@ router.post('/:sessionId/complete', asyncHandler(async (request, response) => {
     const saved = await SimulationSession.updateOne(fence, { $set: { evaluation: result, status: 'completed', completed_at: new Date() } });
     if (!saved.matchedCount) throw new AppError('Yêu cầu đã hết thời gian xử lý. Vui lòng tải lại phiên.', 409, 'SESSION_LOCK_EXPIRED');
     return result;
-  });
+  }, { leaseMs: 210_000 });
   response.json({ data: learnerEvaluation(result, session.case_snapshot ?? await Case.findById(session.case_id).lean() ?? {}) });
 }));
 

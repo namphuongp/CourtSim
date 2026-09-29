@@ -1,0 +1,47 @@
+.account-subtitle { color:var(--courtsim-muted); margin-bottom:30px; }
+.account-layout { display:grid; grid-template-columns:225px minmax(0,1fr); gap:32px; }
+.account-layout>nav { display:flex; flex-direction:column; gap:7px; align-self:start; }
+.account-layout>nav a { display:flex; align-items:center; gap:11px; border-radius:9px; padding:13px 16px; color:var(--courtsim-muted); font-weight:600; }
+.account-layout>nav a.active { color:var(--courtsim-blue); background:#e7effd; }
+.account-page a { text-decoration:none; }
+.account-page a:hover { color:#194bb2; text-decoration:underline; }
+.account-card { background:#fff; border:1px solid #d9e4ef; border-radius:14px; padding:28px; margin-bottom:24px; min-width:0; }
+.account-card h2 { font-size:22px; margin:0 0 12px; }
+.account-card h3 { font-size:17px; }
+.account-card p,.account-proof p { margin:10px 0; overflow-wrap:anywhere; }
+.account-card-heading { display:flex; align-items:center; gap:18px; margin-bottom:28px; }
+.account-card-heading p { color:var(--courtsim-muted); font-size:14px; margin:0; }
+.account-avatar { display:flex; justify-content:center; align-items:center; flex-shrink:0; width:64px; height:64px; font-size:29px; font-weight:700; color:var(--courtsim-blue); background:#e9f0ff; border:1px solid #c7d8f8; border-radius:50%; }
+.account-page button,.account-proof button { border:1px solid #becde0; color:#275280; border-radius:8px; padding:10px 15px; background:white; cursor:pointer; min-height:42px; }
+.account-page button:hover,.account-proof button:hover { background:#eef4fe; }
+.account-page button:disabled,.account-proof button:disabled { opacity:.6; cursor:not-allowed; }
+.account-page input,.account-proof input { display:block; width:100%; min-width:0; padding:11px 13px; border:1px solid #b7c9dc; border-radius:8px; background:white; font-size:16px; min-height:46px; color:#24435e; }
+.account-page input[readonly] { background:#f4f7fb; color:#62778a; }
+.account-page label,.account-proof label { display:block; font-size:14px; font-weight:600; margin:17px 0 7px; }
+.account-page fieldset,.account-proof fieldset { min-width:0; border:0; margin:0; padding:0; }
+.account-page .account-primary,.account-proof .account-primary { color:#fff; background:var(--courtsim-blue); border-color:var(--courtsim-blue); }
+.account-page .account-primary:hover,.account-proof .account-primary:hover { background:#194cae; }
+.account-page .account-danger { color:#a03043; border-color:#dfb9c1; }
+.account-page .account-help,.account-proof .account-help { font-size:13px; line-height:1.7; color:var(--courtsim-muted); }
+.account-error { color:#a52d3c; background:#fff3f3; border:1px solid #efc6ca; padding:11px 13px; border-radius:8px; }
+.account-success { color:#176247; background:#edf9f3; border:1px solid #bce3d0; padding:11px 13px; border-radius:8px; }
+.account-verified { color:#176247; font-size:13px; }
+.account-actions { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-top:20px; }
+.account-session-list { margin:20px 0; padding:0; list-style:none; }
+.account-session-list li { display:flex; align-items:flex-start; gap:14px; padding:18px 0; border-bottom:1px solid #e2eaf2; }
+.account-session-list svg { flex-shrink:0; color:#627a96; margin-top:5px; }
+.account-session-list p { color:var(--courtsim-muted); font-size:13px; margin:5px 0; }
+.account-tag { display:inline-block; margin-left:10px; border-radius:5px; background:#eaf3fe; color:var(--courtsim-blue); padding:2px 8px; font-size:12px; }
+.account-provider { display:flex; align-items:flex-start; gap:18px; padding:22px 0; border-bottom:1px solid #e2eaf2; }
+.account-provider svg { flex-shrink:0; margin-top:4px; }
+.account-provider>div { min-width:0; }
+.account-proof { color:#29455e; }
+.account-proof>button { margin-top:12px; }
+.account-page .auth-password,.account-proof .auth-password { position:relative; }
+.account-page .auth-password input,.account-proof .auth-password input { padding-right:52px; }
+.account-page .auth-password button,.account-proof .auth-password button { position:absolute; top:3px; right:3px; border:0; padding:8px; min-height:40px; }
+.account-page .auth-label-row,.account-proof .auth-label-row { display:block; }
+.account-page :focus-visible,.account-proof :focus-visible { outline:3px solid #6ca0f0; outline-offset:3px; }
+@media(max-width:760px) { .account-layout { grid-template-columns:1fr; gap:18px; } .account-layout>nav { flex-direction:row; flex-wrap:wrap; gap:6px; } .account-layout>nav a { padding:10px 12px; font-size:13px; gap:6px; } .account-card { padding:21px; }  }
+@media(max-width:420px) { .account-card { padding:18px; } .account-layout>nav a { padding:9px; } .account-layout>nav svg { display:none; } .account-tag { margin:6px 0; display:table; } .account-card-heading { gap:12px; } .account-actions button { width:100%; } }
+@media(prefers-reduced-motion:reduce) { .account-page *, .account-proof * { transition:none; } }

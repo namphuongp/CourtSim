@@ -1,4 +1,5 @@
 import { isValidDateOnly } from './legalTimeline.js';
+import { hasVerifiedSource } from '../../../shared/legalSourcePolicy.mjs';
 export { isValidDateOnly } from './legalTimeline.js';
 import { legalAuthorities } from '../data/legalAuthorities.js';
 import { LegalDocument, LegalProvision } from '../models/index.js';
@@ -17,7 +18,7 @@ export function isProvisionEffectiveOn(provision, eventDate) {
 }
 
 export function isCitationEligibleOnDate(authority, eventDate) {
-  return authority.source_status === 'verified_current'
+  return hasVerifiedSource(authority) && authority.source_status === 'verified_current'
     && (!authority.verified_through || (isValidDateOnly(authority.verified_through) && eventDate <= authority.verified_through))
     && isProvisionEffectiveOn({
       effective_from: authority.effective_from,

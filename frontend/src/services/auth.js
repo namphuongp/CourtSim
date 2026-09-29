@@ -1,18 +1,23 @@
+let activeUser = null;
 export function getCurrentUser() {
-  try { return JSON.parse(localStorage.getItem('currentUser') ?? 'null'); } catch { return null; }
+  try { return activeUser ?? JSON.parse(localStorage.getItem('currentUser') ?? 'null'); } catch { return activeUser; }
 }
 export function clearAuth() {
-  for (const key of ['userToken', 'userRole', 'currentUser']) localStorage.removeItem(key);
+  activeUser = null;
+  try { for (const key of ['userToken', 'userRole', 'currentUser']) localStorage.removeItem(key); } catch { /* Cookie vẫn do backend thu hồi khi đăng xuất. */ }
 }
 export function setCurrentUser(user) {
   clearAuth();
   if (user?.id) {
-    localStorage.setItem('currentUser', JSON.stringify(user));
-    localStorage.setItem('userRole', user.role);
+    activeUser = user;
+    try {
+      localStorage.setItem('currentUser', JSON.stringify(user));
+      localStorage.setItem('userRole', user.role);
+    } catch { /* Trình duyệt chặn storage vẫn dùng phiên cookie và dữ liệu trong bộ nhớ. */ }
   }
 }
 export function safeReturnPath(value) {
-  return typeof value === 'string' && /^\/(?:dashboard|simulation|admin)(?:\/|$)/.test(value) ? value : '/dashboard';
+  return typeof value === 'string' && /^\/(?:dashboard|simulation|admin|account)(?:\/|$)/.test(value) ? value : '/dashboard';
 }
 export function draftKey(sessionId) {
   return `courtsim:draft:${getCurrentUser()?.id ?? 'unknown'}:${sessionId}`;

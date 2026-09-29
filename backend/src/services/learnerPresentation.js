@@ -1,8 +1,10 @@
 import { dialogueText, evidenceSummary } from '../../../shared/dialogueText.mjs';
 import { caseKnowledge } from './caseKnowledge.js';
 import { evidenceInventory } from './caseEvidence.js';
+import { scoreSummary } from '../../../shared/scorePresentation.mjs';
 
 import { learnerText } from '../../../shared/learnerText.mjs';
+import { isVbplUrl, hasVerifiedSource } from '../../../shared/legalSourcePolicy.mjs';
 export { learnerText } from '../../../shared/learnerText.mjs';
 
 const safeUrl = (value) => {
@@ -25,10 +27,14 @@ export function learnerCase(value) {
 }
 
 export function learnerCitation(citation) {
-  const verified = citation.verification_status === 'verified';
+  const sourceVerified = hasVerifiedSource(citation);
+  const verified = citation.verification_status === 'verified' && sourceVerified;
   return { id: citation.id, reference_id: citation.reference_id, law_number: citation.law_number, title: learnerText(citation.title),
     article: citation.article, paragraph: citation.paragraph, point: citation.point, locator: citation.locator,
-    text: citation.text, source_url: safeUrl(citation.source_url), version: learnerText(citation.version),
+    text: citation.text, source_url: sourceVerified && isVbplUrl(citation.source_url) ? citation.source_url : null, version: learnerText(citation.version),
+    document_type: citation.document_type, excerpt: citation.excerpt, checked_at: sourceVerified ? citation.checked_at : null,
+    source_verification: sourceVerified ? 'verified' : 'unverified', retrieval_mode: citation.retrieval_mode,
+    application_status: citation.application_status ?? 'unverified', provision_note: citation.provision_note,
     application_date: citation.application_date, application_date_to: citation.application_date_to,
     verification_status: verified ? 'verified' : 'unverified',
     application_reason: verified ? learnerText(citation.application_reason) : 'Cần kiểm tra hiệu lực của điều luật này.',
@@ -47,7 +53,9 @@ function presentationTree(value, inventory = []) {
   if (typeof value === 'string') return learnerText(dialogueText(value, inventory));
   if (Array.isArray(value)) return value.map((child) => presentationTree(child, inventory));
   if (!value || typeof value !== 'object') return value;
-  return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, key === 'quote' ? child : presentationTree(child, inventory)]));
+  // Khóa dữ liệu phục vụ liên kết/React phải giữ nguyên; chỉ lọc phần văn bản hiển thị.
+  const structural = new Set(['id', 'record_id', 'status', 'quote']);
+  return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, structural.has(key) ? child : presentationTree(child, inventory)]));
 }
 
 export function learnerRecord(record, courtCase = {}) {
@@ -64,7 +72,8 @@ export function learnerRecord(record, courtCase = {}) {
 export function learnerEvaluation(result, courtCase = {}) {
   const r = result.toObject ? result.toObject() : result;
   const inventory = evidenceInventory(courtCase);
-  return { session_id: r.session_id, created_at: r.created_at, score: r.score, score_scope: learnerText(r.score_scope),
+  const summary = scoreSummary(r);
+  return { session_id: r.session_id, created_at: r.created_at, score: summary.score, score_scope: summary.partial ? `${summary.label}. Chưa có điểm toàn bài.` : learnerText(r.score_scope),
     earned_score: r.earned_score, assessed_max: r.assessed_max, assessment_status: r.assessment_status,
     rubric_scores: r.rubric_scores, rubric_version: r.rubric_version,
     criteria: presentationTree(r.criteria, inventory), rubric_feedback: presentationTree(r.rubric_feedback, inventory),

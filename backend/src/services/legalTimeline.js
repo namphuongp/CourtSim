@@ -1,4 +1,5 @@
 import { AppError } from '../utils/AppError.js';
+import { isVbplUrl } from '../../../shared/legalSourcePolicy.mjs';
 
 export const EVENT_LABELS = Object.freeze({ conduct: 'Hành vi', transaction: 'Giao dịch/quyền được xác lập', dispute: 'Phát sinh tranh chấp', filing: 'Khởi kiện', hearing: 'Xét xử' });
 
@@ -59,7 +60,7 @@ export function assessVersion(document, provision, plan) {
     && (!rule.articles?.length || rule.articles.includes(provision.article))
     && !rule.excluded_articles?.includes(provision.article));
   const rule = applicable.length === 1 ? applicable[0] : null;
-  if (!rule || !rule.history_checked || !rule.source_checked || !rule.review_sources?.length) return { verified: false, reason: 'Chưa xác minh được phiên bản và lịch sử sửa đổi cho toàn bộ khoảng thời gian.' };
+  if (!rule || !rule.history_checked || !rule.source_checked || !rule.review_sources?.length || rule.review_sources.some(url => !isVbplUrl(url))) return { verified: false, reason: 'Chưa xác minh được phiên bản và lịch sử sửa đổi cho toàn bộ khoảng thời gian.' };
   if (rule.transition_status !== 'reviewed') return { verified: false, reason: 'Có quy định chuyển tiếp chưa được đối chiếu.' };
   if (!rule.event_kinds?.includes(plan.kind)) return { verified: false, reason: 'Chưa xác minh phạm vi áp dụng cho loại mốc thời gian này.' };
   return { verified: true, version: rule.version, reason: `${plan.reason} ${rule.application_note}`, review_sources: rule.review_sources };

@@ -20,9 +20,12 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 const geminiApiKey = process.env.GEMINI_API_KEY?.trim() ?? '';
+const openAiApiKey = process.env.OPENAI_API_KEY?.trim() ?? '';
 const defaultAiBaseUrl = geminiApiKey
   ? 'https://generativelanguage.googleapis.com/v1beta/openai'
-  : 'http://127.0.0.1:11434/v1';
+  : openAiApiKey ? 'https://api.openai.com/v1' : 'http://127.0.0.1:11434/v1';
+const aiBaseUrl = (process.env.AI_BASE_URL?.trim() || defaultAiBaseUrl).replace(/\/$/, '');
+const aiOrigin = new URL(aiBaseUrl).origin;
 const aiTimeout = Number(process.env.AI_TIMEOUT_MS ?? '60000');
 if (!Number.isInteger(aiTimeout) || aiTimeout < 1000 || aiTimeout > 60000) {
   throw new Error('AI_TIMEOUT_MS phải là số nguyên từ 1000 đến 60000.');
@@ -36,9 +39,11 @@ export const env = Object.freeze({
   PORT: parsePort(process.env.PORT),
   MONGO_URI: process.env.MONGO_URI ?? DEFAULT_MONGO_URI,
   JWT_SECRET: jwtSecret,
-  AI_PROVIDER: geminiApiKey ? 'gemini' : 'openai-compatible',
-  AI_BASE_URL: (process.env.AI_BASE_URL ?? defaultAiBaseUrl).replace(/\/$/, ''),
-  AI_API_KEY: geminiApiKey || process.env.AI_API_KEY?.trim() || '',
+  AI_PROVIDER: aiOrigin === 'https://generativelanguage.googleapis.com' ? 'gemini' : 'openai-compatible',
+  AI_BASE_URL: aiBaseUrl,
+  // Không chuyển khóa OpenAI sang endpoint tùy chỉnh nếu chưa cấu hình khóa riêng cho endpoint đó.
+  AI_API_KEY: process.env.AI_API_KEY?.trim()
+    || (aiOrigin === 'https://generativelanguage.googleapis.com' ? geminiApiKey : aiOrigin === 'https://api.openai.com' ? openAiApiKey : ''),
   AI_TIMEOUT_MS: aiTimeout,
   CLIENT_ORIGINS: (process.env.CLIENT_ORIGIN ?? 'http://localhost:5173')
     .split(',')

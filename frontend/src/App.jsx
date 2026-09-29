@@ -1,27 +1,38 @@
-import React, { useEffect, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useState } from 'react';
 import api from './services/api';
 import { getCurrentUser, setCurrentUser, clearAuth, safeReturnPath } from './services/auth';
-import VerifyEmail, { ForgotPassword } from './pages/Auth/VerifyEmail';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
+const AccountSettings = lazy(() => import('./pages/Account/AccountSettings'));
+const AdminLayout = lazy(() => import('./pages/Home/Admin/AdminLayout'));
+const AdminUsers = lazy(() => import('./pages/Home/Admin/AdminManagement').then(module => ({ default: module.AdminUsers })));
+const AdminUserDetail = lazy(() => import('./pages/Home/Admin/AdminManagement').then(module => ({ default: module.AdminUserDetail })));
+const AdminSessions = lazy(() => import('./pages/Home/Admin/AdminManagement').then(module => ({ default: module.AdminSessions })));
+const AdminSessionDetail = lazy(() => import('./pages/Home/Admin/AdminManagement').then(module => ({ default: module.AdminSessionDetail })));
+const AdminAi = lazy(() => import('./pages/Home/Admin/AdminOperations').then(module => ({ default: module.AdminAi })));
+const AdminSystem = lazy(() => import('./pages/Home/Admin/AdminOperations').then(module => ({ default: module.AdminSystem })));
+const AdminAudit = lazy(() => import('./pages/Home/Admin/AdminOperations').then(module => ({ default: module.AdminAudit })));
+const VerifyEmail = lazy(() => import('./pages/Auth/VerifyEmail'));
+const ForgotPassword = lazy(() => import('./pages/Auth/VerifyEmail').then(module => ({ default: module.ForgotPassword })));
+
 // -- CÁC TRANG PUBLIC & AUTH --
-import LandingPage from './pages/Home/LandingPage';
-import LoginPage from './pages/Auth/LoginPage'; 
-import RegisterPage from './pages/Auth/RegisterPage';
+const LandingPage = lazy(() => import('./pages/Home/LandingPage'));
+const LoginPage = lazy(() => import('./pages/Auth/LoginPage'));
+const RegisterPage = lazy(() => import('./pages/Auth/RegisterPage'));
 
 // -- CÁC TRANG CỦA USER DASHBOARD --
-import DashboardLayout from './pages/Home/User/DashboardLayout';
-import Dashboard from './pages/Home/User/Dashboard';
-import Sessions from './pages/Home/User/Sessions';
-import History from './pages/Home/User/History';
-import Analytics from './pages/Home/User/Analytics';
-import SimulationSetup from './pages/Home/User/SimulationSetup';
-import SimulationRoom from './pages/Home/User/SimulationRoom';
-import SimulationResult from './pages/Home/User/SimulationResult';
-import GuidePage from './pages/Guide/GuidePage';
+const DashboardLayout = lazy(() => import('./pages/Home/User/DashboardLayout'));
+const Dashboard = lazy(() => import('./pages/Home/User/Dashboard'));
+const Sessions = lazy(() => import('./pages/Home/User/Sessions'));
+const History = lazy(() => import('./pages/Home/User/History'));
+const Analytics = lazy(() => import('./pages/Home/User/Analytics'));
+const SimulationSetup = lazy(() => import('./pages/Home/User/SimulationSetup'));
+const SimulationRoom = lazy(() => import('./pages/Home/User/SimulationRoom'));
+const SimulationResult = lazy(() => import('./pages/Home/User/SimulationResult'));
+const GuidePage = lazy(() => import('./pages/Guide/GuidePage'));
 // -- TRANG ADMIN --
-import AdminFeedback from './pages/Home/Admin/AdminFeedback';
-import AdminDashboard from './pages/Home/Admin/AdminDashboard';
+const AdminFeedback = lazy(() => import('./pages/Home/Admin/AdminFeedback'));
+const AdminDashboard = lazy(() => import('./pages/Home/Admin/AdminDashboard'));
 
 // ==========================================
 // CÁC HÀM KIỂM TRA QUYỀN TRUY CẬP (AUTH)
@@ -31,7 +42,7 @@ const isAuthenticated = () => {
 };
 
 const getUserRole = () => {
-  return localStorage.getItem('userRole') || 'user';
+  return getCurrentUser()?.role || 'user';
 };
 
 const getDefaultRoute = () => {
@@ -86,6 +97,7 @@ function App() {
   if (authStatus === 'error') return <main className="auth-page"><section className="auth-card"><p role="alert">Chưa thể kết nối CourtSim. Kiểm tra kết nối và thử lại.</p><button className="auth-primary" onClick={() => window.location.reload()}>Thử lại</button></section></main>;
   return (
     <BrowserRouter>
+      <Suspense fallback={<main className="auth-page"><p role="status">Đang mở trang…</p></main>}>
       <Routes>
         {/* PUBLIC ROUTES */}
         <Route path="/" element={ <PublicOnlyRoute><LandingPage /></PublicOnlyRoute> } />
@@ -95,12 +107,22 @@ function App() {
         <Route path="/verify-email" element={<PublicOnlyRoute><VerifyEmail /></PublicOnlyRoute>} />
         <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
         <Route path="/reset-password" element={<PublicOnlyRoute><VerifyEmail reset /></PublicOnlyRoute>} />
-        <Route path="/auth/callback" element={<Navigate to={isAuthenticated() ? safeReturnPath(new URLSearchParams(window.location.search).get('returnTo')) : '/login?googleError=failed'} replace />} />
+        <Route path="/auth/callback" element={<Navigate to={isAuthenticated() ? safeReturnPath(new URLSearchParams(window.location.search).get('returnTo')) + (new URLSearchParams(window.location.search).get('linked') === '1' ? '?linked=1' : '') : '/login?googleError=failed'} replace />} />
         <Route path="/guide" element={<GuidePage />} />
+        <Route path="/account/:section?" element={<ProtectedUserRoute><AccountSettings /></ProtectedUserRoute>} />
 
         {/* ADMIN ROUTES */}
-        <Route path="/admin/feedback" element={<AdminRoute><AdminFeedback /></AdminRoute>} />
-        <Route path="/admin" element={ <AdminRoute><AdminDashboard /></AdminRoute> } />
+        <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="users" element={<AdminUsers />} />
+          <Route path="users/:id" element={<AdminUserDetail />} />
+          <Route path="sessions" element={<AdminSessions />} />
+          <Route path="sessions/:id" element={<AdminSessionDetail />} />
+          <Route path="feedback" element={<AdminFeedback />} />
+          <Route path="ai" element={<AdminAi />} />
+          <Route path="system" element={<AdminSystem />} />
+          <Route path="audit" element={<AdminAudit />} />
+        </Route>
         
         {/* USER DASHBOARD ROUTES (Sử dụng Nested Route với Layout) */}
         <Route 
@@ -125,6 +147,7 @@ function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
         
       </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }

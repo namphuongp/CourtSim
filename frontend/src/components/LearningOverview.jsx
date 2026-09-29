@@ -1,3 +1,4 @@
+import { scoreSummary } from '../../../shared/scorePresentation.mjs';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { roleLabel } from '../services/simulation';
@@ -20,8 +21,9 @@ export default function LearningOverview({ view = 'dashboard' }) {
     return () => { active = false; };
   }, [reload]);
   const completed = sessions.filter((s) => s.status === 'completed');
-  const scored = completed.filter((s) => Number.isFinite(s.result?.score));
-  const average = scored.length ? Math.round(scored.reduce((sum, s) => sum + s.result.score, 0) / scored.length) : null;
+  const scored = completed.filter((s) => s.result && (Number.isFinite(s.result.score) || Number.isFinite(s.result.earned_score)));
+  const completeScores = scored.filter(s => !scoreSummary(s.result).partial);
+  const average = completeScores.length ? Math.round(completeScores.reduce((sum, s) => sum + s.result.score, 0) / completeScores.length) : null;
   const visible = sessions.filter((s) => (view !== 'sessions' || s.status === 'ongoing') && (view !== 'history' || s.status === 'completed'))
     .filter((s) => `${s.case_id?.title ?? ''}`.toLocaleLowerCase('vi').includes(search.toLocaleLowerCase('vi')));
   return <section className="space-y-6">
@@ -29,7 +31,7 @@ export default function LearningOverview({ view = 'dashboard' }) {
     {loading && <p role="status">Đang tải danh sách phiên...</p>}
     {error && <div role="alert" className="rounded-xl border border-rose-500/30 p-4 text-rose-300">{error} <button className="ml-3 underline" onClick={() => { setLoading(true); setReload((n) => n + 1); }}>Thử lại</button></div>}
     {!loading && !error && <>
-      {(view === 'dashboard' || view === 'analytics') && <div className="grid gap-4 sm:grid-cols-3">{[['Đã hoàn thành', completed.length], ['Đang luyện tập', sessions.length - completed.length], ['Điểm trung bình', average === null ? 'Chưa có điểm' : `${average}/100`]].map(([label, value]) => <article key={label} className="rounded-2xl border border-slate-800 bg-slate-900 p-6"><p className="text-sm text-slate-400">{label}</p><p className="mt-2 text-2xl font-bold text-white">{value}</p></article>)}</div>}
+      {(view === 'dashboard' || view === 'analytics') && <div className="grid gap-4 sm:grid-cols-3">{[['Đã hoàn thành', completed.length], ['Đang luyện tập', sessions.length - completed.length], ['Điểm trung bình các phiên chấm đủ', average === null ? 'Chưa có điểm' : `${average}/100`]].map(([label, value]) => <article key={label} className="rounded-2xl border border-slate-800 bg-slate-900 p-6"><p className="text-sm text-slate-400">{label}</p><p className="mt-2 text-2xl font-bold text-white">{value}</p></article>)}</div>}
       {view === 'analytics' ? <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 space-y-5"><p className="text-sm text-slate-400">{scored.length ? `Tổng hợp từ ${scored.length} phiên có điểm. Điểm phản ánh bài tập đã thực hiện, không phải chứng nhận năng lực hành nghề.` : 'Hoàn thành một phiên để xem đánh giá kỹ năng.'}</p>{scored.length > 0 && Object.entries(rubricLabels).map(([key, label]) => {
         const values = scored.map((s) => s.result.rubric_scores?.[key]).filter(Number.isFinite);
         const score = values.length ? Math.round(values.reduce((a, b) => a + b, 0) / values.length) : null;
@@ -41,7 +43,7 @@ export default function LearningOverview({ view = 'dashboard' }) {
           <p className="text-xs font-semibold text-blue-400">{s.status === 'completed' ? 'Đã hoàn thành' : 'Đang luyện tập'} · {new Date(s.created_at).toLocaleDateString('vi-VN')}</p>
           <h2 className="text-lg font-bold text-white">{s.case_id?.title ?? 'Hồ sơ không còn trong thư viện'}</h2>
           <p className="text-sm text-slate-400">{roleLabel(s.user_court_role, s.case_id?.category)} · {s.turn_count} lượt</p>
-          {s.result && <><p className="font-bold">Điểm: {Number.isFinite(s.result.score) ? `${s.result.score}/100` : 'Chưa có'}</p>{s.result?.assessed_max !== undefined && <p className="text-xs text-amber-300">Đã đánh giá {s.result.assessed_max}% trọng số · Điểm đã quy đổi</p>}</>}
+          {s.result && <><p className="font-bold">Điểm: {scoreSummary(s.result).label}</p>{s.result?.assessed_max !== undefined && <p className="text-xs text-amber-300">{scoreSummary(s.result).partial ? `${100 - s.result.assessed_max}% trọng số chưa chấm · Chưa có điểm toàn bài` : 'Đã đánh giá đủ trọng số'}</p>}</>}
           <div className="flex flex-wrap gap-4"><Link className="text-blue-400 underline" to={`/simulation/${s._id}${s.status === 'completed' ? '#transcript' : ''}`}>{s.status === 'completed' ? 'Xem biên bản' : 'Tiếp tục tranh tụng'}</Link>{s.status === 'completed' && <Link className="text-blue-400 underline" to={`/simulation/${s._id}/result`}>Xem kết quả</Link>}</div>
         </article>)}</div>
       </>}

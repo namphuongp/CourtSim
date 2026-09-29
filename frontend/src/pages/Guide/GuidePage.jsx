@@ -1,15 +1,16 @@
 import { ArrowLeft, BookOpen, Gavel, MessageSquare, Scale, Trophy } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { getCurrentUser } from '../../services/auth';
 
 const steps = [
   { icon: BookOpen, title: '1. Chọn hồ sơ', text: 'Đọc tóm tắt và toàn bộ hồ sơ. Chỉ sử dụng tình tiết có trong hồ sơ; đừng tự thêm chứng cứ.' },
   { icon: Scale, title: '2. Chọn vai luật sư', text: 'Chọn phía bạn bảo vệ. Bên đối lập sẽ phản biện, Chủ tọa điều hành phiên.' },
-  { icon: MessageSquare, title: '3. Tranh luận theo lượt', text: 'Mỗi lượt nên có yêu cầu, căn cứ, chứng cứ và kết luận. Bên đối lập phản biện, sau đó Chủ tọa đặt câu hỏi.' },
-  { icon: Trophy, title: '4. Xem kết quả', text: 'Kết thúc sau ít nhất một lượt. Kết quả gồm 6 nhóm tiêu chí: vấn đề và mục tiêu (15), pháp luật (20), chứng cứ (20), lập luận (20), phản biện (15), ứng biến (10). Điểm quy đổi về 100 từ phần đủ dữ liệu, kèm tỷ lệ trọng số đã đánh giá.' },
+  { icon: MessageSquare, title: '3. Tranh luận theo lượt', text: 'Nêu yêu cầu, tình tiết và chứng cứ. Đọc từng lời thoại rồi bấm Tiếp tục; Chủ tọa hoặc bên đối lập phát biểu tùy nội dung và giai đoạn luyện tập.' },
+  { icon: Trophy, title: '4. Xem kết quả', text: 'Kết thúc sau ít nhất một lượt. Kết quả gồm 6 nhóm: vấn đề và mục tiêu (15), pháp luật (20), chứng cứ (20), lập luận (20), phản biện (15), ứng biến (10). Phần chưa đủ dữ liệu được ghi rõ, không tính 0 và không quy đổi thành điểm toàn bài.' },
 ];
 
 export default function GuidePage() {
-  const authenticated = Boolean(localStorage.getItem('userToken'));
+  const authenticated = Boolean(getCurrentUser()?.id);
   return (
     <main className="min-h-screen bg-slate-950 px-5 py-10 text-slate-200"><div className="mx-auto max-w-5xl space-y-10">
       <header><Link to={authenticated ? '/dashboard/setup' : '/'} className="mb-6 inline-flex items-center gap-2 text-sm text-blue-300"><ArrowLeft size={17} /> Quay lại</Link><div className="flex items-center gap-3"><Gavel className="text-blue-400" size={34} /><div><h1 className="text-4xl font-bold text-white">Hướng dẫn phiên tòa mô phỏng</h1><p className="mt-2 text-slate-400">Các bước bắt đầu và hoàn thành một phiên luyện tập.</p></div></div></header>

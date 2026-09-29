@@ -1,3 +1,5 @@
+import { createAccountRoutes } from './AccountRoutes.js';
+import { currentAccount, checkCurrentPassword } from '../services/accountService.js';
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
@@ -19,6 +21,7 @@ export function createAuthRoutes({ sendEmail } = {}) {
   const router = Router();
   router.use((_req, res, next) => { res.setHeader('Cache-Control', 'no-store'); next(); });
   router.use(authRateLimit);
+  router.use('/account', createAccountRoutes({ sendEmail }));
   router.post('/register', asyncHandler(async (req, res) => {
     validateBody(req.body, ['full_name', 'email', 'password', 'confirm_password']);
     const email = normalizeEmail(req.body.email), name = typeof req.body.full_name === 'string' ? req.body.full_name.trim() : '';
@@ -52,7 +55,7 @@ export function createAuthRoutes({ sendEmail } = {}) {
     if (user.status !== 'active') throw new AppError('Tài khoản đã bị khóa.', 403, 'ACCOUNT_DISABLED');
     if (!user.email_verified && !env.AUTH_EMAIL_VERIFICATION_DISABLED) {
       if (!sendEmail) assertEmailReady();
-      return res.status(202).json({ verificationRequired: true, data: await startChallenge({ email, purpose: 'verify' }, sendEmail) });
+      return res.status(202).json({ verificationRequired: true, data: await startChallenge({ email, purpose: 'verify', accountId: user._id, accountVersion: user.auth_version ?? 0 }, sendEmail) });
     }
     securityAudit('login_success', email);
     res.json({ user: await issueSession(req, res, user) });
@@ -72,7 +75,7 @@ export function createAuthRoutes({ sendEmail } = {}) {
     if (!sendEmail) assertEmailReady();
     await consumeAuthLimit(`mail:${email}`, 5);
     const user = await User.findOne({ email, status: 'active' }).select('+password_hash');
-    res.status(202).json({ data: await startChallenge({ email, purpose: 'reset', deliverySuppressed: !user?.password_hash }, sendEmail, false) });
+    res.status(202).json({ data: await startChallenge({ email, purpose: 'reset', accountId: user?._id, accountVersion: user?.auth_version ?? 0, deliverySuppressed: !user?.password_hash }, sendEmail, false) });
   }));
   router.post('/reset-password', asyncHandler(async (req, res) => {
     validateBody(req.body, ['challenge', 'otp', 'password', 'confirm_password']);
@@ -92,21 +95,23 @@ export function createAuthRoutes({ sendEmail } = {}) {
   }));
   router.post('/google/link', authenticate, asyncHandler(async (req, res) => {
     validateBody(req.body, ['password']);
-    const user = await User.findById(req.auth.userId).select('+password_hash');
-    if (typeof req.body.password !== 'string' || req.body.password.length > 128 || !user.password_hash || !await bcrypt.compare(req.body.password, user.password_hash)) throw new AppError('Mật khẩu không chính xác.', 401, 'INVALID_CREDENTIALS');
-    res.json({ url: await startGoogle(req, res, '/dashboard', user._id) });
+    await consumeAuthLimit('google-link:' + req.auth.userId, 10);
+    const user = await currentAccount(req);
+    if (user.google_id) throw new AppError('Google đã được liên kết với tài khoản này.', 409, 'GOOGLE_ALREADY_LINKED');
+    await checkCurrentPassword(user, req.body.password);
+    res.json({ url: await startGoogle(req, res, '/account/linked', user._id) });
   }));
   router.get('/google/callback', async (req, res) => {
     const frontend = env.CLIENT_ORIGINS[0];
     try {
-      const { user, returnTo } = await completeGoogle(req, res);
+      const { user, returnTo, linked } = await completeGoogle(req, res);
       await issueSession(req, res, user);
-      securityAudit('google_login_success', user.email);
-      res.redirect(`${frontend}/auth/callback?returnTo=${encodeURIComponent(returnTo)}`);
+      securityAudit(linked ? 'GOOGLE_LINKED' : 'google_login_success', user.email);
+      res.redirect(`${frontend}/auth/callback?returnTo=${encodeURIComponent(returnTo)}${linked ? '&linked=1' : ''}`);
     } catch (error) {
       securityAudit('google_login_failure');
       res.clearCookie('courtsim_oauth', cookieOptions);
-      res.redirect(`${frontend}/login?googleError=${error.code === 'GOOGLE_LINK_REQUIRED' ? 'link' : 'failed'}`);
+      res.redirect(error.accountLink ? `${frontend}/account/linked?googleError=failed` : `${frontend}/login?googleError=${error.code === 'GOOGLE_LINK_REQUIRED' ? 'link' : 'failed'}`);
     }
   });
   return router;

@@ -1,3 +1,4 @@
+import adminRoutes from './routes/AdminRoutes.js';
 import cors from 'cors';
 import express from 'express';
 import { corsOptions, securityHeaders, browserMutationGuard } from './middlewares/security.js';
@@ -22,6 +23,7 @@ export function createApp(authDependencies) {
   app.use('/api/v1/cases', caseRoutes);
   app.use('/api/v1/sessions/:sessionId/feedback', learnerFeedbackRoutes);
   app.use('/api/v1/admin/feedback', adminFeedbackRoutes);
+  app.use('/api/v1/admin', adminRoutes);
   app.use('/api/v1/sessions', sessionRoutes);
 
   app.use(notFoundHandler);

@@ -5,7 +5,7 @@ const amendmentSchema = new mongoose.Schema({
   title: { type: String, required: true },
   promulgated_at: { type: String, default: null },
   effective_from: { type: String, required: true },
-  source_url: { type: String, required: true },
+  source_url: { type: String, default: '' },
   note: { type: String, required: true },
 }, { _id: false });
 
@@ -46,7 +46,7 @@ const legalDocumentSchema = new mongoose.Schema({
     evidence: [{ kind: String, url: String, sha256: String, quote: String, _id: false }],
   }, { _id: false })], default: [] },
   temporal_note: { type: String, required: true },
-  source_url: { type: String, required: true },
+  source_url: { type: String, default: '' },
   consolidated_source_url: { type: String, default: null },
   amendments: { type: [amendmentSchema], default: [] },
   effective_rules: { type: [effectiveRuleSchema], default: [] },

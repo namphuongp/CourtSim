@@ -18,5 +18,6 @@ export function estimateCost(provider, model, usage, pricing = modelPricing) {
   const input = usage.prompt_tokens, output = usage.completion_tokens;
   const cached = usage.prompt_tokens_details?.cached_tokens ?? 0;
   if (input < 0 || output < 0 || !Number.isSafeInteger(cached) || cached < 0 || cached > input) return null;
-  return { cost: ((input - cached) * rate.inputPerMillion + cached * rate.cachedInputPerMillion + output * rate.outputPerMillion) / 1e6, version: rate.version };
+  const cost = ((input - cached) * rate.inputPerMillion + cached * rate.cachedInputPerMillion + output * rate.outputPerMillion) / 1e6;
+  return Number.isFinite(cost) ? { cost, version: rate.version } : null;
 }

@@ -9,6 +9,7 @@ const schema = new mongoose.Schema({
   answer: String, citations: { type: [mongoose.Schema.Types.Mixed], default: [] },
   sources: { type: [mongoose.Schema.Types.Mixed], default: [] },
   verification_status: String,
+  source_status: { type: String, enum: ['available', 'unavailable', 'disabled'] },
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
 schema.index({ session_id: 1, request_id: 1 }, { unique: true });
 schema.index({ session_id: 1, user_id: 1, created_at: 1 });

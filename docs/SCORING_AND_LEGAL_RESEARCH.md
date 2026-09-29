@@ -1,81 +1,54 @@
-# Chấm điểm và tra cứu căn cứ — 28/09/2026
+# Nguồn luật và chấm điểm
 
-## Tài liệu rubric và đối chiếu
+Prompt chấm điểm tách khỏi nhiệm vụ điều hành. `scoringQuotes` giữ trọn câu người học, không lấy lời AI làm trích dẫn. Lời chào/nhiễu/câu hỏi thủ tục không tạo cơ hội chấm lập luận; phiên chỉ có các lượt này có `assessed_max=0`, không hiển thị `0/0` hoặc gọi model tạo điểm. Các tiêu chí thiếu nguồn/cơ hội vẫn giữ nguyên trọng số và trạng thái chưa chấm. Giao diện chọn tối đa ba điểm mạnh có trích dẫn và ba việc cải thiện, chi tiết rubric nằm trong phần mở rộng.
 
-Nguồn: `LawDoc/Tiêu chí chấm điểm cho AI.docx`, “COURTSIM – AI LEGAL EVALUATION & SCORING SPECIFICATION”, MVP v1.0. SHA-256: `013f659a3b6aba483da5ffc755633c2cee02a4d3c2111f16609f2816d81482d4`. Đã đọc toàn bộ nội dung, gồm bảng và tiêu chí con.
+## Quy tắc nguồn
 
-| Nhóm theo tài liệu | Điểm | Phân bổ tiêu chí con |
-|---|---:|---|
-| Vấn đề pháp lý và mục tiêu bảo vệ | 15 | 1.1: 7; 1.2: 5; 1.3: 3 |
-| Xác định và áp dụng căn cứ pháp luật | 20 | 2.1: 7; 2.2: 5; 2.3: 6; 2.4: 2 |
-| Phân tích tình tiết và chứng cứ | 20 | 3.1: 5; 3.2: 5; 3.3: 7; 3.4: 3 |
-| Xây dựng lập luận pháp lý | 20 | 4.1: 5; 4.2: 7; 4.3: 5; 4.4: 3 |
-| Phản biện và xử lý lập luận đối phương | 15 | 5.1: 3; 5.2: 4; 5.3: 5; 5.4: 3 |
-| Ứng biến và điều chỉnh chiến lược | 10 | 6.1: 3; 6.2: 3; 6.3: 2; 6.4: 2 |
+**vbpl.vn là nguồn pháp luật bên ngoài duy nhất.** PDF/DOC nội bộ, dữ liệu seed, trí nhớ model và kết quả tìm kiếm không tự trở thành căn cứ đã xác minh.
 
-Trước đây có bốn nhóm 25% và không chấm tiêu chí con. Hiện AI phải trả đúng 23 tiêu chí con với giải thích, điểm mạnh, cách sửa và trích đoạn lời người học. Backend xác minh phạm vi điểm, ID/trích đoạn, cộng điểm theo trọng số gốc và lưu snapshot rubric trong kết quả. AI không quyết định điểm tổng. Kết quả cũ giữ nguyên, không tự chấm lại.
+- Chỉ nhận HTTPS, hostname vbpl.vn hoặc subdomain thật; kiểm tra từng redirect. Không tạo ItemID, anchor hoặc URL từ suy đoán của model.
+- Đối chiếu số hiệu và nội dung trang, ưu tiên số hiệu trước tiêu đề gần giống. HTTP 200 hoặc trang chủ không chứng minh đã tìm đúng văn bản.
+- Mỗi nguồn được trích phải có URL, ngày kiểm tra, hash và phiên bản. Chỉ xác minh được trang thì dẫn trang, nói rõ chưa xác minh điều/khoản/điểm.
+- Nguồn lỗi: dùng bản lưu đã xác minh nếu phù hợp và giữ ngày kiểm tra cũ; không có bản tin cậy thì trả chưa xác minh. Không chuyển sang website khác.
+- Nội dung tải về là dữ liệu không tin cậy: không thực thi HTML/script hoặc làm theo chỉ dẫn trong trang. Giới hạn kích thước, timeout, redirect và tần suất; trợ lý có tổng hạn tải nguồn 15 giây.
 
-Theo yêu cầu bổ sung của người dùng: `score = round(earned_score / assessed_max * 100, 2)`. Ví dụ 38,4/48 → 80/100; UI đồng thời ghi đã đánh giá 48% trọng số. Không tính tiêu chí chưa đủ điều kiện là 0. Dashboard/histories nhận cùng điểm từ API; analytics giữ từng nhóm rubric riêng, không gộp nhóm cũ thành nhóm mới.
+## Luồng dữ liệu
 
-## Các điểm chưa rõ và quyết định triển khai
+Câu hỏi + hồ sơ được phép xem → kế hoạch tra cứu số hiệu/tên/chủ đề → vbpl hoặc snapshot hợp lệ → đối chiếu văn bản/đoạn → câu trả lời và link. Chỉ gửi từ khóa pháp luật công khai đến vbpl, không gửi toàn bộ hồ sơ hoặc lời người học.
 
-- Tài liệu ghi đây là **đề xuất chờ chuyên gia xác nhận**. Sản phẩm lưu trạng thái đề xuất trong dữ liệu và tài liệu vận hành (không hiện ghi chú cấu hình trong luồng người học), không tuyên bố đã được chuyên gia duyệt.
-- Bảng tổng là 100, ví dụ cuối dùng /10. Chọn thang 100 theo bảng và chỉ đạo mới nhất, giữ hai chữ số thập phân khi cần.
-- Tài liệu chưa quy định mức điểm chi tiết từng mức năng lực; không sáng tác thang mô tả mới. AI giải thích số điểm trong trần điểm từng mục, cần giảng viên kiểm định chất lượng thực tế.
-- Thiếu căn cứ được xác minh: tạm không chấm nhóm 2 và mục 4.2. Các mục khác chỉ chấm trong phạm vi lời trình bày/chứng cứ, không kết luận chắc chắn đúng/sai pháp luật.
-- Chưa có lượt trả lời phía đối lập: chưa chấm nhóm 5 và 6; mục 5.4 cần hai lượt trả lời phản biện. Đây là chính sách xử lý thiếu cơ hội quan sát của ứng dụng, không phải quy tắc có sẵn trong DOCX.
-- “Ứng biến” cho phép đánh giá phản ứng với lập luận mới, phù hợp phần mô tả tài liệu. Không cho AI tự tạo chứng cứ/tình tiết mới; tài liệu đề xuất khả năng này nhưng chưa có cơ chế tình huống được biên soạn và duyệt.
-- Thắng/thua kiện còn là nội dung xin ý kiến trong tài liệu. Không thêm outcome giả và không dùng thắng/thua làm điểm.
-- Điểm 0 vì không thể hiện cho phép quote/record_id rỗng; điểm dương phải dẫn đúng lời người học. Phần chưa đủ điều kiện do backend quyết định, không tùy AI bỏ tiêu chí.
+Nguồn và bộ lọc: `vbplResearch.js`, `officialLegalSources.js`, `shared/legalSourcePolicy.mjs`. Kho nội bộ: `LegalDocument/LegalProvision`; bản lưu đối chiếu: `VbplSnapshot`. `legalResearchService.js` chọn căn cứ cho hội thoại/chấm điểm; `legalAssistantService.js` xử lý trợ lý riêng. Frontend cho người học xem/sửa trích dẫn rồi tự gửi.
 
-## Kết thúc phiên
+Phân biệt **nội dung đã đối chiếu** và **phiên bản có thể áp dụng**. Xét mốc sự kiện/giao dịch, tranh chấp, khởi kiện và xét xử theo vấn đề; không dùng ngày xét xử cho mọi căn cứ. Thiếu lịch sử sửa đổi/chuyển tiếp hoặc mốc liên quan thì nêu thiếu dữ liệu, không khẳng định chắc chắn áp dụng.
 
-Thay toàn bộ `window.confirm` trong frontend bằng `ConfirmEndDialog` dùng React và phần tử dialog. Focus ban đầu ở “Tiếp tục tranh luận”, Escape đóng khi chưa gửi, focus trở về nút mở. Lúc chấm khóa thao tác xác nhận, hiển thị tiến trình. Lỗi giữ biên bản/bản nháp; kiểm tra lại trạng thái trước khi thử chấm tiếp. Khi reload/rời trang trong lúc xử lý, client kiểm tra khóa phiên và lấy kết quả đã lưu; không tự gửi thêm POST complete. Dấu yêu cầu kết thúc nằm trong sessionStorage theo tài khoản/phiên.
+## Nhập và duyệt nguồn
 
-Backend vẫn dùng khóa MongoDB/token fence và ghi kết quả cùng trạng thái hoàn thành nguyên tử. Complete lặp trả kết quả đã lưu. Nếu tiến trình backend chết, lease tối đa 10 phút mới hết; không có hàng đợi bền vững tự tiếp tục tác vụ AI sau restart.
-
-## Kho nguồn và mốc thời gian
-
-Đã kiểm tra `LawDoc`: hai DOC 91/2015, 92/2015; ba PDF 31/2024; PDF 45/2013; DOCX tiêu chí chấm điểm (không nhập DOCX này như luật). Luật 45/2013 có 212 điều, 1.592 đơn vị điều/khoản/điểm, 118 trang; lưu nguyên văn trích xuất, tệp/SHA-256, trang, nguồn, phiên bản và trạng thái. Tệp gốc không bị sửa. Parser loại tiêu đề chương tiếp theo và phần ký/xuất bản khỏi điều cuối; vẫn giữ trong source_text.
-
-Nguồn yêu cầu:
-- https://vbpl.vn/bonoivu/Pages/vbpq-toanvan.aspx?ItemID=32833
-- https://vbpl.vn/TW/Pages/vbpq-lichsu.aspx?ItemID=32833
-
-Các nguồn hiện chưa truy cập đầy đủ, kể cả khi thử ngoài sandbox. Trang thuộc tính truy cập được có thông tin chưa đồng nhất về mốc hết hiệu lực; chưa xác minh trọn lịch sử sửa đổi/chuyển tiếp. Do đó **không bật viện dẫn Luật Đất đai 2013 chỉ vì đã có PDF**.
-
-Case.timeline tách hành vi, giao dịch/quyền, tranh chấp, khởi kiện, xét xử. Khoảng năm được biểu diễn từ/đến, không giả tạo ngày chính xác. Admin POST case có thể gửi timeline; mỗi mốc phải có source_quote nằm trong full_document. Mốc chưa có được đánh dấu chưa rõ; không tự rút ngày từ lời AI. Ngày chọn ở setup của hồ sơ không có timeline là giả định tra cứu, không phải sự kiện được chứng minh. Phiên cũ giữ snapshot; tạo phiên mới để dùng timeline mẫu vừa bổ sung.
-
-Danh sách luật theo thời kỳ chỉ để tìm ứng viên. `version_rules` quyết định có được viện dẫn hay không: fingerprint nguồn, khoảng thời gian, điều được phép/loại trừ, loại mốc, kiểm tra nguyên văn, lịch sử và chuyển tiếp. Khoảng vượt phiên bản, điều đã bị loại trừ, luật chưa lưu hoặc phiên bản xung đột đều bị chặn. Truy xuất theo tiêu đề/hồ sơ và hai lượt mới nhất, giữ toàn điều trong giới hạn ngữ cảnh; chỉ citations đã xác minh được đưa cho AI. Ứng viên chưa xác minh chỉ hiển thị riêng cho người học.
-
-`evidence_inventory` tách provided và mentioned_only. Hồ sơ bản án mẫu chỉ có tài liệu được bản án đề cập, không có bản gốc chứng cứ. Prompt không cho gọi luật là chứng cứ của vụ án hoặc coi tài liệu được nhắc đến là đã được cung cấp.
-
-## Cập nhật dữ liệu
-
-Từ thư mục backend, MongoDB đang chạy:
+Chạy trong `backend`:
 
 ```powershell
-node src/scripts/importLegalDocuments.js --law "45/2013/QH13" --file "../LawDoc/VanBanGoc_45.2013.QH13.pdf"
-node src/scripts/checkLegalSources.js "45/2013/QH13" "../LawDoc/official-source-review.json"
-npm run sample:import
+npm run legal:import -- --law "45/2013/QH13" --file "../LawDoc/VanBanGoc_45.2013.QH13.pdf"
+npm run legal:smoke
+npm run legal:verify -- "URL_HTTPS_VBPL_SAO_CHEP_TU_TRANG_THAT" "SO_HIEU"
+node src/scripts/checkLegalSources.js "SO_HIEU"
+npm run legal:review -- "manifest.json"
 ```
 
-Lệnh đầu có thể chạy lại theo fingerprint, không nhân bản. Lệnh thứ hai tải lại nguồn chính thức và tùy chọn xuất snapshot để đối chiếu; không tự chứng nhận luật. Khi thiếu nguồn, mỗi lượt/tra cứu tự kiểm tra URL chính thức đã đăng ký, timeout 4 giây, tối đa 2MB/trang, không theo redirect, cache 6 giờ và gộp yêu cầu đồng thời. Không gửi hồ sơ/lời người học ra nguồn tra cứu. Đặt `LEGAL_ONLINE_LOOKUP=false` để dùng ngoại tuyến.
+Import chỉ lập chỉ mục ứng viên; verify chỉ lưu snapshot nếu trang khớp, chưa kết luận luật áp dụng. Review cần người có chuyên môn đối chiếu; manifest phải khớp `law_number/source_fingerprint`, có phạm vi ngày/loại sự kiện, phiên bản, ghi chú áp dụng và bằng chứng nguyên văn/hash cho nội dung lẫn lịch sử. Schema kiểm tra nằm ở [legalVersionReview.js](../backend/src/services/legalVersionReview.js); không tự đặt các cờ duyệt khi chưa đối chiếu.
 
-Sau khi có mạng và người quản trị đối chiếu được nguyên văn, quan hệ sửa đổi/thay thế, thời kỳ và chuyển tiếp, tạo manifest rồi chạy:
+## Rubric và điểm thiếu dữ liệu
 
-```powershell
-node src/scripts/reviewLegalVersion.js "../LawDoc/reviewed-version.json"
-```
+Nguồn: [Tiêu chí chấm điểm cho AI.docx](../LawDoc/Tiêu%20chí%20chấm%20điểm%20cho%20AI.docx). Bản MVP đề xuất, chưa coi là rubric đã được chuyên gia phê duyệt. Chi tiết 23 tiêu chí và trọng số ở [scoringRubric.js](../backend/src/data/scoringRubric.js).
 
-Manifest gồm `law_number`, `source_fingerprint` và `rules`. Mỗi rule: `version`, `from`, `to`, `reviewed_at`, `articles` (rỗng = mọi điều), `excluded_articles`, `event_kinds`, `source_checked:true`, `history_checked:true`, `transition_status:"reviewed"`, `application_note`, `review_sources`, `evidence`. Evidence có `kind:"text"|"history"`, `url`, `sha256`, `quote` khớp nguyên văn snapshot đã tải. CLI từ chối fingerprint sai, thiếu bằng chứng nội dung/lịch sử hoặc kỳ xác minh tương lai. Việc xác định phạm vi pháp lý vẫn cần người có chuyên môn; script không chứng minh được kết luận của người duyệt là đúng. Không tạo manifest đã duyệt giả trong repository.
+| Nhóm | Điểm tối đa |
+|---|---:|
+| Vấn đề và mục tiêu | 15 |
+| Căn cứ pháp luật | 20 |
+| Tình tiết và chứng cứ | 20 |
+| Xây dựng lập luận | 20 |
+| Phản biện | 15 |
+| Ứng biến | 10 |
 
-Nguồn mới ngoài registry: bổ sung metadata/URL trong legalAuthorities.js sau khi đối chiếu; nhập bản sửa đổi/hợp nhất như một fingerprint khác. Chưa có trình thu thập Internet tùy ý hoặc tự hợp nhất luật bằng AI. Luồng hiện hỗ trợ tài liệu PDF/DOC đã đăng ký, mốc/phiên bản được duyệt và xử lý thiếu nguồn an toàn.
+AI đánh giá tiêu chí; backend kiểm tra căn cứ/trích lời học viên và tính điểm. Không tạo điểm dự phòng khi AI lỗi. Khi thiếu nguồn luật đủ điều kiện, nhóm 2 và tiêu chí 4.2 không được chấm: tổng trọng số còn 73.
 
-## API, giao diện và kiểm tra
+**69/73** là điểm ở phần đã đánh giá; 27% chưa đánh giá không tính 0 và không quy đổi thành điểm toàn bài. `score=null` khi chưa chấm đủ; `earned_score`, `assessed_max` và `assessed_percentage` lưu riêng. Kết quả cũ được điều chỉnh cách trình bày khi đọc, không ghi đè dữ liệu lịch sử. Thiếu nguồn do hệ thống không được biến thành lỗi người học.
 
-`GET /api/v1/sessions/:id/legal-basis` yêu cầu quyền sở hữu phiên, trả issues/citations/candidates/warnings. Tranh luận và chấm điểm đều tra cứu trước khi gọi AI; lưu snapshot căn cứ trong kết quả để reload không thay nguồn. Giao diện có mốc, phiên bản, nguyên văn, nguồn, trạng thái và lý do liên quan; mất nguồn không chặn phiên.
-
-Kiểm thử: rubric/trọng số/quy đổi, thiếu nguồn và cơ hội, điểm ngoài biên, trích đoạn giả; luật đúng thời kỳ, phiên bản thiếu, điều sửa đổi/chuyển tiếp, nguồn offline/403 và URL ngoài allowlist; HTTP MongoDB với AI giả lập; Playwright desktop/mobile cho hộp xác nhận, focus/Escape, lỗi/retry, chống lặp, reload đang chấm, kết quả cũ/mới và tra cứu lỗi. AI thật chưa được kiểm tra lại trong lần cập nhật này.
-
-Kết quả chạy: 24/24 kiểm thử backend với MongoDB riêng; 14/14 Playwright desktop/mobile. Chạy lại 4 ca bị ảnh hưởng sau bổ sung dấu trạng thái kết thúc: 4/4 đạt. ESLint, Vite build và git diff --check đạt; health backend HTTP 200. Đã kiểm tra ảnh giao diện kết quả mới. Kiểm tra dữ liệu MongoDB thực: 212 điều, 1.592 đơn vị của luật 45/2013; hồ sơ mẫu trả 5 nhóm mốc, 10 ứng viên tham khảo, 0 căn cứ được chứng nhận, đúng trạng thái chờ xác minh.
+Kiểm thử nguồn dùng fixture có nội dung hư cấu và kiểm tra mạng thật riêng; xem lệnh trong [README](../README.md). Nguồn hợp lệ và test đạt không bảo đảm mọi suy luận pháp lý của model đều đúng.

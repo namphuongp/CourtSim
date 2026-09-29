@@ -15,7 +15,9 @@ export async function consumeAuthLimit(key, limit, windowMs = 15 * 60000) {
   }
   if (bucket.count > limit) {
     securityAudit('rate_limit', key);
-    throw new AppError('Bạn đã thử nhiều lần. Vui lòng chờ 15 phút rồi thử lại.', 429, 'RATE_LIMITED');
+    const error = new AppError('Bạn đã dùng hết lượt trong khoảng thời gian này. Vui lòng chờ rồi thử lại.', 429, 'RATE_LIMITED');
+    error.retryAfter = Math.max(1, Math.ceil(((slot + 1) * windowMs - Date.now()) / 1000));
+    throw error;
   }
 }
 export async function authRateLimit(request, response, next) {

@@ -6,6 +6,7 @@ export const objectId = value => {
 };
 export const literalRegex = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 export function queryOptions(query, sorts = ['created_at']) {
+  if (Object.keys(query).some(key => !['page', 'limit', 'q', 'sort', 'order', 'range', 'from', 'to', 'status', 'role', 'verified'].includes(key))) throw new AppError('Bộ lọc không hợp lệ.');
   for (const value of Object.values(query)) if (typeof value !== 'string') throw new AppError('Bộ lọc không hợp lệ.');
   const { page = '1', limit = '20', q = '', sort = sorts[0], order = 'desc' } = query;
   if (!/^[1-9]\d{0,5}$/.test(page) || !/^[1-9]\d{0,2}$/.test(limit) || Number(limit) > 100 || q.length > 100 || !sorts.includes(sort) || !['asc', 'desc'].includes(order)) throw new AppError('Bộ lọc hoặc phân trang không hợp lệ.');
@@ -21,7 +22,7 @@ export function dateRange(query = {}, now = new Date()) {
   let to = new Date(today.getTime() + DAY);
   if (range === 'custom') {
     const parse = value => {
-      if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value) || new Date(value + 'T00:00:00Z').toISOString().slice(0, 10) !== value) throw new AppError('Ngày không hợp lệ.');
+      if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value) || !Number.isFinite(Date.parse(value + 'T00:00:00Z')) || new Date(value + 'T00:00:00Z').toISOString().slice(0, 10) !== value) throw new AppError('Ngày không hợp lệ.');
       return new Date(value + 'T00:00:00+07:00');
     };
     from = parse(query.from); to = new Date(parse(query.to).getTime() + DAY);

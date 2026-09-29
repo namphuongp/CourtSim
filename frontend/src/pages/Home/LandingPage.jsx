@@ -1,6 +1,7 @@
+import CourtSimBrand from '../../components/CourtSimBrand';
 import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowDown, ArrowRight, BookOpen, FileText, Gavel, GitBranch, MessagesSquare, Search, Sparkles, Target } from 'lucide-react';
+import { ArrowDown, ArrowRight, BookOpen, FileText, GitBranch, MessagesSquare, Search, Sparkles, Target } from 'lucide-react';
 import './landing.css';
 import LandingFooter from '../../components/landing/LandingFooter';
 
@@ -57,7 +58,7 @@ export default function LandingPage() {
   return <div className="landing-page">
     <a className="landing-skip" href="#main-content">Đến nội dung chính</a>
     <header className="landing-header">
-      <Link to="/" aria-label="CourtSim — Trang chủ" className="landing-brand"><Gavel size={26} aria-hidden="true" />Court<span>Sim</span></Link>
+      <CourtSimBrand/>
       <nav aria-label="Điều hướng trang chủ"><a href="#how-it-works">Cách học</a><a href="#skills">Kỹ năng</a><a href="#feedback">Cách nhận góp ý</a></nav>
       <Link className="landing-login" to="/login">Đăng nhập <ArrowRight size={16} aria-hidden="true" /></Link>
     </header>
@@ -89,7 +90,7 @@ export default function LandingPage() {
         <Reveal className="landing-container landing-feedback-summary">
           <div><p className="landing-eyebrow">Sau phiên luyện tập</p><h2 id="feedback-heading">Nhận góp ý.<br />Luyện tập tốt hơn.</h2><p>Nhìn lại cách dùng căn cứ, phân tích chứng cứ, xây dựng lập luận và phản biện qua từng lượt.</p></div>
           <div className="landing-feedback-points">
-            <div><Target size={24} aria-hidden="true" /><div><h3>Điểm số kèm giải thích</h3><p>Điểm quy đổi về thang 100 từ phần đủ dữ liệu để chấm, kèm nhận xét và những phần chưa thể đánh giá.</p></div></div>
+            <div><Target size={24} aria-hidden="true" /><div><h3>Điểm số kèm giải thích</h3><p>Xem điểm ở phần đủ dữ liệu để đánh giá, kèm nhận xét và các mục chưa chấm. Chỉ có điểm toàn bài khi đủ dữ liệu cho cả thang 100.</p></div></div>
             <div><Sparkles size={24} aria-hidden="true" /><div><h3>Biết cách cải thiện</h3><p>Xem điểm mạnh, điều cần sửa và gợi ý cụ thể. Mở lại biên bản để đối chiếu với lập luận của bạn.</p></div></div>
           </div>
         </Reveal>
