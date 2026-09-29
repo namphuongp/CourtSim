@@ -1,3 +1,4 @@
+import { canCiteEvidence } from '../../../shared/casePresentation.mjs';
 import { createHash } from 'node:crypto';
 import { AppError } from '../utils/AppError.js';
 import { isValidDateOnly } from './legalTimeline.js';
@@ -28,7 +29,7 @@ export function validateEvidenceReferences(courtCase, content, supplied) {
   if (supplied !== undefined && (!Array.isArray(supplied) || supplied.length > 30 || supplied.some((id) => typeof id !== 'string')
     || JSON.stringify([...new Set(supplied)].sort()) !== JSON.stringify(ids))) throw new AppError('Danh sách tài liệu không khớp bài viết. Hãy chọn lại tài liệu muốn viện dẫn.');
   if (ids.length > 30) throw new AppError('Mỗi bài viết chỉ được viện dẫn tối đa 30 tài liệu.');
-  if (ids.some((id) => !inventory.some((item) => item.id === id))) throw new AppError('Tài liệu viện dẫn không thuộc hồ sơ của phiên này.', 400, 'EVIDENCE_NOT_IN_CASE');
+  if (ids.some((id) => !inventory.some((item) => item.id === id && canCiteEvidence(item, courtCase)))) throw new AppError('Tài liệu viện dẫn không thuộc hồ sơ của phiên này.', 400, 'EVIDENCE_NOT_IN_CASE');
   return ids;
 }
 
@@ -43,13 +44,15 @@ export function validateCaseDetails(body) {
   }
   for (const item of evidence) {
     if (!item || !text(item.name, 200) || !item.name.trim() || !['provided', 'mentioned_only'].includes(item.availability)
-      || ['summary', 'source_quote', 'provided_by'].some((key) => item[key] !== undefined && !text(item[key], 2000))
+      || ['summary', 'source_quote', 'provided_by', 'source_locator', 'proof_scope'].some((key) => item[key] !== undefined && !text(item[key], 2000))
+      || (item.source_kind !== undefined && !['document', 'transcript_statement', 'transcript_readout'].includes(item.source_kind))
+      || (item.verification_status !== undefined && !['unverified', 'conflicting'].includes(item.verification_status))
       || (item.content !== undefined && !text(item.content, 10000))
       || (item.availability === 'provided' && !item.content?.trim())
       || (item.date && !isValidDateOnly(item.date))) throw new AppError('Chứng cứ cần tên, trạng thái và nội dung thực sự được cung cấp; ngày không rõ có thể để trống.');
   }
   return {
     parties: parties.map(({ side, name, claims }) => ({ side, name, claims })),
-    evidence_inventory: evidence.map(({ name, availability, summary, source_quote, provided_by, date, content }) => ({ name, availability, summary, source_quote, provided_by, date, content })),
+    evidence_inventory: evidence.map(({ name, availability, summary, source_quote, provided_by, date, content, source_kind, source_locator, proof_scope, verification_status }) => ({ name, availability, summary, source_quote, provided_by, date, content, source_kind, source_locator, proof_scope, verification_status })),
   };
 }

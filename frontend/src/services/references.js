@@ -2,7 +2,7 @@ export const EVIDENCE_MIME = 'application/x-courtsim-evidence';
 import { legalReferenceLabel } from '../../../shared/legalSourcePolicy.mjs';
 
 export function evidenceText(item) {
-  return `[Chứng cứ: ${item.name}] ${item.summary || ''}`.trim();
+  return `[Chứng cứ: ${item.name}] ${item.source_kind?.startsWith('transcript_') ? `${item.content}\nNguồn: ${item.provided_by}; ${item.source_locator}. Giới hạn: ${item.proof_scope}` : item.summary || ''}`.trim();
 }
 
 export function evidenceIds(content, inventory = []) {

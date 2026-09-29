@@ -68,6 +68,18 @@ test('trình duyệt → API thật → MongoDB riêng: tài khoản, hồ sơ, 
   await page.reload();
   await expect(page.getByRole('button', { name: nextRole })).toBeVisible();
   expect(harness.calls()).toBe(1);
+  await expect(page.getByRole('button', { name: 'Lời thoại sau', exact: true })).toBeDisabled();
+  await page.getByRole('button', { name: 'Lời thoại trước', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Nội dung lời thoại' })).toContainText('Tôi căn cứ hợp đồng');
+  await expect(page.getByRole('button', { name: nextRole })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Lời thoại trước', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Lời thoại trước', exact: true })).toBeDisabled();
+  await expect(page.getByRole('navigation', { name: 'Duyệt lời thoại' })).toContainText('1 / 3');
+  await page.getByRole('button', { name: 'Lời thoại sau', exact: true }).click();
+  await page.getByRole('button', { name: 'Lời thoại sau', exact: true }).click();
+  await expect(page.getByRole('button', { name: nextRole })).toBeVisible();
+  expect(harness.calls()).toBe(1);
+  await page.screenshot({ path: `../.test-artifacts/dialogue-navigation-${info.project.name}.png`, fullPage: true });
   await page.getByRole('button', { name: 'Biên bản phiên', exact: true }).click();
   await page.getByRole('button', { name: 'Xem tại phiên tòa: 01 · Chủ tọa', exact: true }).click();
   await expect(page.getByRole('button', { name: nextRole })).toHaveCount(0);

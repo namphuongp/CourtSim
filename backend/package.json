@@ -15,7 +15,8 @@
     "legal:verify": "node src/scripts/verifyVbplDocument.js",
     "legal:review": "node src/scripts/reviewLegalVersion.js",
     "auth:migrate": "node src/scripts/migrateAuth.js",
-    "admin:indexes": "node src/scripts/createAdminIndexes.js"
+    "admin:indexes": "node src/scripts/createAdminIndexes.js",
+    "case1:import": "node src/scripts/importCase1.js"
   },
   "keywords": [],
   "author": "",

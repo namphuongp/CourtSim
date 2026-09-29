@@ -76,6 +76,11 @@ export function resolveLegalResearch({ courtCase, eventDate, learnerTimeline = [
 }
 
 export async function researchLegalBasis({ courtCase, eventDate, learnerTimeline = [], records = [], online = true }) {
+  // Không dùng ngày sơ thẩm thay ngày phúc thẩm chưa biết để xác nhận luật áp dụng.
+  if (courtCase.practice_context?.legal_assessment === 'unverified') return {
+    citations: [], candidates: [], issues: [], legal_assessment_available: false,
+    warnings: ['Chưa xác minh luật áp dụng theo các mốc trong bản ghi; tiếp tục luyện lập luận và xử lý chứng cứ.'],
+  };
   try {
     const plans = buildLegalPlan(courtCase, eventDate, learnerTimeline);
     const numbers = [...new Set(plans.flatMap((p) => p.law_numbers))];

@@ -42,7 +42,7 @@ export default function LearningOverview({ view = 'dashboard' }) {
         <div className="grid gap-4 lg:grid-cols-2">{(view === 'dashboard' ? visible.slice(0, 6) : visible).map((s) => <article key={s._id} className="rounded-2xl border border-slate-800 bg-slate-900 p-5 space-y-3">
           <p className="text-xs font-semibold text-blue-400">{s.status === 'completed' ? 'Đã hoàn thành' : 'Đang luyện tập'} · {new Date(s.created_at).toLocaleDateString('vi-VN')}</p>
           <h2 className="text-lg font-bold text-white">{s.case_id?.title ?? 'Hồ sơ không còn trong thư viện'}</h2>
-          <p className="text-sm text-slate-400">{roleLabel(s.user_court_role, s.case_id?.category)} · {s.turn_count} lượt</p>
+          <p className="text-sm text-slate-400">{roleLabel(s.user_court_role, s.case_id?.category, s.case_id)} · {s.turn_count} lượt</p>
           {s.result && <><p className="font-bold">Điểm: {scoreSummary(s.result).label}</p>{s.result?.assessed_max !== undefined && <p className="text-xs text-amber-300">{scoreSummary(s.result).partial ? `${100 - s.result.assessed_max}% trọng số chưa chấm · Chưa có điểm toàn bài` : 'Đã đánh giá đủ trọng số'}</p>}</>}
           <div className="flex flex-wrap gap-4"><Link className="text-blue-400 underline" to={`/simulation/${s._id}${s.status === 'completed' ? '#transcript' : ''}`}>{s.status === 'completed' ? 'Xem biên bản' : 'Tiếp tục tranh tụng'}</Link>{s.status === 'completed' && <Link className="text-blue-400 underline" to={`/simulation/${s._id}/result`}>Xem kết quả</Link>}</div>
         </article>)}</div>

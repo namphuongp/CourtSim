@@ -3,7 +3,10 @@ import mongoose from 'mongoose';
 import { randomUUID } from 'node:crypto';
 import { SCORING_RUBRIC } from '../../src/data/scoringRubric.js';
 
-export async function startBrowserHarness() {
+// Worker có thể chạy nhiều tệp; env của backend đã cache nên giữ cổng AI giữa các harness.
+let fixtureAiPort = 0;
+
+export async function startBrowserHarness({ courtCase } = {}) {
   const dbName = `courtsim_test_${randomUUID().replaceAll('-', '')}`;
   const emails = [];
   let calls = 0;
@@ -21,7 +24,7 @@ export async function startBrowserHarness() {
       const judge = prompt.includes('Chủ tọa trung lập,');
       const opponentNext = prompt.includes('Người được mời tiếp duy nhất: bên đối lập');
       const replying = context.recentProceedings.filter(r => r.speaker_type === 'user').length > 1;
-      const fact_analysis = { established_facts: ['Có hợp đồng vay.'], learner_claims: [], inferences: [], missing_facts: ['Chưa có biên nhận'] };
+      const fact_analysis = { established_facts: courtCase ? [] : ['Có hợp đồng vay.'], learner_claims: [], inferences: [], missing_facts: ['Chưa có biên nhận'] };
       const payload = prompt.includes('unassessedReasons') ? {
         verdict: 'Đạt yêu cầu thực hành', score: 1, fact_analysis, citation_ids: [],
         criteria: SCORING_RUBRIC.groups.flatMap(g => g.items.map(i => ({ id: i.id, score: i.max * 0.8, reason: 'Có liên hệ hồ sơ', strength: 'Bám chứng cứ', improvement: 'Giải thích chứng cứ', record_id: user.record_id, quote: user.text.slice(0, 20) }))),
@@ -30,8 +33,8 @@ export async function startBrowserHarness() {
       } : {
         role: judge ? 'judge' : 'opponent', purpose: judge ? 'clarify_claim' : 'rebut',
         issue: context.state.current_issue.id, next_speaker: context.state.invited_next,
-        focus: { learner: context.learner[0].id, dossier: [context.dossier.find(s => s.text === 'Có hợp đồng vay.').id] }, citation_ids: [],
-        content: judge ? opponentNext ? 'Mời bên đối lập làm rõ căn cứ phản hồi. Bên đối lập giải thích mối liên hệ giữa hợp đồng và việc thanh toán như thế nào?' : 'Bạn viện dẫn hợp đồng trong hồ sơ. Bạn giải thích chứng cứ nào cho thấy khoản tiền còn phải trả?'
+        focus: { learner: context.learner[0].id, dossier: [(context.dossier.find(s => s.text === 'Có hợp đồng vay.') ?? context.dossier[0]).id] }, citation_ids: [],
+        content: courtCase ? (judge ? (opponentNext ? 'Mời bên đối lập phản hồi về nguồn biết việc giao gạch. Phía đối lập phân biệt lời kể trực tiếp và gián tiếp thế nào?' : 'Bạn đã nêu giới hạn nguồn lời khai. Bạn còn cần đối chiếu tài liệu nào để làm rõ nội dung thỏa thuận?') : replying ? 'Bạn đã giữ giới hạn của lời kể. Phía tôi đề nghị đối chiếu nội dung thỏa thuận với phạm vi điều người kể trực tiếp biết, chưa suy ra quyền sử dụng đất từ lời kể đó.' : 'Lời tự nhận gánh gạch cần được xem trong giới hạn điều người kể biết. Phía tôi chưa đồng ý suy ra đã có thỏa thuận về quyền sử dụng đất chỉ từ lời trình bày này.') : judge ? opponentNext ? 'Mời bên đối lập làm rõ căn cứ phản hồi. Bên đối lập giải thích mối liên hệ giữa hợp đồng và việc thanh toán như thế nào?' : 'Bạn viện dẫn hợp đồng trong hồ sơ. Bạn giải thích chứng cứ nào cho thấy khoản tiền còn phải trả?'
           : replying ? 'Bạn đã phân biệt việc vay với việc thanh toán. Phía tôi đề nghị đối chiếu khoản tiền còn yêu cầu với diễn biến được hồ sơ ghi nhận, thay vì suy ra toàn bộ nghĩa vụ chỉ từ hợp đồng.' : 'Bạn viện dẫn hợp đồng để yêu cầu đối chiếu việc trả tiền. Hợp đồng thể hiện việc vay, nhưng tự nó không chứng minh đã thanh toán; vì vậy lời trình bày trả tiền còn phải được liên kết với diễn biến trong hồ sơ.',
       };
       const raw = JSON.stringify(payload);
@@ -46,7 +49,8 @@ export async function startBrowserHarness() {
       } else { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify({ choices: [{ message: { content: raw } }] })); }
     } catch { res.writeHead(500); res.end('{}'); }
   });
-  await new Promise(resolve => ai.listen(0, '127.0.0.1', resolve));
+  await new Promise((resolve, reject) => { ai.once('error', reject); ai.listen(fixtureAiPort, '127.0.0.1', resolve); });
+  fixtureAiPort = ai.address().port;
   Object.assign(process.env, { NODE_ENV: 'test', AUTH_EMAIL_VERIFICATION_DISABLED: 'false', JWT_SECRET: 'browser-integration-only-secret-at-least-32',
     CLIENT_ORIGIN: 'http://127.0.0.1:4175', AI_BASE_URL: `http://127.0.0.1:${ai.address().port}`, GEMINI_API_KEY: '', AI_API_KEY: '', LEGAL_ONLINE_LOOKUP: 'false' });
   const { createApp } = await import('../../src/app.js');
@@ -56,7 +60,7 @@ export async function startBrowserHarness() {
   await mongoose.connect(process.env.COURTSIM_TEST_MONGO_URI || 'mongodb://127.0.0.1:27017', { dbName, serverSelectionTimeoutMS: 5000 });
   await Promise.all([User.init(), SimulationSession.init(), VbplSnapshot.init()]);
   await AiPersonal.insertMany(['judge', 'prosecutor', 'evaluator'].map(role_name => ({ role_name, model_id: 'test', system_prompt: 'Bám hồ sơ.', temperature: 0.1 })));
-  await Case.create({ title: 'Hồ sơ kiểm thử trình duyệt', category: 'dân sự', summary: 'Tranh chấp vay', full_document: 'Có hợp đồng vay. Chưa có biên nhận trả tiền.',
+  await Case.create(courtCase ?? { title: 'Hồ sơ kiểm thử trình duyệt', category: 'dân sự', summary: 'Tranh chấp vay', full_document: 'Có hợp đồng vay. Chưa có biên nhận trả tiền.',
     evidence_inventory: [{ name: 'Hợp đồng vay', availability: 'provided', content: 'Có hợp đồng vay.', summary: 'Hợp đồng hai bên ký.' }, { name: 'Biên nhận', availability: 'mentioned_only', source_quote: 'Chưa có biên nhận trả tiền.' }] });
   // Fixture chỉ nằm trong DB ngẫu nhiên, không đưa vào kho luật người dùng.
   await VbplSnapshot.create(parseVbplPage({ url: 'https://vbpl.vn/van-ban/chi-tiet/fixture-browser', content: '<h1>Bộ luật Dân sự</h1><p>Số ký hiệu: 91/2015/QH13</p><p>Loại văn bản: Bộ luật</p><article><p>Điều 1. Hợp đồng vay</p><p>Nội dung giả định dùng riêng cho kiểm thử, không phải điều luật thật.</p></article>' }, '91/2015/QH13', new Date('2026-09-01T00:00:00Z')));
@@ -68,8 +72,10 @@ export async function startBrowserHarness() {
       if (mongoose.connection.name !== dbName || !/^courtsim_test_[a-f0-9]{32}$/.test(dbName)) throw new Error('Không đúng DB kiểm thử');
       await User.updateOne({ email }, { $set: { system_role: 'admin' } });
     }, close: async () => {
-    api.closeAllConnections(); ai.closeAllConnections();
-    await new Promise(resolve => api.close(resolve)); await new Promise(resolve => ai.close(resolve));
+    await Promise.all([api, ai].map(server => new Promise(resolve => {
+      server.close(resolve);
+      server.closeAllConnections();
+    })));
     if (mongoose.connection.name === dbName && /^courtsim_test_[a-f0-9]{32}$/.test(dbName)) await mongoose.connection.dropDatabase();
     await mongoose.disconnect();
   } };

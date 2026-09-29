@@ -15,6 +15,7 @@ import { MAX_TURNS, getRecords, publicSession, readRequestId, replayTurn, withSe
 import { researchLegalBasis } from '../services/legalResearchService.js';
 import { consumeAuthLimit } from '../middlewares/rateLimit.js';
 import { runConversation } from '../services/conversationService.js';
+import { openingStatement } from '../services/casePractice.js';
 
 const router = Router();
 const allowedRoles = ['defense_lawyer', 'plaintiff_lawyer'];
@@ -56,7 +57,7 @@ router.post('/', asyncHandler(async (request, response) => {
     const id = new mongoose.Types.ObjectId();
     const opening = record(id, {
       sender_type: 'ai_judge', sender_name: 'Chủ tọa',
-      content: `Phiên mô phỏng “${courtCase.title}” bắt đầu. Bạn bảo vệ phía ${/hình sự/iu.test(courtCase.category) ? (role === 'defense_lawyer' ? 'bị cáo' : 'người bị hại') : (role === 'defense_lawyer' ? 'bị đơn' : 'nguyên đơn')}. Mời trình bày yêu cầu, luận điểm mở đầu và chứng cứ có trong hồ sơ.`,
+      content: openingStatement(courtCase, role) ?? `Phiên mô phỏng “${courtCase.title}” bắt đầu. Bạn bảo vệ phía ${/hình sự/iu.test(courtCase.category) ? (role === 'defense_lawyer' ? 'bị cáo' : 'người bị hại') : (role === 'defense_lawyer' ? 'bị đơn' : 'nguyên đơn')}. Mời trình bày yêu cầu, luận điểm mở đầu và chứng cứ có trong hồ sơ.`,
     });
     try {
       session = await SimulationSession.create({ ...filter, _id: id, case_id: caseId, case_snapshot: courtCase,
@@ -75,7 +76,7 @@ router.post('/', asyncHandler(async (request, response) => {
 router.get('/', asyncHandler(async (request, response) => {
   const sessions = await SimulationSession.find({ user_id: request.auth.userId })
     .select('-turns -opening -case_snapshot -evaluation.feedback -evaluation.fact_analysis -evaluation.citations -evaluation.rubric_feedback -evaluation.criteria -evaluation.legal_research -evaluation.citation_warnings -evaluation.improvement_suggestions')
-    .sort({ created_at: -1 }).populate('case_id', 'title category').lean();
+    .sort({ created_at: -1 }).populate('case_id', 'title category practice_context').lean();
   const legacyResults = await TrialResult.find({ session_id: { $in: sessions.filter((s) => !s.evaluation).map((s) => s._id) } }).select('session_id score rubric_scores').lean();
   const bySession = new Map(legacyResults.map((result) => [String(result.session_id), result]));
   response.json({ data: sessions.map((session) => {

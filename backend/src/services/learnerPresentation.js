@@ -18,11 +18,13 @@ export function learnerCase(value) {
     _id: c._id, title: learnerText(c.title, 'Hồ sơ vụ án'), category: learnerText(c.category),
     summary: learnerText(c.summary), full_document: learnerText(c.full_document),
     reference_date: c.reference_date, source_url: safeUrl(c.source_url), created_at: c.created_at,
+    practice_context: c.practice_context,
     recorded_events: caseKnowledge(c).recorded_events.map((f) => ({ text: f.quote, source_quote: f.quote, source: f.source_type === 'judgment' ? 'Theo nội dung bản án' : 'Theo hồ sơ bài tập' })),
     parties: (c.parties ?? []).map((p) => ({ side: p.side, name: learnerText(p.name), claims: (p.claims ?? []).map((v) => learnerText(v)).filter(Boolean) })),
     timeline: (c.timeline ?? []).map((e) => ({ kind: e.kind, date: e.date, date_to: e.date_to, description: learnerText(e.description) })),
     evidence_inventory: evidenceInventory(c).map((e) => ({ id: e.id, code: e.code, name: learnerText(e.name, 'Tài liệu trong hồ sơ'), availability: e.availability,
-      summary: e.summary === e.source_quote ? e.summary : learnerText(evidenceSummary(e.summary)), source_quote: e.source_quote, content: e.content, provided_by: learnerText(e.provided_by), date: e.date || null })),
+      summary: e.summary === e.source_quote ? e.summary : learnerText(evidenceSummary(e.summary)), source_quote: e.source_quote, content: e.content, provided_by: learnerText(e.provided_by), date: e.date || null,
+      source_kind: e.source_kind, source_locator: e.source_locator, proof_scope: e.proof_scope, verification_status: e.verification_status })),
   };
 }
 

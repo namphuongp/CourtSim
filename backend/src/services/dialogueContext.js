@@ -23,7 +23,9 @@ export function dialogueContext(session, courtCase, records, legalContext) {
     ...knowledge.unproven.map(f => ({ kind: 'unproven', text: f.quote })),
     ...knowledge.unclassified_context.map(text => ({ kind: 'unclassified_context', text })),
     ...evidenceInventory(courtCase).flatMap(e => [e.summary, ...(e.availability === 'provided' ? [e.content] : [])]
-      .filter(Boolean).map(text => ({ kind: e.availability, evidence_id: e.id, document: e.name, text }))),
+      .filter(Boolean).map(text => ({ kind: e.source_kind === 'transcript_statement' ? 'party_statement' : e.availability, availability: e.availability,
+        source_kind: e.source_kind, party: e.provided_by, source_locator: e.source_locator, proof_scope: e.proof_scope, verification_status: e.verification_status,
+        evidence_id: e.id, document: e.name, text }))),
   ];
   // Chọn trích đoạn có liên quan, giữ nhãn lời khai; không dùng model tóm tắt thành sự thật.
   const seen = new Set();
@@ -40,28 +42,36 @@ export function dialogueContext(session, courtCase, records, legalContext) {
   const positions = learnerSentences.filter(text => !/^(?:Phiên kiểm thử|Nội dung người học mô phỏng)/iu.test(text));
   const learner = (positions.length ? positions : learnerSentences).map((text, i) => ({ id: `L${i + 1}`, text }));
   const questions = records.flatMap((record, index) => {
-    if (record.sender_type !== 'ai_judge') return [];
+    if (!['ai_judge', 'ai_prosecutor'].includes(record.sender_type)) return [];
     const invited = record.next_speaker ?? 'learner';
-    const replyType = invited === 'opponent' ? 'ai_prosecutor' : 'user';
+    const replyType = invited === 'opponent' ? 'ai_prosecutor' : invited === 'judge' ? 'ai_judge' : 'user';
     const reply = records.slice(index + 1).find(r => r.sender_type === replyType);
     return ((record.content ?? '').match(/[^.!?\n]*\?/gu) ?? []).map(text => ({
-      record_id: String(record._id ?? index), text: text.trim(),
+      record_id: String(record._id ?? index), asked_by: record.sender_type, text: text.trim(),
       invited_speaker: invited,
       status: reply ? 'reply_received' : 'awaiting_reply',
       reply_record_id: reply ? String(reply._id ?? records.indexOf(reply)) : null,
       reply: reply ? sentences(reply.content) : [],
     }));
   }).slice(-10);
-  const issue = { id: `I:${latest?._id ?? records.lastIndexOf(latest)}`, learner_points: learner.map(s => s.text) };
+  // Không chép cả lời mới nhất lần thứ ba; nội dung đầy đủ nằm trong learner.
+  const issue = { id: `I:${latest?._id ?? records.lastIndexOf(latest)}`, learner_points: learner.map(s => s.id) };
+  const latestIndex = records.lastIndexOf(latest);
+  const normalize = text => text.normalize('NFC').toLocaleLowerCase('vi').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+  const earlierPoints = new Set(records.slice(0, latestIndex).filter(r => r.sender_type === 'user').flatMap(r => sentences(r.content)).map(normalize));
+  const opponentReply = records.slice(latestIndex + 1).findLast(r => r.sender_type === 'ai_prosecutor');
   const brief = r => ({ record_id: String(r._id ?? records.indexOf(r)), speaker_type: r.sender_type,
     text: sentences(r.content).slice(0, 2).join(' '), issue: r.issue ?? null, purpose: r.purpose ?? null,
     evidence_ids: r.evidence_ids ?? [] });
   return {
     schema_version: 2,
     title: courtCase.title, category: courtCase.category, userRole: session.user_court_role,
+    practice_context: courtCase.practice_context,
     state: { phase: session.conversation?.phase ?? 'debate', learner_turns: records.filter(r => r.sender_type === 'user').length,
       input_kind: latest?.input_kind ?? classifyDialogueInput(latest?.content ?? ''),
       current_issue: issue, questions,
+      repeated_learner_points: learner.filter(point => earlierPoints.has(normalize(point.text))).map(point => point.id),
+      last_opponent_reply: opponentReply ? String(opponentReply._id ?? records.indexOf(opponentReply)) : null,
       pending_question: questions.findLast(q => q.status === 'awaiting_reply') ?? null,
       last_question_with_reply: questions.findLast(q => q.status === 'reply_received') ?? null,
       // Có lượt trả lời không đồng nghĩa đã giải quyết câu hỏi; không suy diễn sự thống nhất.
@@ -84,7 +94,8 @@ export function resolveDialogueFocus(response, context) {
   const learnerIds = Array.isArray(focus?.learner) ? focus.learner : [focus?.learner];
   const learners = learnerIds.map(id => context.learner.find(s => s.id === id));
   const learner = learners[0];
-  const requiresDossier = response.purpose === 'rebut' || response.purpose === 'clarify_evidence';
+  // Phản biện mắt xích suy luận/nguồn luật có thể chỉ dựa vào lời vừa nói, không ép gán hồ sơ không liên quan.
+  const requiresDossier = response.purpose === 'clarify_evidence';
   if (!learnerIds.length || learnerIds.length > 3 || learners.some(s => !s) || new Set(learnerIds).size !== learnerIds.length
     || !Array.isArray(focus?.dossier) || (requiresDossier && context.dossier.length && !focus.dossier.length) || focus.dossier.length > 3
     || focus.dossier.some(id => !context.dossier.some(s => s.id === id))) {
@@ -99,4 +110,14 @@ export function resolveDialogueFocus(response, context) {
     fact_analysis: { established_facts: [], learner_claims: learners.map(s => s.text), inferences: [], missing_facts: [] },
     source_anchors: focus.dossier.map(id => context.dossier.find(s => s.id === id)),
   };
+}
+
+export function validateDialogueQuantities(content, context) {
+  // Chặn số đo/số tiền mới; phép kiểm này không thay thế thẩm định ý nghĩa lời thoại.
+  const quantities = text => (text.match(/(?<![\p{L}\p{N}])\d+(?:[.,]\d+)*\s*(?:m²|m2|km²|ha|triệu đồng|tỷ đồng|đồng|%)(?!\p{L})/giu) ?? [])
+    .map(value => value.toLocaleLowerCase('vi').replace(/\s+/gu, '').replaceAll('m2', 'm²'));
+  const sources = new Set(quantities([...context.learner.map(s => s.text), ...context.dossier.map(s => s.text), ...context.retrievedLaw.map(s => s.text)].join('\n')));
+  if (quantities(content).some(value => !sources.has(value))) {
+    throw new AppError('Lời thoại có số đo hoặc số tiền chưa có trong nguồn được cung cấp.', 502, 'AI_UNGROUNDED_FACT');
+  }
 }
