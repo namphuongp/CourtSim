@@ -1,0 +1,434 @@
+[
+  {
+    "law_number": "45/2013/QH13",
+    "title": "Luật Đất đai",
+    "issuing_body": "Quốc hội",
+    "promulgated_at": "2013-11-29",
+    "document_kind": "original",
+    "version": "Bản gốc PDF Công báo — chưa xác minh sửa đổi và hiệu lực từng điều",
+    "expected_articles": 212,
+    "completeness_reviewed": true,
+    "page_review_evidence": "Đối chiếu dãy điều liên tục; phần 2024 gồm 1–90, 91–170, 171–260. Đã render trang ít chữ: thông tin xuất bản và trang trắng.",
+    "permission": {
+      "status": "allowed",
+      "basis": "user_authorized_simulation",
+      "evidence": "Ngày 29/09/2026 người dùng xác nhận các tài liệu là văn bản nhà nước và yêu cầu dùng làm căn cứ mô phỏng toà, Trợ lý AI, kết hợp web không giới hạn nguồn."
+    },
+    "official_url": "https://vbpl.vn/bonoivu/Pages/vbpq-toanvan.aspx?ItemID=32833",
+    "files": [
+      {
+        "path": "VanBanGoc_45.2013.QH13.pdf",
+        "sha256": "e60dfb3e9da515b0c7dda4691a7200dbac83856ec96a8a13e242fb3388ec4d41"
+      }
+    ],
+    "relations": [],
+    "priority": 100
+  },
+  {
+    "law_number": "31/2024/QH15",
+    "title": "Luật Đất đai",
+    "issuing_body": "Quốc hội",
+    "promulgated_at": "2024-01-18",
+    "document_kind": "original",
+    "version": "Bản gốc PDF Công báo — chưa xác minh sửa đổi và hiệu lực từng điều",
+    "expected_articles": 260,
+    "completeness_reviewed": true,
+    "page_review_evidence": "Đối chiếu dãy điều liên tục; phần 2024 gồm 1–90, 91–170, 171–260. Đã render trang ít chữ: thông tin xuất bản và trang trắng.",
+    "permission": {
+      "status": "allowed",
+      "basis": "user_authorized_simulation",
+      "evidence": "Ngày 29/09/2026 người dùng xác nhận các tài liệu là văn bản nhà nước và yêu cầu dùng làm căn cứ mô phỏng toà, Trợ lý AI, kết hợp web không giới hạn nguồn."
+    },
+    "official_url": "https://vbpl.vn/bolaodong/Pages/ivbpq-toanvan.aspx?ItemID=177815&Keyword=",
+    "files": [
+      {
+        "path": "VanBanGoc_31-2024-qh15_1 (2).pdf",
+        "sha256": "2558044082ee768192a311aee548eb9fae4daada546013aa5181eb91c8842637"
+      },
+      {
+        "path": "VanBanGoc_31-2024-qh15_2 (2).pdf",
+        "sha256": "651797458d2399fd70cd5b4d3edb3845d223540fa34d82f826718c248aca619e"
+      },
+      {
+        "path": "VanBanGoc_31-2024-qh15_3 (2).pdf",
+        "sha256": "6f679f5043ac94fec88ec6f565131faf7aacc819290191069f80799b60d294d0"
+      }
+    ],
+    "relations": [],
+    "priority": 100
+  },
+  {
+    "law_number": "01/2017/NĐ-CP",
+    "title": "NGHỊ ĐỊNH SỬA ĐỔI, BỔ SUNG MỘT SỐ NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT THI HÀNH LUẬT ĐẤT ĐAI",
+    "document_kind": "amendment",
+    "priority": 10,
+    "permission": {
+      "status": "allowed",
+      "basis": "user_authorized_simulation",
+      "evidence": "Ngày 29/09/2026 người dùng xác nhận các tài liệu là văn bản nhà nước và yêu cầu dùng làm căn cứ mô phỏng toà, Trợ lý AI, kết hợp web không giới hạn nguồn."
+    },
+    "files": [
+      {
+        "path": "01_2017_ND-CP_337031.doc",
+        "sha256": "4b9cdde94790e30ae61a29b3da158aa031c59b0d223b3007ffe019a932ba576e"
+      }
+    ]
+  },
+  {
+    "law_number": "101/2024/NĐ-CP",
+    "title": "NGHỊ ĐỊNH QUY ĐỊNH VỀ ĐIỀU TRA CƠ BẢN ĐẤT ĐAI; ĐĂNG KÝ, CẤP GIẤY CHỨNG NHẬN QUYỀN SỬ DỤNG ĐẤT, QUYỀN SỞ HỮU TÀI SẢN GẮN LIỀN VỚI ĐẤT VÀ HỆ THỐNG THÔNG TIN ĐẤT ĐAI",
+    "document_kind": "amendment",
+    "priority": 10,
+    "permission": {
+      "status": "allowed",
+      "basis": "user_authorized_simulation",
+      "evidence": "Ngày 29/09/2026 người dùng xác nhận các tài liệu là văn bản nhà nước và yêu cầu dùng làm căn cứ mô phỏng toà, Trợ lý AI, kết hợp web không giới hạn nguồn."
+    },
+    "files": [
+      {
+        "path": "101_2024_ND-CP_613131.doc",
+        "sha256": "4870eb576925a77b41bdefe2e57dfdd541f992c03f8c4df751c63aa1f2aa88ad"
+      }
+    ]
+  },
+  {
+    "law_number": "102/2024/NĐ-CP",
+    "title": "NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT THI HÀNH MỘT SỐ ĐIỀU CỦA LUẬT ĐẤT ĐAI",
+    "document_kind": "amendment",
+    "priority": 10,
+    "permission": {
+      "status": "allowed",
+      "basis": "user_authorized_simulation",
+      "evidence": "Ngày 29/09/2026 người dùng xác nhận các tài liệu là văn bản nhà nước và yêu cầu dùng làm căn cứ mô phỏng toà, Trợ lý AI, kết hợp web không giới hạn nguồn."
+    },
+    "files": [
+      {
+        "path": "102_2024_ND-CP_603982.doc",
+        "sha256": "533ef4e6d93ed7f0c1c15fcb21b68582e4f095c4c6fc9047ee39b1063e8f4783"
+      }
+    ]
+  },
+  {
+    "law_number": "181/2004/NĐ-CP",
+    "title": "NGHỊ ĐỊNH VỀ THI HÀNH LUẬT ĐẤT ĐAI",
+    "document_kind": "original",
+    "priority": 10,
+    "permission": {
+      "status": "allowed",
+      "basis": "user_authorized_simulation",
+      "evidence": "Ngày 29/09/2026 người dùng xác nhận các tài liệu là văn bản nhà nước và yêu cầu dùng làm căn cứ mô phỏng toà, Trợ lý AI, kết hợp web không giới hạn nguồn."
+    },
+    "files": [
+      {
+        "path": "181_2004_ND-CP_52514.docx",
+        "sha256": "34611011d97d9f53a8d758a0a4651766e725451f4f54e5ab02e3043e26309c9b"
+      }
+    ]
+  },
+  {
+    "law_number": "24/2004/QH11",
+    "title": "BỘ LUẬT TỐ TỤNG DÂN SỰ",
+    "document_kind": "amendment",
+    "priority": 10,
+    "permission": {
+      "status": "allowed",
+      "basis": "user_authorized_simulation",
+      "evidence": "Ngày 29/09/2026 người dùng xác nhận các tài liệu là văn bản nhà nước và yêu cầu dùng làm căn cứ mô phỏng toà, Trợ lý AI, kết hợp web không giới hạn nguồn."
+    },
+    "files": [
+      {
+        "path": "24_2004_QH11_52189.docx",
+        "sha256": "3c66319930aae6908a19455c593fd3e382f87511cefea5a7bfe23c73091d3bc8"
+      }
+    ]
+  },
+  {
+    "law_number": "33/2005/QH11",
+    "title": "BỘ LUẬT DÂN SỰ",
+    "document_kind": "amendment",
+    "priority": 10,
+    "permission": {
+      "status": "allowed",
+      "basis": "user_authorized_simulation",
+      "evidence": "Ngày 29/09/2026 người dùng xác nhận các tài liệu là văn bản nhà nước và yêu cầu dùng làm căn cứ mô phỏng toà, Trợ lý AI, kết hợp web không giới hạn nguồn."
+    },
+    "files": [
+      {
+        "path": "33_2005_QH11_2463.doc",
+        "sha256": "ab9bf9c440fb97382208375a96ded88eebaf047f00e5c66a8f8cd8d38dd8a34c"
+      }
+    ]
+  },
+  {
+    "law_number": "43/2014/NĐ-CP",
+    "title": "NGHỊ ĐỊNH QUY ĐỊNH CHI TIẾT THI HÀNH MỘT SỐ ĐIỀU CỦA LUẬT ĐẤT ĐAI",
+    "document_kind": "original",
+    "priority": 10,
+    "permission": {
+      "status": "allowed",
+      "basis": "user_authorized_simulation",
+      "evidence": "Ngày 29/09/2026 người dùng xác nhận các tài liệu là văn bản nhà nước và yêu cầu dùng làm căn cứ mô phỏng toà, Trợ lý AI, kết hợp web không giới hạn nguồn."
+    },
+    "files": [
+      {
+        "path": "43_2014_ND-CP_230680.doc",
+        "sha256": "cefb2ceff608e417f1ed5f6f75f69d449d5656e25840c9b00cf50c95792eec2d"
+      }
+    ]
+  },
+  {
+    "law_number": "43/2024/QH15",
+    "title": "Luật số:  43/2024/QH15\tHà Nội, ngày 29 tháng 6 năm 2024",
+    "document_kind": "amendment",
+    "priority": 10,
+    "permission": {
+      "status": "allowed",
+      "basis": "user_authorized_simulation",
+      "evidence": "Ngày 29/09/2026 người dùng xác nhận các tài liệu là văn bản nhà nước và yêu cầu dùng làm căn cứ mô phỏng toà, Trợ lý AI, kết hợp web không giới hạn nguồn."
+    },
+    "files": [
+      {
+        "path": "43_2024_QH15_612195.doc",
+        "sha256": "9f2f6acf6493ad4c9f68cca7e2d8b19d78e94b43b3ee9e4f31c9b75d16d3aa15"
+      }
+    ]
+  },
+  {
+    "law_number": "44-L/CTN",
+    "title": "BỘ LUẬT DÂN SỰ",
+    "document_kind": "original",
+    "priority": 10,
+    "permission": {
+      "status": "allowed",
+      "basis": "user_authorized_simulation",
+      "evidence": "Ngày 29/09/2026 người dùng xác nhận các tài liệu là văn bản nhà nước và yêu cầu dùng làm căn cứ mô phỏng toà, Trợ lý AI, kết hợp web không giới hạn nguồn."
+    },
+    "files": [
+      {
+        "path": "44-L_CTN_39391.doc",
+        "sha256": "0fecf81623f36a935987e6b66becd3fab5ddb9e8b9246c9f7b5c4f595626574f"
+      }
+    ]
+  },
+  {
+    "law_number": "65/2011/QH12",
+    "title": "Luật số: 65/2011/QH12\tHà Nội, ngày 29 tháng 03 năm 2011",
+    "document_kind": "amendment",
+    "priority": 10,
+    "permission": {
+      "status": "allowed",
+      "basis": "user_authorized_simulation",
+      "evidence": "Ngày 29/09/2026 người dùng xác nhận các tài liệu là văn bản nhà nước và yêu cầu dùng làm căn cứ mô phỏng toà, Trợ lý AI, kết hợp web không giới hạn nguồn."
+    },
+    "files": [
+      {
+        "path": "65_2011_QH12_122220.docx",
+        "sha256": "620050c9f77b980c7017220a5dbd0abb2cfca3a3707463d10d3d9c88ef8dd1b4"
+      }
+    ]
+  },
+  {
+    "law_number": "84/2007/NĐ-CP",
+    "title": "NGHỊ ĐỊNH QUY ĐỊNH BỔ SUNG VỀ VIỆC CẤP GIẤY CHỨNG NHẬN QUYỀN SỬ DỤNG ĐẤT, THU HỒI ĐẤT, THỰC HIỆN QUYỀN SỬ DỤNG ĐẤT, TRÌNH TỰ, THỦ TỤC BỒI THƯỜNG, HỖ TRỢ, TÁI ĐỊNH CƯ KHI NHÀ NƯỚC THU HỒI ĐẤT VÀ GIẢI QUYẾT KHIẾU NẠI VỀ ĐẤT ĐAI",
+    "document_kind": "original",
+    "priority": 10,
+    "permission": {
+      "status": "allowed",
+      "basis": "user_authorized_simulation",
+      "evidence": "Ngày 29/09/2026 người dùng xác nhận các tài liệu là văn bản nhà nước và yêu cầu dùng làm căn cứ mô phỏng toà, Trợ lý AI, kết hợp web không giới hạn nguồn."
+    },
+    "files": [
+      {
+        "path": "84_2007_ND-CP_20495.docx",
+        "sha256": "2b3d6df0aa7f6977368710024dfbb65fc3bd469285b9997a702bd341915b60c2"
+      }
+    ]
+  },
+  {
+    "law_number": "88/2009/NĐ-CP",
+    "title": "NGHỊ ĐỊNH VỀ CẤP GIẤY CHỨNG NHẬN QUYỀN SỬ DỤNG ĐẤT, QUYỀN SỞ HỮU NHÀ Ở VÀ TÀI SẢN KHÁC GẮN LIỀN VỚI ĐẤT",
+    "document_kind": "amendment",
+    "priority": 10,
+    "permission": {
+      "status": "allowed",
+      "basis": "user_authorized_simulation",
+      "evidence": "Ngày 29/09/2026 người dùng xác nhận các tài liệu là văn bản nhà nước và yêu cầu dùng làm căn cứ mô phỏng toà, Trợ lý AI, kết hợp web không giới hạn nguồn."
+    },
+    "files": [
+      {
+        "path": "88_2009_ND-CP_96275.docx",
+        "sha256": "f85871284a34a44c2470622c11ab660fa75e3d75ed98759aca9ddbc9272ae28e"
+      }
+    ]
+  },
+  {
+    "law_number": "91/2015/QH13",
+    "title": "Luật số: 91/2015/QH13\tHà Nội, ngày 24 tháng 11 năm 2015",
+    "document_kind": "original",
+    "priority": 5,
+    "permission": {
+      "status": "allowed",
+      "basis": "user_authorized_simulation",
+      "evidence": "Ngày 29/09/2026 người dùng xác nhận các tài liệu là văn bản nhà nước và yêu cầu dùng làm căn cứ mô phỏng toà, Trợ lý AI, kết hợp web không giới hạn nguồn."
+    },
+    "files": [
+      {
+        "path": "91.2015.QH13.doc",
+        "sha256": "045a5a4cbd8322f3e82a4193d3ce23ad051c169fd7fef7322897c1122380bc23"
+      }
+    ]
+  },
+  {
+    "law_number": "91/2015/QH13",
+    "title": "Luật số: 91/2015/QH13\tHà Nội, ngày 24 tháng 11 năm 2015",
+    "document_kind": "original",
+    "priority": 10,
+    "permission": {
+      "status": "allowed",
+      "basis": "user_authorized_simulation",
+      "evidence": "Ngày 29/09/2026 người dùng xác nhận các tài liệu là văn bản nhà nước và yêu cầu dùng làm căn cứ mô phỏng toà, Trợ lý AI, kết hợp web không giới hạn nguồn."
+    },
+    "files": [
+      {
+        "path": "91_2015_QH13_296215.docx",
+        "sha256": "5d8449fc8c3e249ff78b3b6392db245501527486c98a7524f2c73335c1d2e10e"
+      }
+    ]
+  },
+  {
+    "law_number": "92/2015/QH13",
+    "title": "Luật số: 92/2015/QH13\tHà Nội, ngày 25 tháng 11 năm 2015",
+    "document_kind": "original",
+    "priority": 5,
+    "permission": {
+      "status": "allowed",
+      "basis": "user_authorized_simulation",
+      "evidence": "Ngày 29/09/2026 người dùng xác nhận các tài liệu là văn bản nhà nước và yêu cầu dùng làm căn cứ mô phỏng toà, Trợ lý AI, kết hợp web không giới hạn nguồn."
+    },
+    "files": [
+      {
+        "path": "92.2015.QH13.doc",
+        "sha256": "42681b5a067c8dde157250124f368f2abc733b4a062a1383fbea8bb529df980e"
+      }
+    ]
+  },
+  {
+    "law_number": "92/2015/QH13",
+    "title": "Luật số: 92/2015/QH13\tHà Nội, ngày 25 tháng 11 năm 2015",
+    "document_kind": "original",
+    "priority": 10,
+    "permission": {
+      "status": "allowed",
+      "basis": "user_authorized_simulation",
+      "evidence": "Ngày 29/09/2026 người dùng xác nhận các tài liệu là văn bản nhà nước và yêu cầu dùng làm căn cứ mô phỏng toà, Trợ lý AI, kết hợp web không giới hạn nguồn."
+    },
+    "files": [
+      {
+        "path": "92_2015_QH13_296861.doc",
+        "sha256": "cb9d6c8c3b640a4405869326075ad0b01f65c4280574fee10efbf2401457c7d0"
+      }
+    ]
+  },
+  {
+    "law_number": "3-LCT/HĐNN8",
+    "title": "LUẬT ĐẤT ĐAI CỦA QUỐC HỘI SỐ 3-LCT/HĐNN8 NGÀY 29/12/1987",
+    "document_kind": "original",
+    "priority": 5,
+    "permission": {
+      "status": "allowed",
+      "basis": "user_authorized_simulation",
+      "evidence": "Ngày 29/09/2026 người dùng xác nhận các tài liệu là văn bản nhà nước và yêu cầu dùng làm căn cứ mô phỏng toà, Trợ lý AI, kết hợp web không giới hạn nguồn."
+    },
+    "files": [
+      {
+        "path": "Luật đất đai 1987.doc",
+        "sha256": "b53da52ef9b31389979a175a5123c2337527fda4b234b9e8853ea8162901cd5d"
+      }
+    ]
+  },
+  {
+    "law_number": "24-L/CTN",
+    "title": "LUẬT ĐẤT ĐAI",
+    "document_kind": "original",
+    "priority": 5,
+    "permission": {
+      "status": "allowed",
+      "basis": "user_authorized_simulation",
+      "evidence": "Ngày 29/09/2026 người dùng xác nhận các tài liệu là văn bản nhà nước và yêu cầu dùng làm căn cứ mô phỏng toà, Trợ lý AI, kết hợp web không giới hạn nguồn."
+    },
+    "files": [
+      {
+        "path": "Luật đất đai 1993.doc",
+        "sha256": "422a8a16f9c3ff639bf024b24aeca5b15b0fd52766e433cd28f330427c969400"
+      }
+    ]
+  },
+  {
+    "law_number": "13/2003/QH11",
+    "title": "LUẬT SỐ13/2003/QH11 CỦA QUỐC HỘI NƯỚC CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM VỀ ĐẤT ĐAI",
+    "document_kind": "amendment",
+    "priority": 5,
+    "permission": {
+      "status": "allowed",
+      "basis": "user_authorized_simulation",
+      "evidence": "Ngày 29/09/2026 người dùng xác nhận các tài liệu là văn bản nhà nước và yêu cầu dùng làm căn cứ mô phỏng toà, Trợ lý AI, kết hợp web không giới hạn nguồn."
+    },
+    "files": [
+      {
+        "path": "Luật đất đai 2003.doc",
+        "sha256": "3753ad128e1fd4a1bd8dcca4f17bd558da5f3e4263d520c945125b0dfd0d370a"
+      }
+    ]
+  },
+  {
+    "law_number": "45/2013/QH13",
+    "title": "Luật số: 45/2013/QH13\tHà Nội, ngày 29 tháng 11 năm 2013",
+    "document_kind": "original",
+    "priority": 5,
+    "permission": {
+      "status": "allowed",
+      "basis": "user_authorized_simulation",
+      "evidence": "Ngày 29/09/2026 người dùng xác nhận các tài liệu là văn bản nhà nước và yêu cầu dùng làm căn cứ mô phỏng toà, Trợ lý AI, kết hợp web không giới hạn nguồn."
+    },
+    "files": [
+      {
+        "path": "Luật đất đai 2013.doc",
+        "sha256": "8fe88cdc5aa4a2becf6b2614e869d7cd01a6eb58f33667c1ad857f5bbbcb569f"
+      }
+    ]
+  },
+  {
+    "law_number": "31/2024/QH15",
+    "title": "Luật số: 31/2024/QH15\tHà Nội, ngày 18 tháng 01 năm 2024",
+    "document_kind": "original",
+    "priority": 5,
+    "permission": {
+      "status": "allowed",
+      "basis": "user_authorized_simulation",
+      "evidence": "Ngày 29/09/2026 người dùng xác nhận các tài liệu là văn bản nhà nước và yêu cầu dùng làm căn cứ mô phỏng toà, Trợ lý AI, kết hợp web không giới hạn nguồn."
+    },
+    "files": [
+      {
+        "path": "Luật đất đai 2024.doc",
+        "sha256": "ba9dac1914f3819760299c938394eb6bfd8553e32002aaca4e1d3f399d56747f"
+      }
+    ]
+  },
+  {
+    "law_number": "10/1998/QH10",
+    "title": "LUẬT CỦA QUỐC HỘI SỐ 10/1998/QH10 NGÀY 2 THÁNG 12 NĂM 1998 SỬA ĐỔI, BỔ SUNG MỘT SỐ ĐIỀU CỦA LUẬT ĐẤT ĐAI",
+    "document_kind": "amendment",
+    "priority": 5,
+    "permission": {
+      "status": "allowed",
+      "basis": "user_authorized_simulation",
+      "evidence": "Ngày 29/09/2026 người dùng xác nhận các tài liệu là văn bản nhà nước và yêu cầu dùng làm căn cứ mô phỏng toà, Trợ lý AI, kết hợp web không giới hạn nguồn."
+    },
+    "files": [
+      {
+        "path": "Luật đất đai sửa đổi 1998.doc",
+        "sha256": "21d936ca0f97ed42ccfa5c214978c67ca9c13f7bd90140eb75459c216f1c9403"
+      }
+    ]
+  }
+]

@@ -10,7 +10,8 @@ export default function ScoringSummary({ result, sessionId }) {
   const missingLaw = summary.assessed > 0 && result.criteria?.some(group => group.items.some(item => (item.id.startsWith('2.') || item.id === '4.2') && item.status === 'not_assessed'));
   return <>
     <section aria-labelledby="score-heading" className="rounded-3xl border border-blue-200 bg-blue-50 p-6 sm:p-8">
-      <h2 id="score-heading" className="text-sm font-semibold text-blue-700">{summary.partial ? 'Kết quả phần đã đánh giá' : 'Điểm luyện tập'}</h2>
+      <h2 id="score-heading" className="text-sm font-semibold text-blue-700">{summary.provisional ? 'Điểm tham khảo từ nguồn web' : summary.partial ? 'Kết quả phần đã đánh giá' : 'Điểm luyện tập'}</h2>
+      {summary.provisional && <p className="mt-2 font-medium">{result.assessment_note || 'Chưa xác minh đầy đủ hiệu lực, sửa đổi và điều kiện áp dụng của nguồn luật.'}</p>}
       <p className="mt-2 text-4xl font-black text-slate-900 sm:text-5xl">{Number.isFinite(summary.earned) ? <>{summary.earned}<span className="text-2xl font-semibold">/{summary.assessed}</span></> : 'Chưa có điểm'}</p>
       <p className="mt-2 font-medium">{summary.partial ? 'Điểm ở phần đã đánh giá · Chưa có điểm toàn bài' : 'Đã đánh giá đủ 100 điểm của rubric'}</p>
       {summary.partial && <p className="mt-3 text-sm leading-6">{summary.remaining}% trọng số chưa đánh giá và không bị tính thành 0 điểm.</p>}

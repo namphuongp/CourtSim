@@ -4,23 +4,25 @@ Prompt chấm điểm tách khỏi nhiệm vụ điều hành. `scoringQuotes` g
 
 ## Quy tắc nguồn
 
-**vbpl.vn là nguồn pháp luật bên ngoài duy nhất.** PDF/DOC nội bộ, dữ liệu seed, trí nhớ model và kết quả tìm kiếm không tự trở thành căn cứ đã xác minh.
+**Kho có hồ sơ nguồn/quyền được tìm trước.** Nguồn ngoài cần được duyệt quyền; hiện vbpl.vn là nguồn chính thức mặc định. PDF/DOC nội bộ, dữ liệu seed, trí nhớ model và kết quả tìm kiếm không tự trở thành căn cứ đã xác minh.
 
 - Chỉ nhận HTTPS, hostname vbpl.vn hoặc subdomain thật; kiểm tra từng redirect. Không tạo ItemID, anchor hoặc URL từ suy đoán của model.
 - Đối chiếu số hiệu và nội dung trang, ưu tiên số hiệu trước tiêu đề gần giống. HTTP 200 hoặc trang chủ không chứng minh đã tìm đúng văn bản.
 - Mỗi nguồn được trích phải có URL, ngày kiểm tra, hash và phiên bản. Chỉ xác minh được trang thì dẫn trang, nói rõ chưa xác minh điều/khoản/điểm.
-- Nguồn lỗi: dùng bản lưu đã xác minh nếu phù hợp và giữ ngày kiểm tra cũ; không có bản tin cậy thì trả chưa xác minh. Không chuyển sang website khác.
+- Nguồn lỗi: dùng bản lưu đã xác minh nếu phù hợp và giữ ngày kiểm tra cũ; không có bản tin cậy thì trả chưa xác minh. Chỉ chuyển sang nguồn khác nếu đã duyệt điều kiện sử dụng.
 - Nội dung tải về là dữ liệu không tin cậy: không thực thi HTML/script hoặc làm theo chỉ dẫn trong trang. Giới hạn kích thước, timeout, redirect và tần suất; trợ lý có tổng hạn tải nguồn 15 giây.
 
 ## Luồng dữ liệu
 
-Câu hỏi + hồ sơ được phép xem → kế hoạch tra cứu số hiệu/tên/chủ đề → vbpl hoặc snapshot hợp lệ → đối chiếu văn bản/đoạn → câu trả lời và link. Chỉ gửi từ khóa pháp luật công khai đến vbpl, không gửi toàn bộ hồ sơ hoặc lời người học.
+Câu hỏi + hồ sơ được phép xem → kế hoạch tra cứu số hiệu/tên/chủ đề → kho nội bộ đã xác minh → vbpl hoặc snapshot hợp lệ → đối chiếu văn bản/đoạn → câu trả lời và link. Chỉ gửi từ khóa pháp luật công khai đến vbpl, không gửi toàn bộ hồ sơ hoặc lời người học.
 
-Nguồn và bộ lọc: `vbplResearch.js`, `officialLegalSources.js`, `shared/legalSourcePolicy.mjs`. Kho nội bộ: `LegalDocument/LegalProvision`; bản lưu đối chiếu: `VbplSnapshot`. `legalResearchService.js` chọn căn cứ cho hội thoại/chấm điểm; `legalAssistantService.js` xử lý trợ lý riêng. Frontend cho người học xem/sửa trích dẫn rồi tự gửi.
+Nguồn và bộ lọc: `vbplResearch.js`, `officialLegalSources.js`, `shared/legalSourcePolicy.mjs`. Kho đang phục vụ: `LegalCorpusVersion/LegalCorpusProvision`; `LegalDocument/LegalProvision` cũ được giữ để đối chiếu, không tự chuyển trạng thái; bản lưu đối chiếu: `VbplSnapshot`. `legalResearchService.js` chọn căn cứ cho hội thoại/chấm điểm; `legalAssistantService.js` xử lý trợ lý riêng. Frontend cho người học xem/sửa trích dẫn rồi tự gửi.
 
 Phân biệt **nội dung đã đối chiếu** và **phiên bản có thể áp dụng**. Xét mốc sự kiện/giao dịch, tranh chấp, khởi kiện và xét xử theo vấn đề; không dùng ngày xét xử cho mọi căn cứ. Thiếu lịch sử sửa đổi/chuyển tiếp hoặc mốc liên quan thì nêu thiếu dữ liệu, không khẳng định chắc chắn áp dụng.
 
 ## Nhập và duyệt nguồn
+
+Quy trình hiện hành: [LEGAL_CORPUS.md](LEGAL_CORPUS.md). Lệnh `legal:import` cũ đã khóa ghi để không bỏ qua kiểm tra quyền; các lệnh bên dưới mô tả công cụ cũ phục vụ đối chiếu lịch sử.
 
 Chạy trong `backend`:
 

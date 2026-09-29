@@ -9,6 +9,8 @@
     "start": "node src/server.js",
     "seed": "node src/scripts/seed.js",
     "legal:import": "node src/scripts/importLegalDocuments.js",
+    "legal:inventory": "node src/scripts/inventoryLegalCorpus.js",
+    "legal:local:import": "node src/scripts/importLocalLaws.js",
     "sample:import": "node src/scripts/importSampleCase.js",
     "legal:check": "node src/scripts/checkLegalSources.js",
     "legal:smoke": "node src/scripts/smokeVbpl.js",
@@ -16,7 +18,8 @@
     "legal:review": "node src/scripts/reviewLegalVersion.js",
     "auth:migrate": "node src/scripts/migrateAuth.js",
     "admin:indexes": "node src/scripts/createAdminIndexes.js",
-    "case1:import": "node src/scripts/importCase1.js"
+    "case1:import": "node src/scripts/importCase1.js",
+    "legal:web:smoke": "node src/scripts/smokeWebLaw.js"
   },
   "keywords": [],
   "author": "",

@@ -2,7 +2,7 @@ import { caseKnowledge } from './caseKnowledge.js';
 import { evidenceInventory } from './caseEvidence.js';
 import { AppError } from '../utils/AppError.js';
 import { classifyDialogueInput } from './dialogueInput.js';
-import { hasVerifiedSource } from '../../../shared/legalSourcePolicy.mjs';
+import { hasReadableLawSource } from '../../../shared/legalSourcePolicy.mjs';
 
 const sentences = text => (text ?? '').split(/(?<=[.!?])\s+|\n+/u).map(s => s.trim()).filter(Boolean);
 const words = text => new Set((text.toLocaleLowerCase('vi').match(/[\p{L}\p{N}]{3,}/gu) ?? []));
@@ -80,11 +80,11 @@ export function dialogueContext(session, courtCase, records, legalContext) {
       earlier_positions: records.slice(0, -6).filter(r => r.sender_type !== 'ai_judge').slice(-12).map(brief),
       party_positions: (courtCase.parties ?? []).map(p => ({ side: p.side, party: p.name, claims: p.claims, status: 'party_statement' })),
       previous_questions: records.filter(r => r.sender_type !== 'user').flatMap(r => (r.content ?? '').match(/[^.!?\n]*\?/gu) ?? []).slice(-16) },
-    learner, dossier,
+    learner, dossier, legal_assessment_mode: legalContext.legal_assessment_mode, assessment_note: legalContext.assessment_note,
     recentProceedings: records.slice(-6).map(r => ({ ...brief(r), text: r.content })),
-    retrievedLaw: legalContext.citations.filter(hasVerifiedSource).map(c => ({ citationId: c.id, lawNumber: c.law_number, title: c.title, locator: c.locator,
+    retrievedLaw: legalContext.citations.filter(hasReadableLawSource).map(c => ({ citationId: c.id, lawNumber: c.law_number, title: c.title, locator: c.locator,
       text: c.context_text ?? c.text, source_url: c.source_url, checked_at: c.checked_at, version: c.version,
-      applicationDate: c.application_date, applicationReason: c.application_reason })),
+      applicationStatus: c.application_status, applicationDate: c.application_date, applicationReason: c.application_reason })),
   };
 }
 

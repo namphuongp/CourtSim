@@ -29,6 +29,14 @@ reports/*.json
 reports/*.log
 reports/*.png
 reports/*.html
+# Hồ sơ nguồn đã duyệt và truy vấn tổng hợp công khai, không chứa lời khai/tài khoản.
+!reports/LEGAL_FILE_MANIFEST.json
+!reports/LEGAL_PDF_REVIEWS.json
+!reports/LEGAL_OFFICIAL_SOURCE_AUDIT.json
+!reports/LEGAL_CORPUS_LIVE_QUERIES.json
+!reports/LEGAL_LOCAL_USE_REVIEWS.json
+!reports/LEGAL_LOCAL_USE_RESULT.json
+backend/storage/legal-sources/
 docs/verification/
 reports/archived-doc-evidence/
 *.har

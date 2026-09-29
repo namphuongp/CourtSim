@@ -1,0 +1,296 @@
+{
+  "mode": "apply",
+  "checked_at": "2026-09-29T08:49:41.249Z",
+  "results": [
+    {
+      "law_number": "45/2013/QH13",
+      "files": [
+        "VanBanGoc_45.2013.QH13.pdf"
+      ],
+      "fingerprint": "6788367c949969de369c1e26f8b7dd2e14e3035dcdfddd1df0232bf175fed79e",
+      "articles": 212,
+      "provisions": 1592,
+      "source_verification": "local_read",
+      "status": "unchanged",
+      "id": "6abb7916841e796dc8881e2e"
+    },
+    {
+      "law_number": "31/2024/QH15",
+      "files": [
+        "VanBanGoc_31-2024-qh15_1 (2).pdf",
+        "VanBanGoc_31-2024-qh15_2 (2).pdf",
+        "VanBanGoc_31-2024-qh15_3 (2).pdf"
+      ],
+      "fingerprint": "a09e5922c033d780eb636139b9c5fb5be89d6b2b46911b45665b2c2ce71f0c8d",
+      "articles": 260,
+      "provisions": 2567,
+      "source_verification": "local_read",
+      "status": "unchanged",
+      "id": "6abb791a841e796dc8882467"
+    },
+    {
+      "law_number": "01/2017/NĐ-CP",
+      "files": [
+        "01_2017_ND-CP_337031.doc"
+      ],
+      "fingerprint": "b9184ffaf1b7acac4de46b3b3621e878363d3f443673ff1e11d0034c0b986d4f",
+      "articles": 6,
+      "provisions": 9,
+      "source_verification": "local_read",
+      "status": "unchanged",
+      "id": "6abb791c841e796dc8882e6f"
+    },
+    {
+      "law_number": "101/2024/NĐ-CP",
+      "files": [
+        "101_2024_ND-CP_613131.doc"
+      ],
+      "fingerprint": "6f21eca2b436a22e26eb1f13173a119e4aa89d69af610a52c3cc69b60b46fb23",
+      "articles": 68,
+      "provisions": 906,
+      "source_verification": "local_read",
+      "status": "unchanged",
+      "id": "6abb791c841e796dc8882e79"
+    },
+    {
+      "law_number": "102/2024/NĐ-CP",
+      "files": [
+        "102_2024_ND-CP_603982.doc"
+      ],
+      "fingerprint": "71f04e03d78ccf2f9614714cd7735e2137491f5d9ecb42f053882649efa6b0d2",
+      "articles": 113,
+      "provisions": 1406,
+      "source_verification": "local_read",
+      "status": "unchanged",
+      "id": "6abb791e841e796dc8883204"
+    },
+    {
+      "law_number": "181/2004/NĐ-CP",
+      "files": [
+        "181_2004_ND-CP_52514.docx"
+      ],
+      "fingerprint": "6df2e5c3ad2a29d9a935b0bd58fe680d7c1fcb6e7bf5a0f3577a564548de991c",
+      "articles": 186,
+      "provisions": 1541,
+      "source_verification": "local_read",
+      "status": "unchanged",
+      "id": "6abb791f841e796dc8883783"
+    },
+    {
+      "law_number": "24/2004/QH11",
+      "files": [
+        "24_2004_QH11_52189.docx"
+      ],
+      "fingerprint": "46cc1630dad2cd888f33a99ff9553a790604969cb9d1e700c572ce60f5a50fcb",
+      "articles": 60,
+      "provisions": 299,
+      "source_verification": "local_read",
+      "status": "unchanged",
+      "id": "6abb7921841e796dc8883d89"
+    },
+    {
+      "law_number": "33/2005/QH11",
+      "files": [
+        "33_2005_QH11_2463.doc"
+      ],
+      "fingerprint": "f883f6de909b58ac303d7675193fa45ceca5998e7704c1ab8e7e236b3b320f8a",
+      "articles": 777,
+      "provisions": 2441,
+      "source_verification": "local_read",
+      "status": "unchanged",
+      "id": "6abb7921841e796dc8883eb5"
+    },
+    {
+      "law_number": "43/2014/NĐ-CP",
+      "files": [
+        "43_2014_ND-CP_230680.doc"
+      ],
+      "fingerprint": "b3beb96c36ccf3e66c9e15fdb9b5586e958db6a13a7415033932ae2559a82892",
+      "articles": 103,
+      "provisions": 922,
+      "source_verification": "local_read",
+      "status": "unchanged",
+      "id": "6abb7923841e796dc888483f"
+    },
+    {
+      "law_number": "43/2024/QH15",
+      "files": [
+        "43_2024_QH15_612195.doc"
+      ],
+      "fingerprint": "d6bfd7a2be698d2b3b7f35d7f01a364a7884f7be6e4a85050fecf2ca2b731f0a",
+      "articles": 5,
+      "provisions": 11,
+      "source_verification": "local_read",
+      "status": "unchanged",
+      "id": "6abb7924841e796dc8884bda"
+    },
+    {
+      "law_number": "44-L/CTN",
+      "files": [
+        "44-L_CTN_39391.doc"
+      ],
+      "fingerprint": "d25a82690809123cee9728c91af06f433dc1271871c86b83012b97eb0082b72e",
+      "articles": 838,
+      "provisions": 838,
+      "source_verification": "local_read",
+      "status": "unchanged",
+      "id": "6abb7924841e796dc8884be6"
+    },
+    {
+      "law_number": "65/2011/QH12",
+      "files": [
+        "65_2011_QH12_122220.docx"
+      ],
+      "fingerprint": "33c8083df8dbc546628b6bca49251f2900941fd14c760e03e6da7ae537f6e028",
+      "articles": 2,
+      "provisions": 4,
+      "source_verification": "local_read",
+      "status": "unchanged",
+      "id": "6abb7925841e796dc8884f2d"
+    },
+    {
+      "law_number": "84/2007/NĐ-CP",
+      "files": [
+        "84_2007_ND-CP_20495.docx"
+      ],
+      "fingerprint": "bde7476b6bbbb9145c43ff56cd56be80128798054ccce70c1d18faa272532ee2",
+      "articles": 68,
+      "provisions": 374,
+      "source_verification": "local_read",
+      "status": "unchanged",
+      "id": "6abb7925841e796dc8884f32"
+    },
+    {
+      "law_number": "88/2009/NĐ-CP",
+      "files": [
+        "88_2009_ND-CP_96275.docx"
+      ],
+      "fingerprint": "45d3476abe13a296cefe0d26c8e1bb6a78297caa342369dc73cf5f64f5254ec3",
+      "articles": 29,
+      "provisions": 229,
+      "source_verification": "local_read",
+      "status": "unchanged",
+      "id": "6abb7925841e796dc88850a9"
+    },
+    {
+      "law_number": "91/2015/QH13",
+      "files": [
+        "91.2015.QH13.doc"
+      ],
+      "fingerprint": "3daec37202ad596f6bf98621787f7908883220fb6f480f595ec20248995253a9",
+      "articles": 689,
+      "provisions": 2419,
+      "source_verification": "local_read",
+      "status": "unchanged",
+      "id": "6abb7925841e796dc888518f"
+    },
+    {
+      "law_number": "91/2015/QH13",
+      "files": [
+        "91_2015_QH13_296215.docx"
+      ],
+      "fingerprint": "e5a4b61d6d10e54e6432710e553bc86b24160ab6e8f4776b54c27e62b439dd90",
+      "articles": 689,
+      "provisions": 2419,
+      "source_verification": "local_read",
+      "status": "unchanged",
+      "id": "6abb7927841e796dc8885b03"
+    },
+    {
+      "law_number": "92/2015/QH13",
+      "files": [
+        "92.2015.QH13.doc"
+      ],
+      "fingerprint": "8b7e75880367e22882d03f4a01c13a47dd65e068463efde64d06bf265a0c7415",
+      "articles": 517,
+      "provisions": 2590,
+      "source_verification": "local_read",
+      "status": "unchanged",
+      "id": "6abb792a841e796dc8886477"
+    },
+    {
+      "law_number": "92/2015/QH13",
+      "files": [
+        "92_2015_QH13_296861.doc"
+      ],
+      "fingerprint": "0173d3ee967272450b48784895595afc9911d8b757a2f045ce363490312521b1",
+      "articles": 517,
+      "provisions": 2591,
+      "source_verification": "local_read",
+      "status": "unchanged",
+      "id": "6abb792c841e796dc8886e96"
+    },
+    {
+      "law_number": "3-LCT/HĐNN8",
+      "files": [
+        "Luật đất đai 1987.doc"
+      ],
+      "fingerprint": "224a8d0424c581407e43f9132f02d5c3c6229dc228b52b5525e06e6a6cfbc72b",
+      "articles": 57,
+      "provisions": 57,
+      "source_verification": "local_read",
+      "status": "unchanged",
+      "id": "6abb792f841e796dc88878b6"
+    },
+    {
+      "law_number": "24-L/CTN",
+      "files": [
+        "Luật đất đai 1993.doc"
+      ],
+      "fingerprint": "debc3ac7e0846593aed876f6627dddbb844a04a4be6a5a2211108790f466e549",
+      "articles": 89,
+      "provisions": 89,
+      "source_verification": "local_read",
+      "status": "unchanged",
+      "id": "6abb792f841e796dc88878f0"
+    },
+    {
+      "law_number": "13/2003/QH11",
+      "files": [
+        "Luật đất đai 2003.doc"
+      ],
+      "fingerprint": "488fa2688ba2d5a3cc89c078d5f5c6b69134d5ed22c507742f7f724594e9a711",
+      "articles": 146,
+      "provisions": 998,
+      "source_verification": "local_read",
+      "status": "unchanged",
+      "id": "6abb792f841e796dc888794a"
+    },
+    {
+      "law_number": "45/2013/QH13",
+      "files": [
+        "Luật đất đai 2013.doc"
+      ],
+      "fingerprint": "597c667841741e3487d8dbd5b919ace75616317ad73077240d496cdf96b1f091",
+      "articles": 212,
+      "provisions": 1603,
+      "source_verification": "local_read",
+      "status": "unchanged",
+      "id": "6abb792f841e796dc8887d31"
+    },
+    {
+      "law_number": "31/2024/QH15",
+      "files": [
+        "Luật đất đai 2024.doc"
+      ],
+      "fingerprint": "5f68badaf97f3d1a62af87c56227a6ffb6beef6ced97ee1a4d691084660df260",
+      "articles": 260,
+      "provisions": 2567,
+      "source_verification": "local_read",
+      "status": "unchanged",
+      "id": "6abb7931841e796dc8888375"
+    },
+    {
+      "law_number": "10/1998/QH10",
+      "files": [
+        "Luật đất đai sửa đổi 1998.doc"
+      ],
+      "fingerprint": "943b529e261a321e461d8113cc195da921443736a01c46979527416ab1afe115",
+      "articles": 2,
+      "provisions": 5,
+      "source_verification": "local_read",
+      "status": "unchanged",
+      "id": "6abb7933841e796dc8888d7d"
+    }
+  ]
+}

@@ -3,7 +3,7 @@ import { startBrowserHarness } from '../../backend/tests/helpers/browserHarness.
 import { case1Appeal } from '../../backend/src/data/case1Appeal.js';
 
 let harness;
-test.beforeAll(async () => { harness = await startBrowserHarness({ courtCase: case1Appeal }); });
+test.beforeAll(async () => { harness = await startBrowserHarness({ courtCase: case1Appeal, webReference: false }); });
 test.afterAll(async () => { await harness?.close(); });
 
 test('Case1: chọn vai, hồ sơ, kéo thả, đối đáp, tải lại, chấm điểm và lịch sử', async ({ page }, info) => {
@@ -59,11 +59,17 @@ test('Case1: chọn vai, hồ sơ, kéo thả, đối đáp, tải lại, chấm
   await page.getByRole('button', { name: 'Xác nhận kết thúc', exact: true }).click();
   await page.getByRole('button', { name: 'Bỏ qua và xem kết quả', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Kết quả luyện tập' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Điểm tham khảo từ nguồn web' })).toHaveCount(0);
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Kết quả luyện tập' })).toBeVisible();
+
+  const result = await page.request.get(`http://127.0.0.1:5019/api/v1/sessions/${room.split('/').at(-1)}/result`).then(r => r.json());
+  expect(result.data.criteria.find(g => g.id === 'legal_application').items.every(i => i.status === 'not_assessed')).toBe(true);
+  expect(result.data.citations).toEqual([]);
   const history = await page.request.get('http://127.0.0.1:5019/api/v1/sessions').then(r => r.json());
   const saved = history.data.find(s => room.endsWith(s._id));
   expect(saved.status).toBe('completed');
+  expect(saved.result.legal_assessment_mode).toBe('verified_or_unassessed');
   expect(saved.turn_count).toBe(3);
   expect(saved.case_id.practice_context.role_labels[role]).toBe(label);
   await page.goto('/dashboard/history');

@@ -10,7 +10,7 @@ import { calculateEvaluation, scoringEligibility } from './scoringService.js';
 import { scoringQuotes, resolveScoringQuotes } from './scoringQuotes.js';
 import { researchLegalBasis } from './legalResearchService.js';
 import { AiPersonal } from '../models/index.js';
-import { hasVerifiedSource } from '../../../shared/legalSourcePolicy.mjs';
+import { hasReadableLawSource } from '../../../shared/legalSourcePolicy.mjs';
 import { AppError } from '../utils/AppError.js';
 import { createChatCompletion } from './aiClient.js';
 import { validateCitationIds } from './legalRetrievalService.js';
@@ -100,6 +100,7 @@ function commonContext(session, courtCase, records, legalContext, fullHistory = 
     evidenceInventory: evidenceInventory(courtCase),
     caseKnowledge: caseKnowledge(courtCase),
     legalAssessmentAvailable: legalContext.legal_assessment_available,
+    legalAssessmentMode: legalContext.legal_assessment_mode, assessmentNote: legalContext.assessment_note,
     eventDate: session.case_event_date,
     userRole: session.user_court_role,
     difficulty: session.difficulty,
@@ -116,7 +117,7 @@ function commonContext(session, courtCase, records, legalContext, fullHistory = 
       text: record.content,
       evidence_ids: record.evidence_ids ?? [],
       legal_reference_ids: record.legal_reference_ids ?? [],
-      citations: (record.citations ?? []).filter(hasVerifiedSource).map((citation) => ({
+      citations: (record.citations ?? []).filter(hasReadableLawSource).map((citation) => ({
         citationId: citation.id,
         lawNumber: citation.law_number,
         title: citation.title,
@@ -124,7 +125,7 @@ function commonContext(session, courtCase, records, legalContext, fullHistory = 
         sourceUrl: citation.source_url,
       })),
     })),
-    retrievedLaw: legalContext.citations.map(({ id, law_number, title, locator, context_text, temporal_note, source_files, source_url, version, application_date, application_reason }) => ({
+    retrievedLaw: legalContext.citations.map(({ id, law_number, title, locator, context_text, temporal_note, source_files, source_url, version, application_date, application_reason, source_verification, application_status }) => ({
       version, applicationDate: application_date, applicationReason: application_reason,
       citationId: id,
       lawNumber: law_number,
@@ -134,6 +135,7 @@ function commonContext(session, courtCase, records, legalContext, fullHistory = 
       temporalNote: temporal_note,
       sourceFiles: source_files,
       sourceUrl: source_url,
+      sourceStatus: source_verification, applicationStatus: application_status,
     })),
     legalCoverageWarnings: legalContext.warnings,
   };
@@ -179,7 +181,7 @@ function readCitationIds(value, roleName) {
 
 function verifyCitations({ content, citationIds, legalCitations, roleName }) {
   const urls = content.match(/https?:\/\/[^\s<>"“”]+/giu) ?? [];
-  if (urls.some(url => !legalCitations.some(c => hasVerifiedSource(c) && c.source_url === url.replace(/[),.;!?]+$/u, '')))) {
+  if (urls.some(url => !legalCitations.some(c => hasReadableLawSource(c) && c.source_url === url.replace(/[),.;!?]+$/u, '')))) {
     throw new AppError('Lời thoại chứa liên kết chưa đối chiếu với nguồn được phép.', 502, 'AI_UNVERIFIED_CITATION');
   }
   const result = validateCitationIds({
@@ -247,7 +249,7 @@ export async function generateDebateTurn({ session, courtCase, records, speakers
   let legalMs = 0;
   const research = async () => {
     const at = performance.now();
-    const result = await (dependencies.research ?? researchLegalBasis)({ eventDate: session.case_event_date, learnerTimeline: session.learner_timeline, courtCase, records });
+    const result = await (dependencies.research ?? researchLegalBasis)({ eventDate: session.case_event_date, learnerTimeline: session.learner_timeline, courtCase, records, usageContext: { userId: session.user_id, sessionId: session._id } });
     legalMs = performance.now() - at; return result;
   };
   const needsLaw = needsLegalResearch(records);
@@ -336,17 +338,20 @@ export async function evaluateSession({ session, courtCase, records }, dependenc
   if (!session.case_event_date) throw new AppError('Phiên này chưa có ngày sự kiện; không thể xác định luật áp dụng.', 409, 'SESSION_EVENT_DATE_REQUIRED');
   const [evaluator, legalContext] = await Promise.all([
     (dependencies.persona ?? getPersona)('evaluator'),
-    (dependencies.research ?? researchLegalBasis)({ eventDate: session.case_event_date, learnerTimeline: session.learner_timeline, courtCase, records }),
+    (dependencies.research ?? researchLegalBasis)({ eventDate: session.case_event_date, learnerTimeline: session.learner_timeline, courtCase, records, usageContext: { userId: session.user_id, sessionId: session._id } }),
   ]);
-  const eligibility = scoringEligibility(records, legalContext.legal_assessment_available);
+  const legalScorable = legalContext.legal_assessment_available && legalContext.citations.length > 0
+    && legalContext.citations.every(c => c.source_verification === 'verified' && c.application_status === 'verified' && hasReadableLawSource(c));
+  const eligibility = scoringEligibility(records, legalScorable);
   if (Object.values(eligibility).every(Boolean)) return {
-    ...calculateEvaluation(Object.keys(eligibility).map(id => ({ id })), records, legalContext.legal_assessment_available),
+    ...calculateEvaluation(Object.keys(eligibility).map(id => ({ id })), records, legalScorable),
     verdict: 'Chưa có phần lập luận để đánh giá.', feedback: 'Phiên mới có lời chào hoặc trao đổi thủ tục.',
     improvement_suggestions: 'Ở phiên tiếp theo, hãy nêu quan điểm và giải thích bằng thông tin trong hồ sơ.',
     citations: [], generation_mode: 'control', generation_metrics: { attempts: [], outcome: 'control' },
   };
   const anchors = scoringQuotes(records);
-  const assessedSchema = { ...EVALUATION_SCHEMA, criteria: EVALUATION_SCHEMA.criteria.filter(item => !eligibility[item.id]) };
+  const assessedSchema = { ...EVALUATION_SCHEMA, criteria: EVALUATION_SCHEMA.criteria.filter(item => !eligibility[item.id]),
+    citation_ids: legalScorable ? legalContext.citations.map(c => c.id) : [] };
   const input = {
     usageContext: { userId: session.user_id, sessionId: session._id, role: 'evaluator' },
     model: evaluator.model_id,
@@ -379,7 +384,7 @@ export async function evaluateSession({ session, courtCase, records }, dependenc
       // Chỉ bổ sung mục không chấm; tuyệt đối không tự tạo điểm cho mục thiếu hoặc sai.
       const entries = Array.isArray(evaluation.criteria) ? [...evaluation.criteria,
         ...Object.keys(eligibility).filter(id => eligibility[id] && !evaluation.criteria.some(item => item?.id === id)).map(id => ({ id }))] : evaluation.criteria;
-      const scoring = calculateEvaluation(resolveScoringQuotes(entries, anchors), records, legalContext.legal_assessment_available);
+      const scoring = calculateEvaluation(resolveScoringQuotes(entries, anchors), records, legalScorable);
       const availableCitations = legalContext.citations;
       const citations = verifyCitations({
         content: `${evaluation.verdict ?? ''}\n${evaluation.feedback ?? ''}\n${evaluation.improvement_suggestions ?? ''}\n${JSON.stringify(evaluation.fact_analysis)}\n${JSON.stringify(scoring.criteria.flatMap((group) => group.items.filter((item) => item.status === 'assessed').map(({ reason, strength, improvement }) => ({ reason, strength, improvement }))))}`,
@@ -396,6 +401,8 @@ export async function evaluateSession({ session, courtCase, records }, dependenc
       const result = {
         generation_mode: 'model', generation_metrics: metrics,
         ...scoring,
+        legal_assessment_mode: 'verified_or_unassessed',
+        score_scope: scoring.score_scope,
         verdict: evaluation.verdict,
         feedback: evaluation.feedback,
         improvement_suggestions: evaluation.improvement_suggestions,

@@ -22,7 +22,7 @@ export default function LearningOverview({ view = 'dashboard' }) {
   }, [reload]);
   const completed = sessions.filter((s) => s.status === 'completed');
   const scored = completed.filter((s) => s.result && (Number.isFinite(s.result.score) || Number.isFinite(s.result.earned_score)));
-  const completeScores = scored.filter(s => !scoreSummary(s.result).partial);
+  const completeScores = scored.filter(s => !scoreSummary(s.result).partial && !scoreSummary(s.result).provisional);
   const average = completeScores.length ? Math.round(completeScores.reduce((sum, s) => sum + s.result.score, 0) / completeScores.length) : null;
   const visible = sessions.filter((s) => (view !== 'sessions' || s.status === 'ongoing') && (view !== 'history' || s.status === 'completed'))
     .filter((s) => `${s.case_id?.title ?? ''}`.toLocaleLowerCase('vi').includes(search.toLocaleLowerCase('vi')));

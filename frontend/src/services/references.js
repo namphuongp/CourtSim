@@ -1,5 +1,8 @@
 export const EVIDENCE_MIME = 'application/x-courtsim-evidence';
-import { legalReferenceLabel } from '../../../shared/legalSourcePolicy.mjs';
+import { legalReferenceLabel, isLocalLawUrl } from '../../../shared/legalSourcePolicy.mjs';
+import api from './api';
+
+export const legalSourceHref = source => isLocalLawUrl(source) ? `${api.defaults.baseURL.replace(/\/$/u, '')}${source.slice(4)}` : source;
 
 export function evidenceText(item) {
   return `[Chứng cứ: ${item.name}] ${item.source_kind?.startsWith('transcript_') ? `${item.content}\nNguồn: ${item.provided_by}; ${item.source_locator}. Giới hạn: ${item.proof_scope}` : item.summary || ''}`.trim();

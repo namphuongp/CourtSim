@@ -7,7 +7,7 @@ const inFlight = new Map();
 const TTL = 6 * 60 * 60 * 1000;
 export const isOfficialUrl = isVbplUrl;
 
-export async function fetchOfficialPage(url, fetcher = fetch, { timeoutMs = 6000, maxBytes = 2_000_000 } = {}) {
+async function fetchOfficialResource(url, fetcher = fetch, { timeoutMs = 6000, maxBytes = 2_000_000, binary = false } = {}) {
   if (!isOfficialUrl(url)) throw new Error('Nguồn không được phép.');
   const signal = AbortSignal.timeout(timeoutMs);
   const redirectsFollowed = [];
@@ -15,7 +15,7 @@ export async function fetchOfficialPage(url, fetcher = fetch, { timeoutMs = 6000
   // Kiểm tra từng đích trước khi kết nối, dùng chung hạn chờ cho cả chuỗi chuyển hướng.
   for (let redirects = 0; redirects <= 3; redirects++) {
     if (!isOfficialUrl(url)) throw new Error('Nguồn không được phép.');
-    response = await fetcher(url, { redirect: 'manual', signal, headers: { Accept: 'text/html' } });
+    response = await fetcher(url, { redirect: 'manual', signal, headers: { Accept: binary ? 'application/pdf,application/octet-stream' : 'text/html' } });
     if (response.url && !isOfficialUrl(response.url)) throw new Error('Nguồn không được phép.');
     if (![301, 302, 303, 307, 308].includes(response.status)) break;
     await response.body?.cancel();
@@ -25,7 +25,7 @@ export async function fetchOfficialPage(url, fetcher = fetch, { timeoutMs = 6000
     redirectsFollowed.push({ url, status: response.status, location: next });
     url = next;
   }
-  if (!response.ok || !/text\/html|text\/plain/i.test(response.headers.get('content-type') ?? '')) throw new Error('Nguồn không truy cập được.');
+  if (!response.ok || !(binary ? /application\/(?:pdf|octet-stream)/i : /text\/html|text\/plain/i).test(response.headers.get('content-type') ?? '')) throw new Error('Nguồn không truy cập được.');
   const chunks = []; let length = 0;
   for await (const chunk of response.body) {
     length += chunk.length;
@@ -33,8 +33,11 @@ export async function fetchOfficialPage(url, fetcher = fetch, { timeoutMs = 6000
     chunks.push(Buffer.from(chunk));
   }
   const bytes = Buffer.concat(chunks);
-  return { url, content: bytes.toString('utf8'), sha256: createHash('sha256').update(bytes).digest('hex'), http_status: response.status, redirects: redirectsFollowed };
+  return { url, ...(binary ? { bytes } : { content: bytes.toString('utf8') }), sha256: createHash('sha256').update(bytes).digest('hex'), http_status: response.status, redirects: redirectsFollowed };
 }
+
+export const fetchOfficialPage = (url, fetcher = fetch, options = {}) => fetchOfficialResource(url, fetcher, options);
+export const fetchOfficialFile = (url, fetcher = fetch) => fetchOfficialResource(url, fetcher, { binary: true, maxBytes: 30_000_000, timeoutMs: 15000 });
 
 export async function inspectOfficialSources(lawNumber, { fetcher = fetch, enabled = process.env.LEGAL_ONLINE_LOOKUP !== 'false' } = {}) {
   if (!enabled) return { status: 'disabled', message: 'Chưa xác minh được căn cứ pháp luật: tra cứu Internet đang tắt.', snapshots: [] };

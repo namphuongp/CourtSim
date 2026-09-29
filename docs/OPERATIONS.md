@@ -48,6 +48,10 @@ Trong `backend`: `node src/scripts/smokeAi.js` dùng tình huống hư cấu, c�
 `node src/scripts/evaluateDialogue.js edge` chạy hai phiên năm lượt, giữ vai/giai đoạn/mục đích cuối giữa các lượt: thừa nhận thiếu chứng cứ, lặp lời, số điều chưa xác minh, phát biểu dài và tổng kết. Script trả mã thoát lỗi khi có lời gọi thất bại; `guided_continuation` vẫn phải đọc riêng trong report vì không phải chất lượng model đạt. `datasetHash` định danh bộ hồ sơ/đầu vào cơ sở; `evaluated_inputs_sha256` định danh các đầu vào thực sự đã chạy, gồm bộ edge. Không so tổng thời gian hai phiên khi số người nói khác nhau; dùng thời gian từng lần gọi và số lần sửa kèm transcript.
 
 Chưa đủ điều kiện kết luận sẵn sàng production: bộ test rút gọn đã qua luồng OTP/đặt lại mật khẩu với API thật và email fixture, nhưng vbpl chưa trả nội dung đủ để xác minh trong lần kiểm tra trực tiếp, trình duyệt có lúc bị chặn; chưa xác nhận đủ email/OAuth trên domain thật. Giám sát lỗi, quota, thời gian AI, tỷ lệ dự phòng và gửi email; chưa có hàng đợi email bền vững hoặc kiểm toán bảo mật độc lập.
+## Kho luật có kiểm soát nguồn và quyền sử dụng
+
+Quy trình hiện tại: xem [LEGAL_CORPUS.md](LEGAL_CORPUS.md). Mô phỏng/trợ lý dùng kho tài liệu người dùng đã cho phép và web bổ sung không giới hạn tên miền, trong phạm vi pháp luật Việt Nam về tranh chấp đất đai. Chấm điểm luật vẫn kiểm tra thời điểm áp dụng riêng; kết quả lịch sử không tự tính lại. Sao lưu cả MongoDB và `backend/storage/legal-sources/`.
+
 # Nhập hồ sơ Case1
 
 Từ thư mục `backend`, chạy `npm run case1:import`. Script đối chiếu SHA-256 của `LawDoc/Case1.docx`, kiểm tra hồ sơ biên tập và upsert đúng tiêu đề; không chạy seed hoặc xóa dữ liệu. Phiên đã mở giữ snapshot riêng. Bảng nguồn và quyết định biên tập ở `reports/CASE1_EDITORIAL.md`.

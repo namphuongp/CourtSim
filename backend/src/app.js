@@ -8,6 +8,7 @@ import caseRoutes from './routes/CaseRoutes.js';
 import healthRoutes from './routes/HealthRoutes.js';
 import { learnerFeedbackRoutes, adminFeedbackRoutes } from './routes/FeedbackRoutes.js';
 import sessionRoutes from './routes/SessionRoutes.js';
+import legalSourceRoutes from './routes/LegalSourceRoutes.js';
 
 export function createApp(authDependencies) {
   const app = express();
@@ -21,6 +22,7 @@ export function createApp(authDependencies) {
   app.use('/api/v1/health', healthRoutes);
   app.use('/api/auth', createAuthRoutes(authDependencies));
   app.use('/api/v1/cases', caseRoutes);
+  app.use('/api/v1/legal-sources', legalSourceRoutes);
   app.use('/api/v1/sessions/:sessionId/feedback', learnerFeedbackRoutes);
   app.use('/api/v1/admin/feedback', adminFeedbackRoutes);
   app.use('/api/v1/admin', adminRoutes);

@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { basename } from 'node:path';
 import WordExtractor from 'word-extractor';
 
-const articleHeading = /(?:^|\n)\s*Điều\s+(\d+[a-z]?)\s*\.\s+/giu;
+const articleHeading = /(?:^|\n)[\t \u00a0]*Điều[\t \u00a0]+(\d+[a-z]?)[\t \u00a0]*(?:[.:–-][\t \u00a0]*|\r?\n)/giu;
 const paragraphHeading = /^\s*(\d+)\.\s+(?=\S)/gmu;
 const pointHeading = /^\s*([a-zđ])\)\s+(?=\S)/gimu;
 
@@ -79,8 +79,15 @@ export function parseLegalArticles(sourceText, pages = []) {
   const matches = [...sourceText.matchAll(articleHeading)];
   if (!matches.length) return [];
 
+  const headings = [...sourceText.matchAll(/(?:^|\n)[\t ]*((Chương|Mục)[\t ]+[IVX\d]+[^\n]*)/giu)];
+  let headingIndex = 0, chapter = null, section = null;
   return matches.map((match, index) => {
     const start = match.index + (match[0].startsWith('\n') ? 1 : 0);
+    while (headings[headingIndex]?.index < start) {
+      const heading = headings[headingIndex++];
+      if (/^chương$/iu.test(heading[2])) { chapter = heading[1].trim(); section = null; }
+      else section = heading[1].trim();
+    }
     const contentStart = match.index + match[0].length;
     let end = index + 1 < matches.length ? matches[index + 1].index : sourceText.length;
     // Tiêu đề chương tiếp theo và phần ký/xuất bản không thuộc nội dung điều cuối.
@@ -95,6 +102,7 @@ export function parseLegalArticles(sourceText, pages = []) {
 
     return {
       article: match[1],
+      chapter, section,
       text,
       body: sourceText.slice(contentStart, end).trim(),
       pageFrom: pageNumbers.length ? Math.min(...pageNumbers) : null,

@@ -81,7 +81,7 @@ router.get('/', asyncHandler(async (request, response) => {
   const bySession = new Map(legacyResults.map((result) => [String(result.session_id), result]));
   response.json({ data: sessions.map((session) => {
     const result = session.evaluation ?? bySession.get(String(session._id));
-    return { ...publicSession(session), result: result ? { score: scoreSummary(result).score, earned_score: result.earned_score, assessment_status: result.assessment_status, rubric_scores: result.rubric_scores, rubric_version: result.rubric_version, assessed_max: result.assessed_max, score_scope: result.score_scope } : null };
+    return { ...publicSession(session), result: result ? { score: scoreSummary(result).score, earned_score: result.earned_score, assessment_status: result.assessment_status, rubric_scores: result.rubric_scores, rubric_version: result.rubric_version, assessed_max: result.assessed_max, score_scope: result.score_scope, legal_assessment_mode: result.legal_assessment_mode, assessment_note: result.assessment_note } : null };
   }) });
 }));
 

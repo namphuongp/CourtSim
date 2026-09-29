@@ -1,0 +1,58 @@
+[
+  {
+    "law_number": "45/2013/QH13",
+    "title": "Luật Đất đai",
+    "issuing_body": "Quốc hội",
+    "promulgated_at": "2013-11-29",
+    "document_kind": "original",
+    "version": "Bản gốc PDF Công báo — chưa xác minh sửa đổi và hiệu lực từng điều",
+    "expected_articles": 212,
+    "completeness_reviewed": true,
+    "page_review_evidence": "Đối chiếu dãy điều liên tục; phần 2024 gồm 1–90, 91–170, 171–260. Đã render trang ít chữ: thông tin xuất bản và trang trắng.",
+    "permission": {
+      "status": "allowed",
+      "basis": "official_original",
+      "evidence": "Người dùng xác nhận ngày 29/09/2026: PDF đảm bảo nguồn, tải từ vbpl.vn. Xác nhận này không thay cho đối chiếu hiệu lực."
+    },
+    "official_url": "https://vbpl.vn/bonoivu/Pages/vbpq-toanvan.aspx?ItemID=32833",
+    "files": [
+      {
+        "path": "VanBanGoc_45.2013.QH13.pdf",
+        "sha256": "e60dfb3e9da515b0c7dda4691a7200dbac83856ec96a8a13e242fb3388ec4d41"
+      }
+    ],
+    "relations": []
+  },
+  {
+    "law_number": "31/2024/QH15",
+    "title": "Luật Đất đai",
+    "issuing_body": "Quốc hội",
+    "promulgated_at": "2024-01-18",
+    "document_kind": "original",
+    "version": "Bản gốc PDF Công báo — chưa xác minh sửa đổi và hiệu lực từng điều",
+    "expected_articles": 260,
+    "completeness_reviewed": true,
+    "page_review_evidence": "Đối chiếu dãy điều liên tục; phần 2024 gồm 1–90, 91–170, 171–260. Đã render trang ít chữ: thông tin xuất bản và trang trắng.",
+    "permission": {
+      "status": "allowed",
+      "basis": "official_original",
+      "evidence": "Người dùng xác nhận ngày 29/09/2026: PDF đảm bảo nguồn, tải từ vbpl.vn. Xác nhận này không thay cho đối chiếu hiệu lực."
+    },
+    "official_url": "https://vbpl.vn/bolaodong/Pages/ivbpq-toanvan.aspx?ItemID=177815&Keyword=",
+    "files": [
+      {
+        "path": "VanBanGoc_31-2024-qh15_1 (2).pdf",
+        "sha256": "2558044082ee768192a311aee548eb9fae4daada546013aa5181eb91c8842637"
+      },
+      {
+        "path": "VanBanGoc_31-2024-qh15_2 (2).pdf",
+        "sha256": "651797458d2399fd70cd5b4d3edb3845d223540fa34d82f826718c248aca619e"
+      },
+      {
+        "path": "VanBanGoc_31-2024-qh15_3 (2).pdf",
+        "sha256": "6f679f5043ac94fec88ec6f565131faf7aacc819290191069f80799b60d294d0"
+      }
+    ],
+    "relations": []
+  }
+]

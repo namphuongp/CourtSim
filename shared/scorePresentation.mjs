@@ -2,11 +2,12 @@
 export function scoreSummary(result = {}) {
   const assessed = Number.isFinite(result.assessed_max) ? result.assessed_max : 100;
   const partial = assessed < 100;
+  const provisional = result.legal_assessment_mode === 'web_reference';
   const earned = assessed === 0 ? null : Number.isFinite(result.earned_score) ? result.earned_score : partial ? null : result.score;
   return {
-    partial, assessed, earned, remaining: 100 - assessed,
+    partial, provisional, assessed, earned, remaining: 100 - assessed,
     score: partial ? null : (Number.isFinite(earned) ? earned : null),
-    label: Number.isFinite(earned) ? `${earned}/${assessed}${partial ? ' điểm ở phần đã đánh giá' : ' điểm'}` : 'Chưa đủ dữ liệu để chấm',
+    label: Number.isFinite(earned) ? `${earned}/${assessed}${partial ? ' điểm ở phần đã đánh giá' : ' điểm'}${provisional ? ' · tham khảo từ nguồn web' : ''}` : 'Chưa đủ dữ liệu để chấm',
   };
 }
 

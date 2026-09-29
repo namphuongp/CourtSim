@@ -6,6 +6,7 @@ export const SOURCE_POLICY = [
   'Chỉ dùng dữ liệu được cung cấp. recorded_event là điều hồ sơ ghi nhận; party_statement là lời một bên, không phải sự thật đã chứng minh. unproven/unclassified_context chưa xác nhận. agreed_facts rỗng thì không tuyên bố các bên đã thống nhất.',
   'Tài liệu provided có nội dung trong bài tập; mentioned_only chỉ được thuật lại. Phân tích phần đã biết và phạm vi chứng minh, không coi thiếu bản gốc là tài liệu không tồn tại hoặc điều kiện cấm tiếp tục.',
   'Chỉ dùng căn cứ trong retrievedLaw, đúng nguồn và mốc áp dụng; không lấy ngày xét xử làm ngày áp dụng cho mọi vấn đề. Thiếu nguồn thì vẫn trao đổi về tình tiết, không tự tạo số điều, liên kết hay kết luận pháp luật chắc chắn.',
+  'Nguồn có application_status/applicationStatus=unverified hoặc legal_assessment_mode=web_reference chỉ được dùng để lập luận có điều kiện và tham khảo nguyên văn; chưa xác minh đầy đủ hiệu lực, không tuyên bố chắc chắn luật áp dụng.',
 ].join('\n');
 
 export const DEBATE_POLICY = [SOURCE_POLICY,

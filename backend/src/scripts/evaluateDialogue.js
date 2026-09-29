@@ -8,16 +8,19 @@ import { case1Appeal } from '../data/case1Appeal.js';
 import { sampleLandCase } from '../data/sampleLandCase.js';
 import { generateDebateTurn, evaluateSession, getPersona } from '../services/simulationService.js';
 import { createChatCompletion } from '../services/aiClient.js';
+import { researchLegalBasis } from '../services/legalResearchService.js';
+import { webReferenceEnabled } from '../services/webLegalResearch.js';
 import { chooseSpeakingPlan } from '../services/conversationPolicy.js';
 
 const label = process.argv[2];
+const liveLaw = label === 'case1' && webReferenceEnabled();
 const courtCase = label === 'case1' ? case1Appeal : sampleLandCase;
 if (!['case1', 'before', 'after', 'review', 'edge', 'long-before', 'long-after'].includes(label)) throw new Error('Dùng: node src/scripts/evaluateDialogue.js before|after|review|edge|long-before|long-after');
 if (new URL(env.AI_BASE_URL).origin !== 'https://api.openai.com') throw new Error('Bộ đo chỉ gửi dữ liệu tới OpenAI chính thức.');
 process.env.AI_USAGE_TRACKING = 'false';
 await mongoose.connect(env.MONGO_URI, { serverSelectionTimeoutMS: 5000 });
 const settings = Object.fromEntries(await Promise.all(['judge', 'prosecutor', 'evaluator'].map(async role => [role, await getPersona(role)])));
-await mongoose.disconnect();
+if (!liveLaw) await mongoose.disconnect();
 const emptyLaw = { citations: [], candidates: [], issues: [], warnings: [], legal_assessment_available: false };
 const inputs = [
   ['greeting', 'Xin chào Chủ tọa.'], ['noise', 'abc'],
@@ -39,11 +42,11 @@ async function save() {
     evaluated_inputs_sha256: createHash('sha256').update(JSON.stringify(results.map(item => ({ name: item.name, role: item.learner_role, content: item.input.findLast(record => record.sender_type === 'user')?.content })))).digest('hex'),
     configuration: Object.fromEntries(Object.entries(settings).map(([role, p]) => [role, { model: p.model_id, temperature: p.temperature,
       persona_sha256: createHash('sha256').update(p.system_prompt).digest('hex') }])),
-    law_mode: 'controlled unavailable (no external law assertion)', results }, null, 2));
+    law_mode: liveLaw ? 'live web reference: Vietnam land disputes' : 'controlled unavailable (no external law assertion)', results }, null, 2));
 }
 async function run(name, session, records, scoring = false) {
   const calls = [], started = performance.now();
-  const dependencies = { persona: async role => settings[role], research: async () => emptyLaw,
+  const dependencies = { persona: async role => settings[role], research: liveLaw ? researchLegalBasis : async () => emptyLaw,
     complete: async input => {
       const call = { role: input.usageContext.role, model: input.model, input_chars: input.systemPrompt.length + JSON.stringify(input.messages).length };
       calls.push(call);
@@ -130,3 +133,4 @@ for (const role of ['plaintiff_lawyer', 'defense_lawyer']) {
   if (label !== 'review') await run('scoring', session, records, true);
 }
 await save();
+if (liveLaw) await mongoose.disconnect();
