@@ -1,4 +1,5 @@
 import { classifyDialogueInput } from './dialogueInput.js';
+import { roleMismatch } from './hearingState.js';
 
 export function initialConversation(opening) {
   const lastSpeaker = opening?.sender_type === 'user' ? 'learner' : opening?.sender_type === 'ai_prosecutor' ? 'opponent' : 'judge';
@@ -8,6 +9,8 @@ export function initialConversation(opening) {
 
 // Quy tắc sư phạm, chưa coi là thứ tự tố tụng bắt buộc theo luật.
 export function chooseSpeakingPlan(session, content) {
+  if (roleMismatch(session, content)) return { phase: 'clarification', plan: ['judge'] };
+  if (session.conversation?.hearing_state?.judge_intervention) return { phase: 'clarification', plan: ['judge', 'opponent'] };
   const kind = classifyDialogueInput(content);
   if (['greeting', 'noise', 'unclear'].includes(kind)) return { phase: session.conversation?.phase ?? 'opening', plan: ['judge'] };
   if (kind === 'brief_position') return { phase: 'clarification', plan: ['judge'] };

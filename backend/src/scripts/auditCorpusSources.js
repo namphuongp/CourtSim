@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { readFile, writeFile } from 'node:fs/promises';
 import { lookupVbpl } from '../services/vbplResearch.js';
-const root = new URL('../../../reports/', import.meta.url);
+const root = new URL('../../../.test-artifacts/', import.meta.url);
 const manifest = JSON.parse(await readFile(new URL('LEGAL_FILE_MANIFEST.json', root), 'utf8'));
 const numbers = [...new Set(manifest.entries.map(e => e.law_number).filter(Boolean))];
 const results = [];

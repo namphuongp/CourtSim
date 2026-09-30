@@ -3,6 +3,7 @@ import { evidenceInventory } from './caseEvidence.js';
 import { AppError } from '../utils/AppError.js';
 import { classifyDialogueInput } from './dialogueInput.js';
 import { hasReadableLawSource } from '../../../shared/legalSourcePolicy.mjs';
+import { hearingState } from './hearingState.js';
 
 const sentences = text => (text ?? '').split(/(?<=[.!?])\s+|\n+/u).map(s => s.trim()).filter(Boolean);
 const words = text => new Set((text.toLocaleLowerCase('vi').match(/[\p{L}\p{N}]{3,}/gu) ?? []));
@@ -15,8 +16,9 @@ export function needsLegalResearch(records) {
 
 export function dialogueContext(session, courtCase, records, legalContext) {
   const knowledge = caseKnowledge(courtCase);
+  const hearing = hearingState(session, courtCase, records);
   const latest = records.findLast(r => r.sender_type === 'user');
-  const terms = words(latest?.content ?? '');
+  const terms = words(`${latest?.content ?? ''} ${hearing.pending_question?.text ?? ''}`);
   const sources = [
     ...knowledge.recorded_events.map(f => ({ kind: 'recorded_event', text: f.quote })),
     ...knowledge.party_statements.map(f => ({ kind: 'party_statement', party: f.party, text: f.quote })),
@@ -30,7 +32,7 @@ export function dialogueContext(session, courtCase, records, legalContext) {
   // Chọn trích đoạn có liên quan, giữ nhãn lời khai; không dùng model tóm tắt thành sự thật.
   const seen = new Set();
   const ranked = sources.flatMap(source => sentences(source.text).map(text => ({ ...source, text })))
-    .filter(source => { if (seen.has(source.text)) return false; seen.add(source.text); return true; })
+    .filter(source => { const key = `${source.evidence_id ?? ''}:${source.text}`; if (seen.has(key)) return false; seen.add(key); return true; })
     .map((source, index) => ({ ...source, index, relevance: [...words(source.text)].filter(w => terms.has(w)).length }))
     .sort((a, b) => b.relevance - a.relevance || a.index - b.index);
   let size = 0;
@@ -55,7 +57,7 @@ export function dialogueContext(session, courtCase, records, legalContext) {
     }));
   }).slice(-10);
   // Không chép cả lời mới nhất lần thứ ba; nội dung đầy đủ nằm trong learner.
-  const issue = { id: `I:${latest?._id ?? records.lastIndexOf(latest)}`, learner_points: learner.map(s => s.id) };
+  const issue = { ...hearing.current_issue, learner_points: learner.map(s => s.id) };
   const latestIndex = records.lastIndexOf(latest);
   const normalize = text => text.normalize('NFC').toLocaleLowerCase('vi').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
   const earlierPoints = new Set(records.slice(0, latestIndex).filter(r => r.sender_type === 'user').flatMap(r => sentences(r.content)).map(normalize));
@@ -63,10 +65,18 @@ export function dialogueContext(session, courtCase, records, legalContext) {
   const brief = r => ({ record_id: String(r._id ?? records.indexOf(r)), speaker_type: r.sender_type,
     text: sentences(r.content).slice(0, 2).join(' '), issue: r.issue ?? null, purpose: r.purpose ?? null,
     evidence_ids: r.evidence_ids ?? [] });
+  // Prompt chỉ nhận metadata của toàn danh mục; nội dung dài đi qua bộ chọn dossier.
+  const hearingForPrompt = { ...hearing, available_evidence: hearing.available_evidence.map(e => ({
+    id: e.id, name: e.name, title: e.title, availability: e.availability, has_content: e.has_content,
+    date: e.date, source_kind: e.source_kind, source_locator: e.source_locator,
+    proof_scope: e.proof_scope, verification_status: e.verification_status,
+    evidence_state: e.evidence_state, referenced: e.referenced,
+  })), presented_evidence: hearing.presented_evidence.map(e => e.id) };
   return {
     schema_version: 2,
     title: courtCase.title, category: courtCase.category, userRole: session.user_court_role,
     practice_context: courtCase.practice_context,
+    hearing: hearingForPrompt,
     state: { phase: session.conversation?.phase ?? 'debate', learner_turns: records.filter(r => r.sender_type === 'user').length,
       input_kind: latest?.input_kind ?? classifyDialogueInput(latest?.content ?? ''),
       current_issue: issue, questions,
@@ -116,8 +126,14 @@ export function validateDialogueQuantities(content, context) {
   // Chặn số đo/số tiền mới; phép kiểm này không thay thế thẩm định ý nghĩa lời thoại.
   const quantities = text => (text.match(/(?<![\p{L}\p{N}])\d+(?:[.,]\d+)*\s*(?:m²|m2|km²|ha|triệu đồng|tỷ đồng|đồng|%)(?!\p{L})/giu) ?? [])
     .map(value => value.toLocaleLowerCase('vi').replace(/\s+/gu, '').replaceAll('m2', 'm²'));
-  const sources = new Set(quantities([...context.learner.map(s => s.text), ...context.dossier.map(s => s.text), ...context.retrievedLaw.map(s => s.text)].join('\n')));
-  if (quantities(content).some(value => !sources.has(value))) {
-    throw new AppError('Lời thoại có số đo hoặc số tiền chưa có trong nguồn được cung cấp.', 502, 'AI_UNGROUNDED_FACT');
+  const sources = new Set(quantities(context.dossier.map(s => s.text).join('\n')));
+  const claims = new Set(quantities(context.learner.map(s => s.text).join('\n')));
+  const law = new Set(quantities(context.retrievedLaw.map(s => s.text).join('\n')));
+  for (const sentence of sentences(content)) {
+    const attributed = /(?:bạn|người học)\s+(?:nêu|nói|viện dẫn|cho rằng)|theo lời bạn/iu.test(sentence);
+    const legal = /(?:quy định|điều luật|pháp luật)/iu.test(sentence);
+    if (quantities(sentence).some(value => !sources.has(value) && !(attributed && claims.has(value)) && !(legal && law.has(value)))) {
+      throw new AppError('Lời thoại có số đo/số tiền chưa có trong hồ sơ hoặc chưa giữ đúng nguồn lời trình bày.', 502, 'AI_UNGROUNDED_FACT');
+    }
   }
 }

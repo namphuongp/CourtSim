@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 const simulationSessionSchema = new mongoose.Schema({
   user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   case_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Case', required: true },
-  user_court_role: { type: String, required: true },
+  user_court_role: { type: String, required: true, immutable: true },
   case_event_date: { type: String, match: /^\d{4}-\d{2}-\d{2}$/, default: null },
   difficulty: { type: String, enum: ['beginner', 'balanced', 'advanced'], default: 'balanced' },
   turn_count: { type: Number, default: 0, min: 0 },

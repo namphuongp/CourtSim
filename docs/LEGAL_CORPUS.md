@@ -1,6 +1,6 @@
 # Kho luật đất đai: nhập, duyệt và khôi phục
 
-Đặt nguồn mới trong `LawDoc/`, giữ nguyên byte tệp tải về và thông tin nguồn tải. Theo chỉ dẫn ngày 29/09/2026, các tài liệu người dùng cung cấp được dùng trực tiếp cho mô phỏng và trợ lý, không chờ tải lại từ VBPL. Hồ sơ hiện hành là `reports/LEGAL_LOCAL_USE_REVIEWS.json`; manifest và audit nguồn chính thức trước đó là bằng chứng của đợt kiểm tra cũ.
+Đặt nguồn mới trong `LawDoc/`, giữ nguyên byte tệp tải về và thông tin nguồn tải. Theo chỉ dẫn ngày 29/09/2026, các tài liệu người dùng cung cấp được dùng trực tiếp cho mô phỏng và trợ lý, không chờ tải lại từ VBPL. Hồ sơ hiện hành là `backend/src/data/legal-reviews/LEGAL_LOCAL_USE_REVIEWS.json`. Manifest và audit được tạo lại trong `.test-artifacts/` khi cần.
 
 ## Nhập tài liệu người dùng đã cho phép
 
@@ -11,7 +11,7 @@ node src/scripts/importLocalLaws.js
 node src/scripts/importLocalLaws.js --apply
 ```
 
-Lệnh đầu kiểm tra checksum, định danh và cấu trúc; lệnh sau nhập MongoDB, sao lưu nguyên byte vào `backend/storage/legal-sources/`. Kết quả nằm ở `reports/LEGAL_LOCAL_USE_RESULT.json`. Đã nhập 24 bản thuộc 20 số hiệu từ 26 tệp; chạy lại không nhân đôi. Case1 và rubric không thuộc kho luật. Sao lưu thư mục nguồn cùng DB để link nguồn tiếp tục hoạt động khi chuyển máy.
+Lệnh đầu kiểm tra checksum, định danh và cấu trúc; lệnh sau nhập MongoDB, sao lưu nguyên byte vào `backend/storage/legal-sources/`. Kết quả nằm ở `.test-artifacts/LEGAL_LOCAL_USE_RESULT.json`. Đã nhập 24 bản thuộc 20 số hiệu từ 26 tệp; chạy lại không nhân đôi. Case1 và rubric không thuộc kho luật. Sao lưu thư mục nguồn cùng DB để link nguồn tiếp tục hoạt động khi chuyển máy.
 
 Nguồn này mang `reference + local_read + allowed`, có thể trích dẫn trong hội thoại/trợ lý. Nhãn này xác nhận đã đọc tệp cung cấp, không giả lập việc đối chiếu byte với VBPL hay xác minh hiệu lực cho mọi thời điểm. API mở tệp yêu cầu đăng nhập và kiểm tra checksum; Word tải xuống, PDF xem trực tiếp. Bản PDF được ưu tiên khi trùng số hiệu/điều với Word. Giữ nguyên dấu nguồn trong tệp; không sửa phiên và trích dẫn cũ.
 
@@ -21,8 +21,8 @@ Trong `backend`, dùng Node trực tiếp khi truyền tham số trên PowerShel
 
 ```powershell
 npm run legal:inventory
-node src/scripts/inventoryLegalCorpus.js --reviews ../reports/LEGAL_PDF_REVIEWS.json
-node src/scripts/inventoryLegalCorpus.js --reviews ../reports/LEGAL_PDF_REVIEWS.json --apply
+node src/scripts/inventoryLegalCorpus.js --reviews src/data/legal-reviews/LEGAL_PDF_REVIEWS.json
+node src/scripts/inventoryLegalCorpus.js --reviews src/data/legal-reviews/LEGAL_PDF_REVIEWS.json --apply
 ```
 
 Lệnh đầu chỉ kiểm kê. Lệnh thứ hai đối chiếu không ghi DB. Lệnh cuối chỉ ghi những bản đã vượt đủ kiểm tra. `--root` đổi thư mục tài liệu; đường dẫn từng tệp review phải nằm bên trong thư mục đó, không được thoát qua symlink. `--output` chọn manifest kết quả. Báo `not_imported` là chưa nhập, kể cả tiến trình kết thúc bình thường; đọc từng mục `imports`.
@@ -68,4 +68,4 @@ Thu hồi chỉ ngừng phục vụ tìm kiếm mới, giữ nội dung và trí
 
 ## Kiểm tra
 
-`node --test tests/legalCorpus.test.js` kiểm tra nguồn/quyền, thời kỳ, sửa đổi/chuyển tiếp, hợp nhất, lỗi nguồn, idempotency và thu hồi. Đặt `COURTSIM_TEST_MONGO_URI` để chạy phần tích hợp trong DB ngẫu nhiên riêng. `node src/scripts/auditCorpusSources.js` đối chiếu số hiệu công khai; `node src/scripts/smokeLegalCorpus.js` chạy ba câu hỏi qua HTTP loopback với service/DB/nguồn VBPL thật, không tạo phiên hay gửi hồ sơ tới LLM. Kiểm thử bằng fixture không phải chứng nhận nguồn thật.
+`node --test tests/legalCorpus.test.js` kiểm tra nguồn/quyền, thời kỳ, sửa đổi/chuyển tiếp, hợp nhất, lỗi nguồn, idempotency và thu hồi. Đặt `COURTSIM_TEST_MONGO_URI` để chạy phần tích hợp trong DB ngẫu nhiên riêng. Chạy `npm run legal:inventory` rồi `node src/scripts/auditCorpusSources.js` để đối chiếu số hiệu công khai; kết quả nằm trong `.test-artifacts/`. Kiểm thử bằng fixture không phải chứng nhận nguồn thật.

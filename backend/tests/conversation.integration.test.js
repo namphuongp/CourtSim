@@ -247,4 +247,26 @@ test('MongoDB: từng lời, cursor, retry, double click, reload, kết thúc l�
   assert.deepEqual(session.conversation.plan, ['judge', 'opponent']);
   assert.equal(session.conversation.last_speaker, 'judge');
   assert.equal((await getRecords(session)).filter(r => r.sender_type === 'user').length, 2);
+
+  const correctionSession = await makeSession('defense_lawyer');
+  await runConversation(correctionSession, { action: 'submit', revision: 0, requestId: randomUUID(),
+    content: 'Tôi bảo vệ nguyên đơn A.', evidenceIds: [], citations: [] });
+  const corrected = await SimulationSession.findById(correctionSession._id);
+  assert.deepEqual(corrected.conversation.plan, ['judge']);
+  assert.equal(corrected.conversation.hearing_state.participants.player, 'defendant');
+  assert.equal(corrected.turns[0].records[1].generation_mode, 'role_correction');
+  await SimulationSession.updateOne({ _id: corrected._id }, { $set: { user_court_role: 'plaintiff_lawyer' } });
+  assert.equal((await SimulationSession.findById(corrected._id)).user_court_role, 'defense_lawyer');
+
+  const evasionSession = await makeSession('defense_lawyer');
+  evasionSession.opening = { sender_type: 'ai_judge', next_speaker: 'opponent', content: 'Bên đối lập có tài liệu cụ thể nào?' };
+  evasionSession.conversation = { ...initialConversation(evasionSession.opening), last_purpose: 'clarify_evidence' };
+  await evasionSession.save();
+  await runConversation(evasionSession, { action: 'submit', revision: 0, requestId: randomUUID(), content: 'Tôi chỉ căn cứ nội dung hợp đồng vay.', evidenceIds: [], citations: [] }, {
+    generate: async () => [{ sender_type: 'ai_prosecutor', role: 'opponent', content: 'Phía tôi sẽ bổ sung sau khi xem xét.', generation_mode: 'guided_continuation' }],
+  });
+  const intervening = await SimulationSession.findById(evasionSession._id);
+  assert.deepEqual(intervening.conversation.plan, ['opponent', 'judge']);
+  assert.equal(intervening.conversation.next_speaker, 'judge');
+  assert.equal(intervening.conversation.hearing_state.judge_intervention, 'request_direct_answer');
 });

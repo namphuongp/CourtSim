@@ -237,7 +237,7 @@ function Room({ sessionId }) {
     </div> : null;
   if (state.loading) return <main className="courtroom-page" role="status">Đang tải phiên tòa...</main>;
   return <main className="courtroom-page">
-    {panel === 'guide' && <CourtroomGuide completed={completed} hasDialogue={Boolean(view.record)} onClose={() => setPanel(null)} />}
+    {panel === 'guide' && <CourtroomGuide completed={completed} maxTurns={session?.max_turns ?? 20} hasDialogue={Boolean(view.record)} onClose={() => setPanel(null)} />}
     <StudyPanel open={Boolean(panel) && panel !== 'guide'} compact={panel === 'speech'} title={panelTitles[panel] ?? 'Hồ sơ vụ án'} onClose={() => setPanel(null)}>
       {insertError && <p role="alert" className="mb-3 text-rose-400">{insertError}</p>}
       {(panel === 'case' || panel === 'history') && <>

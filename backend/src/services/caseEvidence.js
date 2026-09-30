@@ -34,6 +34,11 @@ export function validateEvidenceReferences(courtCase, content, supplied) {
 }
 
 export function validateCaseDetails(body) {
+  const absences = body.evidence_absences ?? [];
+  const dossier = `${body.summary ?? ''}\n${body.full_document ?? ''}`;
+  if (!Array.isArray(absences) || absences.length > 50 || absences.some(e => !e || typeof e.title !== 'string' || !e.title.trim() || e.title.length > 200
+    || typeof e.source_quote !== 'string' || e.source_quote.length < 15 || e.source_quote.length > 2000 || !dossier.includes(e.source_quote)
+    || !/(?:không có|không tồn tại|không được lập)/iu.test(e.source_quote))) throw new AppError('Xác nhận thiếu tài liệu cần tên và trích đoạn rõ ràng từ hồ sơ.');
   const parties = body.parties ?? [];
   const evidence = body.evidence_inventory ?? [];
   if (!Array.isArray(parties) || parties.length > 20 || !Array.isArray(evidence) || evidence.length > 50) throw new AppError('Danh sách các bên hoặc chứng cứ quá dài.');
@@ -52,6 +57,7 @@ export function validateCaseDetails(body) {
       || (item.date && !isValidDateOnly(item.date))) throw new AppError('Chứng cứ cần tên, trạng thái và nội dung thực sự được cung cấp; ngày không rõ có thể để trống.');
   }
   return {
+    evidence_absences: absences.map(({ title, source_quote }) => ({ title, source_quote })),
     parties: parties.map(({ side, name, claims }) => ({ side, name, claims })),
     evidence_inventory: evidence.map(({ name, availability, summary, source_quote, provided_by, date, content, source_kind, source_locator, proof_scope, verification_status }) => ({ name, availability, summary, source_quote, provided_by, date, content, source_kind, source_locator, proof_scope, verification_status })),
   };

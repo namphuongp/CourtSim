@@ -1,6 +1,6 @@
 # CourtSim
 
-Ứng dụng luyện tranh tụng bằng React/Vite, Node.js/Express và MongoDB. Chủ tọa và bên đối lập phát biểu từng lượt; người học chủ động bấm **Tiếp tục**. Chỉ dùng **vbpl.vn** làm nguồn pháp luật bên ngoài.
+Ứng dụng luyện tranh tụng bằng React/Vite, Node.js/Express và MongoDB. Chủ tọa và bên đối lập phát biểu từng lượt; người học chủ động bấm **Tiếp tục**. Ưu tiên kho tài liệu pháp luật nội bộ, kết hợp web về pháp luật Việt Nam.
 
 ## Chạy tại máy phát triển
 
@@ -62,7 +62,7 @@ Test chỉ nằm trong `backend/tests` và `frontend/tests`:
 
 Backend dùng node:test; khi thiếu COURTSIM_TEST_MONGO_URI, các ca Mongo bị skip. Mỗi ca tích hợp dùng DB courtsim_test_<uuid> riêng. Email/model trong E2E là fixture, không chứng minh dịch vụ ngoài hoạt động. Kết quả tạm gom trong `.test-artifacts/`, chỉ giữ trace/ảnh khi lỗi; `npm run test:clean` dọn thư mục này. Windows dùng Edge; Linux/CI cài Chromium bằng `npx playwright install --with-deps chromium`. Dự án JavaScript chưa có TypeScript typecheck; check-source chỉ kiểm tra cú pháp.
 
-CI chạy tại .github/workflows/ci.yml. Từ backend: `npm run legal:smoke` kiểm tra vbpl trực tiếp; `node src/scripts/smokeAi.js` kiểm tra AI bằng tình huống hư cấu, có phát sinh phí. Kết quả kiểm tra nằm trong `reports/`. Không commit report JSON, log, ảnh có dữ liệu người dùng, file .env hoặc bản sao DB.
+CI chạy tại .github/workflows/ci.yml. Từ backend: `npm run legal:smoke` kiểm tra vbpl trực tiếp; `node src/scripts/smokeAi.js` kiểm tra AI bằng tình huống hư cấu, có phát sinh phí. Kết quả kiểm tra nằm trong `.test-artifacts/`. Không commit report JSON, log, ảnh có dữ liệu người dùng, file .env hoặc bản sao DB.
 
 ## Tài liệu
 
@@ -70,4 +70,4 @@ CI chạy tại .github/workflows/ci.yml. Từ backend: `npm run legal:smoke` ki
 - [Nguồn luật và chấm điểm](docs/SCORING_AND_LEGAL_RESEARCH.md)
 - [Vận hành, cấu hình domain, backup/restore và giới hạn](docs/OPERATIONS.md)
 
-`docs/` chỉ giữ ba hướng dẫn trên. Báo cáo và bằng chứng lịch sử nằm trong `reports/`, không thay thế hướng dẫn hiện tại. Chưa tự triển khai hoặc đổi cấu hình production.
+Hướng dẫn nhập kho luật: [LEGAL_CORPUS.md](docs/LEGAL_CORPUS.md). Hồ sơ đầu vào nhập luật nằm trong `backend/src/data/legal-reviews/`; không xóa thư mục này khi chuyển máy. Kết quả kiểm thử có thể dọn bằng `npm run test:clean` trong frontend. Chưa tự triển khai hoặc đổi cấu hình production.

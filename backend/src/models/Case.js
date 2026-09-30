@@ -10,6 +10,7 @@ const caseSchema = new mongoose.Schema({
   reference_date: String,
   reference_date_note: String,
   legal_scope_note: String,
+  evidence_absences: { type: [new mongoose.Schema({ title: String, source_quote: String }, { _id: false })], default: [] },
   practice_context: { type: mongoose.Schema.Types.Mixed, default: undefined },
   case_facts: { type: [new mongoose.Schema({ kind: { type: String, enum: ['recorded_event', 'party_statement', 'unproven'] }, quote: String, source_type: { type: String, enum: ['judgment', 'case_outline'] }, party: String }, { _id: false })], default: [] },
   parties: { type: [new mongoose.Schema({ side: { type: String, enum: ['plaintiff', 'defendant', 'other'] }, name: String, claims: [String] }, { _id: false })], default: [] },

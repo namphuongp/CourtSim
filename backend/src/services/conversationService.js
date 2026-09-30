@@ -6,6 +6,7 @@ import { getRecords, MAX_TURNS, replayTurn, withSessionLock } from './sessionSto
 
 import { initialConversation, chooseSpeakingPlan } from './conversationPolicy.js';
 import { classifyDialogueInput } from './dialogueInput.js';
+import { hearingState } from './hearingState.js';
 
 function makeRecord(session, value) {
   return { ...value, _id: new mongoose.Types.ObjectId(), session_id: session._id, created_at: new Date(), displayed_at: null };
@@ -62,7 +63,14 @@ export async function runConversation(session, command, { generate = generateDeb
         records: history, speakers: [state.plan[state.cursor]], invitedNext: state.plan[state.cursor + 1] ?? 'learner' }, { onProgress });
       timing.generation_ms = performance.now() - generateAt;
       const speech = makeRecord(locked, message);
+      const progress = hearingState(locked, locked.case_snapshot ?? session.case_snapshot, [...history, speech]);
+      // Lời đối đáp không đạt hoặc tranh điểm cạn cần Chủ tọa, không ép luân phiên cố định.
+      if (speech.sender_type === 'ai_prosecutor' && progress.judge_intervention && state.plan[state.cursor + 1] !== 'judge') {
+        state = { ...state, plan: [...state.plan.slice(0, state.cursor + 1), 'judge'] };
+        speech.next_speaker = 'judge';
+      }
       const updated = { ...state, cursor: state.cursor + 1, status: 'awaiting_continue', revision: state.revision + 1,
+        hearing_state: progress,
         current_issue: speech.issue ?? state.current_issue ?? null,
         last_purpose: speech.purpose ?? null,
         last_speaker: state.plan[state.cursor], next_speaker: state.plan[state.cursor + 1] ?? 'learner', current_record_id: String(speech._id), started_at: null };

@@ -9,7 +9,7 @@ import LegalCorpusVersion from '../models/LegalCorpusVersion.js';
 
 const repo = fileURLToPath(new URL('../../../', import.meta.url));
 const args = process.argv.slice(2);
-const options = { root: resolve(repo, 'LawDoc'), output: resolve(repo, 'reports/LEGAL_FILE_MANIFEST.json') };
+const options = { root: resolve(repo, 'LawDoc'), output: resolve(repo, '.test-artifacts/LEGAL_FILE_MANIFEST.json') };
 try {
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--apply') options.apply = true;

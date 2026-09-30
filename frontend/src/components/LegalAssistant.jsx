@@ -42,7 +42,7 @@ export default function LegalAssistant({ sessionId, open, onInsert, insertionDis
     finally { busy.current = false; setSending(false); }
   }
   return <div className="space-y-4 text-sm">
-    <p>Tìm theo số hiệu, tên luật hoặc vấn đề trong vụ án. Nguồn tra cứu: vbpl.vn. Chọn trích dẫn để đưa vào bài viết rồi tự chỉnh sửa và gửi.</p>
+    <p>Tìm theo số hiệu, tên luật hoặc vấn đề tranh chấp đất đai. Trợ lý ưu tiên kho tài liệu pháp luật và có thể tra cứu thêm trên web. Đọc nguồn và trạng thái áp dụng trước khi đưa trích dẫn vào lập luận.</p>
     <p className="text-slate-400">Tra cứu không gửi lượt tranh luận và không tự thay đổi điểm.</p>
     {!loaded && <p role="status">Đang tải phần tra cứu...</p>}
     {error && <p role="alert">{error} <button onClick={() => setReload((v) => v + 1)} className="underline">Tải lại</button></p>}
