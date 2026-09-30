@@ -61,6 +61,8 @@ test('trình duyệt → API thật → MongoDB riêng: tài khoản, hồ sơ, 
   await expect(page.getByRole('link', { name: 'Mở tệp nguồn' })).toBeVisible();
   await expect(page.getByLabel('Lập luận của bạn')).toHaveValue(/Tôi căn cứ hợp đồng/);
   await expect(page.getByLabel('Lập luận của bạn')).not.toHaveValue(/\[PL:|LAW-/);
+  // Đóng bảng nổi trước khi thao tác với vùng soạn thảo phía sau.
+  await page.getByRole('button', { name: 'Đóng trợ lý luật', exact: true }).click();
   await page.getByRole('button', { name: 'Gửi lập luận', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Kết thúc và chấm điểm', exact: true })).toBeEnabled();
   await expect.poll(harness.calls).toBe(1);
