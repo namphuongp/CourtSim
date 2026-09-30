@@ -25,12 +25,9 @@ test-results/
 test-results-integration/
 .test-artifacts/
 # Bằng chứng kiểm thử có thể chứa hội thoại hoặc thông tin tài khoản; chỉ giữ cục bộ.
-reports/*.json
-reports/*.log
-reports/*.png
-reports/*.html
+reports/
+backend/storage/legal-sources/
 docs/verification/
-reports/archived-doc-evidence/
 *.har
 *.dump
 *.archive

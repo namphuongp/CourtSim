@@ -4,18 +4,23 @@ import mongoose from 'mongoose';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { env } from '../config/env.js';
+import { case1Appeal } from '../data/case1Appeal.js';
 import { sampleLandCase } from '../data/sampleLandCase.js';
 import { generateDebateTurn, evaluateSession, getPersona } from '../services/simulationService.js';
 import { createChatCompletion } from '../services/aiClient.js';
+import { researchLegalBasis } from '../services/legalResearchService.js';
+import { webReferenceEnabled } from '../services/webLegalResearch.js';
 import { chooseSpeakingPlan } from '../services/conversationPolicy.js';
 
 const label = process.argv[2];
-if (!['before', 'after', 'review', 'long-before', 'long-after'].includes(label)) throw new Error('Dùng: node src/scripts/evaluateDialogue.js before|after|review|long-before|long-after');
+const liveLaw = label === 'case1' && webReferenceEnabled();
+const courtCase = label === 'case1' ? case1Appeal : sampleLandCase;
+if (!['case1', 'before', 'after', 'review', 'edge', 'long-before', 'long-after'].includes(label)) throw new Error('Dùng: node src/scripts/evaluateDialogue.js before|after|review|edge|long-before|long-after');
 if (new URL(env.AI_BASE_URL).origin !== 'https://api.openai.com') throw new Error('Bộ đo chỉ gửi dữ liệu tới OpenAI chính thức.');
 process.env.AI_USAGE_TRACKING = 'false';
 await mongoose.connect(env.MONGO_URI, { serverSelectionTimeoutMS: 5000 });
 const settings = Object.fromEntries(await Promise.all(['judge', 'prosecutor', 'evaluator'].map(async role => [role, await getPersona(role)])));
-await mongoose.disconnect();
+if (!liveLaw) await mongoose.disconnect();
 const emptyLaw = { citations: [], candidates: [], issues: [], warnings: [], legal_assessment_available: false };
 const inputs = [
   ['greeting', 'Xin chào Chủ tọa.'], ['noise', 'abc'],
@@ -26,7 +31,7 @@ const inputs = [
   ['answered', 'Tôi chỉ dựa vào nội dung được bản án thuật lại, chưa khẳng định đã xem bản gốc giấy chứng nhận.'],
   ['procedure', 'Xin hỏi Chủ tọa, tôi có thể dẫn tài liệu được bản án nhắc đến không?'],
 ];
-const datasetHash = createHash('sha256').update(JSON.stringify({ inputs, case: sampleLandCase })).digest('hex');
+const datasetHash = createHash('sha256').update(JSON.stringify({ inputs, case: courtCase })).digest('hex');
 const results = [];
 let sequence = 0;
 const user = content => ({ _id: `synthetic-${++sequence}`, sender_type: 'user', content });
@@ -34,13 +39,14 @@ const directory = new URL('../../../.test-artifacts/ai-eval/', import.meta.url);
 await mkdir(directory, { recursive: true });
 async function save() {
   await writeFile(new URL(`${label}.json`, directory), JSON.stringify({ label, created_at: new Date(), datasetHash,
+    evaluated_inputs_sha256: createHash('sha256').update(JSON.stringify(results.map(item => ({ name: item.name, role: item.learner_role, content: item.input.findLast(record => record.sender_type === 'user')?.content })))).digest('hex'),
     configuration: Object.fromEntries(Object.entries(settings).map(([role, p]) => [role, { model: p.model_id, temperature: p.temperature,
       persona_sha256: createHash('sha256').update(p.system_prompt).digest('hex') }])),
-    law_mode: 'controlled unavailable (no external law assertion)', results }, null, 2));
+    law_mode: liveLaw ? 'live web reference: Vietnam land disputes' : 'controlled unavailable (no external law assertion)', results }, null, 2));
 }
 async function run(name, session, records, scoring = false) {
   const calls = [], started = performance.now();
-  const dependencies = { persona: async role => settings[role], research: async () => emptyLaw,
+  const dependencies = { persona: async role => settings[role], research: liveLaw ? researchLegalBasis : async () => emptyLaw,
     complete: async input => {
       const call = { role: input.usageContext.role, model: input.model, input_chars: input.systemPrompt.length + JSON.stringify(input.messages).length };
       calls.push(call);
@@ -50,18 +56,58 @@ async function run(name, session, records, scoring = false) {
   try {
     const selection = chooseSpeakingPlan(session, records.at(-1).content);
     session = { ...session, conversation: { ...session.conversation, ...selection } };
-    const output = scoring ? await evaluateSession({ session, courtCase: sampleLandCase, records }, dependencies)
-      : await generateDebateTurn({ session, courtCase: sampleLandCase, records, speakers: selection.plan }, dependencies);
-    results.push({ name, learner_role: session.user_court_role, input: records, selection, output, calls, elapsed_ms: performance.now() - started });
+    const output = scoring ? await evaluateSession({ session, courtCase, records }, dependencies)
+      : await generateDebateTurn({ session, courtCase, records, speakers: selection.plan }, dependencies);
+    // Giữ ảnh chụp đầu vào: vòng nhiều lượt sẽ push lời AI vào records sau khi run trả về.
+    results.push({ name, learner_role: session.user_court_role, input: structuredClone(records), selection, output, calls, elapsed_ms: performance.now() - started });
     console.log(JSON.stringify({ name, learner_role: session.user_court_role, calls: calls.length, ms: Math.round(performance.now() - started), modes: Array.isArray(output) ? output.map(t => t.generation_mode ?? 'model') : ['evaluation'] }));
     await save(); return Array.isArray(output) ? output : [];
   } catch (error) {
-    results.push({ name, learner_role: session.user_court_role, input: records, error: error.code ?? error.name, calls, elapsed_ms: performance.now() - started });
-    console.log(JSON.stringify({ name, error: error.code ?? error.name })); await save(); return [];
+    results.push({ name, learner_role: session.user_court_role, input: structuredClone(records), error: error.code ?? error.name, calls, elapsed_ms: performance.now() - started });
+    console.log(JSON.stringify({ name, error: error.code ?? error.name })); process.exitCode = 1; await save(); return [];
   }
 }
 for (const role of ['plaintiff_lawyer', 'defense_lawyer']) {
   const session = { user_court_role: role, difficulty: 'balanced', case_event_date: '2024-03-29', turn_count: 0 };
+  if (label === 'case1') {
+    session.case_snapshot = courtCase;
+    session.case_event_date = courtCase.reference_date;
+    const sequence = [
+      role === 'plaintiff_lawyer' ? 'Tôi bảo vệ kháng cáo phía ông Kiên về phần đất được cho là chia miệng. Theo bản ghi, yêu cầu chủ yếu là 58,5 m² nhưng có chỗ 58,2 m²; chưa đủ cơ sở xác nhận con số nào từ bản gốc.' : 'Tôi bảo vệ lập trường phía ông Xây đang vắng mặt. Tôi viện dẫn lời được Chủ tọa đọc lại về 200 đồng và 3.000 viên gạch, nhưng chưa coi thỏa thuận đã được chứng minh vì không có giấy giao nhận.',
+      'Lời chị Dụ và chị Luân tự nhận gánh gạch chỉ cho biết điều họ nói đã trực tiếp làm. Chưa thể suy ra mục đích đổi đất hoặc đã giao đủ gạch; anh Nguyên kể việc thỏa thuận qua bố nên phải đối chiếu nguồn biết.',
+      'Giấy chứng nhận chỉ được nhắc đến, chưa có bản gốc. Tôi đề nghị làm rõ chủ thể được cấp và căn cứ cấp giấy; chưa kết luận hợp pháp hoặc vô hiệu. Căn cứ bồi thường nhà cũng thiếu tài liệu định giá và bản ghi có số tiền bất nhất.',
+    ];
+    const records = [];
+    for (const [index, content] of sequence.entries()) {
+      session.turn_count = index;
+      records.push(user(content));
+      const output = await run('case1-turn-' + (index + 1), session, records);
+      records.push(...output);
+      const last = output.at(-1);
+      if (last) session.conversation = { ...results.at(-1).selection, last_speaker: last.role, last_purpose: last.purpose };
+    }
+    await run('case1-scoring', session, records, true);
+    continue;
+  }
+  if (label === 'edge') {
+    let records = [], conversation = {};
+    const sequence = [
+      'Tôi chưa có chứng cứ xác định ranh giới nên chưa thể khẳng định quyền trên toàn bộ phần đất.',
+      'Tôi chưa có chứng cứ xác định ranh giới nên chưa thể khẳng định quyền trên toàn bộ phần đất.',
+      'Tôi muốn dùng Điều 999 Luật Đất đai nhưng chưa kiểm tra được điều này có tồn tại không.',
+      'Tôi muốn nói thêm về việc chuẩn bị buổi học, thời gian đi lại và cách tôi sắp xếp tài liệu. '.repeat(20) + 'Về vụ án, tôi chỉ đề nghị làm rõ sự tương ứng giữa giấy chứng nhận được thuật lại và phạm vi yêu cầu.',
+      'Tóm lại, tôi chỉ giữ quan điểm cần đối chiếu thêm, chưa kết luận ai có quyền.',
+    ];
+    for (const [index, content] of sequence.entries()) {
+      records = JSON.parse(JSON.stringify([...records, user(content)]));
+      const output = await run(`edge-${index + 1}`, { ...session, turn_count: index, conversation }, records);
+      if (!output.length) break;
+      records.push(...output);
+      const last = output.at(-1);
+      conversation = { ...results.at(-1).selection, last_speaker: last.role, last_purpose: last.purpose };
+    }
+    continue;
+  }
   if (label.startsWith('long-')) {
     if (role === 'defense_lawyer') continue;
     await run('long-argument', session, [user([
@@ -87,3 +133,4 @@ for (const role of ['plaintiff_lawyer', 'defense_lawyer']) {
   if (label !== 'review') await run('scoring', session, records, true);
 }
 await save();
+if (liveLaw) await mongoose.disconnect();

@@ -41,8 +41,21 @@ Mẫu cấu hình chưa được triển khai hoặc kiểm chứng trên domain
 
 CI: [.github/workflows/ci.yml](../.github/workflows/ci.yml). Giữ 7 nhóm backend và 2 bài trình duyệt desktop/mobile; dùng `npm test` trong backend và `npm run test:e2e` trong frontend. Mongo dùng DB `courtsim_test_<uuid>` riêng; thiếu URI thì các ca backend tích hợp bị skip. E2E email/model fixture không chứng minh dịch vụ thật hoạt động. Kết quả tạm ở `.test-artifacts/`, dọn bằng `npm run test:clean` trong frontend. JavaScript có lint/kiểm tra cú pháp, chưa có TypeScript typecheck.
 
-Trong `backend`: `node src/scripts/smokeAi.js` dùng tình huống hư cấu, có phí; `npm run legal:smoke` kiểm tra vbpl trực tiếp, tạo `reports/VBPL_LIVE_CHECK.json` khi được chạy. Các script benchmark gắn phiên/tài khoản cụ thể đã bỏ.
+Trong `backend`: `node src/scripts/smokeAi.js` dùng tình huống hư cấu, có phí; `npm run legal:smoke` kiểm tra vbpl trực tiếp, tạo `.test-artifacts/VBPL_LIVE_CHECK.json` khi được chạy. Các script benchmark gắn phiên/tài khoản cụ thể đã bỏ.
 
 Đánh giá prompt: `node src/scripts/evaluateDialogue.js before` ở mã cũ, `after` ở mã mới; `review` chạy hai hội thoại ba lượt và câu hỏi đã trả lời, `long-before`/`long-after` đo bài dài. Chỉ hồ sơ mẫu công khai/câu tổng hợp được gửi đến OpenAI chính thức; đọc cấu hình persona, không đọc phiên người dùng. Có phí API. Kết quả ở `.test-artifacts/ai-eval`, gồm phản hồi thật, token, thời gian, mode và nguyên nhân sửa. Tra cứu luật được cố định ở trạng thái không có nguồn để so sánh công bằng; đây không phải kiểm tra vbpl trực tiếp. Giữ mã baseline trước sửa nếu muốn tái lập so sánh.
 
+`node src/scripts/evaluateDialogue.js edge` chạy hai phiên năm lượt, giữ vai/giai đoạn/mục đích cuối giữa các lượt: thừa nhận thiếu chứng cứ, lặp lời, số điều chưa xác minh, phát biểu dài và tổng kết. Script trả mã thoát lỗi khi có lời gọi thất bại; `guided_continuation` vẫn phải đọc riêng trong report vì không phải chất lượng model đạt. `datasetHash` định danh bộ hồ sơ/đầu vào cơ sở; `evaluated_inputs_sha256` định danh các đầu vào thực sự đã chạy, gồm bộ edge. Không so tổng thời gian hai phiên khi số người nói khác nhau; dùng thời gian từng lần gọi và số lần sửa kèm transcript.
+
 Chưa đủ điều kiện kết luận sẵn sàng production: bộ test rút gọn đã qua luồng OTP/đặt lại mật khẩu với API thật và email fixture, nhưng vbpl chưa trả nội dung đủ để xác minh trong lần kiểm tra trực tiếp, trình duyệt có lúc bị chặn; chưa xác nhận đủ email/OAuth trên domain thật. Giám sát lỗi, quota, thời gian AI, tỷ lệ dự phòng và gửi email; chưa có hàng đợi email bền vững hoặc kiểm toán bảo mật độc lập.
+## Kho luật có kiểm soát nguồn và quyền sử dụng
+
+Quy trình hiện tại: xem [LEGAL_CORPUS.md](LEGAL_CORPUS.md). Mô phỏng/trợ lý dùng kho tài liệu người dùng đã cho phép và web bổ sung không giới hạn tên miền, trong phạm vi pháp luật Việt Nam về tranh chấp đất đai. Chấm điểm luật vẫn kiểm tra thời điểm áp dụng riêng; kết quả lịch sử không tự tính lại. Sao lưu cả MongoDB và `backend/storage/legal-sources/`.
+
+# Nhập hồ sơ Case1
+
+Từ thư mục `backend`, chạy `npm run case1:import`. Script đối chiếu SHA-256 của `LawDoc/Case1.docx`, kiểm tra hồ sơ biên tập và upsert đúng tiêu đề; không chạy seed hoặc xóa dữ liệu. Phiên đã mở giữ snapshot riêng. Nội dung biên tập và metadata nguồn nằm trong `backend/src/data/case1Appeal.js`.
+
+Hồ sơ là bài tập phúc thẩm từ bản chép lời chưa đầy đủ, hai vai bảo vệ lập trường. `practice_context` giữ ngày/số bản án phúc thẩm chưa xác định và trạng thái luật chưa xác minh. Mốc tham chiếu 07/08/2018 chỉ là ngày sơ thẩm được nhắc. 10 thẻ có nội dung lời nói/phần công bố có thể trích; 4 tài liệu gốc chỉ được nhắc không cho chèn như chứng cứ được cung cấp.
+
+Kiểm thử nội bộ: `node --test tests/case1.test.js` trong backend; `npx playwright test case1.spec.js` trong frontend. Kiểm thử AI thật khi được phép gửi nội dung nguồn ra ngoài: `node src/scripts/evaluateDialogue.js case1` trong backend; kết quả riêng ở `.test-artifacts/ai-eval/case1.json`, không tạo phiên cho tài khoản thật.

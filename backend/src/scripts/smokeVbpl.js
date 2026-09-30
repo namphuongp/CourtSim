@@ -25,7 +25,7 @@ for (const question of ['Điều 202 Luật Đất đai 45/2013/QH13', 'Luật �
   report.questions.push({ question, source_status: result.source_status, diagnostics: result.diagnostics,
     results: result.results.map(({ law_number, source_url, checked_at, source_verification, verification_status }) => ({ law_number, source_url, checked_at, source_verification, verification_status })) });
 }
-const reportDirectory = new URL('../../../reports/', import.meta.url);
+const reportDirectory = new URL('../../../.test-artifacts/', import.meta.url);
 await mkdir(reportDirectory, { recursive: true });
 await writeFile(new URL('VBPL_LIVE_CHECK.json', reportDirectory), JSON.stringify(report, null, 2) + '\n');
 console.log(JSON.stringify(report, null, 2));

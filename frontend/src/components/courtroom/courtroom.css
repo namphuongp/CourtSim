@@ -219,3 +219,9 @@
 .speech-controls .dialogue-next { font-weight:600; min-height:44px; }
 .speech-tools { display:flex; justify-content:space-between; gap:12px; }
 .speech-tools button { color:#245ca8; background:transparent; border:0; padding:6px 0; font-size:12px; text-decoration:underline; text-underline-offset:3px; }
+.speech-navigation { display:flex; align-items:center; justify-content:center; gap:16px; }
+.speech-navigation button { display:grid; place-items:center; width:44px; height:44px; border:1px solid #b8c9dd; border-radius:9px; background:#f5f8fc; color:#245ca8; cursor:pointer; }
+.speech-navigation button:hover:not(:disabled) { background:#e5effc; border-color:#5585c6; }
+.speech-navigation button:active:not(:disabled) { background:#d5e5fa; }
+.speech-navigation button:disabled { color:#8b99ab; background:#f1f4f8; border-color:#dce3ec; cursor:default; }
+.speech-navigation span { min-width:52px; text-align:center; color:#526477; font-size:12px; font-variant-numeric:tabular-nums; }

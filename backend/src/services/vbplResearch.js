@@ -7,7 +7,7 @@ import { normalizeLegalSearchText, getLegalSearchTerms } from './legalTextSearch
 import { buildLegalPlan } from './legalTimeline.js';
 import { hasVerifiedSource } from '../../../shared/legalSourcePolicy.mjs';
 
-const NUMBER = /\b\d{1,4}\/(?:\d{4}\/)?[A-ZĐ][A-ZĐ0-9-]{1,30}\b/giu;
+const NUMBER = /\b\d{1,4}(?:\/(?:\d{4}\/)?[A-ZĐ][A-ZĐ0-9-]{1,30}|-[A-ZĐ0-9]+\/[A-ZĐ0-9]+)\b/giu;
 const TTL = 6 * 60 * 60 * 1000;
 const PARSER_VERSION = 2;
 const inFlight = new Map();
@@ -103,6 +103,11 @@ export function planAssistantSearch(question, courtCase = {}, eventDate) {
     }
   }
   const plans = buildLegalPlan(courtCase, eventDate);
+  // Số hiệu ứng viên từ kiểm kê, chưa phải xác nhận hiệu lực cho năm sự kiện.
+  if (!explicit.length && /luat dat dai/iu.test(normalized)) {
+    const oldYear = clean.match(/\b(1987|1993|1998|2003)\b/u)?.[1];
+    if (oldYear) numbers = [{ 1987: '3-LCT/HĐNN8', 1993: '24-L/CTN', 1998: '10/1998/QH10', 2003: '13/2003/QH11' }[oldYear]];
+  }
   if (!numbers.length && !/(?:luật|nghị định|thông tư|nghị quyết)/iu.test(clean)) numbers = [...new Set(plans.flatMap(p => p.law_numbers))].filter(n => /^\d+\//u.test(n)).slice(0, 3);
   return { explicit, numbers, terms: getLegalSearchTerms(clean, 6),
     query: explicit[0] || named[0]?.title || getLegalSearchTerms(clean, 6).join(' '),

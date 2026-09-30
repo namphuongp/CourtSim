@@ -1,11 +1,13 @@
 import { researchAssistant } from './vbplResearch.js';
-import { isVbplUrl, hasVerifiedSource, legalReferenceLabel } from '../../../shared/legalSourcePolicy.mjs';
+import { hasReadableLawSource, legalReferenceLabel } from '../../../shared/legalSourcePolicy.mjs';
+import { researchWebLaw, webReferenceEnabled, legalWebQuery } from './webLegalResearch.js';
 import { dialogueText } from '../../../shared/dialogueText.mjs';
 import { createHash, randomUUID } from 'node:crypto';
 import LegalAssistantExchange from '../models/LegalAssistantExchange.js';
 import { AppError } from '../utils/AppError.js';
 import { learnerCitation, learnerText } from './learnerPresentation.js';
 import { readReferenceIds } from './caseEvidence.js';
+import { researchCorpus } from './legalCorpusRetrieval.js';
 
 export function assistantGuidance(question = '', { unavailable = false, sourceStatus } = {}) {
   const text = question.normalize('NFC').trim().toLocaleLowerCase('vi').replace(/[?.!]+$/u, '');
@@ -28,9 +30,9 @@ export function publicAssistantExchange(value, { fresh = false } = {}) {
   const status = value.status === 'pending' && value.expires_at && new Date(value.expires_at) <= new Date() ? 'failed' : value.status;
   const present = citation => learnerCitation({ ...citation, retrieval_mode: fresh ? citation.retrieval_mode : 'cache' });
   const citations = (value.citations ?? []).map(present);
-  const sources = (value.sources ?? []).filter(s => isVbplUrl(s.source_url ?? s.url) && hasVerifiedSource({ ...s, source_url: s.source_url ?? s.url }))
+  const sources = (value.sources ?? []).filter(s => hasReadableLawSource({ ...s, source_url: s.source_url ?? s.url }))
     .map(s => ({ ...present({ ...s, source_url: s.source_url ?? s.url }), url: s.source_url ?? s.url }));
-  const trusted = [...(value.citations ?? []), ...(value.sources ?? [])].some(hasVerifiedSource);
+  const trusted = [...(value.citations ?? []), ...(value.sources ?? [])].some(hasReadableLawSource);
   return { _id: value._id, question: value.question, status, request_id: value.request_id, created_at: value.created_at,
     // Phản hồi cũ thiếu xuất xứ không được giữ nhãn đã xác minh hoặc link do model tạo.
     answer: trusted ? learnerText(dialogueText(value.answer)) : assistantGuidance(value.question, { unavailable: true, sourceStatus: value.source_status }),
@@ -40,14 +42,25 @@ export function publicAssistantExchange(value, { fresh = false } = {}) {
 export async function answerLegalQuestion({ session, courtCase, question }, dependencies = {}) {
   const guidance = assistantGuidance(question);
   if (guidance) return { answer: guidance, verification_status: 'unverified', citations: [], sources: [] };
-  const research = await (dependencies.research ?? researchAssistant)({ courtCase, eventDate: session.case_event_date, question });
-  const results = (research.results ?? []).filter(hasVerifiedSource);
+  const input = { courtCase, eventDate: session.case_event_date, question, usageContext: { userId: session.user_id, sessionId: session._id } };
+  let useWeb = false;
+  let research;
+  if (dependencies.research) research = await dependencies.research(input);
+  else {
+    research = await (dependencies.corpus ?? researchCorpus)(input);
+    if (!research.results?.length) research = await (dependencies.official ?? researchAssistant)(input);
+    if (!research.results?.some(r => r.text) && webReferenceEnabled() && legalWebQuery(input)) {
+      const web = await (dependencies.web ?? researchWebLaw)(input);
+      if (web.citations.length) { research = web; useWeb = true; }
+    }
+  }
+  const results = (research.results ?? research.citations ?? []).filter(hasReadableLawSource);
   if (!results.length) return {
-    answer: assistantGuidance(question, { unavailable: true, sourceStatus: research.source_status }),
+    answer: useWeb ? 'Chưa đọc được nguyên văn điều khoản Việt Nam phù hợp từ nguồn web. Chưa có trích dẫn để dùng; bạn có thể thử lại với số hiệu hoặc vấn đề cụ thể hơn.' : assistantGuidance(question, { unavailable: true, sourceStatus: research.source_status }),
     source_status: research.source_status,
     verification_status: 'unverified', citations: [], sources: [],
   };
-  const citations = results.filter(r => r.verification_status === 'verified' && r.text);
+  const citations = results.filter(r => hasReadableLawSource(r) && r.text);
   const sources = results.filter(r => !citations.includes(r));
   const timelines = (research.plans ?? []).filter(p => p.date);
   const dates = timelines.map(p => p.label.toLowerCase() + ': ' + p.date + (p.date_to && p.date_to !== p.date ? ' đến ' + p.date_to : '') + (p.status === 'assumed' ? ' (giả định bài tập)' : '')).join('; ');
@@ -55,11 +68,12 @@ export async function answerLegalQuestion({ session, courtCase, question }, depe
   // Trả trích đoạn đối chiếu trực tiếp; không để model bổ sung điều luật hoặc đường dẫn từ trí nhớ.
   const summary = results.map(r => r.title + ' (' + r.law_number + ')' + (r.article ? ' — ' + r.locator : '') + '.').join('\n');
   const timing = dates ? 'Mốc trong hồ sơ: ' + dates + '.' : 'Chưa có mốc sự kiện hoặc giao dịch được xác nhận.';
-  return { answer: 'Tìm thấy ' + results.length + ' văn bản có nội dung được đối chiếu từ vbpl.vn.\n' + summary + '\n'
+  const local = results.some(r => r.source_verification === 'local_read');
+  return { answer: 'Tìm thấy ' + results.length + (local ? ' trích đoạn từ tài liệu pháp luật trong kho mô phỏng.\n' : useWeb ? ' trích đoạn pháp luật Việt Nam đã đọc từ nguồn web.\n' : ' văn bản có nội dung được đối chiếu từ vbpl.vn.\n') + summary + '\n'
       + (results.length > 1 ? 'Có nhiều văn bản phù hợp; hãy chọn đúng số hiệu và thời kỳ cần tra cứu.\n' : '') + timing
       + (missing.length ? ' Cần làm rõ mốc ' + missing.join(', ') + ' nếu liên quan đến câu hỏi.' : '')
       + ' Đọc trích đoạn bên dưới và đối chiếu sửa đổi, hiệu lực, chuyển tiếp trước khi áp dụng.',
-    verification_status: 'verified', citations, sources };
+    verification_status: useWeb || local ? 'unverified' : 'verified', citations, sources };
 }
 
 export async function askLegalAssistant({ session, courtCase, question, requestId }) {
@@ -97,7 +111,7 @@ export async function validateLegalReferences(session, content, supplied) {
     return [];
   }
   const exchanges = await LegalAssistantExchange.find({ session_id: session._id, user_id: session.user_id, status: 'completed' }).sort({ created_at: -1 }).limit(40).lean();
-  const citations = exchanges.flatMap(e => e.citations).filter(c => c.verification_status === 'verified' && hasVerifiedSource(c)
+  const citations = exchanges.flatMap(e => e.citations).filter(c => hasReadableLawSource(c)
     && (ids.includes(c.reference_id) || (content.includes(legalReferenceLabel(c)) && content.includes(c.source_url))));
   if (ids.some((id) => !citations.some((c) => c.reference_id === id))) throw new AppError('Trích dẫn không thuộc phần tra cứu của phiên này. Hãy chọn lại từ trợ lý.', 400, 'LEGAL_REFERENCE_NOT_IN_SESSION');
   // Nhãn tự nhiên được đối chiếu lại với nguồn thuộc phiên, không tin metadata client gửi lên.

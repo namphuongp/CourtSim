@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { startBrowserHarness } from '../../backend/tests/helpers/browserHarness.mjs';
 
 let harness;
-test.beforeAll(async () => { harness = await startBrowserHarness(); });
+test.beforeAll(async () => { harness = await startBrowserHarness({ localLaw: true }); });
 test.afterAll(async () => { await harness?.close(); });
 
 test('trình duyệt → API thật → MongoDB riêng: tài khoản, hồ sơ, trợ lý, phiên, góp ý, điểm và đăng xuất', async ({ page, browser }, info) => {
@@ -48,12 +48,17 @@ test('trình duyệt → API thật → MongoDB riêng: tài khoản, hồ sơ, 
   await expect(page.getByText(/Bạn muốn tìm về hợp đồng lao động/)).toBeVisible();
   await page.getByLabel('Câu hỏi tra cứu luật').fill('Điều 1 Bộ luật Dân sự 91/2015/QH13');
   await page.getByRole('button', { name: 'Hỏi trợ lý', exact: true }).click();
-  await expect(page.getByRole('link', { name: 'Mở nguồn vbpl.vn' })).toHaveAttribute('href', 'https://vbpl.vn/van-ban/chi-tiet/fixture-browser');
-  await expect(page.getByText(/Bản lưu đã đối chiếu vbpl.vn/)).toContainText('2026');
+  const sourceLink = page.getByRole('link', { name: 'Mở tệp nguồn' });
+  await expect(sourceLink).toHaveAttribute('href', /\/api\/v1\/legal-sources\/[a-f0-9]{64}\/files\/0$/);
+  const source = await page.request.get(await sourceLink.getAttribute('href'));
+  expect(source.status()).toBe(200);
+  expect(await source.text()).toContain('chỉ dùng kiểm thử nguồn cục bộ');
   expect(harness.calls()).toBe(0);
   await page.getByRole('button', { name: 'Đưa trích dẫn vào lập luận' }).click();
   await expect(page.getByLabel('Lập luận của bạn')).toHaveValue(/91\/2015\/QH13/);
   await page.reload();
+  await page.getByRole('button', { name: 'Trợ lý luật', exact: true }).click();
+  await expect(page.getByRole('link', { name: 'Mở tệp nguồn' })).toBeVisible();
   await expect(page.getByLabel('Lập luận của bạn')).toHaveValue(/Tôi căn cứ hợp đồng/);
   await expect(page.getByLabel('Lập luận của bạn')).not.toHaveValue(/\[PL:|LAW-/);
   await page.getByRole('button', { name: 'Gửi lập luận', exact: true }).click();
@@ -68,6 +73,18 @@ test('trình duyệt → API thật → MongoDB riêng: tài khoản, hồ sơ, 
   await page.reload();
   await expect(page.getByRole('button', { name: nextRole })).toBeVisible();
   expect(harness.calls()).toBe(1);
+  await expect(page.getByRole('button', { name: 'Lời thoại sau', exact: true })).toBeDisabled();
+  await page.getByRole('button', { name: 'Lời thoại trước', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Nội dung lời thoại' })).toContainText('Tôi căn cứ hợp đồng');
+  await expect(page.getByRole('button', { name: nextRole })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Lời thoại trước', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Lời thoại trước', exact: true })).toBeDisabled();
+  await expect(page.getByRole('navigation', { name: 'Duyệt lời thoại' })).toContainText('1 / 3');
+  await page.getByRole('button', { name: 'Lời thoại sau', exact: true }).click();
+  await page.getByRole('button', { name: 'Lời thoại sau', exact: true }).click();
+  await expect(page.getByRole('button', { name: nextRole })).toBeVisible();
+  expect(harness.calls()).toBe(1);
+  await page.screenshot({ path: `../.test-artifacts/dialogue-navigation-${info.project.name}.png`, fullPage: true });
   await page.getByRole('button', { name: 'Biên bản phiên', exact: true }).click();
   await page.getByRole('button', { name: 'Xem tại phiên tòa: 01 · Chủ tọa', exact: true }).click();
   await expect(page.getByRole('button', { name: nextRole })).toHaveCount(0);

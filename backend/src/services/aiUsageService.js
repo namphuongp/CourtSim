@@ -5,7 +5,8 @@ import { env } from '../config/env.js';
 const count = value => Number.isSafeInteger(value) && value >= 0 ? value : null;
 export async function recordAiUsage({ context = {}, model, usage, started, success, errorType }) {
   if (process.env.AI_USAGE_TRACKING === 'false') return;
-  const price = estimateCost(env.AI_PROVIDER, model, usage);
+  // Phí tìm kiếm chưa có bảng giá riêng: giữ chi phí chưa biết, không báo tổng chỉ gồm token.
+  const price = context.hasUnpricedTools ? null : estimateCost(env.AI_PROVIDER, model, usage);
   try {
     if (mongoose.connection.readyState !== 1) throw new Error('StorageUnavailable');
     await AiUsage.create({

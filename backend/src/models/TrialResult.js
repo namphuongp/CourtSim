@@ -18,6 +18,7 @@ const trialResultSchema = new mongoose.Schema({
   rubric_status: String,
   criteria: { type: [mongoose.Schema.Types.Mixed], default: undefined },
   assessment_status: String,
+  legal_assessment_mode: String, assessment_note: String,
   earned_score: Number,
   assessed_max: Number,
   score_scope: String,

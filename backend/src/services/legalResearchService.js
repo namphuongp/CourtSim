@@ -1,11 +1,9 @@
-import { LegalDocument, LegalProvision } from '../models/index.js';
 import { buildLegalPlan, assessVersion } from './legalTimeline.js';
 import { rankProvisions } from './legalRetrievalService.js';
-import { checkOfficialSources } from './officialLegalSources.js';
-import { getLegalSearchTerms } from './legalTextSearch.js';
-import VbplSnapshot from '../models/VbplSnapshot.js';
 import { hasVerifiedSource } from '../../../shared/legalSourcePolicy.mjs';
 import { parseLegalArticles, createProvisionUnits } from './legalTextParser.js';
+import { researchCorpusForSimulation } from './legalCorpusRetrieval.js';
+import { researchWebLaw, webReferenceEnabled } from './webLegalResearch.js';
 
 const MAX_CONTEXT = 8000;
 
@@ -75,27 +73,13 @@ export function resolveLegalResearch({ courtCase, eventDate, learnerTimeline = [
   return { citations, candidates, issues, warnings, legal_assessment_available: issues.length > 0 && issues.every((issue) => issue.verification_status === 'verified') };
 }
 
-export async function researchLegalBasis({ courtCase, eventDate, learnerTimeline = [], records = [], online = true }) {
+export async function researchLegalBasis(input, dependencies = {}) {
   try {
-    const plans = buildLegalPlan(courtCase, eventDate, learnerTimeline);
-    const numbers = [...new Set(plans.flatMap((p) => p.law_numbers))];
-    const documents = await LegalDocument.find({ law_number: { $in: numbers } }).select('-source_text').lean();
-    const terms = getLegalSearchTerms([courtCase.title, courtCase.summary, ...records.filter((r) => r.sender_type === 'user').slice(-2).map((r) => r.content)].join(' '));
-    const provisions = await LegalProvision.find({ document_id: { $in: documents.map((d) => d._id) }, paragraph: null, point: null, search_tokens: { $in: terms } }).lean();
-    const snapshots = await VbplSnapshot.find({ law_number: { $in: numbers } }).lean();
-    const result = resolveLegalResearch({ courtCase, eventDate, learnerTimeline, records, documents, provisions, snapshots });
-    const missing = [...new Set(result.issues.flatMap((issue) => issue.missing_laws))];
-    if (online && missing.length) {
-      // Chỉ gửi số hiệu công khai; không gửi hồ sơ hoặc lời người học ra nguồn tra cứu.
-      const checks = await Promise.allSettled(missing.slice(0, 4).map(checkOfficialSources));
-      for (const check of checks) result.warnings.push(check.status === 'fulfilled' ? check.value.message : 'Chưa xác minh được căn cứ pháp luật: dịch vụ đối chiếu nguồn đang gián đoạn.');
-    }
-    result.warnings = [...new Set(result.warnings)];
-    return result;
-  } catch {
-    console.error('Legal research failed:', { code: 'LEGAL_RESEARCH_UNAVAILABLE' });
-    // Tra cứu hỏng không được biến thành kết luận chắc chắn hoặc làm mất lượt tranh luận.
-    return { citations: [], candidates: [], issues: buildLegalPlan(courtCase, eventDate, learnerTimeline),
-      legal_assessment_available: false, warnings: ['Chưa xác minh được căn cứ pháp luật: chưa đọc được dữ liệu nguồn. Phiên vẫn tiếp tục luyện lập luận.'] };
+    const result = await (dependencies.corpus ?? researchCorpusForSimulation)(input);
+    if (result.citations.length || !webReferenceEnabled() || input.online === false) return result;
+    const web = await (dependencies.web ?? researchWebLaw)(input);
+    return { ...result, citations: web.citations, warnings: [...result.warnings, ...web.warnings] };
   }
+  catch { return { citations: [], candidates: [], issues: [], legal_assessment_available: false,
+    warnings: ['Kho luật đã xác minh đang không truy cập được; chưa đánh giá phần luật.'] }; }
 }

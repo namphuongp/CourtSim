@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { dialogueText } from '../../../../shared/dialogueText.mjs';
 import { actorFor, courtroomRoles } from '../../services/courtroom';
 import './courtroom.css';
@@ -14,13 +15,14 @@ function Character({ actor, role, active, preparing, invited }) {
   </div>;
 }
 
-export default function CourtroomStage({ session, view, records, onHistory, onReadFull, preparationStalled = false, pendingSpeaker = null, speechControls }) {
+export default function CourtroomStage({ session, view, records, onHistory, onReadFull, onSelectRecord, navigationDisabled = false, preparationStalled = false, pendingSpeaker = null, speechControls }) {
   const roles = courtroomRoles(session);
   const [backgroundFailed, setBackgroundFailed] = useState(false);
   const record = view.record;
   const owner = record ? actorFor(record) : 'judge';
   const content = dialogueText(record?.display_content ?? record?.content, session?.case_id?.evidence_inventory) || 'Chưa hiển thị được phản hồi này. Hãy tải lại phiên.';
   const index = records.findIndex((r) => r._id === record?._id);
+  const canNavigate = !navigationDisabled && !view.pending && !view.streaming && index >= 0 && Boolean(onSelectRecord);
   const latest = !view.pending && index === records.length - 1;
   const preparing = preparationStalled || view.streaming ? null : session?.conversation?.status === 'generating' ? session.conversation.next_speaker : pendingSpeaker;
   // Lời cũ vẫn được giữ để đọc, nhưng quyền phát biểu đã chuyển sang người học.
@@ -41,6 +43,11 @@ export default function CourtroomStage({ session, view, records, onHistory, onRe
         <div className="speech-heading"><strong>{roles[owner].name}</strong><span>{view.streaming ? 'Đang nhận lời thoại…' : view.pending ? 'Đang gửi lập luận' : latest ? 'Lời gần nhất' : 'Đang xem lại'}</span></div>
         <p key={record._id} className="speech-content" tabIndex={0} role="region" aria-label="Nội dung lời thoại">{content}</p>
         <div className="speech-footer">
+          <nav className="speech-navigation" aria-label="Duyệt lời thoại">
+            <button type="button" aria-label="Lời thoại trước" title="Lời thoại trước" disabled={!canNavigate || index === 0} onClick={() => onSelectRecord(records[index - 1]._id)}><ChevronLeft size={20} aria-hidden="true" /></button>
+            <span aria-live="polite" aria-atomic="true" aria-label={index >= 0 ? `Lời thoại ${index + 1} trên ${records.length}` : 'Đang chuẩn bị lời thoại'}>{index >= 0 ? index + 1 : '—'} / {records.length}</span>
+            <button type="button" aria-label="Lời thoại sau" title="Lời thoại sau" disabled={!canNavigate || index === records.length - 1} onClick={() => onSelectRecord(records[index + 1]._id)}><ChevronRight size={20} aria-hidden="true" /></button>
+          </nav>
           {speechControls}
           <div className="speech-tools" aria-label="Công cụ đọc lời thoại">
             <button type="button" onClick={() => onReadFull(record)} aria-label="Phóng to lời thoại">Phóng to{record.citations?.length ? ' và xem căn cứ' : ''}</button>

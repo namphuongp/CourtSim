@@ -10,6 +10,8 @@ const caseSchema = new mongoose.Schema({
   reference_date: String,
   reference_date_note: String,
   legal_scope_note: String,
+  evidence_absences: { type: [new mongoose.Schema({ title: String, source_quote: String }, { _id: false })], default: [] },
+  practice_context: { type: mongoose.Schema.Types.Mixed, default: undefined },
   case_facts: { type: [new mongoose.Schema({ kind: { type: String, enum: ['recorded_event', 'party_statement', 'unproven'] }, quote: String, source_type: { type: String, enum: ['judgment', 'case_outline'] }, party: String }, { _id: false })], default: [] },
   parties: { type: [new mongoose.Schema({ side: { type: String, enum: ['plaintiff', 'defendant', 'other'] }, name: String, claims: [String] }, { _id: false })], default: [] },
   timeline: { type: [new mongoose.Schema({
@@ -20,7 +22,8 @@ const caseSchema = new mongoose.Schema({
   evidence_inventory: { type: [new mongoose.Schema({
     id: String, summary: String, content: String, provided_by: String, date: String,
     name: String, availability: { type: String, enum: ['provided', 'mentioned_only'], required: true },
-    source_quote: String,
+    source_quote: String, source_kind: { type: String, enum: ['document', 'transcript_statement', 'transcript_readout'] },
+    source_locator: String, proof_scope: String, verification_status: { type: String, enum: ['unverified', 'conflicting'] },
   }, { _id: false })], default: [] },
   created_at: { type: Date, default: Date.now }
 });

@@ -1,17 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
 
-const steps = [
-  { target: '.tool-case', title: 'Xem hồ sơ vụ án', text: 'Nhấn Hồ sơ phiên tòa, chọn tab Vụ án để đọc sự việc và chứng cứ. Chọn Đưa vào lập luận tại tài liệu bạn muốn sử dụng.' },
-  { target: '.tool-law', title: 'Tra cứu luật', text: 'Nhấn Trợ lý luật, nhập câu hỏi rồi chọn Hỏi trợ lý. Đọc nguồn và chọn Đưa trích dẫn vào lập luận khi cần.' },
-  { target: '.court-speech', title: 'Đọc lời thoại', text: 'Cuộn để đọc tiếp. Dùng hai mũi tên để xem lời trước hoặc lời tiếp theo; chọn Đọc đầy đủ để mở toàn văn.' },
-  { target: '.courtroom-composer', title: 'Gửi lập luận', text: 'Nhập lập luận của bạn vào ô này, sau đó nhấn Gửi lập luận.' },
-  { target: '.tool-case', title: 'Xem biên bản', text: 'Nhấn Hồ sơ phiên tòa, chọn tab Biên bản để đọc toàn bộ các lượt trao đổi.' },
-  { target: '.end-session, .courtroom-controls a', title: 'Kết thúc phiên', text: 'Nhấn Kết thúc và chấm điểm, rồi xác nhận để xem điểm và nhận xét. Với phiên đã kết thúc, nhấn Xem kết quả.' },
-];
+function guideSteps(completed, maxTurns) {
+  return [
+    { target: '.tool-case', title: 'Xem hồ sơ vụ án', text: 'Mở Hồ sơ phiên tòa, chọn tab Vụ án để đọc tình tiết, yêu cầu và chứng cứ. Phân biệt lời trình bày của các bên với tình tiết đã được chứng minh.' + (completed ? ' Phiên đã kết thúc chỉ cho phép xem lại.' : ' Khi đến lượt bạn, có thể đưa chứng cứ vào ô lập luận rồi bổ sung phần phân tích của mình.') },
+    { target: '.court-speech', title: 'Đọc và xem lại lời thoại', text: 'Cuộn trong ô lời thoại để đọc tiếp; chọn Phóng to để xem toàn văn và căn cứ nếu có. Hai mũi tên < > chỉ chuyển giữa các lời đã có, không gọi AI tạo lời mới.' },
+    ...(!completed ? [
+      { target: '.court-speech', title: 'Tiếp tục đúng lượt', text: 'Đọc xong, bấm Tiếp tục: Chủ tọa hoặc Tiếp tục: Bên đối lập khi nút xuất hiện. Bấm Trình bày ý kiến để mở lượt của bạn. Nếu đang xem lời cũ, chọn Trở về lượt hiện tại. Khi AI đang xử lý, hãy chờ; nếu báo lỗi, dùng Thử lại lời thoại.' },
+      { target: '.courtroom-composer', title: 'Gửi lập luận', text: `Ô nhập chỉ mở khi đến lượt bạn. Nêu yêu cầu, liên hệ chứng cứ và trả lời ý kiến vừa được đưa ra, rồi bấm Gửi lập luận. Mỗi lần nhập tối đa 4.000 ký tự; phiên có tối đa ${maxTurns} lượt của người học. Chưa gửi thì nội dung vẫn là bản nháp.` },
+    ] : []),
+    { target: '.tool-law', title: 'Tra cứu và sử dụng luật', text: 'Mở Trợ lý luật, nhập vấn đề hoặc số hiệu, điều khoản rồi bấm Hỏi trợ lý. Trợ lý ưu tiên kho tài liệu và có thể tìm thêm trên web. Đọc trích đoạn, mở nguồn và kiểm tra trạng thái áp dụng theo thời điểm.' + (completed ? ' Phiên này không thể gửi thêm lập luận.' : ' Khi đến lượt bạn, chọn Đưa trích dẫn vào lập luận; nội dung chỉ được gửi khi bạn bấm Gửi lập luận.') },
+    { target: '.tool-case', title: 'Xem biên bản', text: 'Mở Hồ sơ phiên tòa, chọn tab Biên bản để xem các lời trao đổi đã lưu. Bạn cũng có thể mở nhanh bằng nút Biên bản phiên dưới ô lời thoại. Chọn một lời để xem lại tại phòng xử án.' },
+    { target: '.end-session, .courtroom-controls a', title: completed ? 'Xem kết quả' : 'Kết thúc và chấm điểm', text: completed ? 'Bấm Xem kết quả để đọc điểm và nhận xét của phiên đã hoàn tất. Phần chưa đủ dữ liệu được ghi là chưa đánh giá, không tính thành điểm 0.' : 'Sau ít nhất một lượt gửi và khi hệ thống không xử lý, bạn có thể bấm Kết thúc và chấm điểm rồi xác nhận; không cần dùng hết số lượt. Bản nháp chưa gửi không được chấm. Phần thiếu căn cứ hoặc dữ liệu có thể chưa được đánh giá; kết thúc xong chỉ xem lại, không tiếp tục tranh luận.' },
+  ];
+}
 
-export default function CourtroomGuide({ onClose, completed = false, hasDialogue = true }) {
+export default function CourtroomGuide({ onClose, completed = false, hasDialogue = true, maxTurns = 20 }) {
   const [step, setStep] = useState(0);
-  const availableSteps = steps.filter(item => !(completed && item.target === '.courtroom-composer') && !( !hasDialogue && item.target === '.court-speech'));
+  const availableSteps = guideSteps(completed, maxTurns).filter(item => hasDialogue || item.target !== '.court-speech');
   const currentStep = Math.min(step, availableSteps.length - 1);
   const current = availableSteps[currentStep];
   const [box, setBox] = useState(null);
@@ -56,10 +61,10 @@ export default function CourtroomGuide({ onClose, completed = false, hasDialogue
     <div className="tour-blocker" aria-hidden="true" />
     {box && <div className="tour-spotlight" style={box} aria-hidden="true" />}
     <section ref={card} role="dialog" aria-modal="true" aria-labelledby="tour-title" aria-describedby="tour-description" className="tour-card court-guide" style={{ left, top, width, maxHeight: `calc(100dvh - ${top + 12}px)` }}>
-      <header><span className="guide-progress">Bước {currentStep + 1} / {availableSteps.length}</span><button ref={close} type="button" onClick={onClose} aria-label="Đóng hướng dẫn">Bỏ qua ×</button></header>
+      <header><span className="guide-progress">Bước {currentStep + 1} / {availableSteps.length}</span><button ref={close} type="button" onClick={onClose} aria-label="Đóng hướng dẫn">Đóng ×</button></header>
       <div className="guide-step" aria-live="polite" aria-atomic="true"><h3 id="tour-title">{current.title}</h3><p id="tour-description">{current.text}</p></div>
       <nav aria-label="Các bước hướng dẫn" className="guide-dots">{availableSteps.map((entry, index) => <button type="button" key={entry.title} aria-label={`Bước ${index + 1}: ${entry.title}`} aria-current={index === currentStep ? 'step' : undefined} onClick={() => setStep(index)}>{index + 1}</button>)}</nav>
-      <div className="guide-actions"><button type="button" disabled={currentStep === 0} onClick={() => setStep(currentStep - 1)}>Quay lại</button>{currentStep < availableSteps.length - 1 ? <button type="button" onClick={() => setStep(currentStep + 1)}>Tiếp theo →</button> : <button type="button" onClick={onClose}>Bắt đầu thực hành</button>}</div>
+      <div className="guide-actions"><button type="button" disabled={currentStep === 0} onClick={() => setStep(currentStep - 1)}>Quay lại</button>{currentStep < availableSteps.length - 1 ? <button type="button" onClick={() => setStep(currentStep + 1)}>Tiếp theo →</button> : <button type="button" onClick={onClose}>{completed ? 'Quay lại phiên' : 'Tiếp tục thực hành'}</button>}</div>
     </section>
   </div>;
 }

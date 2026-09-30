@@ -6,8 +6,8 @@ export function courtroomRoles(session) {
   const opposite = session?.user_court_role === 'defense_lawyer' ? 'plaintiff_lawyer' : 'defense_lawyer';
   return {
     judge: { name: 'Chủ tọa', detail: 'Điều hành phiên tòa', asset: 'judge' },
-    opponent: { name: 'Bên đối lập', detail: roleLabel(opposite, category), asset: 'opposing-lawyer' },
-    learner: { name: 'Bạn', detail: roleLabel(session?.user_court_role, category), asset: 'learner-lawyer' },
+    opponent: { name: 'Bên đối lập', detail: roleLabel(opposite, category, session?.case_id), asset: 'opposing-lawyer' },
+    learner: { name: 'Bạn', detail: roleLabel(session?.user_court_role, category, session?.case_id), asset: 'learner-lawyer' },
   };
 }
 

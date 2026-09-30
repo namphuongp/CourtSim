@@ -1,8 +1,8 @@
 import { RESPONSE_STYLE, TECHNICAL_TEXT } from '../../../shared/userCopy.mjs';
 import { caseKnowledge } from './caseKnowledge.js';
-import { dialogueContext, resolveDialogueFocus, needsLegalResearch } from './dialogueContext.js';
+import { dialogueContext, resolveDialogueFocus, needsLegalResearch, validateDialogueQuantities } from './dialogueContext.js';
 import { readDialoguePreview } from './dialoguePreview.js';
-import { SOURCE_POLICY, DEBATE_POLICY, roleTask, dialogueProblem, guidedContinuation } from './debatePolicy.js';
+import { SOURCE_POLICY, DEBATE_POLICY, roleTask, turnTask, dialogueProblem, guidedContinuation } from './debatePolicy.js';
 import { dialogueText } from '../../../shared/dialogueText.mjs';
 import { evidenceInventory } from './caseEvidence.js';
 import { SCORING_RUBRIC } from '../data/scoringRubric.js';
@@ -10,12 +10,15 @@ import { calculateEvaluation, scoringEligibility } from './scoringService.js';
 import { scoringQuotes, resolveScoringQuotes } from './scoringQuotes.js';
 import { researchLegalBasis } from './legalResearchService.js';
 import { AiPersonal } from '../models/index.js';
-import { hasVerifiedSource } from '../../../shared/legalSourcePolicy.mjs';
+import { hasReadableLawSource } from '../../../shared/legalSourcePolicy.mjs';
 import { AppError } from '../utils/AppError.js';
 import { createChatCompletion } from './aiClient.js';
 import { validateCitationIds } from './legalRetrievalService.js';
 import { classifyDialogueInput, controlTurn } from './dialogueInput.js';
 import { chooseSpeakingPlan } from './conversationPolicy.js';
+import { practiceInstructions } from './casePractice.js';
+import { roleMismatch, participantSides } from './hearingState.js';
+import { hearingProblem, validateHearingGrounding } from './hearingValidation.js';
 
 const MAX_HISTORY = 61;
 const RUBRIC_KEYS = ['legal_knowledge', 'reasoning', 'evidence_use', 'courtroom_skill'];
@@ -32,7 +35,10 @@ const EVALUATION_SCHEMA = {
 export function validateFactAnchors(analysis, courtCase, records) {
   const normalize = (value) => value.replace(/\s+/gu, ' ').trim();
   const provided = evidenceInventory(courtCase).filter((e) => e.availability === 'provided').map((e) => e.content).join('\n');
-  const dossier = normalize(`${courtCase.summary}\n${courtCase.full_document}\n${provided}`);
+  // Bản chép lời chỉ xác nhận nội dung được ghi, không xác lập quyền của các bên.
+  const dossier = normalize(courtCase.practice_context?.source_kind === 'transcript'
+    ? caseKnowledge(courtCase).recorded_events.map(f => f.quote).join('\n')
+    : `${courtCase.summary}\n${courtCase.full_document}\n${provided}`);
   const partyClaims = caseKnowledge(courtCase).party_statements.map((f) => normalize(f.quote));
   if (analysis.established_facts.some((fact) => partyClaims.some((claim) => claim.includes(normalize(fact))))) {
     throw new AppError('Lời trình bày của một bên cần được giữ đúng nguồn, không coi là sự kiện đã chứng minh.', 502, 'AI_UNGROUNDED_FACT');
@@ -47,10 +53,17 @@ export function validateFactAnchors(analysis, courtCase, records) {
 export function roleContext(session, courtCase, includeDifficulty = true) {
   const criminal = /hình sự/iu.test(courtCase.category);
   const defense = session.user_court_role === 'defense_lawyer';
-  const learner = criminal ? (defense ? 'luật sư bào chữa cho bị cáo' : 'luật sư bảo vệ người bị hại')
+  let learner = criminal ? (defense ? 'luật sư bào chữa cho bị cáo' : 'luật sư bảo vệ người bị hại')
     : (defense ? 'luật sư bảo vệ bị đơn' : 'luật sư bảo vệ nguyên đơn');
-  const opponent = criminal ? (defense ? 'phía buộc tội' : 'luật sư bào chữa cho bị cáo')
+  let opponent = criminal ? (defense ? 'phía buộc tội' : 'luật sư bào chữa cho bị cáo')
     : (defense ? 'luật sư bảo vệ nguyên đơn' : 'luật sư bảo vệ bị đơn');
+  if (courtCase.practice_context?.hearing_level === 'appeal') {
+    const parties = courtCase.parties ?? [];
+    const plaintiff = parties.find(p => p.side === 'plaintiff')?.name ?? 'nguyên đơn';
+    const defendant = parties.find(p => p.side === 'defendant')?.name ?? 'bị đơn';
+    learner = defense ? `đại diện bảo vệ lập trường phía ${defendant}` : `người bảo vệ phía ${plaintiff} kháng cáo`;
+    opponent = defense ? `người bảo vệ phía ${plaintiff} kháng cáo` : `đại diện bảo vệ lập trường phía ${defendant}`;
+  }
   const difficulty = {
     beginner: 'Nêu một vấn đề mỗi lượt, giải thích thuật ngữ và gợi ý cấu trúc câu trả lời.',
     balanced: 'Nêu một hoặc hai phản biện cụ thể, yêu cầu liên kết chứng cứ và kết luận.',
@@ -84,10 +97,12 @@ export function serializeUntrustedData(value) {
 
 function commonContext(session, courtCase, records, legalContext, fullHistory = false) {
   const untrustedCaseData = {
+    practice_context: courtCase.practice_context,
     timeline: legalContext.issues,
     evidenceInventory: evidenceInventory(courtCase),
     caseKnowledge: caseKnowledge(courtCase),
     legalAssessmentAvailable: legalContext.legal_assessment_available,
+    legalAssessmentMode: legalContext.legal_assessment_mode, assessmentNote: legalContext.assessment_note,
     eventDate: session.case_event_date,
     userRole: session.user_court_role,
     difficulty: session.difficulty,
@@ -104,7 +119,7 @@ function commonContext(session, courtCase, records, legalContext, fullHistory = 
       text: record.content,
       evidence_ids: record.evidence_ids ?? [],
       legal_reference_ids: record.legal_reference_ids ?? [],
-      citations: (record.citations ?? []).filter(hasVerifiedSource).map((citation) => ({
+      citations: (record.citations ?? []).filter(hasReadableLawSource).map((citation) => ({
         citationId: citation.id,
         lawNumber: citation.law_number,
         title: citation.title,
@@ -112,7 +127,7 @@ function commonContext(session, courtCase, records, legalContext, fullHistory = 
         sourceUrl: citation.source_url,
       })),
     })),
-    retrievedLaw: legalContext.citations.map(({ id, law_number, title, locator, context_text, temporal_note, source_files, source_url, version, application_date, application_reason }) => ({
+    retrievedLaw: legalContext.citations.map(({ id, law_number, title, locator, context_text, temporal_note, source_files, source_url, version, application_date, application_reason, source_verification, application_status }) => ({
       version, applicationDate: application_date, applicationReason: application_reason,
       citationId: id,
       lawNumber: law_number,
@@ -122,12 +137,13 @@ function commonContext(session, courtCase, records, legalContext, fullHistory = 
       temporalNote: temporal_note,
       sourceFiles: source_files,
       sourceUrl: source_url,
+      sourceStatus: source_verification, applicationStatus: application_status,
     })),
     legalCoverageWarnings: legalContext.warnings,
   };
 
   return [
-    SOURCE_POLICY, RESPONSE_STYLE, roleContext(session, courtCase, false),
+    SOURCE_POLICY, RESPONSE_STYLE, roleContext(session, courtCase, false), practiceInstructions(courtCase),
     'Bạn là người đánh giá, không phải người tham gia tranh luận. Chỉ chấm những lời người học thực sự gửi. Lời AI chỉ giúp hiểu câu hỏi/phản biện, không phải thành tích người học. Không cộng/trừ điểm vì dùng trợ lý. Không chấm mức độ giống kết quả vụ án gốc.',
     '<UNTRUSTED_CASE_AND_LAW_DATA_JSON>', serializeUntrustedData(untrustedCaseData), '</UNTRUSTED_CASE_AND_LAW_DATA_JSON>',
   ].join('\n');
@@ -167,7 +183,7 @@ function readCitationIds(value, roleName) {
 
 function verifyCitations({ content, citationIds, legalCitations, roleName }) {
   const urls = content.match(/https?:\/\/[^\s<>"“”]+/giu) ?? [];
-  if (urls.some(url => !legalCitations.some(c => hasVerifiedSource(c) && c.source_url === url.replace(/[),.;!?]+$/u, '')))) {
+  if (urls.some(url => !legalCitations.some(c => hasReadableLawSource(c) && c.source_url === url.replace(/[),.;!?]+$/u, '')))) {
     throw new AppError('Lời thoại chứa liên kết chưa đối chiếu với nguồn được phép.', 502, 'AI_UNVERIFIED_CITATION');
   }
   const result = validateCitationIds({
@@ -195,6 +211,12 @@ export function readGeneratedTurn(raw, roleName, legalCitations, courtCase, reco
   if (TECHNICAL_TEXT.test(response.content)) throw new AppError('Lời thoại chứa nội dung kỹ thuật không dành cho người học.', 502, 'AI_INVALID_TURN');
   const citationIds = readCitationIds(response, roleName);
   const resolved = response.focus && compactContext ? resolveDialogueFocus(response, compactContext) : null;
+  if (compactContext?.schema_version === 2) validateDialogueQuantities(response.content, compactContext);
+  if (compactContext?.hearing) {
+    validateHearingGrounding(response, compactContext);
+    const problem = hearingProblem(response, roleName, compactContext, records);
+    if (problem) throw new AppError(problem, 502, 'AI_HEARING_GROUNDING');
+  }
   const analysis = resolved?.fact_analysis ?? readFactAnalysis(response, roleName);
   validateFactAnchors(analysis, courtCase, records);
   return {
@@ -203,6 +225,8 @@ export function readGeneratedTurn(raw, roleName, legalCitations, courtCase, reco
     dialogue_focus: resolved?.dialogue_focus ?? response.dialogue_focus,
     ...(resolved ? { source_anchors: resolved.source_anchors, normalizations: resolved.normalizations } : {}),
     fact_analysis: analysis,
+    ...(response.answer ? { answer: response.answer } : {}),
+    ...(resolved ? { evidence_ids: [...new Set(resolved.source_anchors.map(s => s.evidence_id).filter(Boolean))] } : {}),
     citations: verifyCitations({
       content: `${response.content}\n${JSON.stringify(response.fact_analysis)}`,
       citationIds,
@@ -213,8 +237,15 @@ export function readGeneratedTurn(raw, roleName, legalCitations, courtCase, reco
 }
 
 function makeTurnPrompt(roleInstructions, context) {
+  const question = context.hearing?.pending_question;
+  const needsAnswer = context.state.speaking_role === 'opponent' && question?.invited_speaker === 'opponent' && question.asks_evidence;
+  const schema = { role: context.state.speaking_role, purpose: 'một mục đích được phép', issue: context.state.current_issue.id,
+    next_speaker: context.state.invited_next, focus: { learner: 'L1', dossier: [] }, citation_ids: [],
+    ...(needsAnswer ? { answer: { question_id: question.id, status: 'supported hoặc not_determined', evidence_ids: [], direct_answer: 'câu trả lời trực tiếp' } } : {}),
+    content: 'lời thoại tự nhiên' };
   return [DEBATE_POLICY, RESPONSE_STYLE, roleInstructions,
-    'Chỉ trả JSON, metadata trước content: {"role":"judge hoặc opponent","purpose":"một mục đích được phép","issue":"state.current_issue.id","next_speaker":"state.invited_next","focus":{"learner":"L1","dossier":[]},"citation_ids":[],"content":"lời thoại"}. Chép đúng role=state.speaking_role và next_speaker=state.invited_next. focus.learner chọn luận điểm thật trong learner. focus.dossier chọn 1–3 nguồn khi phản biện/làm rõ chứng cứ, được rỗng khi chỉ mời, hỏi rõ quan điểm/thủ tục hoặc hồ sơ trống. citation_ids chỉ lấy trong retrievedLaw. Không đưa mã vào content.',
+    `Chỉ trả JSON theo cấu trúc này, metadata trước content: ${JSON.stringify(schema)}. Giữ đúng role, issue, next_speaker. focus.learner chọn luận điểm thật trong learner. focus.dossier chọn 1–3 mã D từ dossier khi dùng tình tiết hồ sơ/làm rõ chứng cứ; được rỗng khi chỉ xét suy luận của người học, giới hạn tra cứu, mời hoặc hỏi rõ quan điểm/thủ tục. citation_ids chỉ lấy trong retrievedLaw. Không đưa mã vào content.`,
+    needsAnswer ? 'answer là bắt buộc. evidence_ids chép chính xác id trong hearing.available_evidence (không tự tạo mã và không dùng mã D). focus.dossier dùng mã D tương ứng với evidence_id đó. content phải bắt đầu nguyên văn bằng direct_answer. supported chỉ dùng bản provided có đoạn trong focus.dossier và gọi đúng tên tài liệu. mentioned_only chỉ xác nhận có nhắc tài liệu, không chứng minh nội dung bản gốc. Không có tài liệu đủ thì dùng not_determined, evidence_ids rỗng, nói rõ chưa xác định được từ dữ liệu cung cấp, không giả định kết quả sẽ có trong tương lai.' : '',
     '<UNTRUSTED_CASE_AND_LAW_DATA_JSON>', serializeUntrustedData(context), '</UNTRUSTED_CASE_AND_LAW_DATA_JSON>',
   ].join('\n');
 }
@@ -222,10 +253,20 @@ function makeTurnPrompt(roleInstructions, context) {
 export async function generateDebateTurn({ session, courtCase, records, speakers, invitedNext = 'learner' }, dependencies = {}) {
   if (!session.case_event_date) throw new AppError('Phiên này chưa có ngày sự kiện; không thể xác định luật áp dụng.', 409, 'SESSION_EVENT_DATE_REQUIRED');
   const started = performance.now();
+  const latestContent = records.findLast(r => r.sender_type === 'user')?.content ?? '';
+  if (roleMismatch(session, latestContent)) {
+    const side = participantSides(session).player === 'defendant' ? 'bị đơn' : 'nguyên đơn';
+    return [{ sender_type: 'ai_judge', sender_name: 'Chủ tọa', role: 'judge', purpose: 'clarify_claim', next_speaker: 'learner',
+      content: `Theo phân công của phiên mô phỏng, bạn đang bảo vệ phía ${side}. Đề nghị bạn trình bày lại lập luận theo vai này.`,
+      generation_mode: 'role_correction', citations: [], evidence_ids: [],
+      fact_analysis: { established_facts: [], learner_claims: [latestContent], inferences: [], missing_facts: [] },
+      generation_metrics: { total_ms: performance.now() - started, attempts: [], outcome: 'role_correction' } }];
+  }
   const kind = classifyDialogueInput(records.findLast(r => r.sender_type === 'user')?.content ?? '');
   if (['greeting', 'noise', 'unclear'].includes(kind)) return [{ sender_type: 'ai_judge', sender_name: 'Chủ tọa', ...controlTurn(kind),
     generation_metrics: { total_ms: performance.now() - started, attempts: [], input_kind: kind, outcome: 'control' } }];
   const selection = chooseSpeakingPlan({ ...session, turn_count: session.turn_count ?? Math.max(0, records.filter(r => r.sender_type === 'user').length - 1) }, records.findLast(r => r.sender_type === 'user')?.content ?? '');
+  if (!speakers) session = { ...session, conversation: { ...session.conversation, ...selection } };
   speakers ??= selection.plan;
   if (!session.conversation) session = { ...session, conversation: selection };
   const persona = dependencies.persona ?? getPersona;
@@ -233,7 +274,7 @@ export async function generateDebateTurn({ session, courtCase, records, speakers
   let legalMs = 0;
   const research = async () => {
     const at = performance.now();
-    const result = await (dependencies.research ?? researchLegalBasis)({ eventDate: session.case_event_date, learnerTimeline: session.learner_timeline, courtCase, records });
+    const result = await (dependencies.research ?? researchLegalBasis)({ eventDate: session.case_event_date, learnerTimeline: session.learner_timeline, courtCase, records, usageContext: { userId: session.user_id, sessionId: session._id } });
     legalMs = performance.now() - at; return result;
   };
   const needsLaw = needsLegalResearch(records);
@@ -247,13 +288,16 @@ export async function generateDebateTurn({ session, courtCase, records, speakers
     const roleStarted = performance.now();
     const history = [...records, ...generated];
     const context = dialogueContext(session, courtCase, history, legalContext);
+    if (role === 'judge' && context.hearing.stalled && context.hearing.next_issue) {
+      context.state.current_issue = { ...context.hearing.next_issue, learner_points: context.learner.map(p => p.id) };
+    }
     const next = speakers[index + 1] ?? invitedNext;
     context.state.speaking_role = role;
     context.state.invited_next = next;
     const phase = session.conversation?.phase ?? 'debate';
     const direction = `Giai đoạn: ${phase}. Người được mời tiếp duy nhất: ${next === 'opponent' ? 'bên đối lập' : next === 'judge' ? 'Chủ tọa' : 'người học (xưng bạn)'}. Không mời bên khác.`;
     // Persona chỉ chọn model/nhiệt độ; nhiệm vụ vai dùng một bản chuẩn có kiểm thử.
-    const systemPrompt = makeTurnPrompt([roleContext(session, courtCase), roleTask(role, phase), direction].join('\n'), context);
+    const systemPrompt = makeTurnPrompt([roleContext(session, courtCase), practiceInstructions(courtCase), roleTask(role, phase), direction, turnTask(role, context)].join('\n'), context);
     const metrics = { preparation_ms: preparationMs, legal_ms: legalMs, legal_lookup: needsLaw, context_ms: performance.now() - roleStarted, input_chars: systemPrompt.length, attempts: [] };
     let repair = '', accepted;
     for (let attempt = 0; attempt < 2; attempt++) {
@@ -293,9 +337,9 @@ export async function generateDebateTurn({ session, courtCase, records, speakers
         problem = dialogueProblem(turn, role, history, courtCase, phase, next);
         if (!problem) { accepted = turn; measurement.normalizations = turn.normalizations ?? []; }
       } catch (error) {
-        if (!['AI_UNGROUNDED_FACT', 'AI_INVALID_STRUCTURED_RESPONSE', 'AI_INVALID_TURN', 'AI_INVALID_FACT_ANALYSIS', 'AI_INVALID_CITATIONS', 'AI_UNVERIFIED_CITATION', 'AI_EMPTY_STRUCTURED_CONTENT'].includes(error.code)) throw error;
+        if (!['AI_HEARING_GROUNDING', 'AI_UNGROUNDED_FACT', 'AI_INVALID_STRUCTURED_RESPONSE', 'AI_INVALID_TURN', 'AI_INVALID_FACT_ANALYSIS', 'AI_INVALID_CITATIONS', 'AI_UNVERIFIED_CITATION', 'AI_EMPTY_STRUCTURED_CONTENT'].includes(error.code)) throw error;
         measurement.rejection_code = error.code;
-        problem = error.code === 'AI_UNGROUNDED_FACT' ? 'Chọn focus.learner và focus.dossier từ đúng danh sách, không tạo mã mới.'
+        problem = error.code === 'AI_HEARING_GROUNDING' ? error.message : error.code === 'AI_UNGROUNDED_FACT' ? 'Chọn focus.learner và focus.dossier từ đúng danh sách, không tạo mã mới; bỏ số đo hoặc số tiền không có trong nguồn.'
           : error.code === 'AI_UNVERIFIED_CITATION' ? 'Chỉ dùng căn cứ có trong retrievedLaw; bỏ số điều và URL chưa được cung cấp.'
             : 'Sửa JSON theo schema, role, purpose, issue và next_speaker đúng state; content không rỗng, citation_ids là mảng.';
       }
@@ -309,7 +353,7 @@ export async function generateDebateTurn({ session, courtCase, records, speakers
     }
     metrics.total_ms = performance.now() - roleStarted + preparationMs;
     metrics.outcome = accepted ? 'model' : 'guided_continuation';
-    const turn = accepted ? { ...accepted, generation_mode: 'model' } : guidedContinuation(role, courtCase, history, next, phase);
+    const turn = accepted ? { ...accepted, generation_mode: 'model' } : guidedContinuation(role, courtCase, history, next, phase, context);
     generated.push({ sender_type: role === 'judge' ? 'ai_judge' : 'ai_prosecutor', sender_name: role === 'judge' ? 'Chủ tọa' : 'Bên đối lập', ...turn,
       generation_metrics: metrics, citation_warnings: legalContext.warnings,
       legal_research: { issues: legalContext.issues, candidates: legalContext.candidates.map(({ context_text, text, ...metadata }) => metadata), legal_assessment_available: legalContext.legal_assessment_available } });
@@ -322,17 +366,20 @@ export async function evaluateSession({ session, courtCase, records }, dependenc
   if (!session.case_event_date) throw new AppError('Phiên này chưa có ngày sự kiện; không thể xác định luật áp dụng.', 409, 'SESSION_EVENT_DATE_REQUIRED');
   const [evaluator, legalContext] = await Promise.all([
     (dependencies.persona ?? getPersona)('evaluator'),
-    (dependencies.research ?? researchLegalBasis)({ eventDate: session.case_event_date, learnerTimeline: session.learner_timeline, courtCase, records }),
+    (dependencies.research ?? researchLegalBasis)({ eventDate: session.case_event_date, learnerTimeline: session.learner_timeline, courtCase, records, usageContext: { userId: session.user_id, sessionId: session._id } }),
   ]);
-  const eligibility = scoringEligibility(records, legalContext.legal_assessment_available);
+  const legalScorable = legalContext.legal_assessment_available && legalContext.citations.length > 0
+    && legalContext.citations.every(c => c.source_verification === 'verified' && c.application_status === 'verified' && hasReadableLawSource(c));
+  const eligibility = scoringEligibility(records, legalScorable);
   if (Object.values(eligibility).every(Boolean)) return {
-    ...calculateEvaluation(Object.keys(eligibility).map(id => ({ id })), records, legalContext.legal_assessment_available),
+    ...calculateEvaluation(Object.keys(eligibility).map(id => ({ id })), records, legalScorable),
     verdict: 'Chưa có phần lập luận để đánh giá.', feedback: 'Phiên mới có lời chào hoặc trao đổi thủ tục.',
     improvement_suggestions: 'Ở phiên tiếp theo, hãy nêu quan điểm và giải thích bằng thông tin trong hồ sơ.',
     citations: [], generation_mode: 'control', generation_metrics: { attempts: [], outcome: 'control' },
   };
   const anchors = scoringQuotes(records);
-  const assessedSchema = { ...EVALUATION_SCHEMA, criteria: EVALUATION_SCHEMA.criteria.filter(item => !eligibility[item.id]) };
+  const assessedSchema = { ...EVALUATION_SCHEMA, criteria: EVALUATION_SCHEMA.criteria.filter(item => !eligibility[item.id]),
+    citation_ids: legalScorable ? legalContext.citations.map(c => c.id) : [] };
   const input = {
     usageContext: { userId: session.user_id, sessionId: session._id, role: 'evaluator' },
     model: evaluator.model_id,
@@ -365,7 +412,7 @@ export async function evaluateSession({ session, courtCase, records }, dependenc
       // Chỉ bổ sung mục không chấm; tuyệt đối không tự tạo điểm cho mục thiếu hoặc sai.
       const entries = Array.isArray(evaluation.criteria) ? [...evaluation.criteria,
         ...Object.keys(eligibility).filter(id => eligibility[id] && !evaluation.criteria.some(item => item?.id === id)).map(id => ({ id }))] : evaluation.criteria;
-      const scoring = calculateEvaluation(resolveScoringQuotes(entries, anchors), records, legalContext.legal_assessment_available);
+      const scoring = calculateEvaluation(resolveScoringQuotes(entries, anchors), records, legalScorable);
       const availableCitations = legalContext.citations;
       const citations = verifyCitations({
         content: `${evaluation.verdict ?? ''}\n${evaluation.feedback ?? ''}\n${evaluation.improvement_suggestions ?? ''}\n${JSON.stringify(evaluation.fact_analysis)}\n${JSON.stringify(scoring.criteria.flatMap((group) => group.items.filter((item) => item.status === 'assessed').map(({ reason, strength, improvement }) => ({ reason, strength, improvement }))))}`,
@@ -382,6 +429,8 @@ export async function evaluateSession({ session, courtCase, records }, dependenc
       const result = {
         generation_mode: 'model', generation_metrics: metrics,
         ...scoring,
+        legal_assessment_mode: 'verified_or_unassessed',
+        score_scope: scoring.score_scope,
         verdict: evaluation.verdict,
         feedback: evaluation.feedback,
         improvement_suggestions: evaluation.improvement_suggestions,
