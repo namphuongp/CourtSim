@@ -10,7 +10,8 @@ Dùng Node.js **24 LTS** (hoặc 22.13+), MongoDB đang chạy. Không chép đ�
 cd backend
 if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 npm ci
-# Đặt JWT_SECRET ngẫu nhiên ít nhất 32 ký tự và thông tin dịch vụ trong .env.
+# Đặt JWT_SECRET ngẫu nhiên ít nhất 32 ký tự, SEED_ADMIN_PASSWORD riêng và cấu hình AI trong .env.
+npm run seed
 npm run dev
 # Terminal thứ hai:
 cd frontend
@@ -20,7 +21,7 @@ npm run dev
 
 Frontend: http://localhost:5173. Backend bind 127.0.0.1:5000; Vite proxy /api đến backend. Nếu đã có frontend/.env cũ chứa VITE_API_URL, bỏ giá trị localhost hoặc dùng /api khi build production.
 
-Lần đầu chuẩn bị dữ liệu: cấu hình SEED_ADMIN_EMAIL/SEED_ADMIN_PASSWORD rồi chạy npm run seed trong backend. Seed cập nhật hồ sơ/persona và mật khẩu admin theo cấu hình; **không chạy seed như một bước khởi động production**. Migration auth: npm run auth:migrate mặc định chỉ kiểm tra; đọc hướng dẫn trước khi --apply.
+Hướng dẫn khởi tạo đầy đủ dữ liệu: [SEED.md](docs/SEED.md). Chạy lại seed giữ nguyên dữ liệu và mật khẩu admin đã có. Migration auth: `npm run auth:migrate` mặc định chỉ kiểm tra; đọc hướng dẫn trước khi `--apply`.
 
 ## Chức năng và lưu trữ
 

@@ -19,7 +19,8 @@
     "auth:migrate": "node src/scripts/migrateAuth.js",
     "admin:indexes": "node src/scripts/createAdminIndexes.js",
     "case1:import": "node src/scripts/importCase1.js",
-    "legal:web:smoke": "node src/scripts/smokeWebLaw.js"
+    "legal:web:smoke": "node src/scripts/smokeWebLaw.js",
+    "seed:export": "node src/scripts/exportSeed.js"
   },
   "keywords": [],
   "author": "",
