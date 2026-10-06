@@ -133,7 +133,7 @@ export function snapshotResult(snapshot, plan, mode) {
     article: unit?.article ?? null, paragraph: unit?.paragraph ?? null, point: unit?.point ?? null,
     locator: unit ? getProvisionLocator(unit) : 'Trang văn bản', text: unit?.text ?? '', excerpt: unit?.text.slice(0, 350) ?? snapshot.title,
     verification_status: unit ? 'verified' : 'unverified', application_status: 'unverified',
-    application_date: null, application_reason: 'Đã đối chiếu nội dung nguồn; cần kiểm tra thời điểm, sửa đổi và chuyển tiếp trước khi áp dụng.',
+    application_date: null, application_reason: 'Đã đối chiếu nội dung nguồn, cần kiểm tra thời điểm, sửa đổi và chuyển tiếp trước khi áp dụng.',
     provision_note: unit ? null : 'Chưa xác minh được điều/khoản/điểm cụ thể. Mở trang văn bản để đối chiếu.' };
 }
 

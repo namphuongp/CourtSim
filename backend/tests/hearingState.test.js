@@ -6,6 +6,7 @@ import { dialogueContext, validateDialogueQuantities } from '../src/services/dia
 import { chooseSpeakingPlan } from '../src/services/conversationPolicy.js';
 import { validateCaseDetails } from '../src/services/caseEvidence.js';
 import { readDialoguePreview } from '../src/services/dialoguePreview.js';
+import { guidedContinuation } from '../src/services/debatePolicy.js';
 
 process.env.JWT_SECRET ||= 'hearing-test-only-secret-at-least-32-characters';
 const session = { user_court_role: 'defense_lawyer', case_event_date: '2024-03-29', turn_count: 2, conversation: { phase: 'debate' } };
@@ -107,6 +108,27 @@ test('6 repetition: tranh điểm ổn định, ba lượt không nguồn mới 
   assert.equal(fresh.stalled, false);
   const context = contextFor(courtCase, history);
   assert.ok(hearingProblem({ ...response(context, 'Bạn có tài liệu đối chiếu nào?'), role: 'judge' }, 'judge', context, history));
+});
+
+test('chủ tọa tạm gác tranh điểm, không quay vòng, vẫn cho người học tổng kết', () => {
+  const history = Array.from({ length: 3 }, () => user('Tôi đề nghị đối chiếu giấy chứng nhận với phần đất tranh chấp.'));
+  const state = hearingState(session, courtCase, history);
+  const stuckSession = { ...session, conversation: { phase: 'debate', hearing_state: state } };
+  assert.deepEqual(chooseSpeakingPlan(stuckSession, 'Tôi chưa xác định được tài liệu khác trong hồ sơ.').plan, ['judge']);
+  assert.equal(chooseSpeakingPlan(stuckSession, 'Tóm lại, tôi giữ nguyên yêu cầu.').phase, 'summary');
+  const context = contextFor(courtCase, history);
+  const turn = guidedContinuation('judge', courtCase, history, 'learner', 'debate', context);
+  assert.equal(turn.issue, state.next_issue.id);
+  assert.match(turn.content, /Tạm gác/);
+  history.push({ ...turn, sender_type: 'ai_judge' });
+  const advanced = hearingState(session, courtCase, history);
+  assert.deepEqual(advanced.deferred_issues, ['issue:overlap']);
+  assert.equal(advanced.current_issue.id, state.next_issue.id);
+  history.push(user('Tôi tiếp tục đề nghị đối chiếu giấy chứng nhận.'));
+  assert.equal(hearingState(session, courtCase, history).current_issue.id, state.next_issue.id);
+  const summary = guidedContinuation('judge', courtCase, history, 'learner', 'summary', context);
+  assert.equal(summary.purpose, 'close');
+  assert.doesNotMatch(summary.content, /Chuyển sang/);
 });
 
 test('7 né câu hỏi: retry đúng nguyên nhân, không stream câu trả lời chưa đạt', async () => {

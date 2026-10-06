@@ -10,7 +10,6 @@ export function initialConversation(opening) {
 // Quy tắc sư phạm, chưa coi là thứ tự tố tụng bắt buộc theo luật.
 export function chooseSpeakingPlan(session, content) {
   if (roleMismatch(session, content)) return { phase: 'clarification', plan: ['judge'] };
-  if (session.conversation?.hearing_state?.judge_intervention) return { phase: 'clarification', plan: ['judge', 'opponent'] };
   const kind = classifyDialogueInput(content);
   if (['greeting', 'noise', 'unclear'].includes(kind)) return { phase: session.conversation?.phase ?? 'opening', plan: ['judge'] };
   if (kind === 'brief_position') return { phase: 'clarification', plan: ['judge'] };
@@ -20,6 +19,9 @@ export function chooseSpeakingPlan(session, content) {
   const closing = /(?:^|[.!?\n]\s*)(?:tóm lại(?:[,:]|\s)|(?:tôi\s+)?(?:xin\s+)?(?:kết luận|giữ nguyên yêu cầu|không còn ý kiến)(?:\s|[.,:]|$))/iu.test(content);
   if (procedural) return { phase: 'clarification', plan: ['judge'] };
   if (closing && session.turn_count > 0) return { phase: 'summary', plan: ['judge'] };
+  // Chuyển tranh điểm trả lời về người học, không gọi lại phản biện cũ.
+  if (session.conversation?.hearing_state?.stalled) return { phase: 'clarification', plan: ['judge'] };
+  if (session.conversation?.hearing_state?.judge_intervention) return { phase: 'clarification', plan: ['judge', 'opponent'] };
   if (session.turn_count === 0 && session.case_snapshot?.practice_context?.hearing_level === 'appeal') return { phase: 'presentation', plan: ['judge', 'opponent'] };
   // Sau câu hỏi làm rõ, cho bên kia đáp rồi trả lời trực tiếp; không bắt Chủ tọa nhắc lại.
   if (['clarify_claim', 'clarify_evidence'].includes(session.conversation?.last_purpose)) return { phase: 'debate', plan: ['opponent'] };

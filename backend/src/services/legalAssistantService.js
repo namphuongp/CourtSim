@@ -1,5 +1,5 @@
 import { researchAssistant } from './vbplResearch.js';
-import { hasReadableLawSource, legalReferenceLabel } from '../../../shared/legalSourcePolicy.mjs';
+import { hasReadableLawSource, hasVerifiedSource, legalReferenceLabel } from '../../../shared/legalSourcePolicy.mjs';
 import { researchWebLaw, webReferenceEnabled, legalWebQuery } from './webLegalResearch.js';
 import { dialogueText } from '../../../shared/dialogueText.mjs';
 import { createHash, randomUUID } from 'node:crypto';
@@ -19,11 +19,11 @@ export function assistantGuidance(question = '', { unavailable = false, sourceSt
   const broad = topics.find(([pattern]) => pattern.test(text));
   if (broad) return broad[1];
   if (!unavailable) return null;
-  if (sourceStatus === 'unavailable') return 'Hiện chưa lấy được nội dung văn bản để đối chiếu trên vbpl.vn. Chưa thể xác minh điều luật hoặc cung cấp trích dẫn. Bạn có thể thử lại sau hoặc tra bằng số hiệu/tên văn bản khác.';
+  if (sourceStatus === 'unavailable') return 'Hiện chưa lấy được nội dung văn bản để đối chiếu. Chưa thể xác minh điều luật hoặc cung cấp trích dẫn. Bạn có thể thử lại sau hoặc tra bằng số hiệu/tên văn bản khác.';
   if (sourceStatus === 'disabled') return 'Tra cứu trực tiếp đang tắt và chưa có bản lưu đủ điều kiện để viện dẫn. Bạn có thể thử số hiệu hoặc tên văn bản khác.';
-  if (/\d+\/\d{4}\//u.test(text)) return 'Chưa đối chiếu được văn bản mang số hiệu này trên vbpl.vn. Bạn hãy kiểm tra lại số hiệu, hoặc thử lại sau; chưa có căn cứ đã xác minh để viện dẫn.';
+  if (/\d+\/\d{4}\//u.test(text)) return 'Chưa đối chiếu được văn bản mang số hiệu này. Bạn hãy kiểm tra lại số hiệu, hoặc thử lại sau, chưa có căn cứ đã xác minh để viện dẫn.';
   if (/(?:điều|khoản|điểm)\s+[\da-z]/iu.test(text)) return 'Chưa xác minh được điều khoản bạn hỏi. Bạn đang tra văn bản nào, số hiệu và thời điểm áp dụng là gì?';
-  return 'Chưa tìm được nguồn phù hợp để đối chiếu trên vbpl.vn. Bạn cần làm rõ quyền, nghĩa vụ hay thủ tục nào? Hãy thêm tên văn bản hoặc mốc sự kiện.';
+  return 'Chưa tìm được nguồn phù hợp để đối chiếu. Bạn cần làm rõ quyền, nghĩa vụ hay thủ tục nào? Hãy thêm tên văn bản hoặc mốc sự kiện.';
 }
 
 export function publicAssistantExchange(value, { fresh = false } = {}) {
@@ -56,7 +56,7 @@ export async function answerLegalQuestion({ session, courtCase, question }, depe
   }
   const results = (research.results ?? research.citations ?? []).filter(hasReadableLawSource);
   if (!results.length) return {
-    answer: useWeb ? 'Chưa đọc được nguyên văn điều khoản Việt Nam phù hợp từ nguồn web. Chưa có trích dẫn để dùng; bạn có thể thử lại với số hiệu hoặc vấn đề cụ thể hơn.' : assistantGuidance(question, { unavailable: true, sourceStatus: research.source_status }),
+    answer: useWeb ? 'Chưa đọc được nguyên văn điều khoản Việt Nam phù hợp từ nguồn web. Chưa có trích dẫn để dùng, bạn có thể thử lại với số hiệu hoặc vấn đề cụ thể hơn.' : assistantGuidance(question, { unavailable: true, sourceStatus: research.source_status }),
     source_status: research.source_status,
     verification_status: 'unverified', citations: [], sources: [],
   };
@@ -69,11 +69,11 @@ export async function answerLegalQuestion({ session, courtCase, question }, depe
   const summary = results.map(r => r.title + ' (' + r.law_number + ')' + (r.article ? ' — ' + r.locator : '') + '.').join('\n');
   const timing = dates ? 'Mốc trong hồ sơ: ' + dates + '.' : 'Chưa có mốc sự kiện hoặc giao dịch được xác nhận.';
   const local = results.some(r => r.source_verification === 'local_read');
-  return { answer: 'Tìm thấy ' + results.length + (local ? ' trích đoạn từ tài liệu pháp luật trong kho mô phỏng.\n' : useWeb ? ' trích đoạn pháp luật Việt Nam đã đọc từ nguồn web.\n' : ' văn bản có nội dung được đối chiếu từ vbpl.vn.\n') + summary + '\n'
-      + (results.length > 1 ? 'Có nhiều văn bản phù hợp; hãy chọn đúng số hiệu và thời kỳ cần tra cứu.\n' : '') + timing
+  return { answer: 'Tìm thấy ' + results.length + (local ? ' trích đoạn từ tài liệu pháp luật trong kho mô phỏng.\n' : useWeb ? ' trích đoạn pháp luật Việt Nam đã đọc từ nguồn web.\n' : ' văn bản có nội dung được đối chiếu với nguồn.\n') + summary + '\n'
+      + (results.length > 1 ? 'Có nhiều văn bản phù hợp, hãy chọn đúng số hiệu và thời kỳ cần tra cứu.\n' : '') + timing
       + (missing.length ? ' Cần làm rõ mốc ' + missing.join(', ') + ' nếu liên quan đến câu hỏi.' : '')
       + ' Đọc trích đoạn bên dưới và đối chiếu sửa đổi, hiệu lực, chuyển tiếp trước khi áp dụng.',
-    verification_status: useWeb || local ? 'unverified' : 'verified', citations, sources };
+    verification_status: results.every(hasVerifiedSource) ? 'verified' : 'unverified', citations, sources };
 }
 
 export async function askLegalAssistant({ session, courtCase, question, requestId }) {

@@ -1,4 +1,5 @@
 import { scoreSummary } from '../../../shared/scorePresentation.mjs';
+import { skillPresentation } from '../services/skillPresentation.js';
 import LegalAssistantExchange from '../models/LegalAssistantExchange.js';
 import { askLegalAssistant, publicAssistantExchange, validateLegalReferences } from '../services/legalAssistantService.js';
 import { validateEvidenceReferences } from '../services/caseEvidence.js';
@@ -74,14 +75,29 @@ router.post('/', asyncHandler(async (request, response) => {
 }));
 
 router.get('/', asyncHandler(async (request, response) => {
-  const sessions = await SimulationSession.find({ user_id: request.auth.userId })
-    .select('-turns -opening -case_snapshot -evaluation.feedback -evaluation.fact_analysis -evaluation.citations -evaluation.rubric_feedback -evaluation.criteria -evaluation.legal_research -evaluation.citation_warnings -evaluation.improvement_suggestions')
-    .sort({ created_at: -1 }).populate('case_id', 'title category practice_context').lean();
-  const legacyResults = await TrialResult.find({ session_id: { $in: sessions.filter((s) => !s.evaluation).map((s) => s._id) } }).select('session_id score rubric_scores').lean();
+  if (request.query.include !== undefined && request.query.include !== 'skills') throw new AppError('Tùy chọn dữ liệu không hợp lệ.', 400);
+  const includeSkills = request.query.include === 'skills';
+  // Tính từ mốc đã lưu để cả phiên cũ cũng có ngày hoạt động, không tải biên bản về client.
+  const sessions = await SimulationSession.aggregate([
+    { $match: { user_id: new mongoose.Types.ObjectId(request.auth.userId) } },
+    { $set: { updated_at: { $max: ['$created_at', '$updated_at', '$completed_at', '$conversation.started_at',
+      { $reduce: { input: { $ifNull: ['$turns', []] }, initialValue: '$created_at', in: { $max: ['$$value',
+        { $max: { $map: { input: { $ifNull: ['$$this.records', []] }, as: 'record', in: '$$record.created_at' } } }] } } }] } } },
+    { $project: { turns: 0, opening: 0, case_snapshot: 0, 'evaluation.fact_analysis': 0,
+      ...(!includeSkills ? { 'evaluation.feedback': 0, 'evaluation.criteria': 0 } : {}),
+      'evaluation.citations': 0, 'evaluation.rubric_feedback': 0,
+      'evaluation.legal_research': 0, 'evaluation.citation_warnings': 0 } },
+    { $sort: { created_at: -1 } },
+  ]);
+  await SimulationSession.populate(sessions, { path: 'case_id', select: 'title category practice_context' });
+  const legacyResults = await TrialResult.find({ session_id: { $in: sessions.filter((s) => !s.evaluation).map((s) => s._id) } })
+    .select(`session_id score earned_score assessed_max assessment_status legal_assessment_mode rubric_scores improvement_suggestions${includeSkills ? ' criteria feedback' : ''}`).lean();
   const bySession = new Map(legacyResults.map((result) => [String(result.session_id), result]));
   response.json({ data: sessions.map((session) => {
     const result = session.evaluation ?? bySession.get(String(session._id));
-    return { ...publicSession(session), result: result ? { score: scoreSummary(result).score, earned_score: result.earned_score, assessment_status: result.assessment_status, rubric_scores: result.rubric_scores, rubric_version: result.rubric_version, assessed_max: result.assessed_max, score_scope: result.score_scope, legal_assessment_mode: result.legal_assessment_mode, assessment_note: result.assessment_note } : null };
+    return { ...publicSession(session), result: result ? { score: scoreSummary(result).score, earned_score: result.earned_score, assessment_status: result.assessment_status, rubric_scores: result.rubric_scores, rubric_version: result.rubric_version, assessed_max: result.assessed_max, score_scope: result.score_scope, legal_assessment_mode: result.legal_assessment_mode, assessment_note: result.assessment_note,
+      improvement_suggestions: typeof result.improvement_suggestions === 'string' ? result.improvement_suggestions.trim().slice(0, 1200) : null,
+      ...(includeSkills ? { skill_insights: skillPresentation(result) } : {}) } : null };
   }) });
 }));
 

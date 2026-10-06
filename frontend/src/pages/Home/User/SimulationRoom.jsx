@@ -177,7 +177,7 @@ function Room({ sessionId }) {
         else document.querySelector('.speech-content')?.focus();
       });
     } catch (error) {
-      setState(s => ({ ...s, error: getApiError(error, 'Chưa tạo được lời thoại tiếp theo. Các lượt đã lưu vẫn được giữ lại; hãy thử lại.') }));
+      setState(s => ({ ...s, error: getApiError(error, 'Chưa tạo được lời thoại tiếp theo. Các lượt đã lưu vẫn được giữ lại, hãy thử lại.') }));
       setReload(n => n + 1);
     } finally { busy.current = false; setStreamedSpeech(null); setState(s => ({ ...s, sending: false })); }
   }

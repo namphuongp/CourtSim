@@ -49,16 +49,23 @@ function getPdfLineText(items) {
 }
 
 export async function extractPdfText(filePath) {
-  const { getDocument } = await import('pdfjs-dist/legacy/build/pdf.mjs');
-  const bytes = await readFile(filePath);
-  const document = await getDocument({ data: new Uint8Array(bytes), verbosity: 0 }).promise;
-  const pages = [];
+  return extractPdfBytes(await readFile(filePath));
+}
 
+export async function extractPdfBytes(bytes, { maxPages = 1000, maxCharacters = 4_000_000 } = {}) {
+  const { getDocument } = await import('pdfjs-dist/legacy/build/pdf.mjs');
+  const document = await getDocument({ data: new Uint8Array(bytes), verbosity: 0, isEvalSupported: false }).promise;
+  const pages = [];
+  let size = 0;
   try {
+    if (document.numPages > maxPages) throw new Error('PDF_PAGE_LIMIT');
     for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
       const page = await document.getPage(pageNumber);
       const content = await page.getTextContent();
-      pages.push({ pageNumber, text: getPdfLineText(content.items) });
+      const text = getPdfLineText(content.items);
+      size += text.length;
+      if (size > maxCharacters) throw new Error('PDF_TEXT_LIMIT');
+      pages.push({ pageNumber, text });
     }
   } finally {
     await document.destroy();

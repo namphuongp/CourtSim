@@ -79,8 +79,41 @@ test('tìm, đọc, cache nguồn thật; lỗi nguồn không sinh điểm tham
 
 test('nguồn web chưa xác minh thời điểm không mở chấm luật', async () => {
   const base = { citations: [], candidates: [], issues: [], warnings: [], legal_assessment_available: false };
-  const legal = await researchLegalBasis({ courtCase }, { corpus: async () => base });
+  const legal = await researchLegalBasis({ courtCase }, { corpus: async () => base, web: async () => ({ citations: [], warnings: [] }) });
   assert.equal(legal.legal_assessment_available, false);
   assert.equal(legal.legal_assessment_mode, undefined);
   assert.deepEqual(legal.citations, []);
+});
+
+test('web đối chiếu số hiệu và toàn văn chính thức, không tự xác nhận thời điểm áp dụng', () => {
+  const official = { url: 'https://vbpl.vn/van-ban/chi-tiet/fixture', content: '<h1>Luật kiểm thử</h1><p>Số: 999/2020/QH14</p><article><p>Điều 1. Chứng cứ đất đai</p><p>Nội dung hư cấu để kiểm tra nguồn, không phải pháp luật thật.</p></article>' };
+  const snapshot = parseWebLawPage(official, now);
+  assert.equal(hasVerifiedSource(snapshot), true);
+  const citations = webReferenceCitations([snapshot], legalWebQuery({ courtCase, question: 'Điều 1 999/2020/QH14' }), now);
+  assert.equal(citations[0].verification_status, 'verified');
+  assert.equal(citations[0].application_status, 'unverified');
+  assert.equal(webReferenceCitations([snapshot], legalWebQuery({ courtCase, question: 'Điều 1 998/2020/QH14' }), now).length, 0);
+});
+
+test('kho lỗi vẫn tìm web, web lỗi không làm mất luật trong kho, offline không gọi mạng', async () => {
+  let calls = 0;
+  const base = { citations: [{ id: 'local' }], warnings: [], legal_assessment_available: false };
+  const web = async () => { calls++; return { citations: [{ id: 'web' }], warnings: [] }; };
+  const recovered = await researchLegalBasis({}, { corpus: async () => { throw Error('unavailable'); }, web });
+  assert.equal(recovered.citations[0].id, 'web');
+  const kept = await researchLegalBasis({}, { corpus: async () => base, web: async () => { throw Error('offline'); } });
+  assert.deepEqual(kept.citations, base.citations);
+  await researchLegalBasis({ online: false }, { corpus: async () => base, web });
+  assert.equal(calls, 1);
+});
+
+test('PDF chính thức cần nhận diện văn bản, bỏ điều cuối có thể bị cắt trang', () => {
+  const pdf = { url: 'https://vbpl.vn/FileData/fixture.pdf', format: 'pdf', source_sha256: 'b'.repeat(64),
+    content: 'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\nLuật số: 999/2020/QH14\nĐiều 1. Chứng cứ\nQuy định hư cấu dành riêng cho kiểm thử, không phải luật thật.\nĐiều 2. Tiếp theo\nĐây là phần có thể bị cắt và không được sử dụng để chấm điểm.' };
+  const snapshot = parseWebLawPage(pdf, now);
+  assert.equal(hasVerifiedSource(snapshot), true);
+  assert.match(snapshot.source_text, /Điều 1/);
+  assert.doesNotMatch(snapshot.source_text, /Điều 2/);
+  assert.equal(parseWebLawPage({ ...pdf, content: pdf.content.replace('Luật số:', 'Trích dẫn:') }, now), null);
+  assert.equal(parseWebLawPage({ ...pdf, source_sha256: undefined }, now), null);
 });

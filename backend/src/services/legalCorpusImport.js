@@ -2,21 +2,25 @@ import { readFile } from 'node:fs/promises';
 import { hash, containedPath, extractLawFile, compactLaw, inspectLawText } from './legalFileInventory.js';
 import { buildPageOffsets, parseLegalArticles, createProvisionUnits, getProvisionLocator, getProvisionLocatorKey } from './legalTextParser.js';
 import { getLegalSearchTerms } from './legalTextSearch.js';
-import { fetchOfficialPage, fetchOfficialFile } from './officialLegalSources.js';
-import { parseVbplPage } from './vbplResearch.js';
-import { isVbplUrl } from '../../../shared/legalSourcePolicy.mjs';
+import { fetchPublicLawPage } from './publicWebPage.js';
+import { parseWebLawPage } from './webLawParser.js';
+import { isOfficialLawUrl } from '../../../shared/legalSourcePolicy.mjs';
 import { validateVersionReview } from './legalVersionReview.js';
 import LegalCorpusVersion from '../models/LegalCorpusVersion.js';
 import LegalCorpusProvision from '../models/LegalCorpusProvision.js';
 
 const PARSER = 'corpus-1';
-export async function prepareCorpusImport(review, root, { fetchPage = fetchOfficialPage, fetchFile = fetchOfficialFile } = {}) {
+const readSource = async url => {
+  const page = await fetchPublicLawPage(url);
+  return { ...page, sha256: page.source_sha256 ?? hash(page.content) };
+};
+export async function prepareCorpusImport(review, root, { fetchPage = readSource, fetchFile = readSource } = {}) {
   if (!review || !Array.isArray(review.files) || !review.files.length || review.files.length > 10
     || !review.law_number || !review.title || !['original', 'amendment', 'consolidated', 'annex'].includes(review.document_kind)
     || review.permission?.status !== 'allowed' || !['official_original', 'explicit_permission'].includes(review.permission.basis)
     || typeof review.permission.evidence !== 'string' || review.permission.evidence.length < 30
     || !review.completeness_reviewed || !Number.isInteger(review.expected_articles) || review.expected_articles < 1
-    || !isVbplUrl(review.official_url)) throw new Error('INCOMPLETE_SOURCE_OR_PERMISSION_REVIEW');
+    || !isOfficialLawUrl(review.official_url)) throw new Error('INCOMPLETE_SOURCE_OR_PERMISSION_REVIEW');
   const groups = [], sourceFiles = [];
   for (const file of review.files) {
     const path = await containedPath(root, file.path), bytes = await readFile(path);
@@ -34,7 +38,7 @@ export async function prepareCorpusImport(review, root, { fetchPage = fetchOffic
   const articles = parseLegalArticles(text, pages);
   if (articles.length !== review.expected_articles || new Set(articles.map(a => a.article)).size !== articles.length) throw new Error('INCOMPLETE_OR_AMBIGUOUS_ARTICLES');
   let snapshot;
-  if (sourceFiles.every(f => isVbplUrl(f.official_url))) {
+  if (sourceFiles.every(f => isOfficialLawUrl(f.official_url))) {
     // PDF gốc: đối chiếu từng byte, không ép văn bản qua HTML hoặc bỏ qua phần bị thiếu.
     for (const file of sourceFiles) {
       const remote = await fetchFile(file.official_url);
@@ -44,8 +48,8 @@ export async function prepareCorpusImport(review, root, { fetchPage = fetchOffic
       source_sha256: hash(sourceFiles.map(f => f.sha256).join(':')), checked_at: new Date().toISOString() };
   } else {
     const page = await fetchPage(review.official_url);
-    snapshot = parseVbplPage(page, review.law_number);
-    if (!snapshot?.source_text) throw new Error('OFFICIAL_CONTENT_UNAVAILABLE');
+    snapshot = parseWebLawPage(page);
+    if (!snapshot?.source_text || snapshot.law_number !== review.law_number) throw new Error('OFFICIAL_CONTENT_UNAVAILABLE');
     const official = parseLegalArticles(snapshot.source_text);
     if (official.length !== articles.length || articles.some((a, i) => a.article !== official[i].article || compactLaw(a.text) !== compactLaw(official[i].text))) throw new Error('OFFICIAL_TEXT_MISMATCH');
   }

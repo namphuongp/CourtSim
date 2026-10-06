@@ -15,7 +15,7 @@ export default function ScoringSummary({ result, sessionId }) {
       <p className="mt-2 text-4xl font-black text-slate-900 sm:text-5xl">{Number.isFinite(summary.earned) ? <>{summary.earned}<span className="text-2xl font-semibold">/{summary.assessed}</span></> : 'Chưa có điểm'}</p>
       <p className="mt-2 font-medium">{summary.partial ? 'Điểm ở phần đã đánh giá · Chưa có điểm toàn bài' : 'Đã đánh giá đủ 100 điểm của rubric'}</p>
       {summary.partial && <p className="mt-3 text-sm leading-6">{summary.remaining}% trọng số chưa đánh giá và không bị tính thành 0 điểm.</p>}
-      {missingLaw && <p className="mt-2 max-w-3xl text-sm leading-6">Phần căn cứ pháp luật chưa đủ nguồn để chấm. CourtSim chưa xác minh được nguồn phù hợp từ vbpl.vn; đây không phải lỗi của bạn. Nhận xét dưới đây chỉ dựa trên phần đã đánh giá.</p>}
+      {missingLaw && <p className="mt-2 max-w-3xl text-sm leading-6">Phần căn cứ pháp luật chưa đủ nguồn để chấm. CourtSim chưa xác minh được nguồn phù hợp từ vbpl.vn, đây không phải lỗi của bạn. Nhận xét dưới đây chỉ dựa trên phần đã đánh giá.</p>}
     </section>
     <div className="grid gap-6 md:grid-cols-2">
       <section className="rounded-2xl border border-slate-200 bg-white p-6" aria-labelledby="strengths-heading">
@@ -42,7 +42,7 @@ export default function ScoringSummary({ result, sessionId }) {
           <h3 className="font-bold">{item.id}. {item.label} · {item.score === null ? 'Chưa chấm' : `${item.score}/${item.max}`}</h3>
           <p>{item.reason}</p>
           {item.quote && <blockquote className="border-l-2 border-blue-300 pl-3">“{item.quote}” <Link className="text-blue-700 underline" to={`/simulation/${sessionId}#record-${item.record_id}`}>Xem phát biểu</Link></blockquote>}
-          {item.status === 'assessed' ? <><p><strong>Điểm mạnh:</strong> {item.strength}</p><p><strong>Cách cải thiện:</strong> {item.improvement}</p></> : <p>{(item.id.startsWith('2.') || item.id === '4.2') ? 'CourtSim cần xác minh nguồn luật để đánh giá mục này; không tính lỗi cho người học.' : item.improvement}</p>}
+          {item.status === 'assessed' ? <><p><strong>Điểm mạnh:</strong> {item.strength}</p><p><strong>Cách cải thiện:</strong> {item.improvement}</p></> : <p>{(item.id.startsWith('2.') || item.id === '4.2') ? 'CourtSim cần xác minh nguồn luật để đánh giá mục này, không tính lỗi cho người học.' : item.improvement}</p>}
         </article>)}
       </details>)}</div>
     </section>}

@@ -81,7 +81,7 @@ export async function getLegalCoverageWarnings(eventDate) {
         return `${authority.title} số ${authority.lawNumber}: ${authority.temporalNote}`;
       }
       if (eventDate > authority.verifiedThrough) {
-        return `${authority.title} số ${authority.lawNumber} chỉ được đối chiếu đến ${authority.verifiedThrough}; ngày vụ việc nằm ngoài thời điểm đã xác minh.`;
+        return `${authority.title} số ${authority.lawNumber} chỉ được đối chiếu đến ${authority.verifiedThrough}, ngày vụ việc nằm ngoài thời điểm đã xác minh.`;
       }
       return null;
     })

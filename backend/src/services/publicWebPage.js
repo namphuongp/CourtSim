@@ -2,6 +2,8 @@ import { lookup } from 'node:dns/promises';
 import { BlockList, isIP } from 'node:net';
 import http from 'node:http';
 import https from 'node:https';
+import { createHash } from 'node:crypto';
+import { extractPdfBytes } from './legalTextParser.js';
 import { isPublicWebUrl } from '../../../shared/legalSourcePolicy.mjs';
 
 const blocked = new BlockList();
@@ -20,25 +22,38 @@ export async function fetchPublicLawPage(value, { resolver = lookup, request = (
     if (!addresses.length || addresses.some(item => !publicAddress(item.address))) throw new Error('WEB_ADDRESS_NOT_PUBLIC');
     // Ghim IP đã kiểm tra vào kết nối để tránh DNS đổi sang mạng nội bộ sau kiểm tra.
     const page = await new Promise((resolve, reject) => {
-      const req = request(url, { signal, headers: { Accept: 'text/html,text/plain', 'User-Agent': 'CourtSim-LegalResearch/1.0' },
+      const req = request(url, { signal, headers: { Accept: 'text/html,text/plain,application/pdf', 'User-Agent': 'CourtSim-LegalResearch/1.0' },
         lookup: (_host, options, callback) => options.all ? callback(null, addresses) : callback(null, addresses[0].address, addresses[0].family) }, async response => {
         try {
           if ([301, 302, 303, 307, 308].includes(response.statusCode)) {
             response.resume(); resolve({ redirect: response.headers.location }); return;
           }
-          if (response.statusCode !== 200 || !/text\/html|text\/plain/iu.test(response.headers['content-type'] ?? '')) throw new Error('WEB_PAGE_UNREADABLE');
+          const isPdf = /^application\/pdf(?:;|$)/iu.test(response.headers['content-type'] ?? '');
+          if (response.statusCode !== 200 || (!isPdf && !/text\/html|text\/plain/iu.test(response.headers['content-type'] ?? ''))) {
+            const error = new Error('WEB_PAGE_UNREADABLE');
+            error.http_status = response.statusCode;
+            throw error;
+          }
           let length = 0; const chunks = [];
           for await (const chunk of response) {
             length += chunk.length;
             if (length > 3_000_000) throw new Error('WEB_PAGE_TOO_LARGE');
             chunks.push(chunk);
           }
-          resolve({ url: url.href, content: Buffer.concat(chunks).toString('utf8') });
+          const bytes = Buffer.concat(chunks);
+          resolve(isPdf ? { url: url.href, format: 'pdf', bytes } : { url: url.href, content: bytes.toString('utf8') });
         } catch (error) { response.destroy(); reject(error); }
       });
       req.on('error', reject);
     });
-    if (!Object.hasOwn(page, 'redirect')) return page;
+    if (!Object.hasOwn(page, 'redirect')) {
+      if (page.format !== 'pdf') return page;
+      if (page.bytes.subarray(0, 5).toString() !== '%PDF-') throw new Error('WEB_PDF_INVALID');
+      // Chỉ trích văn bản, không chạy JavaScript trong PDF hoặc tải tài nguyên nhúng.
+      const extracted = await extractPdfBytes(page.bytes, { maxPages: 150, maxCharacters: 1_000_000 });
+      return { url: page.url, format: 'pdf', content: extracted.text,
+        source_sha256: createHash('sha256').update(page.bytes).digest('hex') };
+    }
     if (!page.redirect || redirect === 3) throw new Error('WEB_REDIRECT_LIMIT');
     url = new URL(page.redirect, url);
   }

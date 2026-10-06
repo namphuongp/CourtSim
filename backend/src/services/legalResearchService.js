@@ -25,17 +25,17 @@ export function resolveLegalResearch({ courtCase, eventDate, learnerTimeline = [
     for (const { provision, score } of ranked.filter((item) => item.score > 0).slice(0, 5)) {
       const document = byId.get(String(provision.document_id));
       let assessment = assessVersion(document, provision, plan);
-      // Bản nhập cũ chỉ có cờ duyệt không đủ: nguyên văn phải khớp đúng đơn vị trên vbpl.vn.
+      // Cờ duyệt chưa đủ: nguyên văn phải khớp đơn vị trong nguồn đã xác minh.
       const snapshot = sourceUnits.find(({ snapshot: s, units }) => s.law_number === document.law_number && s.source_url === document.source_url
         && units.some(p => p.article === provision.article && p.paragraph === (provision.paragraph ?? null)
           && p.point === (provision.point ?? null) && compact(p.text) === compact(provision.text)))?.snapshot;
-      if (!snapshot) assessment = { verified: false, reason: 'Chưa đối chiếu được nguyên văn điều khoản với bản lưu vbpl.vn.' };
+      if (!snapshot) assessment = { verified: false, reason: 'Chưa đối chiếu được nguyên văn điều khoản với nguồn đã xác minh.' };
       if (assessment.verified && provisions.some((other) => {
         const otherDoc = byId.get(String(other.document_id));
         return String(other.document_id) !== String(provision.document_id) && other.article === provision.article
           && otherDoc?.law_number === document.law_number && assessVersion(otherDoc, other, plan).verified
           && other.text !== provision.text;
-      })) assessment = { verified: false, reason: 'Có phiên bản cùng điều và thời kỳ với nội dung khác nhau; cần đối chiếu xung đột.' };
+      })) assessment = { verified: false, reason: 'Có phiên bản cùng điều và thời kỳ với nội dung khác nhau, cần đối chiếu xung đột.' };
       const entry = {
         id: `${provision._id}:${plan.id}`, provision_id: String(provision._id),
         law_number: document.law_number, title: document.title, article: provision.article,
@@ -74,12 +74,24 @@ export function resolveLegalResearch({ courtCase, eventDate, learnerTimeline = [
 }
 
 export async function researchLegalBasis(input, dependencies = {}) {
+  let result;
   try {
-    const result = await (dependencies.corpus ?? researchCorpusForSimulation)(input);
-    if (result.citations.length || !webReferenceEnabled() || input.online === false) return result;
-    const web = await (dependencies.web ?? researchWebLaw)(input);
-    return { ...result, citations: web.citations, warnings: [...result.warnings, ...web.warnings] };
+    result = await (dependencies.corpus ?? researchCorpusForSimulation)(input);
+  } catch {
+    result = { citations: [], candidates: [], issues: [], legal_assessment_available: false,
+      warnings: ['Kho luật đang không truy cập được.'] };
   }
-  catch { return { citations: [], candidates: [], issues: [], legal_assessment_available: false,
-    warnings: ['Kho luật đã xác minh đang không truy cập được; chưa đánh giá phần luật.'] }; }
+  // Có tài liệu chưa đồng nghĩa đã đủ nguồn để chấm. Lỗi kho không chặn đường tìm web.
+  if ((result.legal_assessment_available && result.citations.length && result.citations.every(c => hasVerifiedSource(c) && c.application_status === 'verified'))
+    || !webReferenceEnabled() || input.online === false) return result;
+  try {
+    const web = await (dependencies.web ?? researchWebLaw)(input);
+    const citations = [...result.citations];
+    for (const citation of web.citations ?? []) {
+      if (!citations.some(c => c.id && c.id === citation.id)) citations.push(citation);
+    }
+    return { ...result, citations, source_diagnostics: web.diagnostics ?? [], warnings: [...new Set([...(result.warnings ?? []), ...(web.warnings ?? [])])] };
+  } catch {
+    return { ...result, warnings: [...(result.warnings ?? []), 'Chưa truy cập được nguồn web, giữ phần đánh giá có căn cứ hiện có.'] };
+  }
 }

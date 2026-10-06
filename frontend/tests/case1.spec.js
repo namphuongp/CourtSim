@@ -1,3 +1,4 @@
+import { caseRoleLabel } from '../../shared/casePresentation.mjs';
 import { test, expect } from '@playwright/test';
 import { startBrowserHarness } from '../../backend/tests/helpers/browserHarness.mjs';
 import { case1Appeal } from '../../backend/src/data/case1Appeal.js';
@@ -8,7 +9,7 @@ test.afterAll(async () => { await harness?.close(); });
 
 test('Case1: chọn vai, hồ sơ, kéo thả, đối đáp, tải lại, chấm điểm và lịch sử', async ({ page }, info) => {
   const role = info.project.name === 'mobile' ? 'plaintiff_lawyer' : 'defense_lawyer';
-  const label = case1Appeal.practice_context.role_labels[role];
+  const label = caseRoleLabel(role, case1Appeal);
   await page.goto('/register');
   await page.getByLabel('Họ và tên').fill('Kiểm thử Case1');
   await page.getByLabel('Email').fill(`case1-${info.project.name}@example.test`);
@@ -22,18 +23,27 @@ test('Case1: chọn vai, hồ sơ, kéo thả, đối đáp, tải lại, chấm
   await page.getByRole('link', { name: 'Tạo phiên mới', exact: true }).click();
   await page.getByRole('button', { name: new RegExp('Phúc thẩm tranh chấp đất') }).click();
   await page.getByRole('button', { name: label, exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Tóm tắt diễn biến' })).toBeVisible();
+  await expect(page.getByText('Giấy chứng nhận và quá trình sử dụng được nhắc đến chứng minh được gì khi chưa có bản gốc?')).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Thông tin được hồ sơ ghi nhận' })).toHaveCount(0);
+  await expect(page.locator('#evidence-EV-case1-nguyen')).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Mở rộng chứng cứ' })).toHaveAttribute('aria-expanded', 'false');
+  await page.screenshot({ path: `../.test-artifacts/case1-setup-${info.project.name}.png`, fullPage: true });
+  await page.getByRole('button', { name: 'Mở rộng chứng cứ' }).click();
+  await expect(page.locator('#evidence-EV-case1-nguyen')).toBeVisible();
   await expect(page.getByLabel('3. Mốc tra cứu của bài tập')).toHaveValue('2018-08-07');
   await page.getByRole('button', { name: 'Bắt đầu phiên tòa', exact: true }).click();
   await expect(page).toHaveURL(/simulation\/[a-f0-9]{24}$/);
   const room = page.url();
   await expect(page.locator('.courtroom-meta')).toContainText(label);
   await page.getByRole('button', { name: 'Hồ sơ phiên tòa', exact: true }).click();
-  await expect(page.getByText(/Ngày phúc thẩm: Chưa xác định/)).toBeVisible();
-  await expect(page.locator('article[draggable="true"]')).toHaveCount(10);
-  await expect(page.locator('article[draggable="false"]')).toHaveCount(4);
+  await expect(page.getByRole('heading', { name: 'Tóm tắt diễn biến' })).toBeVisible();
+  await page.getByRole('button', { name: 'Mở rộng chứng cứ' }).click();
+  await expect(page.locator('article[draggable="true"]')).toHaveCount(14);
+  await expect(page.locator('article[draggable="false"]')).toHaveCount(0);
   const card = page.locator('#evidence-EV-case1-nguyen');
   await card.locator('summary').click();
-  await expect(card).toContainText('không phải tài liệu gốc');
+  await expect(card).not.toContainText('không phải tài liệu gốc');
   await page.screenshot({ path: `../.test-artifacts/case1-dossier-${info.project.name}.png`, fullPage: true });
   // Dùng DataTransfer thật để kiểm tra payload kéo thả, kể cả màn hình cảm ứng.
   const transfer = await page.evaluateHandle(() => new DataTransfer());
@@ -41,7 +51,7 @@ test('Case1: chọn vai, hồ sơ, kéo thả, đối đáp, tải lại, chấm
   await page.getByLabel('Lập luận của bạn').dispatchEvent('drop', { dataTransfer: transfer });
   await expect(page.getByLabel('Lập luận của bạn')).toHaveValue(/Nguồn:.*Nguyên/);
   await page.reload();
-  await expect(page.getByLabel('Lập luận của bạn')).toHaveValue(/không phải tài liệu gốc/);
+  await expect(page.getByLabel('Lập luận của bạn')).toHaveValue(/Anh Nguyên/);
   for (let turn = 0; turn < 3; turn++) {
     if (turn) await page.getByLabel('Lập luận của bạn').fill(turn === 1
       ? 'Tôi phân biệt lời trực tiếp gánh gạch với việc chỉ nghe kể về thỏa thuận. Chưa có giấy giao nhận để xác định mục đích.'
@@ -71,7 +81,7 @@ test('Case1: chọn vai, hồ sơ, kéo thả, đối đáp, tải lại, chấm
   expect(saved.status).toBe('completed');
   expect(saved.result.legal_assessment_mode).toBe('verified_or_unassessed');
   expect(saved.turn_count).toBe(3);
-  expect(saved.case_id.practice_context.role_labels[role]).toBe(label);
+  expect(caseRoleLabel(role, saved.case_id)).toBe(label);
   await page.goto('/dashboard/history');
   await expect(page.getByText(label, { exact: false })).toBeVisible();
   await page.getByRole('link', { name: 'Xem kết quả', exact: true }).click();
@@ -79,4 +89,14 @@ test('Case1: chọn vai, hồ sơ, kéo thả, đối đáp, tải lại, chấm
   await page.getByRole('link', { name: 'Xem lại toàn bộ biên bản' }).click();
   await expect(page.getByText('Phiên đã kết thúc. Đây là biên bản chỉ đọc.')).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+
+test('hướng dẫn chỉ hiển thị thao tác và thông tin luyện tập', async ({ page }, info) => {
+  await page.goto('/guide');
+  await expect(page.getByRole('heading', { name: 'Hướng dẫn luyện tập tranh tụng' })).toBeVisible();
+  await expect(page.getByText(/được giả định có bản gốc/)).toBeVisible();
+  await expect(page.getByText(/Kết quả gồm 6 nhóm|không quy đổi|trọng số/)).toHaveCount(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: '../.test-artifacts/guide-' + info.project.name + '.png', fullPage: true });
 });

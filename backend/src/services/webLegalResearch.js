@@ -3,33 +3,19 @@ import { AiPersonal } from '../models/index.js';
 import WebLawSnapshot from '../models/WebLawSnapshot.js';
 import { searchLegalWeb } from './aiClient.js';
 import { fetchPublicLawPage } from './publicWebPage.js';
-import { htmlText } from './vbplResearch.js';
-import { parseLegalArticles, getProvisionLocator } from './legalTextParser.js';
+import { readWebArticles, parseWebLawPage } from './webLawParser.js';
+export { readWebArticles, parseWebLawPage } from './webLawParser.js';
+import { getProvisionLocator } from './legalTextParser.js';
 import { normalizeLegalSearchText } from './legalTextSearch.js';
-import { hasReadableLawSource, isPublicWebUrl } from '../../../shared/legalSourcePolicy.mjs';
+import { hasReadableLawSource, hasVerifiedSource, isOfficialLawUrl } from '../../../shared/legalSourcePolicy.mjs';
 import { permittedLegalSource } from './legalUsagePolicy.js';
 
-export const WEB_REFERENCE_NOTE = 'Điểm tham khảo từ nguồn web đã đọc được; chưa xác minh đầy đủ hiệu lực, sửa đổi và điều kiện áp dụng.';
-export const webReferenceEnabled = () => process.env.LEGAL_WEB_REFERENCE_SCORING === 'true';
+export const WEB_REFERENCE_NOTE = 'Điểm tham khảo từ nguồn web đã đọc được, chưa xác minh đầy đủ hiệu lực, sửa đổi và điều kiện áp dụng.';
+export const webReferenceEnabled = () => process.env.LEGAL_WEB_REFERENCE_SCORING !== 'false';
 const TTL = 6 * 60 * 60 * 1000;
 const pending = new Map();
 // Chỉ gửi từ khóa pháp luật và số điều/số hiệu công khai; không gửi tên người, địa chỉ hoặc lời khai lên bộ tìm kiếm.
 const TOPICS = ['quyền sử dụng đất', 'đất đai', 'giấy chứng nhận', 'chia đất', 'tặng cho', 'chuyển nhượng', 'bồi thường', 'thiệt hại', 'thừa kế', 'hợp đồng', 'giao dịch', 'nghĩa vụ', 'chứng cứ', 'chứng minh', 'kháng cáo', 'phúc thẩm', 'tố tụng dân sự'];
-
-export function readWebArticles(text) {
-  const articles = parseLegalArticles(text.replace(/\[\s*sửa\s*\]/giu, ''));
-  const groups = new Map();
-  for (const article of articles) {
-    const body = article.text.slice(article.text.indexOf('\n') + 1);
-    // Mục lục có số điều nhưng không có quy định: không được đưa vào nguồn chấm.
-    if (article.text.indexOf('\n') < 0 || (body.match(/\p{L}+/gu) ?? []).length < 8) continue;
-    const group = groups.get(article.article) ?? new Map();
-    group.set(article.text.replace(/\s+/gu, ' ').trim(), article);
-    groups.set(article.article, group);
-  }
-  // Có hai nội dung khác nhau cùng số điều thì chưa chọn được bản chuẩn trên trang.
-  return [...groups.values()].filter(group => group.size === 1).map(group => [...group.values()][0]);
-}
 
 export function legalWebQuery({ courtCase = {}, records = [], question = '', eventDate }) {
   const latest = [question, ...records.filter(r => r.sender_type === 'user').slice(-3).map(r => r.content)].join(' ');
@@ -41,32 +27,13 @@ export function legalWebQuery({ courtCase = {}, records = [], question = '', eve
   const articles = [...new Set(latest.match(/điều\s+\d{1,4}[a-z]?/giu) ?? [])].slice(0, 3);
   const year = /^\d{4}-\d{2}-\d{2}$/u.test(eventDate ?? '') ? eventDate.slice(0, 4) : null;
   return topics.length || numbers.length ? { topics, numbers, articles,
-    query: ['Pháp luật Việt Nam về tranh chấp đất đai.', year ? `Mốc tham khảo bài tập: ${year}, chưa xác định đầy đủ các thời điểm áp dụng.` : '', 'Tìm nguyên văn văn bản và điều khoản liên quan:', ...numbers, ...articles, ...topics].join(' ') } : null;
-}
-
-export function parseWebLawPage(page, now = new Date()) {
-  if (!isPublicWebUrl(page.url)) return null;
-  if (!permittedLegalSource(page.url)) return null;
-  const text = htmlText(page.content);
-  if (/Sorry, you have been blocked|Access denied|Just a moment/iu.test(text)) return null;
-  // Chỉ nhận trang chứa dấu hiệu văn bản Việt Nam và số hiệu; không lấy bài tổng hợp chỉ nhắc điều luật.
-  if (!/CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM/iu.test(text)) return null;
-  const number = text.match(/Số\s*(?:ký hiệu|hiệu)?\s*[:：]\s*(\d{1,4}\/(?:\d{4}\/)?[A-ZĐ][A-ZĐ0-9-]{1,30})/iu)?.[1]?.toUpperCase();
-  if (!number) return null;
-  const title = htmlText(page.content.match(/<title\b[^>]*>([\s\S]*?)<\/title>/iu)?.[1]
-    ?? page.content.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/iu)?.[1] ?? '').slice(0, 500);
-  if (!title || !readWebArticles(text).length) return null;
-  return { source_url: page.url, law_number: number, title, source_text: text,
-    document_type: title.match(/Bộ luật|Luật|Nghị định|Nghị quyết|Thông tư/iu)?.[0] ?? 'Văn bản pháp luật',
-    source_sha256: createHash('sha256').update(page.content).digest('hex'), checked_at: now.toISOString(), parser_version: 1,
-    source_verification: 'web_read', law_country: 'VN', research_scope: 'land_dispute',
-    version: `Nội dung trang đọc ngày ${now.toISOString().slice(0, 10)}; chưa xác minh hiệu lực` };
+    query: ['Pháp luật Việt Nam về tranh chấp đất đai. Tìm nhiều nguồn, không giới hạn website. Ưu tiên văn bản gốc từ Chính phủ, Công báo, Quốc hội hoặc cơ quan ban hành. Đối chiếu số hiệu, nguyên văn, hiệu lực, sửa đổi, thay thế và chuyển tiếp.', year ? `Mốc tham khảo bài tập: ${year}, cần kiểm tra phiên bản phù hợp thời điểm này.` : '', 'Tìm nguyên văn văn bản và điều khoản liên quan:', ...numbers, ...articles, ...topics].join(' ') } : null;
 }
 
 export function webReferenceCitations(snapshots, search, now = new Date()) {
   if (!search) return [];
   let length = 0;
-  const ranked = snapshots.filter(s => permittedLegalSource(s.source_url) && hasReadableLawSource(s) && s.parser_version === 1 && now - new Date(s.checked_at) <= TTL
+  const ranked = snapshots.filter(s => permittedLegalSource(s.source_url) && hasReadableLawSource(s) && (hasVerifiedSource(s) ? s.parser_version === 2 : s.parser_version === 1) && now - new Date(s.checked_at) >= 0 && now - new Date(s.checked_at) <= TTL
     && (!search.numbers.length || search.numbers.includes(s.law_number)))
     .flatMap(snapshot => readWebArticles(snapshot.source_text).map(article => {
       const text = normalizeLegalSearchText(article.text);
@@ -79,16 +46,27 @@ export function webReferenceCitations(snapshots, search, now = new Date()) {
     const key = `${snapshot.law_number}:${article.article}:${snapshot.source_sha256}`;
     if (seen.has(key) || seen.size >= 5 || length + article.text.length > 16000) return false;
     seen.add(key); length += article.text.length; return true;
-  }).map(({ snapshot: s, article }) => ({
+  }).map(({ snapshot: s, article }) => {
+    const normalize = value => value.normalize('NFC').replace(/\s+/gu, ' ').trim();
+    const contentHash = createHash('sha256').update(normalize(article.text)).digest('hex');
+    // Bản đăng lại được đối chiếu theo từng điều với bản chính thức đã tải, không tin nhãn của website.
+    const evidence = snapshots.filter(other => hasVerifiedSource(other) && isOfficialLawUrl(other.source_url)
+      && other.law_number === s.law_number && now - new Date(other.checked_at) >= 0 && now - new Date(other.checked_at) <= TTL
+      && readWebArticles(other.source_text).some(a => a.article === article.article && normalize(a.text) === normalize(article.text)))
+      .map(other => ({ source_url: other.source_url, source_sha256: other.source_sha256, checked_at: other.checked_at,
+        law_number: s.law_number, article: article.article, content_sha256: contentHash }));
+    const verified = hasVerifiedSource(s) || evidence.length > 0;
+    return {
     id: `WEB-${createHash('sha256').update(`${s.source_sha256}:${article.article}`).digest('hex').slice(0, 24)}`,
     law_number: s.law_number, title: s.title, document_type: s.document_type, article: article.article,
     paragraph: null, point: null, locator: getProvisionLocator(article), text: article.text, context_text: article.text,
-    source_url: s.source_url, source_verification: 'web_read', source_sha256: s.source_sha256,
+    source_url: s.source_url, source_verification: verified ? 'verified' : 'web_read', source_sha256: s.source_sha256,
+    content_sha256: contentHash, verification_evidence: evidence,
     law_country: 'VN', research_scope: 'land_dispute',
     checked_at: s.checked_at, version: s.version, retrieval_mode: 'cache',
-    verification_status: 'unverified', application_status: 'unverified', application_date: null,
+    verification_status: verified ? 'verified' : 'unverified', application_status: 'unverified', application_date: null,
     application_reason: WEB_REFERENCE_NOTE, temporal_note: WEB_REFERENCE_NOTE, assessment_mode: 'web_reference',
-  }));
+  }; });
 }
 
 const repository = {
@@ -101,30 +79,42 @@ export async function researchWebLaw(input, dependencies = {}) {
   if (!search) return { citations: [], warnings: ['Chưa xác định được chủ đề luật cần tìm.'] };
   const cache = dependencies.cache ?? repository;
   const now = dependencies.now ?? new Date();
-  const snapshots = await cache.find(search);
+  // Cache hỏng vẫn tìm trực tiếp. Tái dùng nguồn trong TTL nhưng giữ nguyên mức xác minh.
+  let snapshots = [];
+  try { snapshots = await cache.find(search); } catch { /* Tiếp tục với nguồn công khai. */ }
   let citations = webReferenceCitations(snapshots, search, now);
-  if (citations.length || process.env.LEGAL_ONLINE_LOOKUP === 'false') return { citations, warnings: citations.length ? [WEB_REFERENCE_NOTE] : ['Tra cứu web đang tắt hoặc bản lưu chưa đủ nội dung.'] };
+  const covered = citations.length
+    && search.numbers.every(n => citations.some(c => c.law_number === n))
+    && search.articles.every(a => citations.some(c => c.article === a.match(/\d+[a-z]?/iu)?.[0]));
+  if (covered || input.online === false || process.env.LEGAL_ONLINE_LOOKUP === 'false') return { citations, warnings: citations.length ? [WEB_REFERENCE_NOTE] : ['Tra cứu web đang tắt hoặc bản lưu chưa đủ nội dung.'] };
   // Chỉ gộp việc tải nguồn công khai; không chia sẻ nội dung phiên giữa người học.
   const key = search.query;
   if (!pending.has(key)) pending.set(key, (async () => {
     const persona = await (dependencies.persona ?? (() => AiPersonal.findOne({ role_name: 'evaluator' }).lean()))();
     const urls = await (dependencies.discover ?? searchLegalWeb)({ model: persona?.model_id, query: search.query, usageContext: input.usageContext });
-    const pages = await Promise.allSettled(urls.filter(url => permittedLegalSource(url)).slice(0, 4).map(url => (dependencies.fetchPage ?? fetchPublicLawPage)(url)));
-    const found = [];
-    for (const page of pages) {
-      if (page.status !== 'fulfilled') continue;
+    const selected = urls.filter(url => permittedLegalSource(url)).slice(0, 4);
+    const pages = await Promise.allSettled(selected.map(url => (dependencies.fetchPage ?? fetchPublicLawPage)(url)));
+    const found = [], diagnostics = [];
+    for (const [index, page] of pages.entries()) {
+      if (page.status !== 'fulfilled') {
+        diagnostics.push({ url: selected[index], reason: 'fetch_failed', http_status: page.reason?.http_status ?? null });
+        continue;
+      }
       const snapshot = parseWebLawPage(page.value, now);
+      diagnostics.push({ url: selected[index], final_url: page.value.url, reason: snapshot ? 'document_content' : 'identity_or_content_missing' });
       if (!snapshot?.source_text) continue;
-      await cache.save(snapshot); found.push(snapshot);
+      try { await cache.save(snapshot); } catch { /* Lỗi lưu cache không làm mất nguồn vừa đọc. */ }
+      found.push(snapshot);
     }
-    return found;
+    return { found, diagnostics };
   })());
   try {
-    const loaded = await pending.get(key);
-    citations = webReferenceCitations(loaded, search, now).map(c => ({ ...c, retrieval_mode: 'live' }));
-    return { citations, warnings: citations.length ? [WEB_REFERENCE_NOTE] : ['Đã tìm web nhưng chưa đọc được nguyên văn điều khoản Việt Nam phù hợp; chưa chấm phần luật.'] };
+    const { found: loaded, diagnostics } = await pending.get(key);
+    const liveHashes = new Set(loaded.map(s => s.source_sha256));
+    citations = webReferenceCitations([...loaded, ...snapshots], search, now).map(c => ({ ...c, retrieval_mode: liveHashes.has(c.source_sha256) ? 'live' : 'cache' }));
+    return { citations, diagnostics, warnings: citations.length ? [WEB_REFERENCE_NOTE] : ['Đã tìm web nhưng chưa đọc được nguyên văn điều khoản Việt Nam phù hợp, chưa chấm phần luật.'] };
   } catch (error) {
     console.warn('WEB_LAW_LOOKUP_FAILED', { code: error.code ?? error.name });
-    return { citations: [], warnings: ['Công cụ tìm kiếm hoặc nguồn luật chưa truy cập được; phần luật chưa được chấm.'] };
+    return { citations, warnings: ['Công cụ tìm kiếm hoặc nguồn luật chưa truy cập được, giữ các nguồn đã đọc trong bản lưu.'] };
   } finally { pending.delete(key); }
 }

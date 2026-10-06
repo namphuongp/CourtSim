@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { caseKnowledge } from './caseKnowledge.js';
 import { evidenceInventory } from './caseEvidence.js';
+import { isSubstantiveRecord } from './dialogueInput.js';
 
 export const normalizeHearingText = value => (value ?? '').normalize('NFC').toLocaleLowerCase('vi').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
 const stableId = text => createHash('sha256').update(text).digest('hex').slice(0, 16);
@@ -58,21 +59,32 @@ export function hearingState(session, courtCase, records) {
   const entries = new Map(catalog.map(({ id, label }) => [id, { id, label, status: 'unresolved', rounds_without_new_evidence: 0, visits: 0, evidence_ids: [], previous_questions: [] }]));
   let current = catalog[0].id;
   for (const record of records) {
-    const topic = catalog.find(t => t.id === record.issue) ?? catalog.find(t => t.pattern.test(record.content ?? ''));
+    const ids = referencedIds(record, inventory);
+    const topic = catalog.find(t => t.id === record.issue)
+      ?? catalog.find(t => t.id === current && t.pattern.test(record.content ?? ''))
+      ?? catalog.find(t => t.pattern.test(record.content ?? ''));
+    if (record.sender_type === 'ai_judge' && record.purpose === 'transition' && topic && topic.id !== current
+      && entries.get(current).rounds_without_new_evidence >= 3) {
+      entries.get(current).status = 'deferred';
+    }
+    // Tranh điểm tạm gác chỉ mở lại khi có nguồn mới, không coi tạm gác là đã giải quyết.
+    if (topic && entries.get(topic.id).status === 'deferred') {
+      if (!ids.some(id => !entries.get(topic.id).evidence_ids.includes(id))) continue;
+      entries.get(topic.id).status = 'unresolved';
+    }
     if (topic) current = topic.id;
     const item = entries.get(current);
     item.visits++;
-    const ids = referencedIds(record, inventory);
     const fresh = ids.filter(id => !item.evidence_ids.includes(id));
     item.evidence_ids = [...new Set([...item.evidence_ids, ...ids])];
     if (fresh.length) item.rounds_without_new_evidence = 0;
-    else if (record.sender_type === 'user') item.rounds_without_new_evidence++;
+    else if (isSubstantiveRecord(record)) item.rounds_without_new_evidence++;
     if (record.sender_type === 'ai_judge') item.previous_questions.push(...((record.content ?? '').match(/[^.!?\n]*\?/gu) ?? []));
   }
   const issues = [...entries.values()];
   const active = entries.get(current);
   const exhausted = active.rounds_without_new_evidence >= 3;
-  const next = exhausted ? issues.filter(i => i.id !== current && i.rounds_without_new_evidence < 3).sort((a, b) => a.visits - b.visits)[0] ?? null : null;
+  const next = exhausted ? issues.filter(i => i.id !== current && i.status !== 'deferred' && i.rounds_without_new_evidence < 3).sort((a, b) => a.visits - b.visits)[0] ?? null : null;
   const questions = [];
   for (const [index, record] of records.entries()) {
     if (record.sender_type !== 'ai_judge') continue;
@@ -88,6 +100,8 @@ export function hearingState(session, courtCase, records) {
       reply_record_id: reply ? String(reply._id ?? records.indexOf(reply)) : null });
   }
   const lastQuestion = questions.at(-1) ?? null;
+  const lastJudge = records.findLast(r => r.sender_type === 'ai_judge');
+  const movedOn = ['transition', 'close'].includes(lastJudge?.purpose);
   return { version: 1, participants: participantSides(session),
     role_mismatch: roleMismatch(session, records.findLast(r => r.sender_type === 'user')?.content ?? ''),
     case_facts: knowledge.recorded_events, party_statements: knowledge.party_statements,
@@ -96,9 +110,9 @@ export function hearingState(session, courtCase, records) {
     evidence_referenced: available.filter(e => e.referenced).map(e => e.id), absent_evidence: absent,
     evidence_search_status: 'inventory_only_not_full_record_certification',
     issues, current_issue: active, next_issue: next, stalled: exhausted,
-    resolved_issues: [], pending_issues: issues.map(i => i.id),
+    resolved_issues: [], deferred_issues: issues.filter(i => i.status === 'deferred').map(i => i.id), pending_issues: issues.map(i => i.id),
     previous_questions: questions, pending_question: lastQuestion?.status === 'awaiting_reply' ? lastQuestion : null,
-    judge_intervention: lastQuestion?.status === 'possibly_evaded' ? 'request_direct_answer' : exhausted ? 'move_issue' : null,
+    judge_intervention: exhausted ? 'move_issue' : !movedOn && lastQuestion?.status === 'possibly_evaded' ? 'request_direct_answer' : null,
     last_question: lastQuestion,
   };
 }

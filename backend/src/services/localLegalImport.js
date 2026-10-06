@@ -6,7 +6,7 @@ import { parseLegalArticles, createProvisionUnits, getProvisionLocator, getProvi
 import { getLegalSearchTerms } from './legalTextSearch.js';
 
 export const legalArchiveRoot = fileURLToPath(new URL('../../storage/legal-sources/', import.meta.url));
-export const LOCAL_LAW_NOTE = 'Nội dung đọc từ tài liệu do người dùng cung cấp cho mô phỏng; cần đối chiếu thời điểm, sửa đổi và chuyển tiếp trước khi kết luận luật áp dụng.';
+export const LOCAL_LAW_NOTE = 'Nội dung đọc từ tài liệu do người dùng cung cấp cho mô phỏng, cần đối chiếu thời điểm, sửa đổi và chuyển tiếp trước khi kết luận luật áp dụng.';
 
 export function localLawArticles(text, pages = []) {
   // Không gộp biểu mẫu/phụ lục đánh số lại thành điều của văn bản chính.
@@ -67,7 +67,7 @@ export async function prepareLocalLaw(review, root, { archive = false, archiveRo
     source_url: `/api/v1/legal-sources/${fingerprint}/files/0`, source_sha256: hash(text), checked_at: new Date(),
     version: `Bản tài liệu người dùng cung cấp — ${review.law_number}`, source_files: files, source_priority: review.priority ?? 0,
     version_rules: [], relations: [], import_notes: [LOCAL_LAW_NOTE,
-      ...(articles.length !== parseLegalArticles(text).length ? ['Chỉ lập chỉ mục dãy điều chính; giữ nguyên phần sửa đổi lồng trong điều và phụ lục ở tệp gốc.'] : [])] };
+      ...(articles.length !== parseLegalArticles(text).length ? ['Chỉ lập chỉ mục dãy điều chính, giữ nguyên phần sửa đổi lồng trong điều và phụ lục ở tệp gốc.'] : [])] };
   const provisions = articles.flatMap(a => createProvisionUnits(a).map(u => ({ ...u, chapter: a.chapter, section: a.section,
     locator_key: getProvisionLocatorKey(u), locator: getProvisionLocator(u), page_from: a.pageFrom, page_to: a.pageTo,
     page_source_file: a.pageSourceFile, search_tokens: getLegalSearchTerms(u.text, 2000) })));

@@ -58,7 +58,9 @@ test('hội thoại nhận nguồn cục bộ và web dự phòng, không tự n
   const local = { source_verification: 'local_read' };
   const base = { citations: [local], warnings: [], legal_assessment_available: false };
   process.env.LEGAL_WEB_REFERENCE_SCORING = 'true';
-  assert.equal((await researchLegalBasis({}, { corpus: async () => base, web: async () => { throw Error('must not search'); } })).citations[0], local);
+  let searched = false;
+  assert.equal((await researchLegalBasis({}, { corpus: async () => base, web: async () => { searched = true; return { citations: [], warnings: [] }; } })).citations[0], local);
+  assert.equal(searched, true);
   const result = await researchLegalBasis({}, { corpus: async () => ({ ...base, citations: [] }), web: async () => ({ citations: [{ source_verification: 'web_read' }], warnings: [] }) });
   assert.equal(result.citations[0].source_verification, 'web_read'); assert.equal(result.legal_assessment_available, false);
   delete process.env.LEGAL_WEB_REFERENCE_SCORING;

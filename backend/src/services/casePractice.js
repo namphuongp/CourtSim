@@ -1,3 +1,4 @@
+import { caseRoleLabel } from '../../../shared/casePresentation.mjs';
 import { AppError } from '../utils/AppError.js';
 
 export function validatePracticeContext(value) {
@@ -18,11 +19,11 @@ export function validatePracticeContext(value) {
 
 export function practiceInstructions(courtCase) {
   if (courtCase.practice_context?.source_kind !== 'transcript') return '';
-  return 'Bối cảnh là bài tập phúc thẩm từ bản chép lời chưa đầy đủ, không phải bản án. Chủ tọa làm rõ nội dung kháng cáo và tranh điểm, không tuyên kết quả phúc thẩm. Người học và bên đối lập chỉ bảo vệ lập trường phía được gán, không nhập vai người vắng mặt hoặc tự sinh lời nhân chứng. Bên đối lập không cần bác mọi câu: nếu người học thừa nhận điểm yếu của chính phía họ, dùng sự thừa nhận đó để làm rõ hệ quả cho yêu cầu của phía mình; không đảo sang bảo vệ phía người học. Nội dung provided có source_kind=transcript_statement/transcript_readout chỉ là lời nói/phần đọc lại được biên tập; không phải chứng cứ gốc hay sự thật đã xác minh. Giữ người phát biểu, nguồn biết trực tiếp/gián tiếp, proof_scope và verification_status; số liệu conflicting không được nêu như số chắc chắn. Nhiều lời kể hỗ trợ nhau vẫn chưa xác nhận sự kiện thực tế đã xảy ra; mọi suy luận phải nói rõ điều kiện và nguồn lời kể. Không coi phần sơ thẩm được đọc lại là đáp án, không chấm đoán phán quyết. hearing_date và judgment_number chưa biết thì không tự điền; event_date chỉ là mốc tham chiếu sơ thẩm.';
+  return 'Bối cảnh là bài tập phúc thẩm từ bản chép lời chưa đầy đủ, không phải bản án. Chủ tọa làm rõ nội dung kháng cáo và tranh điểm, không tuyên kết quả phúc thẩm. Người học và bên đối lập chỉ bảo vệ lập trường phía được gán, không nhập vai người vắng mặt hoặc tự sinh lời nhân chứng. Bên đối lập không cần bác mọi câu: nếu người học thừa nhận điểm yếu của chính phía họ, dùng sự thừa nhận đó để làm rõ hệ quả cho yêu cầu của phía mình, không đảo sang bảo vệ phía người học. Áp dụng giả định chứng cứ gốc cho cả transcript_statement/transcript_readout; lời khai vẫn phải được phân tích theo người phát biểu và phạm vi chứng minh. Giữ người phát biểu, nguồn biết trực tiếp/gián tiếp, proof_scope và verification_status, số liệu conflicting không được nêu như số chắc chắn. Nhiều lời kể hỗ trợ nhau vẫn chưa xác nhận sự kiện thực tế đã xảy ra, mọi suy luận phải nói rõ điều kiện và nguồn lời kể. Không coi phần sơ thẩm được đọc lại là đáp án, không chấm đoán phán quyết. hearing_date và judgment_number chưa biết thì không tự điền, event_date chỉ là mốc tham chiếu sơ thẩm.';
 }
 
 export function openingStatement(courtCase, role) {
   const context = courtCase.practice_context;
   if (!context) return null;
-  return `Bắt đầu luyện hỏi đáp phúc thẩm từ bản ghi phiên tòa. Bạn ${context.role_labels[role]}. Mời nêu nội dung kháng cáo phía mình bảo vệ và chọn một vấn đề cần làm rõ. Ngày phúc thẩm chưa xác định; phiên kết thúc bằng đánh giá lập luận, không tuyên án.`;
+  return `Bạn ${caseRoleLabel(role, courtCase)}. Mời nêu nội dung kháng cáo phía mình bảo vệ và chọn một vấn đề cần làm rõ.`;
 }

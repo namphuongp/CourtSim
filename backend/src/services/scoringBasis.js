@@ -1,0 +1,39 @@
+import { hasVerifiedSource } from '../../../shared/legalSourcePolicy.mjs';
+import { AppError } from '../utils/AppError.js';
+import { validateCitationIds } from './legalRetrievalService.js';
+
+export const contentCriteria = ['2.1', '2.2'];
+export const applicationCriteria = ['2.3', '2.4', '4.2'];
+
+export function legalScoringBasis(context, records = []) {
+  const verified = (context.citations ?? []).filter(c => hasVerifiedSource(c) && c.verification_status === 'verified' && c.article && c.text?.trim());
+  const applicable = verified.filter(c => c.application_status === 'verified');
+  // Thiếu đúng điều người học viện dẫn không được biến thành lỗi hiểu luật của người học.
+  const covered = sources => records.filter(r => r.sender_type === 'user').every(r => validateCitationIds({
+    content: r.content ?? '', citationIds: sources.map(c => c.id), availableCitations: sources,
+  }).valid);
+  return { content: verified.length > 0 && covered(verified), application: Boolean(context.legal_assessment_available && applicable.length && covered(applicable)),
+    verified, applicable };
+}
+
+// Điểm luật phải gắn nguồn ở từng tiêu chí, không mượn một nguồn chung để chấm mọi mục.
+export function validateScoringBasis(entries, basis) {
+  for (const entry of entries) {
+    const application = applicationCriteria.includes(entry.id);
+    if (!application && !contentCriteria.includes(entry.id)) continue;
+    if (entry.score == null) continue;
+    const sources = application ? basis.applicable : basis.verified;
+    if (!Array.isArray(entry.citation_ids) || !entry.citation_ids.length
+      || entry.citation_ids.some(id => !sources.some(c => c.id === id))) {
+      throw new AppError(`Tiêu chí ${entry.id} cần dẫn nguồn đã xác minh phù hợp với phần nhận xét.`, 502, 'AI_INVALID_EVALUATION');
+    }
+  }
+}
+
+export const SCORING_CALIBRATION = [
+  'Chấm mức độ thể hiện thực tế theo từng tiêu chí, không mặc định điểm tối đa khi người học chỉ nêu đúng từ khóa hoặc thừa nhận thiếu dữ liệu.',
+  'Mốc tham chiếu: 0 khi không thể hiện hoặc sai hoàn toàn, khoảng 25% khi chỉ nêu ý, 50% khi có giải thích nhưng thiếu liên kết quan trọng, 75% khi lập luận có căn cứ nhưng còn thiếu sót, 100% khi đáp ứng đầy đủ tiêu chí trong phạm vi hồ sơ. Có thể dùng điểm giữa các mốc, không ép phân phối điểm.',
+  'Điểm tối đa cần reason giải thích vì sao đã đáp ứng đầy đủ. Nếu improvement chỉ ra thiếu sót ngay trong tiêu chí đang chấm thì không cho điểm tối đa. Bài tập nâng cao cho lần sau không tự động làm mất điểm.',
+  'Chấm tính nhất quán trên toàn phiên. Một câu đúng cuối phiên không xóa mâu thuẫn chưa được người học điều chỉnh. Không thưởng cho độ dài, số lần lặp hoặc thắng kiện.',
+  'Tiêu chí 2.1 và 2.2 chỉ đánh giá lựa chọn và hiểu nội dung nguồn đã đối chiếu, không xác nhận hiệu lực áp dụng. Các mục 2.3, 2.4 và 4.2 cần nguồn đã xác minh điều kiện áp dụng. Mỗi tiêu chí luật được chấm phải có citation_ids riêng từ nguồn phù hợp.',
+].join('\n');

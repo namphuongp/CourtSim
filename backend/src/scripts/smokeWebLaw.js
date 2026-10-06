@@ -23,15 +23,15 @@ try {
     discover: async request => { const urls = await searchLegalWeb(request, { onDiagnostics: value => console.log(JSON.stringify(value)) }); console.log(JSON.stringify({ discovered: urls })); return urls; },
     fetchPage: async url => {
       try { const page = await fetchPublicLawPage(url); await writeFile(new URL(`web-law-page-${++sourceIndex}.html`, directory), page.content); console.log(JSON.stringify({ loaded: page.url, bytes: page.content.length })); return page; }
-      catch (error) { console.log(JSON.stringify({ failed: url, code: error.code ?? error.message })); throw error; }
+      catch (error) { console.log(JSON.stringify({ failed: url, code: error.code ?? error.message, http_status: error.http_status })); throw error; }
     },
   }) } : {};
   const legal = await researchLegalBasis({ courtCase, eventDate: courtCase.reference_date, records }, dependencies);
   const report = { mode: legal.legal_assessment_mode, sources: legal.citations, warnings: legal.warnings };
   if (!legal.citations.length) { process.exitCode = 1; }
-  else report.evaluation = await evaluateSession({ session: { user_court_role: 'plaintiff_lawyer', case_event_date: courtCase.reference_date }, courtCase, records }, { research: async () => legal });
+  else if (!process.argv.includes('--sources-only')) report.evaluation = await evaluateSession({ session: { user_court_role: 'plaintiff_lawyer', case_event_date: courtCase.reference_date }, courtCase, records }, { research: async () => legal });
   await writeFile(new URL('web-law-smoke.json', directory), JSON.stringify(report, null, 2));
-  console.log(JSON.stringify({ mode: report.mode, sources: legal.citations.map(c => ({ law: c.law_number, article: c.article, url: c.source_url })),
+  console.log(JSON.stringify({ mode: report.mode, sources: legal.citations.map(c => ({ law: c.law_number, article: c.article, url: c.source_url, source_verification: c.source_verification, application_status: c.application_status })),
     score: report.evaluation?.earned_score, assessed: report.evaluation?.assessed_max, note: report.evaluation?.assessment_note, warnings: legal.citations.length ? undefined : legal.warnings }));
 } catch (error) { console.error(error.code ?? error.name); process.exitCode = 1; }
 finally { await disconnectDatabase(); }

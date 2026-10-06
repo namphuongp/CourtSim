@@ -30,7 +30,7 @@ export function resolveCorpusResults({ documents, provisions, question = '', cou
       && (byId.get(String(other.document_id)).source_priority ?? 0) > (d.source_priority ?? 0))) continue;
     const relevant = plans.filter(t => t.law_numbers.includes(d.law_number));
     const assessments = relevant.map(t => ({ plan: t, assessment: d.document_kind === 'consolidated'
-      ? { verified: false, reason: 'Văn bản hợp nhất không có hiệu lực độc lập; cần đối chiếu văn bản gốc và sửa đổi.' } : assessVersion(d, p, t) }));
+      ? { verified: false, reason: 'Văn bản hợp nhất không có hiệu lực độc lập, cần đối chiếu văn bản gốc và sửa đổi.' } : assessVersion(d, p, t) }));
     const conflicts = units.some(other => other.article === p.article && other.paragraph === p.paragraph && other.point === p.point
       && byId.get(String(other.document_id))?.law_number === d.law_number && other.text !== p.text
       && assessments.some(a => a.assessment.verified && assessVersion(byId.get(String(other.document_id)), other, a.plan).verified));
@@ -43,7 +43,7 @@ export function resolveCorpusResults({ documents, provisions, question = '', cou
       permission_status: 'allowed', version: d.version, source_fingerprint: d.fingerprint, retrieval_mode: 'cache',
       verification_status: d.source_verification === 'verified' ? 'verified' : 'unverified', application_status: verified ? 'verified' : 'unverified',
       application_date: verified?.plan.date ?? null, event_kind: verified?.plan.kind ?? null,
-      application_reason: conflicts ? 'Có phiên bản xung đột cùng thời kỳ; cần đối chiếu.' : verified?.assessment.reason
+      application_reason: conflicts ? 'Có phiên bản xung đột cùng thời kỳ, cần đối chiếu.' : verified?.assessment.reason
         ?? assessments[0]?.assessment.reason ?? 'Cần làm rõ mốc sự kiện, cấp giấy/chuyển quyền, khởi kiện hoặc xét xử liên quan.',
       page_from: p.page_from, page_to: p.page_to });
     size += p.text.length; seen.add(key);
@@ -72,5 +72,5 @@ export async function researchCorpusForSimulation(input) {
     && p.law_numbers.length && p.law_numbers.every(n => citations.some(c => c.application_status === 'verified' && c.law_number === n && c.event_kind === p.kind && c.application_date === p.date)) ? 'verified' : 'unverified' }));
   return { citations, candidates: [], issues,
     legal_assessment_available: issues.length > 0 && issues.every(i => i.verification_status === 'verified'),
-    warnings: issues.some(i => i.verification_status !== 'verified') ? ['Chưa đủ nguồn đã xác minh về nội dung, thời điểm và mức liên quan cho mọi vấn đề; tiêu chí luật chưa đủ căn cứ sẽ chưa được đánh giá.'] : [] };
+    warnings: issues.some(i => i.verification_status !== 'verified') ? ['Chưa đủ nguồn đã xác minh về nội dung, thời điểm và mức liên quan cho mọi vấn đề, tiêu chí luật chưa đủ căn cứ sẽ chưa được đánh giá.'] : [] };
 }

@@ -9,9 +9,25 @@ export function isVbplUrl(value) {
 
 export function hasVerifiedSource(value) {
   return value?.permission_status !== 'pending_permission' && value?.status !== 'pending_permission'
-    && isVbplUrl(value?.source_url) && value?.source_verification === 'verified'
+    && (isOfficialLawUrl(value?.source_url) || hasCorroboratingSource(value)) && value?.source_verification === 'verified'
     && Number.isFinite(Date.parse(value.checked_at)) && /^[a-f0-9]{64}$/.test(value.source_sha256 ?? '')
     && Boolean(value.version);
+}
+
+// Nguồn chính thức không giới hạn ở một cổng. Tên miền chỉ xác định nơi xuất bản, parser vẫn phải đối chiếu văn bản.
+export function isOfficialLawUrl(value) {
+  if (!isPublicWebUrl(value)) return false;
+  const url = new URL(value);
+  return url.protocol === 'https:' && (isVbplUrl(value) || url.hostname.endsWith('.gov.vn')
+    || ['chinhphu.vn', 'quochoi.vn'].some(host => url.hostname === host || url.hostname.endsWith(`.${host}`)));
+}
+
+function hasCorroboratingSource(value) {
+  return isPublicWebUrl(value?.source_url) && Boolean(value.law_number && value.article)
+    && Array.isArray(value.verification_evidence) && value.verification_evidence.some(e => e && isOfficialLawUrl(e.source_url)
+      && e.law_number === value.law_number && e.article === value.article
+      && e.content_sha256 === value.content_sha256 && /^[a-f0-9]{64}$/u.test(e.content_sha256 ?? '')
+      && /^[a-f0-9]{64}$/u.test(e.source_sha256 ?? '') && Number.isFinite(Date.parse(e.checked_at)));
 }
 
 export const legalReferenceLabel = value => `[Căn cứ: ${value.law_number}, ${value.locator}]`;

@@ -4,7 +4,9 @@ const INTERNAL = /bài tập ưu tiên lập luận|(?:kho|cơ sở) dữ liệu
 export function learnerText(value, fallback = '') {
   if (typeof value !== 'string') return fallback;
   const result = value.split(/(?<=[.!?])\s+|\n+/u).filter((part) => !INTERNAL.test(part) && !TECHNICAL_TEXT.test(part.replace(/\[(?:CC|PL):[^\]]+\]|\b(?:EV|LAW)-[\w-]+|mentioned_only/gu, ''))).join('\n').trim();
-  return result.replace(/Thẩm phán(?: AI)?/gu, 'Chủ tọa').replace(/Bên đối lập AI/gu, 'Bên đối lập').replace(/\brubric\b/giu, 'bộ tiêu chí') || fallback;
+  // Đổi dấu câu trong lời dẫn, giữ nguyên trích dẫn và địa chỉ nguồn.
+  return result.replace(/Thẩm phán(?: AI)?/gu, 'Chủ tọa').replace(/Bên đối lập AI/gu, 'Bên đối lập').replace(/\brubric\b/giu, 'bộ tiêu chí')
+    .replace(/"[^"\n]*"|“[^”]*”|https?:\/\/\S+|&(?:#\d+|\w+);|;/gu, part => part === ';' ? ',' : part) || fallback;
 }
 
 

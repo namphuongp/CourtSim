@@ -54,7 +54,7 @@ export function validateCaseDetails(body) {
       || (item.verification_status !== undefined && !['unverified', 'conflicting'].includes(item.verification_status))
       || (item.content !== undefined && !text(item.content, 10000))
       || (item.availability === 'provided' && !item.content?.trim())
-      || (item.date && !isValidDateOnly(item.date))) throw new AppError('Chứng cứ cần tên, trạng thái và nội dung thực sự được cung cấp; ngày không rõ có thể để trống.');
+      || (item.date && !isValidDateOnly(item.date))) throw new AppError('Chứng cứ cần tên, trạng thái và nội dung thực sự được cung cấp, ngày không rõ có thể để trống.');
   }
   return {
     evidence_absences: absences.map(({ title, source_quote }) => ({ title, source_quote })),

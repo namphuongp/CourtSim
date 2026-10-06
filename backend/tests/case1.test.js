@@ -13,12 +13,12 @@ test('Case1 giữ nguồn, ngày chưa biết và giới hạn thẻ có thể t
   validateCaseDetails(c); validateCaseFacts(c); validateTimeline(c.timeline);
   assert.equal(validatePracticeContext(c.practice_context).hearing_date, null);
   assert.equal(c.practice_context.judgment_number, null);
-  assert.equal(c.evidence_inventory.filter(e => canCiteEvidence(e, c)).length, 10);
+  assert.equal(c.evidence_inventory.filter(e => canCiteEvidence(e, c)).length, c.evidence_inventory.length);
   for (const e of c.evidence_inventory) {
     if (e.availability === 'provided') {
       assert.ok(e.provided_by && e.source_locator && e.proof_scope && e.content);
       assert.deepEqual(validateEvidenceReferences(c, `[CC:${e.id}]`), [e.id]);
-    } else assert.throws(() => validateEvidenceReferences(c, `[CC:${e.id}]`));
+    } else assert.deepEqual(validateEvidenceReferences(c, `[CC:${e.id}]`), [e.id]);
   }
   assert.throws(() => validatePracticeContext({ ...c.practice_context, hearing_date: '2018-09-01' }));
 });
@@ -49,4 +49,20 @@ test('nguồn chưa xác minh không chấm luật và không nâng lời khai t
   assert.deepEqual(legal.citations, []);
   assert.throws(() => validateFactAnchors({ established_facts: ['Anh Nguyên nói việc thỏa thuận là do bố kể lại'], learner_claims: [] }, c, []));
   assert.doesNotThrow(() => validateFactAnchors({ established_facts: [c.case_facts[0].quote], learner_claims: [] }, c, []));
+});
+
+
+test('giả định chứng cứ không sửa nguồn, không cho viện dẫn tài liệu ngoài hồ sơ', async () => {
+  const { EVIDENCE_ASSUMPTION_POLICY, caseIntroduction, practiceText } = await import('../../shared/casePresentation.mjs');
+  const { SOURCE_POLICY } = await import('../src/services/debatePolicy.js');
+  const { hearingProblem } = await import('../src/services/hearingValidation.js');
+  const before = structuredClone(c);
+  assert.ok(SOURCE_POLICY.includes(EVIDENCE_ASSUMPTION_POLICY));
+  assert.ok(!caseRoleLabel('defense_lawyer', c).includes('mô phỏng'));
+  assert.equal(caseIntroduction(c).developments.length, 4);
+  assert.equal(caseIntroduction({ title: 'Vụ án khác', summary: 'Nội dung khác' }).summary, 'Nội dung khác');
+  assert.ok(!practiceText(c.evidence_inventory[0].content).includes('không phải tài liệu gốc'));
+  assert.throws(() => validateEvidenceReferences(c, '[CC:EV-outside-case]'));
+  assert.match(hearingProblem({ content: 'Đề nghị bạn xuất trình bản gốc giấy chứng nhận.' }, 'judge', { hearing: {} }, []), /giả định/);
+  assert.deepEqual(c, before);
 });

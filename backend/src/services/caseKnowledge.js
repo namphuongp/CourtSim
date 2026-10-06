@@ -14,7 +14,7 @@ export function validateCaseFacts(body) {
     || (f.party !== undefined && (typeof f.party !== 'string' || f.party.length > 200))
     || (f.kind === 'party_statement' && !f.party?.trim())
     || (f.kind === 'recorded_event' && CLAIM.test(f.quote)))) {
-    throw new AppError('Phân loại tình tiết cần trích đúng hồ sơ, ghi rõ nguồn và bên trình bày; không xếp lời khai thành sự kiện đã được xác nhận.');
+    throw new AppError('Phân loại tình tiết cần trích đúng hồ sơ, ghi rõ nguồn và bên trình bày, không xếp lời khai thành sự kiện đã được xác nhận.');
   }
   return facts.map(({ kind, quote, source_type, party }) => ({ kind, quote, source_type, party }));
 }
