@@ -169,7 +169,9 @@
 .tour-spotlight { position:fixed; border:3px solid #60a5fa; border-radius:12px; box-shadow:0 0 0 9999px #0f172aa8; pointer-events:none; transition:top 180ms ease,left 180ms ease,width 180ms ease,height 180ms ease; }
 .tour-card { position:fixed; max-height:calc(100dvh - 24px); overflow-y:auto; border:1px solid #b5ccec; border-radius:14px; background:white; color:#183047; padding:16px; box-shadow:0 12px 40px #0f172a40; transition:top 180ms ease,left 180ms ease; }
 .tour-card header { display:flex; justify-content:space-between; align-items:center; }
-.tour-card header button { color:#475569; font-size:13px; padding:4px; }
+.tour-card header .tour-close { width:36px; height:36px; display:grid; place-items:center; flex-shrink:0; padding:0; border:1px solid #b7c9dc; border-radius:10px; background:#fff; color:#24506f; line-height:1; }
+.tour-card header .tour-close:hover { background:#eefbfc; border-color:#20c5cf; color:#087d91; }
+.tour-card header .tour-close svg { display:block; }
 .tour-card .guide-step { margin:12px 0; line-height:1.65; font-size:14px; }
 .tour-card .guide-step h3 { font-size:17px; margin-bottom:8px; }
 .tour-card .guide-dots,.tour-card .guide-actions { margin-top:12px; gap:6px; }

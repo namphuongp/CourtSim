@@ -2,7 +2,9 @@
 .feedback-modal::backdrop { background:#16344b88; backdrop-filter:blur(4px); }
 .feedback-modal-heading { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
 .feedback-modal-heading h2 { font-size:23px; }
-.feedback-modal-heading button { width:32px; height:32px; flex-shrink:0; font-size:24px; border-radius:6px; }
+.feedback-modal-heading .feedback-modal-close { width:42px; height:42px; flex-shrink:0; display:grid; place-items:center; padding:0; border:1px solid #b7c9dc; border-radius:10px; background:#fff; color:#24506f; line-height:1; transition:background .18s ease,border-color .18s ease,color .18s ease,box-shadow .18s ease; }
+.feedback-modal-heading .feedback-modal-close:hover { background:#eefbfc; border-color:#20c5cf; color:#087d91; box-shadow:0 10px 24px #20c5cf24; }
+.feedback-modal-heading .feedback-modal-close svg { display:block; }
 .feedback-modal p { margin:16px 0; line-height:1.65; }
 .feedback-modal label { display:block; font-weight:650; margin:18px 0 8px; }
 .feedback-modal label span { font-weight:400; font-size:13px; color:#526b80; }

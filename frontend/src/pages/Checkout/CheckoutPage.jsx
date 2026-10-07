@@ -1,0 +1,191 @@
+import { useEffect, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { ArrowLeft, ArrowRight, CheckCircle2, CreditCard, Landmark, ShieldCheck, Sparkles } from 'lucide-react';
+import UserHeader from '../../components/UserHeader';
+import api, { getApiError } from '../../services/api';
+import { findPricingPlan } from '../../services/pricingPlans';
+import './checkout.css';
+
+const formatMoney = (amount) => amount ? new Intl.NumberFormat('vi-VN').format(amount) + ' VNĐ' : '0 VNĐ';
+const statusText = {
+  pending: 'Chờ chuyển khoản',
+  processing: 'Đang xác minh',
+  paid: 'Đã thanh toán',
+  expired: 'Đã hết hạn',
+  cancelled: 'Đã hủy',
+};
+
+function remaining(expiresAt, now) {
+  const ms = new Date(expiresAt).getTime() - now;
+  if (!Number.isFinite(ms) || ms <= 0) return '00:00';
+  const total = Math.ceil(ms / 1000);
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+}
+
+export default function CheckoutPage() {
+  const { planId } = useParams();
+  const plan = findPricingPlan(planId);
+  const [order, setOrder] = useState(null);
+  const [qrMissing, setQrMissing] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [error, setError] = useState('');
+  const [now, setNow] = useState(() => Date.now());
+
+  const countdown = order?.expiresAt ? remaining(order.expiresAt, now) : '';
+
+  async function createOrder() {
+    if (!plan || busy || plan.amount === 0) return;
+    setBusy(true);
+    setError('');
+    setQrMissing(false);
+    try {
+      const { data } = await api.post('/payments/create', { type: plan.type });
+      setOrder(data.payment ?? data.data);
+    } catch (err) {
+      setError(getApiError(err, 'Chưa thể tạo yêu cầu thanh toán. Vui lòng thử lại.'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function refreshOrder({ silent = false } = {}) {
+    if (!order || checking) return;
+    if (!silent) setChecking(true);
+    setError('');
+    try {
+      const { data } = await api.get(`/payments/${order.payment_id ?? order.id ?? order.transaction_id}/status`);
+      setOrder(data.payment ?? data.data);
+    } catch (err) {
+      if (!silent) setError(getApiError(err, 'Chưa thể kiểm tra trạng thái thanh toán.'));
+    } finally {
+      if (!silent) setChecking(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!order || ['paid', 'expired', 'cancelled'].includes(order.status)) return undefined;
+    const paymentId = order.payment_id ?? order.id ?? order.transaction_id;
+    const timer = window.setInterval(async () => {
+      try {
+        const { data } = await api.get(`/payments/${paymentId}/status`);
+        setOrder(data.payment ?? data.data);
+      } catch {
+        // Keep the current screen while the next poll retries.
+      }
+    }, 2500);
+    return () => window.clearInterval(timer);
+  }, [order]);
+
+  useEffect(() => {
+    if (!order?.expiresAt || ['paid', 'expired', 'cancelled'].includes(order.status)) return undefined;
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [order?.expiresAt, order?.status]);
+
+  if (!plan) {
+    return <div className="user-shell checkout-shell">
+      <UserHeader />
+      <main className="checkout-page user-content">
+        <section className="checkout-empty">
+          <Landmark size={36} aria-hidden="true" />
+          <h1>Không tìm thấy gói thanh toán</h1>
+          <p>Gói bạn chọn không còn trong bảng giá hiện tại. Hãy quay lại bảng giá để chọn lại.</p>
+          <Link to="/#pricing"><ArrowLeft size={18} aria-hidden="true" /> Về bảng giá</Link>
+        </section>
+      </main>
+    </div>;
+  }
+
+  const isFree = plan.amount === 0;
+  const payPerUse = plan.id === 'pay-per-use';
+
+  return <div className="user-shell checkout-shell">
+    <UserHeader />
+    <main className="checkout-page user-content">
+      <Link className="checkout-back" to="/#pricing"><ArrowLeft size={17} aria-hidden="true" /> Quay lại bảng giá</Link>
+      <section className="checkout-hero" aria-labelledby="checkout-heading">
+        <div>
+          <p className="checkout-eyebrow"><Sparkles size={16} aria-hidden="true" /> Thanh toán CourtSim</p>
+          <h1 id="checkout-heading">{isFree ? 'Kích hoạt trải nghiệm miễn phí' : `Thanh toán gói ${plan.name}`}</h1>
+          <p>{isFree ? 'Freemium mở 2 case đầu tiên mà không cần tạo payment.' : payPerUse ? 'Pay-per-use là mua trước 01 lượt mô phỏng. Khi SePay gửi webhook khớp số tiền và nội dung, hệ thống sẽ tự cộng lượt.' : 'Kiểm tra gói đã chọn trước khi tạo yêu cầu thanh toán chính thức của CourtSim.'}</p>
+        </div>
+        <aside aria-label="Gói đã chọn">
+          <span>{plan.cadence}</span>
+          <strong>{plan.price}</strong>
+          <p>{plan.name}</p>
+        </aside>
+      </section>
+
+      <div className="checkout-grid">
+        <section className="checkout-card checkout-summary" aria-labelledby="summary-heading">
+          <div className="checkout-card-heading">
+            <CreditCard size={22} aria-hidden="true" />
+            <div>
+              <h2 id="summary-heading">Tóm tắt đơn hàng</h2>
+              <p>{payPerUse ? 'Bạn đang mua trước 01 lượt mô phỏng để mở 01 case.' : 'Gói luyện tập bạn đang chuẩn bị kích hoạt.'}</p>
+            </div>
+          </div>
+          <dl className="checkout-facts">
+            <div><dt>Gói</dt><dd>{plan.name}</dd></div>
+            <div><dt>Loại</dt><dd>{plan.cadence}</dd></div>
+            <div><dt>Tạm tính</dt><dd>{formatMoney(plan.amount)}</dd></div>
+            <div><dt>Trạng thái</dt><dd>{order ? statusText[order.status] ?? order.status : isFree ? 'Không cần thanh toán' : 'Chờ tạo thanh toán'}</dd></div>
+          </dl>
+          <div className="checkout-total">
+            <span>Tổng thanh toán</span>
+            <strong>{formatMoney(plan.amount)}</strong>
+          </div>
+        </section>
+
+        <section className="checkout-card checkout-method" aria-labelledby="method-heading">
+          <div className="checkout-card-heading">
+            <ShieldCheck size={22} aria-hidden="true" />
+            <div>
+              <h2 id="method-heading">Phương thức thanh toán</h2>
+              <p>{isFree ? 'Bạn có thể bắt đầu luyện tập ngay.' : 'Mỗi đơn có một mã chuyển khoản riêng để SePay tự đối soát.'}</p>
+            </div>
+          </div>
+          <div className="checkout-method-box">
+            <CheckCircle2 size={21} aria-hidden="true" />
+            <div>
+              <strong>{isFree ? 'Kích hoạt Freemium' : 'Thanh toán chuyển khoản'}</strong>
+              <p>{isFree ? 'Không phát sinh chi phí cho 2 case đầu tiên.' : 'Không sửa nội dung chuyển khoản. Webhook SePay sẽ tự xác minh khi tiền về.'}</p>
+            </div>
+          </div>
+          {isFree ? <Link className="checkout-primary" to="/dashboard/setup">Bắt đầu luyện tập <ArrowRight size={18} aria-hidden="true" /></Link> : <button className="checkout-primary" type="button" disabled={busy || Boolean(order)} onClick={createOrder}>{busy ? 'Đang tạo yêu cầu...' : order ? 'Đã tạo yêu cầu thanh toán' : 'Tạo yêu cầu thanh toán'}<ArrowRight size={18} aria-hidden="true" /></button>}
+          {error && <p className="checkout-note checkout-error" role="alert">{error}</p>}
+          {!isFree && !order && <p className="checkout-note">Sau khi tạo yêu cầu, hệ thống sẽ sinh mã chuyển khoản duy nhất. Backend tự tính giá theo gói, không lấy số tiền từ trình duyệt.</p>}
+          {order && <div className="checkout-order" role="status">
+            <span>Nội dung chuyển khoản</span>
+            <strong>{order.orderCode ?? order.order_code}</strong>
+            <div className="checkout-qr-wrap">
+              {!qrMissing ? <img src={order.payment.qr_image_url} alt={`QR chuyển khoản tới ${order.payment.account_name}`} onError={() => setQrMissing(true)} /> : <div className="checkout-qr-missing">Chưa có ảnh QR trong hệ thống</div>}
+              <dl>
+                <div><dt>Ngân hàng</dt><dd>{order.payment.bank_code || 'Theo QR'}</dd></div>
+                <div><dt>Chủ tài khoản</dt><dd>{order.payment.account_name}</dd></div>
+                <div><dt>Số tài khoản</dt><dd>{order.payment.account_number || order.payment.account_mask}</dd></div>
+                <div><dt>Số tiền</dt><dd>{formatMoney(order.amount)}</dd></div>
+                <div><dt>Nội dung</dt><dd>{order.payment.transfer_content}</dd></div>
+                <div><dt>Hết hạn sau</dt><dd>{order.status === 'pending' ? countdown : statusText[order.status] ?? order.status}</dd></div>
+              </dl>
+            </div>
+            <p>Vui lòng chuyển khoản đúng số tiền và đúng nội dung. Khi SePay gửi webhook giao dịch về, CourtSim sẽ tự xác minh. Trạng thái hiện tại: <b>{statusText[order.status] ?? order.status}</b>.</p>
+            <div className="checkout-order-actions">
+              {!['paid', 'expired', 'cancelled'].includes(order.status) && <button type="button" onClick={() => refreshOrder()} disabled={checking}>{checking ? 'Đang kiểm tra...' : 'Kiểm tra trạng thái'}</button>}
+              {order.status === 'expired' && <button type="button" onClick={() => { setOrder(null); setError(''); setQrMissing(false); }}>Tạo đơn mới</button>}
+              {order.status === 'paid' && <Link to="/dashboard/setup">Tiếp tục luyện tập <ArrowRight size={16} aria-hidden="true" /></Link>}
+            </div>
+          </div>}
+        </section>
+      </div>
+
+      <section className="checkout-card checkout-includes" aria-labelledby="includes-heading">
+        <h2 id="includes-heading">Quyền lợi trong gói {plan.name}</h2>
+        <div>
+          {plan.bullets.map((item) => <span key={item}><CheckCircle2 size={17} aria-hidden="true" />{item}</span>)}
+        </div>
+      </section>
+    </main>
+  </div>;
+}

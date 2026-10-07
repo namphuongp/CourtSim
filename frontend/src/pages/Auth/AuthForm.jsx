@@ -12,7 +12,7 @@ export function GoogleButton() {
     if (busy) return;
     setBusy(true); setError('');
     try { const { data } = await api.post('/auth/google/start', { returnTo: safeReturnPath(params.get('returnTo')) }); window.location.assign(data.url); }
-    catch (error) { setError(getApiError(error, 'Chưa thể đăng nhập Google. Bạn có thể dùng email và mật khẩu.')); setBusy(false); }
+    catch (error) { setError(getApiError(error, 'Chưa thể đăng nhập Google. Bạn có thể dùng tài khoản và mật khẩu.')); setBusy(false); }
   }
   return <><button type="button" className="auth-secondary" disabled={busy} onClick={start}><GoogleMark />{busy ? 'Đang mở Google...' : 'Tiếp tục với Google'}</button>{error && <p role="alert">{error}</p>}</>;
 }
@@ -46,10 +46,10 @@ export default function AuthForm({ register = false }) {
   return <AuthShell><h1>{register ? 'Tạo tài khoản' : 'Đăng nhập CourtSim'}</h1><p className="auth-subtitle">{register ? 'Bắt đầu hành trình luyện lập luận của bạn.' : 'Tiếp tục phiên luyện tập của bạn.'}</p>
     {params.get('googleError') && <p role="alert">{params.get('googleError') === 'link' ? 'Hãy đăng nhập bằng mật khẩu, xác thực email rồi chọn Liên kết Google trong tài khoản.' : 'Chưa thể đăng nhập Google. Vui lòng thử lại hoặc dùng mật khẩu.'}</p>}
     {params.get('reset') && <p role="status">Đã đổi mật khẩu. Vui lòng đăng nhập lại.</p>}
-    <GoogleButton /><div className="auth-divider"><span>hoặc dùng email</span></div>
+    <GoogleButton /><div className="auth-divider"><span>hoặc dùng tài khoản</span></div>
     <form onSubmit={submit} aria-busy={busy}>
       {register && <label>Họ và tên<input name="full_name" autoComplete="name" required minLength={2} maxLength={100} /></label>}
-      <label>Email<input name="email" type="email" autoComplete="email" maxLength={254} required /></label>
+      <label>Tài khoản<input name="email" type="email" autoComplete="email" maxLength={254} required /></label>
       <PasswordField creating={register} forgot={!register} />
       {register && <><p className="auth-hint">Dùng ít nhất 8 ký tự, có chữ hoa và số.</p><PasswordField name="confirm_password" label="Nhập lại mật khẩu" creating error={confirmationError} onChange={() => setConfirmationError('')} /></>}
       {error && <p role="alert">{error}</p>}

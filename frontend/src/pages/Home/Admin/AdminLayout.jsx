@@ -1,12 +1,12 @@
 import CourtSimBrand from '../../../components/CourtSimBrand';
 import { useState } from 'react';
 import { NavLink, Outlet, Link } from 'react-router-dom';
-import { LayoutDashboard, Users, Scale, MessageSquare, ChartNoAxesCombined, Settings, Menu, ClipboardList } from 'lucide-react';
+import { LayoutDashboard, Users, Scale, MessageSquare, ChartNoAxesCombined, Settings, Menu, ClipboardList, CreditCard } from 'lucide-react';
 import { LogoutButton } from '../../Auth/AccountActions';
 import { getCurrentUser } from '../../../services/auth';
 import FeedbackModal from '../../../components/feedback/FeedbackModal';
 import './admin.css';
-const links = [['/admin', 'Tổng quan', LayoutDashboard], ['/admin/users', 'Người dùng', Users], ['/admin/sessions', 'Phiên tòa', Scale], ['/admin/feedback', 'Góp ý', MessageSquare], ['/admin/ai', 'AI & Chi phí', ChartNoAxesCombined], ['/admin/system', 'Hệ thống', Settings], ['/admin/audit', 'Hoạt động quản trị', ClipboardList]];
+const links = [['/admin', 'Tổng quan', LayoutDashboard], ['/admin/users', 'Người dùng', Users], ['/admin/sessions', 'Phiên tòa', Scale], ['/admin/feedback', 'Góp ý', MessageSquare], ['/admin/payments', 'Thanh toán', CreditCard], ['/admin/ai', 'AI & Chi phí', ChartNoAxesCombined], ['/admin/system', 'Hệ thống', Settings], ['/admin/audit', 'Hoạt động quản trị', ClipboardList]];
 function Navigation({ onNavigate }) {
   return <nav aria-label="Điều hướng quản trị">{links.map(([to, label, Icon]) => <NavLink key={to} end={to === '/admin'} to={to} onClick={onNavigate}><Icon size={19} aria-hidden="true"/>{label}</NavLink>)}<Link to="/dashboard" onClick={onNavigate}>Vào luyện tập ↗</Link></nav>;
 }

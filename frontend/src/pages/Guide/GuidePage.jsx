@@ -1,6 +1,7 @@
-import { ArrowLeft, BookOpen, Gavel, MessageSquare, Scale, Trophy } from 'lucide-react';
+import { ArrowLeft, BookOpen, Gavel, MessageSquare, Scale, Sparkles, Trophy } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getCurrentUser } from '../../services/auth';
+import './guide.css';
 
 const steps = [
   { icon: BookOpen, title: '1. Chọn hồ sơ', text: 'Đọc tình tiết, yêu cầu của các bên và chứng cứ trước khi chọn vụ án. Trong bài tập, các chứng cứ được nhắc trong hồ sơ được giả định có bản gốc và tài liệu kèm theo. Chỉ lập luận trên nội dung đã nêu.' },
@@ -9,15 +10,74 @@ const steps = [
   { icon: Trophy, title: '4. Xem kết quả', text: 'Sau ít nhất một lượt trình bày, bạn có thể kết thúc phiên để xem nhận xét và gợi ý cải thiện. Gửi phần lập luận còn dang dở trước khi kết thúc. Phiên đã hoàn tất có thể xem lại trong lịch sử.' },
 ];
 
+const argumentShape = [
+  'Nêu rõ vấn đề pháp lý hoặc yêu cầu cần giải quyết.',
+  'Viện dẫn tình tiết và chứng cứ trong hồ sơ.',
+  'Nêu căn cứ pháp luật nếu bạn chắc chắn, không bịa số điều.',
+  'Phản biện luận điểm gần nhất của phía đối lập.',
+  'Kết luận ngắn gọn về đề nghị gửi Hội đồng xét xử.',
+];
+
+const notes = [
+  'AI có thể trả lời sai hoặc viện dẫn chưa chính xác, hãy kiểm tra với văn bản pháp luật chính thức.',
+  'Không tải lên thông tin cá nhân, bí mật nghề nghiệp hoặc hồ sơ vụ án thật chưa được ẩn danh.',
+  'Khi dùng Trợ lý luật, đọc trích đoạn và mở văn bản nguồn để kiểm tra nội dung, thời điểm áp dụng trước khi viện dẫn.',
+];
+
 export default function GuidePage() {
   const authenticated = Boolean(getCurrentUser()?.id);
   return (
-    <main className="min-h-screen bg-slate-950 px-5 py-10 text-slate-200"><div className="mx-auto max-w-5xl space-y-10">
-      <header><Link to={authenticated ? '/dashboard/setup' : '/'} className="mb-6 inline-flex items-center gap-2 text-sm text-blue-300"><ArrowLeft size={17} /> Quay lại</Link><div className="flex items-center gap-3"><Gavel className="text-blue-400" size={34} /><div><h1 className="text-4xl font-bold text-white">Hướng dẫn luyện tập tranh tụng</h1><p className="mt-2 text-slate-400">Các bước bắt đầu và hoàn thành một phiên luyện tập.</p></div></div></header>
-      <section className="grid gap-5 md:grid-cols-2">{steps.map(({ icon: Icon, title, text }) => <article key={title} className="rounded-3xl border border-slate-800 bg-slate-900 p-6"><Icon className="mb-4 text-blue-400" /><h2 className="text-xl font-bold text-white">{title}</h2><p className="mt-2 leading-7 text-slate-400">{text}</p></article>)}</section>
-      <section className="rounded-3xl border border-amber-500/30 bg-amber-500/10 p-7"><h2 className="text-xl font-bold text-amber-300">Cấu trúc một lượt trình bày tốt</h2><ol className="mt-4 list-decimal space-y-2 pl-5 text-slate-300"><li>Nêu rõ vấn đề pháp lý hoặc yêu cầu cần giải quyết.</li><li>Viện dẫn tình tiết và chứng cứ trong hồ sơ.</li><li>Nêu căn cứ pháp luật nếu bạn chắc chắn, không bịa số điều.</li><li>Phản biện luận điểm gần nhất của phía đối lập.</li><li>Kết luận ngắn gọn về đề nghị gửi Hội đồng xét xử.</li></ol></section>
-      <section className="rounded-3xl border border-slate-800 bg-slate-900 p-7"><h2 className="text-xl font-bold text-white">Lưu ý khi luyện tập</h2><ul className="mt-4 list-disc space-y-2 pl-5 text-slate-400"><li>AI có thể trả lời sai hoặc viện dẫn chưa chính xác, hãy kiểm tra với văn bản pháp luật chính thức.</li><li>Không tải lên thông tin cá nhân, bí mật nghề nghiệp hoặc hồ sơ vụ án thật chưa được ẩn danh.</li><li>Khi dùng Trợ lý luật, đọc trích đoạn và mở văn bản nguồn để kiểm tra nội dung, thời điểm áp dụng trước khi viện dẫn.</li></ul></section>
-      {authenticated && <div className="text-center"><Link to="/dashboard/setup" className="inline-block rounded-xl bg-blue-600 px-6 py-3 font-bold text-white">Thiết lập phiên mới</Link></div>}
-    </div></main>
+    <main className="guide-page">
+      <section className="guide-hero">
+        <div className="guide-container">
+          <Link to={authenticated ? '/dashboard/setup' : '/'} className="guide-back"><ArrowLeft size={17} /> Quay lại</Link>
+          <div className="guide-hero-grid">
+            <div>
+              <p className="guide-eyebrow"><Sparkles size={16} /> Hướng dẫn thực hành CourtSim</p>
+              <h1>Hướng dẫn luyện tập tranh tụng</h1>
+              <p>Các bước bắt đầu, hoàn thành một phiên luyện tập và tự cải thiện lập luận pháp lý theo cách chủ động hơn.</p>
+              {authenticated && <Link to="/dashboard/setup" className="guide-primary">Thiết lập phiên mới</Link>}
+            </div>
+            <div className="guide-visual" aria-hidden="true">
+              <div className="guide-visual-mark"><Gavel size={44} /></div>
+              <div className="guide-flow">
+                <span>Hồ sơ</span>
+                <span>Lập luận</span>
+                <span>Phản biện</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="guide-container guide-body">
+        <section className="guide-steps" aria-label="Các bước luyện tập">
+          {steps.map(({ icon: Icon, title, text }) => <article key={title} className="guide-card">
+            <span className="guide-icon"><Icon size={27} aria-hidden="true" /></span>
+            <h2>{title}</h2>
+            <p>{text}</p>
+          </article>)}
+        </section>
+
+        <section className="guide-argument">
+          <div>
+            <p className="guide-eyebrow dark"><MessageSquare size={16} /> Mẫu tư duy khi trình bày</p>
+            <h2>Cấu trúc một lượt trình bày tốt</h2>
+            <p>Giữ bài nói ngắn, có căn cứ và phản hồi đúng vấn đề vừa được đặt ra.</p>
+          </div>
+          <ol>
+            {argumentShape.map((item) => <li key={item}>{item}</li>)}
+          </ol>
+        </section>
+
+        <section className="guide-notes">
+          <div>
+            <h2>Lưu ý khi luyện tập</h2>
+            <p>CourtSim là môi trường học tập. Hãy dùng kết quả AI như phản hồi hỗ trợ, không thay thế kiểm tra pháp lý chuyên môn.</p>
+          </div>
+          <ul>{notes.map((item) => <li key={item}>{item}</li>)}</ul>
+        </section>
+      </div>
+    </main>
   );
 }

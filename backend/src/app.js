@@ -9,6 +9,7 @@ import healthRoutes from './routes/HealthRoutes.js';
 import { learnerFeedbackRoutes, adminFeedbackRoutes } from './routes/FeedbackRoutes.js';
 import sessionRoutes from './routes/SessionRoutes.js';
 import legalSourceRoutes from './routes/LegalSourceRoutes.js';
+import checkoutRoutes from './routes/CheckoutRoutes.js';
 
 export function createApp(authDependencies) {
   const app = express();
@@ -17,12 +18,20 @@ export function createApp(authDependencies) {
   app.use(securityHeaders);
   app.use(cors({ origin: corsOptions, credentials: true, methods: ['GET', 'POST', 'PATCH', 'DELETE'], allowedHeaders: ['Content-Type', 'X-CourtSim-Request'] }));
   app.use(browserMutationGuard);
-  app.use(express.json({ limit: '1mb' }));
+  app.use(express.json({
+    limit: '1mb',
+    verify: (request, _response, buffer) => {
+      request.rawBody = Buffer.from(buffer);
+    },
+  }));
 
   app.use('/api/v1/health', healthRoutes);
   app.use('/api/auth', createAuthRoutes(authDependencies));
   app.use('/api/v1/cases', caseRoutes);
   app.use('/api/v1/legal-sources', legalSourceRoutes);
+  app.use('/api/v1/checkout', checkoutRoutes);
+  app.use('/api/payment', checkoutRoutes);
+  app.use('/api/payments', checkoutRoutes);
   app.use('/api/v1/sessions/:sessionId/feedback', learnerFeedbackRoutes);
   app.use('/api/v1/admin/feedback', adminFeedbackRoutes);
   app.use('/api/v1/admin', adminRoutes);

@@ -12,6 +12,7 @@ const AdminSessionDetail = lazy(() => import('./pages/Home/Admin/AdminManagement
 const AdminAi = lazy(() => import('./pages/Home/Admin/AdminOperations').then(module => ({ default: module.AdminAi })));
 const AdminSystem = lazy(() => import('./pages/Home/Admin/AdminOperations').then(module => ({ default: module.AdminSystem })));
 const AdminAudit = lazy(() => import('./pages/Home/Admin/AdminOperations').then(module => ({ default: module.AdminAudit })));
+const AdminPayments = lazy(() => import('./pages/Home/Admin/AdminOperations').then(module => ({ default: module.AdminPayments })));
 const VerifyEmail = lazy(() => import('./pages/Auth/VerifyEmail'));
 const ForgotPassword = lazy(() => import('./pages/Auth/VerifyEmail').then(module => ({ default: module.ForgotPassword })));
 
@@ -19,6 +20,7 @@ const ForgotPassword = lazy(() => import('./pages/Auth/VerifyEmail').then(module
 const LandingPage = lazy(() => import('./pages/Home/LandingPage'));
 const LoginPage = lazy(() => import('./pages/Auth/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/Auth/RegisterPage'));
+const CheckoutPage = lazy(() => import('./pages/Checkout/CheckoutPage'));
 
 // -- CÁC TRANG CỦA USER DASHBOARD --
 const DashboardLayout = lazy(() => import('./pages/Home/User/DashboardLayout'));
@@ -56,8 +58,11 @@ const getDefaultRoute = () => {
 // 1. Chỉ dành cho người chưa đăng nhập (VD: Landing, Login, Register)
 const PublicOnlyRoute = ({ children }) => {
   const location = useLocation();
-  const googleError = new URLSearchParams(location.search).get('googleError');
-  return isAuthenticated() ? <Navigate to={getDefaultRoute() + (googleError ? '?googleError=failed' : '')} replace /> : children;
+  const params = new URLSearchParams(location.search);
+  const googleError = params.get('googleError');
+  const returnTo = safeReturnPath(params.get('returnTo'));
+  const pricingHash = location.pathname === '/' && ['#pricing', '#pricing-details'].includes(location.hash);
+  return isAuthenticated() && !pricingHash ? <Navigate to={(params.get('returnTo') ? returnTo : getDefaultRoute()) + (googleError ? '?googleError=failed' : '')} replace /> : children;
 };
 
 // 2. Chỉ dành cho Admin
@@ -72,7 +77,7 @@ const AdminRoute = ({ children }) => {
 const ProtectedUserRoute = ({ children }) => {
   const location = useLocation();
   if (!isAuthenticated()) {
-    return <Navigate to={`/login?returnTo=${encodeURIComponent(location.pathname)}`} replace />;
+    return <Navigate to={`/login?returnTo=${encodeURIComponent(location.pathname + location.search)}`} replace />;
   }
   return children;
 };
@@ -110,6 +115,7 @@ function App() {
         <Route path="/auth/callback" element={<Navigate to={isAuthenticated() ? safeReturnPath(new URLSearchParams(window.location.search).get('returnTo')) + (new URLSearchParams(window.location.search).get('linked') === '1' ? '?linked=1' : '') : '/login?googleError=failed'} replace />} />
         <Route path="/guide" element={<GuidePage />} />
         <Route path="/account/:section?" element={<ProtectedUserRoute><AccountSettings /></ProtectedUserRoute>} />
+        <Route path="/checkout/:planId" element={<ProtectedUserRoute><CheckoutPage /></ProtectedUserRoute>} />
 
         {/* ADMIN ROUTES */}
         <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
@@ -119,6 +125,7 @@ function App() {
           <Route path="sessions" element={<AdminSessions />} />
           <Route path="sessions/:id" element={<AdminSessionDetail />} />
           <Route path="feedback" element={<AdminFeedback />} />
+          <Route path="payments" element={<AdminPayments />} />
           <Route path="ai" element={<AdminAi />} />
           <Route path="system" element={<AdminSystem />} />
           <Route path="audit" element={<AdminAudit />} />

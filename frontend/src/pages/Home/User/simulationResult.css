@@ -1,0 +1,296 @@
+.result-page {
+  min-height: 100dvh;
+  color: #092943;
+  padding: 34px 20px 64px;
+  background:
+    radial-gradient(circle at 14% 6%, rgb(0 206 205 / 0.16), transparent 22%),
+    radial-gradient(circle at 92% 2%, rgb(255 211 83 / 0.16), transparent 24%),
+    linear-gradient(180deg, #f4fbfc 0%, #f7fbfc 46%, #f7fafc 100%);
+}
+
+.result-container {
+  max-width: 1120px;
+  margin-inline: auto;
+}
+
+.result-page a {
+  color: #087d91;
+  font-weight: 800;
+  text-underline-offset: 4px;
+}
+
+.result-hero {
+  position: relative;
+  padding: 34px;
+  border: 1px solid rgb(126 239 255 / 0.22);
+  border-radius: 24px;
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, rgb(2 18 34 / 0.86), rgb(2 32 58 / 0.72), rgb(8 121 138 / 0.5)),
+    url('/courtsim-courtroom-background-v2.png') center 38% / cover;
+  box-shadow: 0 26px 60px rgb(8 43 66 / 0.18);
+}
+.result-hero::after {
+  content: '';
+  position: absolute;
+  right: -80px;
+  top: -120px;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  border: 42px solid rgb(255 225 119 / 0.12);
+  pointer-events: none;
+}
+.result-hero > * {
+  position: relative;
+  z-index: 1;
+}
+.result-hero p {
+  margin: 0 0 6px;
+  color: #7ff9ff;
+  font-size: 14px;
+  font-weight: 850;
+}
+.result-hero h1 {
+  margin: 0;
+  color: #fff;
+  font-size: clamp(30px, 4vw, 42px);
+  font-weight: 900;
+  line-height: 1.12;
+  letter-spacing: 0;
+  text-shadow: 0 2px 16px rgb(0 0 0 / 0.22);
+}
+.result-hero button,
+.result-state button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 50px;
+  border: 1px solid #ffd75a;
+  border-radius: 999px;
+  padding: 0 22px;
+  color: #13223b;
+  background: linear-gradient(180deg, #fff6b9, #ffd04a);
+  box-shadow: 0 16px 32px rgb(255 205 77 / 0.28);
+  font-weight: 900;
+}
+
+.result-card,
+.score-card,
+.score-group,
+.score-main-card,
+.result-details {
+  min-width: 0;
+  border: 1px solid #d6e8ee !important;
+  border-radius: 18px !important;
+  color: #19354d;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.96), rgb(255 255 255 / 0.9)) !important;
+  box-shadow: 0 14px 34px rgb(8 43 66 / 0.07);
+}
+
+.result-card,
+.result-details {
+  padding: 24px;
+}
+.result-card h2,
+.score-card h2,
+.score-groups h2,
+.result-details h2 {
+  margin: 0 0 12px;
+  color: #092943 !important;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+.result-card p,
+.score-card p,
+.score-group p,
+.result-details p {
+  color: #526d82;
+  line-height: 1.75;
+}
+
+.result-notice {
+  border: 1px solid #a8eadc;
+  border-radius: 14px;
+  padding: 14px 16px;
+  color: #176247;
+  background: #edf9f3;
+  font-weight: 800;
+}
+
+.score-summary {
+  display: grid;
+  gap: 24px;
+}
+.score-main-card {
+  position: relative;
+  overflow: hidden;
+  padding: 30px !important;
+}
+.score-main-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 6px;
+  background: linear-gradient(180deg, #36eef1, #ffd04a);
+}
+.score-main-card::after {
+  content: '';
+  position: absolute;
+  right: 28px;
+  top: 28px;
+  width: 128px;
+  height: 128px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(255 211 83 / 0.22), transparent 68%);
+  pointer-events: none;
+}
+.score-main-card h2 {
+  color: #087d91 !important;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+}
+.score-main-card p {
+  position: relative;
+  z-index: 1;
+  color: #526d82;
+  line-height: 1.35;
+}
+.score-main-card p:nth-of-type(2) {
+  color: #092943 !important;
+}
+
+.score-card blockquote,
+.score-group blockquote,
+.result-card blockquote {
+  margin: 10px 0;
+  border-left: 4px solid #36eef1 !important;
+  border-radius: 0 12px 12px 0;
+  padding: 12px 14px;
+  color: #37556c;
+  background: #f5fdfe;
+}
+
+.score-groups {
+  display: grid;
+  gap: 8px;
+}
+.score-groups > p {
+  color: #526d82 !important;
+}
+.score-group summary {
+  color: #092943;
+  cursor: pointer;
+}
+.score-group summary span:last-child {
+  color: #087d91 !important;
+  font-weight: 800;
+}
+.score-group article {
+  border-color: #d6e8ee !important;
+}
+
+.score-transcript-link {
+  width: fit-content;
+  border-color: #ffd75a !important;
+  border-radius: 999px !important;
+  color: #13223b !important;
+  background: linear-gradient(180deg, #fff6b9, #ffd04a) !important;
+  box-shadow: 0 16px 32px rgb(255 205 77 / 0.22);
+  text-decoration: none;
+}
+
+.result-details > summary {
+  cursor: pointer;
+  color: #092943;
+  font-weight: 900;
+}
+.result-details[open] > summary {
+  margin-bottom: 18px;
+}
+.result-two-col,
+.result-rubric-grid {
+  margin-block: 18px;
+}
+.result-improvement {
+  border-color: #f1dda1 !important;
+  background:
+    radial-gradient(circle at 0 0, rgb(255 211 83 / 0.18), transparent 28%),
+    linear-gradient(180deg, rgb(255 255 255 / 0.98), rgb(255 251 231 / 0.9)) !important;
+}
+.result-law :where(article, details) {
+  border-color: #d6e8ee !important;
+  color: #19354d;
+  background: #fff;
+}
+.result-law :where(.text-slate-600, .text-slate-400, .text-slate-300) {
+  color: #526d82 !important;
+}
+.result-law :where(.text-blue-700, .text-blue-400) {
+  color: #087d91 !important;
+}
+.result-law :where(.text-amber-700) {
+  color: #9a6a00 !important;
+}
+
+.result-disclaimer {
+  text-align: center;
+  color: #6f8192;
+  font-size: 13px;
+}
+
+.result-state {
+  display: grid;
+  place-items: center;
+}
+.result-state .result-card {
+  max-width: 620px;
+}
+.result-state .result-card a {
+  display: inline-flex;
+  margin-left: 12px;
+}
+.result-feedback {
+  padding-top: 44px;
+}
+
+.result-page :focus-visible {
+  outline: 3px solid rgb(56 237 241 / 0.55);
+  outline-offset: 3px;
+}
+
+@media(max-width: 700px) {
+  .result-page {
+    padding: 20px 16px 44px;
+  }
+  .result-hero {
+    padding: 26px 22px;
+  }
+  .result-hero button {
+    width: 100%;
+  }
+  .result-card,
+  .result-details,
+  .score-main-card,
+  .score-card,
+  .score-group {
+    padding: 20px !important;
+  }
+  .score-main-card {
+    min-height: 172px;
+  }
+  .score-main-card p {
+    line-height: 1.45;
+  }
+  .score-main-card .text-4xl,
+  .score-main-card .sm\:text-5xl {
+    font-size: 40px !important;
+    line-height: 1.12 !important;
+  }
+  .score-transcript-link {
+    width: 100%;
+    text-align: center;
+  }
+}

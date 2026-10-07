@@ -19,7 +19,7 @@ export async function startGoogle(request, response, returnTo, linkUserId) {
   const state = secret(), browser = secret(), nonce = secret(), verifier = secret();
   const sessionToken = cookie(request, SESSION_COOKIE);
   if (linkUserId && (!request.auth || String(linkUserId) !== request.auth.userId || !sessionToken)) throw new AppError('Vui lòng đăng nhập lại trước khi liên kết Google.', 401, 'INVALID_TOKEN');
-  await OAuthAttempt.create({ linkSessionHash: linkUserId ? hash(sessionToken) : undefined, linkAuthVersion: linkUserId ? request.auth.authVersion : undefined, stateHash: hash(state), browserHash: hash(browser), nonce, verifier, returnTo: /^\/(dashboard|simulation|admin|account)(\/|$)/.test(returnTo ?? '') ? returnTo : '/dashboard', linkUserId, expiresAt: new Date(Date.now() + 600000) });
+  await OAuthAttempt.create({ linkSessionHash: linkUserId ? hash(sessionToken) : undefined, linkAuthVersion: linkUserId ? request.auth.authVersion : undefined, stateHash: hash(state), browserHash: hash(browser), nonce, verifier, returnTo: /^\/(dashboard|simulation|admin|account|checkout)(\/|$)/.test(returnTo ?? '') ? returnTo : '/dashboard', linkUserId, expiresAt: new Date(Date.now() + 600000) });
   response.cookie('courtsim_oauth', browser, { ...cookieOptions, maxAge: 600000 });
   const params = new URLSearchParams({ client_id: config.clientId, redirect_uri: config.redirectUri, response_type: 'code', scope: 'openid email profile', state, nonce, code_challenge: createHash('sha256').update(verifier).digest('base64url'), code_challenge_method: 'S256', prompt: 'select_account' });
   return `https://accounts.google.com/o/oauth2/v2/auth?${params}`;

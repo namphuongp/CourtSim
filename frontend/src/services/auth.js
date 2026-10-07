@@ -17,7 +17,7 @@ export function setCurrentUser(user) {
   }
 }
 export function safeReturnPath(value) {
-  return typeof value === 'string' && /^\/(?:dashboard|simulation|admin|account)(?:\/|$)/.test(value) ? value : '/dashboard';
+  return typeof value === 'string' && /^\/(?:dashboard|simulation|admin|account|checkout)(?:\/|$)/.test(value) ? value : '/dashboard';
 }
 export function draftKey(sessionId) {
   return `courtsim:draft:${getCurrentUser()?.id ?? 'unknown'}:${sessionId}`;
