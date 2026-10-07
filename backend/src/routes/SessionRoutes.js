@@ -17,6 +17,7 @@ import { researchLegalBasis } from '../services/legalResearchService.js';
 import { consumeAuthLimit } from '../middlewares/rateLimit.js';
 import { runConversation } from '../services/conversationService.js';
 import { openingStatement } from '../services/casePractice.js';
+import { consumeCaseAccess } from '../services/paymentAccess.js';
 
 const router = Router();
 const allowedRoles = ['defense_lawyer', 'plaintiff_lawyer'];
@@ -60,12 +61,18 @@ router.post('/', asyncHandler(async (request, response) => {
       sender_type: 'ai_judge', sender_name: 'Chủ tọa',
       content: openingStatement(courtCase, role) ?? `Phiên mô phỏng “${courtCase.title}” bắt đầu. Bạn bảo vệ phía ${/hình sự/iu.test(courtCase.category) ? (role === 'defense_lawyer' ? 'bị cáo' : 'người bị hại') : (role === 'defense_lawyer' ? 'bị đơn' : 'nguyên đơn')}. Mời trình bày yêu cầu, luận điểm mở đầu và chứng cứ có trong hồ sơ.`,
     });
+    let accessConsumed = false;
     try {
       session = await SimulationSession.create({ ...filter, _id: id, case_id: caseId, case_snapshot: courtCase,
         user_court_role: role, difficulty, case_event_date: eventDate, opening });
+      await consumeCaseAccess(request.auth.userId, request.auth.tier);
+      accessConsumed = true;
     } catch (error) {
-      if (error.code !== 11000) throw error;
-      session = await SimulationSession.findOne(filter);
+      if (error.code === 11000) session = await SimulationSession.findOne(filter);
+      else {
+        if (!accessConsumed) await SimulationSession.deleteOne({ _id: id, user_id: request.auth.userId });
+        throw error;
+      }
     }
   }
   if (String(session.case_id) !== caseId || session.user_court_role !== role || session.difficulty !== difficulty || session.case_event_date !== eventDate) {

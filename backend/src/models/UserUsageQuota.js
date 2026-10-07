@@ -5,6 +5,7 @@ const userUsageQuotaSchema = new mongoose.Schema({
   voice_seconds_used: { type: Number, default: 0 },
   ai_messages_used: { type: Number, default: 0 },
   cases_played: { type: Number, default: 0 },
+  case_credits: { type: Number, default: 0 },
   reset_date: { type: Date, required: true }
 });
 

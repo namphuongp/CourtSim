@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { X } from 'lucide-react';
 
 function guideSteps(completed, maxTurns) {
   return [
@@ -61,7 +62,7 @@ export default function CourtroomGuide({ onClose, completed = false, hasDialogue
     <div className="tour-blocker" aria-hidden="true" />
     {box && <div className="tour-spotlight" style={box} aria-hidden="true" />}
     <section ref={card} role="dialog" aria-modal="true" aria-labelledby="tour-title" aria-describedby="tour-description" className="tour-card court-guide" style={{ left, top, width, maxHeight: `calc(100dvh - ${top + 12}px)` }}>
-      <header><span className="guide-progress">Bước {currentStep + 1} / {availableSteps.length}</span><button ref={close} type="button" onClick={onClose} aria-label="Đóng hướng dẫn">Đóng ×</button></header>
+      <header><span className="guide-progress">Bước {currentStep + 1} / {availableSteps.length}</span><button ref={close} className="tour-close" type="button" onClick={onClose} aria-label="Đóng hướng dẫn"><X size={17} strokeWidth={2.4} aria-hidden="true"/></button></header>
       <div className="guide-step" aria-live="polite" aria-atomic="true"><h3 id="tour-title">{current.title}</h3><p id="tour-description">{current.text}</p></div>
       <nav aria-label="Các bước hướng dẫn" className="guide-dots">{availableSteps.map((entry, index) => <button type="button" key={entry.title} aria-label={`Bước ${index + 1}: ${entry.title}`} aria-current={index === currentStep ? 'step' : undefined} onClick={() => setStep(index)}>{index + 1}</button>)}</nav>
       <div className="guide-actions"><button type="button" disabled={currentStep === 0} onClick={() => setStep(currentStep - 1)}>Quay lại</button>{currentStep < availableSteps.length - 1 ? <button type="button" onClick={() => setStep(currentStep + 1)}>Tiếp theo →</button> : <button type="button" onClick={onClose}>{completed ? 'Quay lại phiên' : 'Tiếp tục thực hành'}</button>}</div>

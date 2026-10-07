@@ -64,6 +64,8 @@
 .admin-transcript time { margin-left:15px; font-size:12px; color:#62748a; }
 .admin-preserve { white-space:pre-wrap; overflow-wrap:anywhere; }
 .admin-shell .admin-danger { color:#ad3240; border-color:#e5b0b8; }
+.admin-payment-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.admin-payment-actions small { flex-basis:100%; color:#ad3240; }
 .admin-shell .admin-menu-toggle { display:none; }
 .admin-skip { position:fixed; left:15px; top:-80px; z-index:100; background:white; padding:12px; }
 .admin-skip:focus { top:10px; }

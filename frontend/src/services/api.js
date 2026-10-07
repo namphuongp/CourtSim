@@ -23,7 +23,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401 && (!error.config?.url?.startsWith('/auth/') || error.config?.url?.startsWith('/auth/account') || error.config?.url === '/auth/google/link')) {
       clearAuth();
-      window.location.assign('/login?returnTo=' + encodeURIComponent(window.location.pathname));
+      window.location.assign('/login?returnTo=' + encodeURIComponent(window.location.pathname + window.location.search));
     }
     return Promise.reject(error);
   },

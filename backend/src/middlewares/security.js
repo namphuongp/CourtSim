@@ -16,8 +16,13 @@ export function corsOptions(requestOrigin, callback) {
   return callback(new AppError('Không thể thực hiện yêu cầu từ trang này. Hãy mở lại CourtSim.', 403, 'CORS_DENIED'));
 }
 
+function isSepayWebhook(request) {
+  return request.method === 'POST' && request.path === '/api/payments/sepay/webhook';
+}
+
 export function browserMutationGuard(request, _response, next) {
   if (['GET', 'HEAD', 'OPTIONS'].includes(request.method)) return next();
+  if (isSepayWebhook(request)) return next();
   // Cookie xác thực cần chống CSRF kể cả khi trình duyệt không gửi Origin.
   if (!env.CLIENT_ORIGINS.includes(request.headers.origin) || request.headers['x-courtsim-request'] !== '1') {
     return next(new AppError('Yêu cầu không hợp lệ. Hãy tải lại trang và thử lại.', 403, 'CSRF_DENIED'));

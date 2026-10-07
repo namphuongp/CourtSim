@@ -7,6 +7,7 @@ import SkillComments from '../../../components/skills/SkillComments';
 import SkillProgress from '../../../components/skills/SkillProgress';
 import SkillDetails from '../../../components/skills/SkillDetails';
 import RecentEvaluations from '../../../components/skills/RecentEvaluations';
+import '../../../components/dashboard/dashboard.css';
 import '../../../components/skills/skills.css';
 
 export default function Analytics() {
@@ -19,7 +20,7 @@ export default function Analytics() {
     ['Kỹ năng mạnh nhất', profile.strongest ? `${profile.strongest.label} · ${formatScore(profile.strongest.score)}/100` : 'Chưa đủ dữ liệu'],
     ['Kỹ năng cần cải thiện', profile.weakest ? `${profile.weakest.label} · ${formatScore(profile.weakest.score)}/100` : profile.strongest ? 'Chưa có kỹ năng thấp hơn để ưu tiên' : 'Chưa đủ dữ liệu'],
   ];
-  return <section className="skill-profile space-y-6">
+  return <section className="practice-dashboard skill-profile space-y-6">
     <header><h1 className="text-3xl font-bold">Đánh giá kỹ năng</h1><p className="mt-2 text-slate-400">Hồ sơ năng lực từ các phiên luyện tập của bạn: nhận ra điểm mạnh và chọn điều cần luyện tiếp.</p></header>
     {loading ? <p role="status">Đang tải hồ sơ kỹ năng...</p> : error ? <div className="skill-card" role="alert">{error} <button className="skill-link" onClick={retry}>Thử lại</button></div> : <>
       <div className="skill-metrics">{metrics.map(([label, value]) => <article className="skill-card" key={label}><p className="skill-helper">{label}</p><p className="skill-metric-value">{value}</p></article>)}</div>
