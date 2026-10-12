@@ -1,8 +1,8 @@
 ﻿import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import api, { getApiError } from '../../../services/api';
-import { useAdminData, number, money, date, roleLabel } from './adminData';
-import { LoadState, Metric, RangeSelect, Pagination } from './AdminElements';
+import { useAdminData, date } from './adminData';
+import { LoadState, Pagination } from './AdminElements';
 
 const vnd = value => value == null ? 'ChÆ°a cÃ³ dá»¯ liá»‡u' : new Intl.NumberFormat('vi-VN').format(value) + ' VNÄ';
 
@@ -34,20 +34,8 @@ export function AdminPayments() {
   </>;
 }
 
-export function AdminAi() {
-  const [range, setRange] = useState('month');
-  const resource = useAdminData(`/v1/admin/ai/usage?range=${range}`);
-  return <><header className="admin-page-heading"><div><h1>AI & Chi phÃ­</h1><p>Æ¯á»›c tÃ­nh USD theo token vÃ  giÃ¡ cáº¥u hÃ¬nh, khÃ´ng pháº£i hÃ³a Ä‘Æ¡n nhÃ  cung cáº¥p.</p></div><RangeSelect value={range} onChange={setRange}/></header><LoadState resource={resource}>{({ data: d }) => <>
-    {!d.trackingEnabled && <p className="admin-notice">ChÆ°a báº­t theo dÃµi chi phÃ­ AI. Sá»‘ liá»‡u Ä‘Ã£ lÆ°u váº«n Ä‘Æ°á»£c giá»¯ láº¡i.</p>}
-    {!d.requests && <p className="admin-empty">ChÆ°a cÃ³ dá»¯ liá»‡u AI trong khoáº£ng thá»i gian nÃ y.</p>}
-    <div className="admin-metrics"><Metric label="Chi phÃ­ Ä‘Ã£ tÃ­nh (Æ°á»›c tÃ­nh)" value={money(d.estimatedCost)} note={`${d.priced}/${d.requests} lÆ°á»£t gá»i cÃ³ Ä‘á»§ dá»¯ liá»‡u giÃ¡`}/><Metric label="LÆ°á»£t gá»i" value={number(d.requests)} note="Gá»“m cáº£ láº§n thá»­ láº¡i vÃ  lá»—i"/><Metric label="Token Ä‘Ã£ ghi nháº­n" value={number(d.inputTokens + d.outputTokens)} note={`${d.tokensKnown}/${d.requests} lÆ°á»£t cÃ³ sá»‘ token Ä‘áº§u vÃ o vÃ  Ä‘áº§u ra`}/><Metric label="Äá»™ trá»… trung bÃ¬nh" value={d.latencyMs == null ? 'ChÆ°a cÃ³ dá»¯ liá»‡u' : `${number(d.latencyMs)} ms`} note={`Tá»· lá»‡ lá»—i: ${d.errorRate == null ? 'ChÆ°a cÃ³ dá»¯ liá»‡u' : number(d.errorRate * 100) + '%'}`}/></div>
-    {!d.completeCost && <p className="admin-notice">Chi phÃ­ chÆ°a Ä‘áº§y Ä‘á»§: chÆ°a tÃ­nh lÆ°á»£t gá»i thiáº¿u token hoáº·c chÆ°a cáº¥u hÃ¬nh giÃ¡. KhÃ´ng bao gá»“m dá»¯ liá»‡u trÆ°á»›c khi báº­t theo dÃµi.</p>}
-    <p className="admin-note">Báº£n ghi Ä‘áº§u tiÃªn: {date(d.trackedSince)}. Lá»—i á»Ÿ Ä‘Ã¢y lÃ  lá»—i gá»i dá»‹ch vá»¥ hoáº·c Ä‘á»‹nh dáº¡ng pháº£n há»“i, khÃ´ng pháº£i Ä‘iá»ƒm cháº¥t lÆ°á»£ng láº­p luáº­n.</p>
-    <section className="admin-card"><h2>Theo vai trÃ²</h2>{d.roles.length ? <div className="admin-table-scroll"><table><thead><tr><th>Vai trÃ²</th><th>LÆ°á»£t gá»i</th><th>Tá»· lá»‡ lÆ°á»£t gá»i</th><th>Chi phÃ­ Ä‘Ã£ tÃ­nh</th></tr></thead><tbody>{d.roles.map(r => <tr key={r._id}><td>{roleLabel(r._id)}</td><td>{r.requests}</td><td>{number(r.requests / d.requests * 100)}%</td><td>{money(r.priced ? r.knownCost : null)}<small>{r.priced}/{r.requests} lÆ°á»£t cÃ³ giÃ¡</small></td></tr>)}</tbody></table></div> : <p>ChÆ°a cÃ³ dá»¯ liá»‡u theo vai trÃ².</p>}<p className="admin-note">Giá»ng nÃ³i chÆ°a cÃ³ API chuyá»ƒn Ã¢m thanh thÃ nh vÄƒn báº£n nÃªn chÆ°a cÃ³ usage Ä‘á»ƒ tÃ­nh phÃ­.</p></section>
-    <section className="admin-card"><h2>Theo model</h2>{d.models.length ? <div className="admin-table-scroll"><table><thead><tr><th>Model</th><th>NhÃ  cung cáº¥p</th><th>LÆ°á»£t gá»i</th><th>Token vÃ o / ra</th><th>Chi phÃ­ Ä‘Ã£ tÃ­nh</th></tr></thead><tbody>{d.models.map((r, i) => <tr key={i}><td>{r._id.model}</td><td>{r._id.provider}</td><td>{r.requests}</td><td>{number(r.inputTokens)} / {number(r.outputTokens)}</td><td>{money(r.priced ? r.knownCost : null)}</td></tr>)}</tbody></table></div> : <p>ChÆ°a cÃ³ dá»¯ liá»‡u model.</p>}</section>
-    <section className="admin-card"><h2>Chi phÃ­ theo phiÃªn</h2><p>Trung bÃ¬nh: <strong>{money(d.costPerSession)}</strong> / phiÃªn cÃ³ Ä‘á»§ giÃ¡ cho cÃ¡c lÆ°á»£t Ä‘Ã£ ghi nháº­n trong khoáº£ng Ä‘Ã£ chá»n ({d.pricedSessions} phiÃªn).</p><p className="admin-note">ÄÃ¢y lÃ  chi phÃ­ trong khoáº£ng Ä‘Ã£ chá»n, khÃ´ng nháº¥t thiáº¿t lÃ  toÃ n bá»™ chi phÃ­ vÃ²ng Ä‘á»i phiÃªn. PhiÃªn thiáº¿u giÃ¡ bá»‹ loáº¡i khá»i trung bÃ¬nh.</p><h3>PhiÃªn cÃ³ chi phÃ­ cao nháº¥t</h3>{d.expensiveSessions.length ? <div className="admin-table-scroll"><table><thead><tr><th>PhiÃªn</th><th>LÆ°á»£t gá»i</th><th>Chi phÃ­ Æ°á»›c tÃ­nh</th></tr></thead><tbody>{d.expensiveSessions.map(s => <tr key={s._id}><td><Link to={`/admin/sessions/${s._id}`}>{s._id}</Link></td><td>{s.requests}</td><td>{money(s.cost)}</td></tr>)}</tbody></table></div> : <p>ChÆ°a cÃ³ phiÃªn Ä‘á»§ dá»¯ liá»‡u Ä‘á»ƒ tÃ­nh chi phÃ­.</p>}</section>
-  </>}</LoadState></>;
-}
+export { default as AdminAi } from './AdminAi';
+
 export function AdminSystem() {
   const resource = useAdminData('/v1/admin/system/health');
   return <><header className="admin-page-heading"><div><h1>Há»‡ thá»‘ng</h1><p>Tráº¡ng thÃ¡i káº¿t ná»‘i vÃ  cáº¥u hÃ¬nh, khÃ´ng gá»i model Ä‘á»ƒ kiá»ƒm tra.</p></div><button onClick={resource.reload} disabled={resource.loading}>LÃ m má»›i</button></header><LoadState resource={resource}>{({ data: d }) => <><section className="admin-card"><dl className="admin-facts">{[['Backend', d.backend, 'Äang hoáº¡t Ä‘á»™ng'], ['MongoDB', d.mongo, 'ÄÃ£ káº¿t ná»‘i'], ['Dá»‹ch vá»¥ AI', d.aiConfigured, 'ÄÃ£ cáº¥u hÃ¬nh'], ['Email', d.emailConfigured, 'ÄÃ£ cáº¥u hÃ¬nh'], ['Google OAuth', d.googleConfigured, 'ÄÃ£ cáº¥u hÃ¬nh'], ['Theo dÃµi AI', d.trackingEnabled, 'ÄÃ£ báº­t'], ['Báº£ng giÃ¡ AI', d.pricingConfigured, 'ÄÃ£ cáº¥u hÃ¬nh']].map(([label, ok, text]) => <div className="admin-fact-row" key={label}><dt>{label}</dt><dd><span className={`admin-badge ${ok ? 'admin-ok' : 'admin-warning'}`}>{ok ? text : 'ChÆ°a sáºµn sÃ ng'}</span></dd></div>)}</dl><p>Láº§n gá»i AI thÃ nh cÃ´ng gáº§n nháº¥t: {date(d.lastAiSuccess)}</p><p>Kiá»ƒm tra lÃºc: {date(d.checkedAt)}</p><p className="admin-note">CÃ³ cáº¥u hÃ¬nh khÃ´ng báº£o Ä‘áº£m nhÃ  cung cáº¥p Ä‘ang hoáº¡t Ä‘á»™ng hoáº·c khÃ³a cÃ²n há»£p lá»‡.</p></section>{d.verificationTemporarilyDisabled && <p className="admin-notice">Äang táº¡m bá» qua xÃ¡c minh email trong mÃ´i trÆ°á»ng phÃ¡t triá»ƒn.</p>}</>}</LoadState></>;
