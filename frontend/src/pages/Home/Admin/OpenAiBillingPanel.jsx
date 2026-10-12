@@ -56,9 +56,9 @@ export default function OpenAiBillingPanel({ compact = false }) {
     </div>
     {error && <p role="alert" className="admin-notice">{error}</p>}
     {!data ? <p role="status">{error ? 'Báo cáo chưa khả dụng.' : 'Đang tải báo cáo…'}</p> : <>
-      {!data.configuration.ready && <p className="admin-notice">{errors.OPENAI_NOT_CONFIGURED} Không nhập khóa trên giao diện.</p>}
+      {!data.configuration.ready && <p className="admin-note">Chưa thiết lập kết nối OpenAI.</p>}
       <p className="admin-note">Project: {data.projectId ?? 'Chưa cấu hình'} · {statusLabel[data.sync.status]}{data.sync.month && data.sync.month !== month ? ` (tháng ${data.sync.month})` : ''}</p>
-      {[data.sync.costsError, data.sync.usageError].filter(Boolean).map((issue, index) => <p role="alert" className="admin-notice" key={index}>{index === 0 && data.sync.costsError ? 'Costs' : 'Usage'}: {issue.message}</p>)}
+      {[['Costs', data.sync.costsError], ['Usage', data.sync.usageError]].filter(([, issue]) => issue && issue.code !== 'OPENAI_INCOMPLETE').map(([source, issue]) => <p role="alert" className="admin-notice" key={source}>{source}: {issue.message}</p>)}
       <div className="admin-metrics">
         <Metric label="Actual OpenAI Cost" value={money(data.actual.cost)} note={`USD từ OpenAI · ${data.actual.costsDays}/${data.actual.expectedDays} ngày có dữ liệu`} />
         <Metric label="Estimated CourtSim Cost" value={money(data.estimated.cost)} note={`${data.estimated.priced}/${data.estimated.requests} lượt tracking có giá · USD ước tính`} />
@@ -66,8 +66,6 @@ export default function OpenAiBillingPanel({ compact = false }) {
         <Metric label="Token vào / ra" value={`${number(data.actual.inputTokens)} / ${number(data.actual.outputTokens)}`} note={`Cache: ${number(data.actual.cachedInputTokens)} token, đã nằm trong token đầu vào`} />
       </div>
       <p>Đồng bộ Costs gần nhất: {utc(data.actual.lastCostsSyncAt)}<br />Đồng bộ Usage gần nhất: {utc(data.actual.lastUsageSyncAt)}</p>
-      {(!data.actual.hasAllCostDays || !data.actual.hasAllUsageDays || data.sync.stale || data.currentMonth) && <p className="admin-notice">{data.currentMonth ? 'Tháng hiện tại chưa kết thúc. ' : ''}{!data.actual.hasAllCostDays || !data.actual.hasAllUsageDays ? 'Tổng chỉ gồm các ngày đã có dữ liệu; ngày thiếu không được tính là 0. ' : ''}{data.sync.stale ? 'Dữ liệu chưa được cập nhật đầy đủ trong 8 giờ gần đây. ' : ''}OpenAI có thể cập nhật số liệu trễ; đồng bộ lại để lấy điều chỉnh.</p>}
-      <p className="admin-note">Hai nguồn độc lập, không cộng Actual và Estimated. Usage ở đây chỉ gồm completions; Costs có thể gồm các dịch vụ OpenAI khác. Không suy ra chi phí từng model từ token.</p>
       {compact ? <Link to="/admin/ai">Xem chi tiết theo ngày và model →</Link> : <>
         <h3>Chi phí và usage từng ngày (UTC)</h3>
         <div className="admin-table-scroll"><table><thead><tr>{['Ngày', 'Actual (USD)', 'Estimated (USD)', 'Token vào', 'Token cache', 'Token ra', 'Lượt gọi'].map(label => <th key={label}>{label}</th>)}</tr></thead><tbody>{data.daily.map(row => <tr key={row.day}><td>{row.day}</td><td>{money(row.actualCost)}</td><td>{money(row.estimatedCost)}</td><td>{number(row.inputTokens)}</td><td>{number(row.cachedInputTokens)}</td><td>{number(row.outputTokens)}</td><td>{number(row.requests)}</td></tr>)}</tbody></table></div>
