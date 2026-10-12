@@ -22,7 +22,8 @@ export function resolveScoringQuotes(entries, anchors) {
     if (!entry || !Object.hasOwn(entry, 'quote_id')) return entry;
     if (entry.quote_id === null && entry.score === 0) return { ...entry, quote: null, record_id: null };
     const anchor = byId.get(entry.quote_id);
-    if (!anchor) throw new AppError(`Tiêu chí ${entry.id}: cần chọn quote_id có trong danh sách trích đoạn.`, 502, 'AI_INVALID_EVALUATION');
+    if (!anchor) throw new AppError('Cần chọn quote_id có trong danh sách trích đoạn.', 502, 'AI_INVALID_EVALUATION',
+      { check: 'UNKNOWN_QUOTE_ID', criterion: typeof entry.id === 'string' && /^\d\.\d$/.test(entry.id) ? entry.id : undefined });
     return { ...entry, quote: anchor.quote, record_id: anchor.record_id };
   });
 }

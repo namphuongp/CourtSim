@@ -27,7 +27,7 @@ export function calculateEvaluation(entries, records, legalAvailable) {
   const eligibility = scoringEligibility(records, legalAvailable);
   const definitions = SCORING_RUBRIC.groups.flatMap((group) => group.items);
   if (!Array.isArray(entries) || entries.length !== definitions.length || new Set(entries.map((entry) => entry?.id)).size !== definitions.length
-    || entries.some((entry) => !definitions.some((item) => item.id === entry?.id))) throw new AppError('Chưa nhận đủ đánh giá theo từng tiêu chí. Vui lòng chấm lại.', 502, 'AI_INVALID_EVALUATION');
+    || entries.some((entry) => !definitions.some((item) => item.id === entry?.id))) throw new AppError('Chưa nhận đủ đánh giá theo từng tiêu chí. Vui lòng chấm lại.', 502, 'AI_INVALID_EVALUATION', { check: 'INVALID_CRITERIA_SET' });
   const users = new Map(records.filter((r) => r.sender_type === 'user').map((r) => [String(r._id), r.content]));
   const evaluated = new Map();
   for (const item of definitions) {
@@ -37,9 +37,9 @@ export function calculateEvaluation(entries, records, legalAvailable) {
       continue;
     }
     if (typeof value.score !== 'number' || !Number.isFinite(value.score) || value.score < 0 || value.score > item.max
-      || ['reason', 'strength', 'improvement'].some((key) => typeof value[key] !== 'string' || !value[key].trim() || value[key].length > 2000)) throw new AppError('Điểm hoặc nhận xét chưa đúng tiêu chí. Vui lòng chấm lại.', 502, 'AI_INVALID_EVALUATION');
+      || ['reason', 'strength', 'improvement'].some((key) => typeof value[key] !== 'string' || !value[key].trim() || value[key].length > 2000)) throw new AppError(`Tiêu chí ${item.id}: điểm phải từ 0 đến ${item.max}, reason/strength/improvement phải là chuỗi không rỗng tối đa 2000 ký tự.`, 502, 'AI_INVALID_EVALUATION', { check: 'INVALID_SCORE_OR_FEEDBACK', criterion: item.id });
     const hasQuote = typeof value.quote === 'string' && value.quote.trim() && typeof value.record_id === 'string' && users.get(value.record_id)?.includes(value.quote);
-    if (!hasQuote && !(value.score === 0 && value.quote === null && value.record_id === null)) throw new AppError('Nhận xét chưa dẫn đúng phát biểu của bạn. Vui lòng chấm lại.', 502, 'AI_INVALID_EVALUATION');
+    if (!hasQuote && !(value.score === 0 && value.quote === null && value.record_id === null)) throw new AppError(`Tiêu chí ${item.id}: nhận xét chưa dẫn đúng phát biểu của bạn.`, 502, 'AI_INVALID_EVALUATION', { check: 'INVALID_QUOTE', criterion: item.id });
     evaluated.set(item.id, { ...item, score: round(value.score), status: 'assessed', reason: value.reason.trim(), strength: value.strength.trim(), improvement: value.improvement.trim(), record_id: value.record_id, quote: value.quote,
       ...(Array.isArray(value.citation_ids) ? { citation_ids: value.citation_ids } : {}) });
   }

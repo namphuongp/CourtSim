@@ -5,6 +5,11 @@ import { validateCitationIds } from './legalRetrievalService.js';
 export const contentCriteria = ['2.1', '2.2'];
 export const applicationCriteria = ['2.3', '2.4', '4.2'];
 
+export function scoringCitationIds(id, basis) {
+  const sources = applicationCriteria.includes(id) ? basis.applicable : contentCriteria.includes(id) ? basis.verified : [];
+  return sources.map(source => source.id);
+}
+
 export function legalScoringBasis(context, records = []) {
   const verified = (context.citations ?? []).filter(c => hasVerifiedSource(c) && c.verification_status === 'verified' && c.article && c.text?.trim());
   const applicable = verified.filter(c => c.application_status === 'verified');
@@ -22,10 +27,10 @@ export function validateScoringBasis(entries, basis) {
     const application = applicationCriteria.includes(entry.id);
     if (!application && !contentCriteria.includes(entry.id)) continue;
     if (entry.score == null) continue;
-    const sources = application ? basis.applicable : basis.verified;
+    const allowedIds = scoringCitationIds(entry.id, basis);
     if (!Array.isArray(entry.citation_ids) || !entry.citation_ids.length
-      || entry.citation_ids.some(id => !sources.some(c => c.id === id))) {
-      throw new AppError(`Tiêu chí ${entry.id} cần dẫn nguồn đã xác minh phù hợp với phần nhận xét.`, 502, 'AI_INVALID_EVALUATION');
+      || entry.citation_ids.some(id => !allowedIds.includes(id))) {
+      throw new AppError(`Tiêu chí ${entry.id} cần dẫn nguồn đã xác minh phù hợp với phần nhận xét.`, 502, 'AI_INVALID_EVALUATION', { check: 'INVALID_CRITERION_CITATIONS', criterion: entry.id });
     }
   }
 }

@@ -9,7 +9,7 @@ import { evidenceInventory } from './caseEvidence.js';
 import { SCORING_RUBRIC } from '../data/scoringRubric.js';
 import { calculateEvaluation, scoringEligibility } from './scoringService.js';
 import { scoringQuotes, resolveScoringQuotes } from './scoringQuotes.js';
-import { legalScoringBasis, validateScoringBasis, SCORING_CALIBRATION } from './scoringBasis.js';
+import { legalScoringBasis, validateScoringBasis, scoringCitationIds, SCORING_CALIBRATION } from './scoringBasis.js';
 import { researchLegalBasis } from './legalResearchService.js';
 import { AiPersonal } from '../models/index.js';
 import { hasReadableLawSource } from '../../../shared/legalSourcePolicy.mjs';
@@ -380,7 +380,12 @@ export async function evaluateSession({ session, courtCase, records }, dependenc
     citations: [], generation_mode: 'control', generation_metrics: { attempts: [], outcome: 'control' },
   };
   const anchors = scoringQuotes(records);
-  const assessedSchema = { ...EVALUATION_SCHEMA, criteria: EVALUATION_SCHEMA.criteria.filter(item => !eligibility[item.id]),
+  const assessedItems = EVALUATION_SCHEMA.criteria.filter(item => !eligibility[item.id]);
+  const citationRequirements = assessedItems.map(item => ({ id: item.id, allowed_citation_ids: scoringCitationIds(item.id, legalScorable) }))
+    .filter(item => item.allowed_citation_ids.length);
+  // Ví dụ cho mục luật phải có nguồn hợp lệ; không đưa mảng rỗng trái với validator vào schema mẫu.
+  const assessedSchema = { ...EVALUATION_SCHEMA, criteria: assessedItems.map(item => ({ ...item,
+    citation_ids: scoringCitationIds(item.id, legalScorable).slice(0, 1) })),
     citation_ids: legalScorable.verified.map(c => c.id) };
   const input = {
     usageContext: { userId: session.user_id, sessionId: session._id, role: 'evaluator' },
@@ -393,6 +398,8 @@ export async function evaluateSession({ session, courtCase, records }, dependenc
       commonContext(session, courtCase, records, legalContext, true),
       'Đánh giá lập luận pháp lý, chất lượng suy luận, cách dùng chứng cứ và kỹ năng tranh tụng. Phân biệt dữ kiện đã có, suy luận và thông tin còn thiếu.',
       SCORING_CALIBRATION,
+      'citationRequirements quy định nguồn được phép theo từng tiêu chí. Mỗi tiêu chí trong danh sách phải có citation_ids không rỗng, kể cả điểm 0. citation_ids ở cấp tổng không thay thế citation_ids trong criteria. Chọn nguồn thực sự hỗ trợ nhận xét từ danh sách; ID trong schema chỉ là ví dụ, không sao chép nếu nội dung không phù hợp.',
+      serializeUntrustedData({ citationRequirements }),
       'Không coi nhận định của người học hoặc AI khác là sự thật nếu chưa được hồ sơ xác nhận.',
       'Không tạo lại bảng sự kiện vụ án trong kết quả chấm điểm. Không xuất fact_analysis, phần nguồn trích của nhận xét được máy chủ dựng từ quote_id đã đối chiếu. Vẫn phải phân biệt lời khai với sự kiện đã chứng minh trong mọi nhận xét.',
       'Chỉ viện dẫn luật có citationId trong retrievedLaw. Không dùng nguồn lịch sử chưa kiểm tra lại. Nếu thiếu nguồn luật, không phạt chỉ vì người học không nêu số điều.',
@@ -405,15 +412,16 @@ export async function evaluateSession({ session, courtCase, records }, dependenc
     ].join('\n'),
     messages: [{ role: 'user', content: 'Đánh giá toàn bộ phần thể hiện của người học.' }],
   };
-  let repair = '';
+  const evaluationMessages = [{ role: 'user', content: 'Đánh giá toàn bộ phần thể hiện của người học.' }];
   const metrics = { attempts: [] }, started = performance.now();
   for (let attempt = 0; attempt < 2; attempt++) {
     const measurement = { attempt: attempt + 1 }; metrics.attempts.push(measurement);
-    const raw = await (dependencies.complete ?? createChatCompletion)({ ...input, onMetrics: value => Object.assign(measurement, value), messages: [{ role: 'user', content: 'Đánh giá toàn bộ phần thể hiện của người học.' + repair }] });
+    const raw = await (dependencies.complete ?? createChatCompletion)({ ...input, onMetrics: value => Object.assign(measurement, value), messages: [...evaluationMessages] });
     try {
       const evaluation = parseStructuredResponse(raw, 'chấm điểm');
-      // Chỉ bổ sung mục không chấm; tuyệt đối không tự tạo điểm cho mục thiếu hoặc sai.
-      const entries = Array.isArray(evaluation.criteria) ? [...evaluation.criteria,
+      // Máy chủ quyết định mục chưa chấm trước khi kiểm tra quote; không nhận điểm/nguồn do AI tự điền cho mục này.
+      const entries = Array.isArray(evaluation.criteria) ? [...evaluation.criteria.map(item =>
+        item && Object.hasOwn(eligibility, item.id) && eligibility[item.id] ? { id: item.id } : item),
         ...Object.keys(eligibility).filter(id => eligibility[id] && !evaluation.criteria.some(item => item?.id === id)).map(id => ({ id }))] : evaluation.criteria;
       const scoring = calculateEvaluation(resolveScoringQuotes(entries, anchors), records, legalScorable);
       validateScoringBasis(scoring.criteria.flatMap(group => group.items.filter(item => item.status === 'assessed')), legalScorable);
@@ -444,7 +452,7 @@ export async function evaluateSession({ session, courtCase, records }, dependenc
         fact_analysis: factAnalysis,
       };
       if (['verdict', 'feedback', 'improvement_suggestions'].some((key) => typeof result[key] !== 'string' || !result[key].trim())) {
-        throw new AppError('AI chấm điểm thiếu nội dung bắt buộc.', 502, 'AI_INVALID_EVALUATION');
+        throw new AppError('AI chấm điểm thiếu nội dung bắt buộc.', 502, 'AI_INVALID_EVALUATION', { check: 'MISSING_SUMMARY' });
       }
 
       metrics.total_ms = performance.now() - started;
@@ -452,9 +460,15 @@ export async function evaluateSession({ session, courtCase, records }, dependenc
     } catch (error) {
       // Chỉ sửa một lần, không nới điều kiện hoặc tự tạo điểm khi model sai nguồn.
       measurement.rejection_code = error.code;
+      if (error.code === 'AI_INVALID_EVALUATION') {
+        // Chỉ ghi loại lỗi và mã tiêu chí, không ghi phản hồi AI hoặc lời người học.
+        console.warn('Evaluation validation failed:', { code: error.code, attempt: attempt + 1,
+          check: error.details?.check, criterion: error.details?.criterion });
+      }
       if (attempt === 1 || !['AI_UNGROUNDED_FACT', 'AI_INVALID_CITATIONS', 'AI_UNVERIFIED_CITATION', 'AI_INVALID_STRUCTURED_RESPONSE', 'AI_INVALID_EVALUATION'].includes(error.code)) throw error;
-      console.warn('Evaluation validation failed:', { code: error.code, reason: error.message });
-      repair = ` Bản trước chưa đạt: ${error.message} Viết lại toàn bộ JSON theo schema, kiểm tra điểm trong trần rubric và quote_id trong scoringQuotes. Không thêm fact_analysis, không tự tạo dữ kiện hoặc căn cứ.`;
+      // Cho model thấy bản bị từ chối để sửa đúng lỗi, không bắt tạo lại từ một thông báo chung.
+      evaluationMessages.push({ role: 'assistant', content: raw }, { role: 'user', content:
+        `Bản trước chưa đạt: ${error.message} Viết lại toàn bộ JSON theo schema, kiểm tra điểm trong trần rubric và quote_id trong scoringQuotes. Mỗi mục trong citationRequirements phải có citation_ids riêng, không rỗng, chỉ chọn nguồn hỗ trợ nhận xét từ allowed_citation_ids. Không thêm fact_analysis, không tự tạo dữ kiện hoặc căn cứ.` });
     }
   }
 }
