@@ -12,6 +12,7 @@
     "test:clean": "node ../scripts/clean-test-artifacts.mjs"
   },
   "dependencies": {
+    "@vercel/analytics": "^2.0.1",
     "axios": "^1.17.0",
     "framer-motion": "^12.42.2",
     "lucide-react": "^1.20.0",

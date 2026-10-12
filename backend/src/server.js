@@ -9,8 +9,7 @@ let server;
 async function start() {
   // Chỉ nhận request sau khi MongoDB sẵn sàng.
   await connectDatabase();
-  server = app.listen(env.PORT, process.env.HOST || '127.0.0.1', () => console.info('CourtSim API đã sẵn sàng.'));
-}
+server = app.listen(env.PORT, process.env.HOST || '0.0.0.0', () => console.info('CourtSim API đã sẵn sàng.'));}
 
 async function shutdown(signal) {
   console.log(`Nhận ${signal}, đang dừng server...`);
