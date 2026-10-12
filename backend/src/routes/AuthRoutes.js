@@ -227,13 +227,14 @@ export function createAuthRoutes({ sendEmail } = {}) {
         .json({ message: "Đã đăng xuất." });
     }),
   );
-  router.post(
-    "/google/start",
-    asyncHandler(async (req, res) => {
-      validateBody(req.body, ["returnTo"]);
-      res.json({ url: await startGoogle(req, res, req.body.returnTo) });
-    }),
-  );
+  router.get("/google/start", async (req, res) => {
+    try {
+      // GET chỉ mở luồng; callback vẫn bắt buộc state gắn với cookie của trình duyệt.
+      res.redirect(await startGoogle(req, res, req.query.returnTo));
+    } catch {
+      res.redirect(`${env.CLIENT_ORIGINS[0]}/login?googleError=failed`);
+    }
+  });
   router.post(
     "/google/link",
     authenticate,
@@ -268,11 +269,7 @@ export function createAuthRoutes({ sendEmail } = {}) {
     } catch (error) {
       securityAudit("google_login_failure");
 
-      console.error("Google OAuth callback failed:", {
-        name: error.name,
-        code: error.code,
-        message: error.message,
-      });
+      // Không ghi lỗi thô từ provider/DB vì có thể chứa thông tin xác thực.
 
       res.clearCookie("courtsim_oauth", cookieOptions);
 

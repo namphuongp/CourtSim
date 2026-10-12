@@ -8,10 +8,11 @@ export function GoogleButton() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [params] = useSearchParams();
-  async function start() {
+  function start() {
     if (busy) return;
     setBusy(true); setError('');
-    try { const { data } = await api.post('/auth/google/start', { returnTo: safeReturnPath(params.get('returnTo')) }); window.location.assign(data.url); }
+    // Điều hướng toàn trang để trình duyệt nhận cookie OAuth trước khi mở Google.
+    try { window.location.assign(api.getUri({ url: '/auth/google/start', params: { returnTo: safeReturnPath(params.get('returnTo')) } })); }
     catch (error) { setError(getApiError(error, 'Chưa thể đăng nhập Google. Bạn có thể dùng tài khoản và mật khẩu.')); setBusy(false); }
   }
   return <><button type="button" className="auth-secondary" disabled={busy} onClick={start}><GoogleMark />{busy ? 'Đang mở Google...' : 'Tiếp tục với Google'}</button>{error && <p role="alert">{error}</p>}</>;
