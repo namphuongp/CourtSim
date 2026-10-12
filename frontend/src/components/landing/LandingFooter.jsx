@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { ArrowUpRight, Gavel } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
+import CourtSimBrand from '../CourtSimBrand';
 
 const groups = [
   { title: 'Sản phẩm', links: [
@@ -33,7 +34,7 @@ export default function LandingFooter() {
   return <footer className="landing-footer">
     <div className="landing-container landing-footer-grid">
       <div className="landing-footer-about">
-        <Link to="/" className="landing-brand" aria-label="CourtSim — Trang chủ"><Gavel size={25} aria-hidden="true" />Court<span>Sim</span></Link>
+        <CourtSimBrand />
         <p className="landing-footer-copyright">© {new Date().getFullYear()} CourtSim.<br />Bảo lưu mọi quyền.</p>
         <div className="landing-footer-social" aria-label="Kết nối với CourtSim">
           {[['f', 'Facebook'], ['in', 'LinkedIn'], ['▶', 'YouTube']].map(([mark, label]) => <FooterLink key={label} label={label} className="landing-social-link"><span aria-hidden="true">{mark}</span></FooterLink>)}
