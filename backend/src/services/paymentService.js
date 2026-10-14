@@ -163,8 +163,7 @@ function timingEqual(left, right) {
 export function verifySepayWebhook(request) {
   const secret = process.env.SEPAY_WEBHOOK_SECRET?.trim() || process.env.PAYMENT_WEBHOOK_SECRET?.trim();
   if (!secret) {
-    if (process.env.NODE_ENV === 'production') throw new AppError('Webhook thanh toan chua cau hinh secret.', 503, 'SEPAY_WEBHOOK_UNCONFIGURED');
-    return;
+    throw new AppError('Webhook thanh toán chưa được cấu hình.', 503, 'SEPAY_WEBHOOK_UNCONFIGURED');
   }
 
   const auth = String(request.get('authorization') || '').trim();
@@ -331,11 +330,14 @@ export async function manuallySetPaymentStatus({ transactionId, status, adminUse
   if (!['pending', 'submitted', 'expired'].includes(payment.status)) throw new AppError('Chi co the xu ly giao dich dang cho.', 409, 'PAYMENT_STATUS_LOCKED');
 
   if (normalized === 'cancelled') {
-    payment.status = 'cancelled';
-    payment.provider_payload = { ...payment.provider_payload, admin_note: String(note ?? '').slice(0, 500), verified_by: adminUserId, verified_at: new Date() };
-    await payment.save();
-    await audit('payment_cancelled', { paymentId: payment._id, orderCode: payment.order_code, amount: payment.amount });
-    return payment;
+    const cancelled = await PaymentTransaction.findOneAndUpdate(
+      { _id: payment._id, status: { $in: ['pending', 'submitted', 'expired'] } },
+      { $set: { status: 'cancelled', 'provider_payload.admin_note': String(note ?? '').slice(0, 500), 'provider_payload.verified_by': adminUserId, 'provider_payload.verified_at': new Date() } },
+      { new: true },
+    );
+    if (!cancelled) throw new AppError('Giao dịch đã được xử lý bởi yêu cầu khác.', 409, 'PAYMENT_STATUS_LOCKED');
+    await audit('payment_cancelled', { paymentId: cancelled._id, orderCode: cancelled.order_code, amount: cancelled.amount });
+    return cancelled;
   }
 
   const claimed = await PaymentTransaction.findOneAndUpdate(

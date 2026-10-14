@@ -19,11 +19,11 @@ import {
 } from 'lucide-react';
 import './landing.css';
 import LandingFooter from '../../components/landing/LandingFooter';
-import { checkoutPath, pricingPlans } from '../../services/pricingPlans';
+import { checkoutPath, pricingPlans, pricingFeatures } from '../../services/pricingPlans';
 
 const START_PATH = '/dashboard/setup';
 
-function StartLink({ className = '', children = 'Trải nghiệm ngay' }) {
+function StartLink({ className = '', children = 'Bắt đầu luyện tập' }) {
   return <Link to={START_PATH} className={`landing-cta ${className}`}>{children}<ArrowRight size={18} aria-hidden="true" /></Link>;
 }
 
@@ -37,7 +37,7 @@ const audiences = [
 
 const tools = [
   [FileText, 'Tình huống pháp lý mô phỏng', 'Tiếp cận các vụ việc gần với thực tế để rèn luyện phân tích.', 'blue'],
-  [UsersRound, 'Chọn vai trò tham gia', 'Trở thành Thẩm phán, Luật sư, Kiểm sát viên hoặc các bên liên quan.', 'orange'],
+  [UsersRound, 'Chọn phía bạn bảo vệ', 'Nhập vai luật sư bảo vệ nguyên đơn hoặc bị đơn trong tình huống luyện tập.', 'orange'],
   [BrainCircuit, 'AI nhập vai đa tác nhân', 'AI đảm nhiệm các vai trò còn lại trong phiên tòa mô phỏng.', 'green'],
   [MessageCircle, 'Lập luận & phản biện', 'Rèn kỹ năng xây dựng luận điểm, trả lời và đối đáp tương phản.', 'orange'],
   [Trophy, 'Chấm điểm sau phiên', 'Đánh giá mức độ logic, căn cứ và khả năng bảo vệ quan điểm.', 'purple'],
@@ -46,8 +46,8 @@ const tools = [
 
 const workflow = [
   ['Tình huống', ['Xem thông tin vụ việc', 'Nghiên cứu hồ sơ', 'Tóm tắt điểm chính'], FileText],
-  ['Vai trò của bạn', ['Luật sư', 'Kiểm sát viên', 'Thẩm phán', 'Bị đơn'], UserRound],
-  ['Kết quả sau phiên', ['Phân tích chuyên sâu', 'Lập luận 8.5', 'Phản biện 8.0', 'Tư duy pháp lý 8.8'], Trophy],
+  ['Vai trò của bạn', ['Luật sư bảo vệ nguyên đơn', 'Luật sư bảo vệ bị đơn', 'Chủ tọa do AI đảm nhiệm', 'Bên đối lập do AI đảm nhiệm'], UserRound],
+  ['Kết quả sau phiên', ['Nhận xét theo tiêu chí', 'Điểm phần đã được đánh giá', 'Gợi ý cải thiện lập luận', 'Xem lại biên bản tranh tụng'], Trophy],
 ];
 
 function HeroMockup() {
@@ -65,13 +65,13 @@ function HeroMockup() {
             <div className="mockup-icons"><span /><span /><span /></div>
           </div>
           <div className="role-grid">
-            {['Thẩm phán', 'Luật sư bào chữa', 'Kiểm sát viên', 'Luật sư'].map((role) => <div key={role}><UserRound size={18} />{role}</div>)}
+            {['Luật sư nguyên đơn', 'Luật sư bị đơn', 'Chủ tọa AI', 'Bên đối lập AI'].map((role) => <div key={role}><UserRound size={18} />{role}</div>)}
           </div>
           <div className="court-preview">
             <img src="/courtsim-courtroom-background-v2.png" alt="" />
             <span className="judge-chip">Thẩm phán AI</span>
             <span className="lawyer-chip left">Luật sư</span>
-            <span className="lawyer-chip right">Kiểm sát viên</span>
+            <span className="lawyer-chip right">Bên đối lập</span>
           </div>
         </section>
       </div>
@@ -100,7 +100,7 @@ export default function LandingPage() {
         <a href="#features">Tính năng</a>
         <a href="#workflow">Cách hoạt động</a>
         <a href="#pricing">Bảng giá</a>
-        <a href="#resources">Tài nguyên</a>
+        <Link to="/guide">Tài nguyên</Link>
       </nav>
       <Link className="landing-login" to="/login">Đăng nhập / Đăng ký</Link>
     </header>
@@ -160,8 +160,8 @@ export default function LandingPage() {
               <h3>{title}</h3>
               <Icon size={22} aria-hidden="true" />
               <ul>{items.map((item) => <li key={item}>{item}</li>)}</ul>
-              {index === 0 && <a href="#features">Xem toàn bộ tình huống</a>}
-              {index === 2 && <a href="#pricing">Xem đánh giá chi tiết</a>}
+              {index === 0 && <Link to={START_PATH}>Xem toàn bộ tình huống</Link>}
+              {index === 2 && <Link to="/guide#scoring">Tìm hiểu cách đánh giá</Link>}
             </article>)}
           </div>
         </div>
@@ -171,7 +171,7 @@ export default function LandingPage() {
         <div id="pricing-details" className="landing-container pricing-block" aria-labelledby="pricing-heading">
           <p className="section-pill">Bảng giá</p>
           <h2 id="pricing-heading">Linh hoạt cho từng nhịp luyện tập</h2>
-          <p className="pricing-intro">CourtSim sử dụng chiến lược Penetration Pricing để giảm rào cản gia nhập cho sinh viên luật. Bên cạnh đó, CourtSim kết hợp Freemium, Pay-per-use và Bundle Pricing để đáp ứng các mức độ nhu cầu khác nhau.</p>
+          <p className="pricing-intro">Bắt đầu với hai lượt mô phỏng miễn phí. Khi muốn luyện tập thêm, bạn có thể mua từng lượt hoặc chọn gói phù hợp với nhu cầu.</p>
           <div className="pricing-grid">
             {pricingPlans.map((plan) => <article className={`pricing-card ${plan.name === 'Pro' ? 'is-featured' : ''}`} key={plan.id}>
               <div>
@@ -184,7 +184,14 @@ export default function LandingPage() {
               <Link className="pricing-action" to={checkoutPath(plan.id)}>{plan.checkoutLabel}<ArrowRight size={16} aria-hidden="true" /></Link>
             </article>)}
           </div>
-          <p className="pricing-note">Các gói bundle giúp người dùng tiết kiệm hơn so với việc mua từng case riêng lẻ, đồng thời khuyến khích luyện tập thường xuyên hơn.</p>
+          <div className="pricing-comparison" role="region" aria-label="So sánh quyền lợi thành viên" tabIndex={0}>
+            <table><caption>Quyền lợi theo gói thành viên</caption><thead><tr><th scope="col">Chức năng</th>{pricingPlans.map(plan => <th scope="col" key={plan.id}>{plan.name}</th>)}</tr></thead><tbody>
+              <tr><th scope="row">Số lượt mở phiên</th><td>2 lượt miễn phí</td><td>Thêm 1 lượt</td><td>Thêm 5 lượt</td><td>Không trừ lượt</td></tr>
+              {[['legalAssistant', 'Trợ lý luật'], ['detailedScoring', 'Chấm điểm chi tiết'], ['skillAnalytics', 'Phân tích kỹ năng nâng cao']].map(([feature, label]) => <tr key={feature}><th scope="row">{label}</th>{pricingPlans.map(plan => <td key={plan.id}>{pricingFeatures(plan.id)[feature] ? 'Có' : 'Chưa bao gồm'}</td>)}</tr>)}
+              <tr><th scope="row">Lịch sử và biên bản</th>{pricingPlans.map(plan => <td key={plan.id}>Có</td>)}</tr>
+            </tbody></table>
+          </div>
+          <p className="pricing-note">Tất cả gói đều có tối đa 20 lượt trình bày mỗi phiên và chịu hạn mức AI. Chỉ có điểm toàn bài khi đủ dữ liệu đánh giá. Freemium xem kết quả tổng quan; các gói trả phí xem thêm điểm từng tiêu chí. Phân tích kỹ năng nâng cao dành cho Pro.</p>
         </div>
         <div className="landing-container final-grid">
           <div className="hand-note left-note">Hiểu luật để phản biện tốt hơn</div>

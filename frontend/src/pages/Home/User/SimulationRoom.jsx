@@ -15,6 +15,7 @@ import api, { getApiError } from '../../../services/api';
 import { postDialogue } from '../../../services/dialogueStream';
 import { roleLabel } from '../../../services/simulation';
 import { draftKey, readDraft, saveDraft } from '../../../services/auth';
+import UpgradeNotice from '../../../components/membership/UpgradeNotice';
 
 export default function SimulationRoom() {
   const { sessionId } = useParams();
@@ -246,7 +247,7 @@ function Room({ sessionId }) {
           {panel === 'case' ? <CaseDossier courtCase={session?.case_id} role={session?.user_court_role} onInsert={(item) => insertIntoArgument(evidenceText(item))} insertionDisabled={!ready} /> : <Transcript session={session} records={records} selected={view.record?._id} onSelect={selectRecord} />}
         </div>
       </>}
-      {panel === 'assistant' && <LegalAssistant sessionId={sessionId} open onInsert={insertIntoArgument} insertionDisabled={!ready} />}
+      {panel === 'assistant' && (session?.features?.legalAssistant ? <LegalAssistant sessionId={sessionId} open onInsert={insertIntoArgument} insertionDisabled={!ready} /> : <UpgradeNotice />)}
       {panel === 'speech' && <Transcript session={session} records={records} selected={view.record?._id} fullRecord={panel === 'speech' ? fullRecord : null} onSelect={selectRecord} />}
     </StudyPanel>
     <ConfirmEndDialog open={confirmEnd} pending={state.ending} hasDraft={Boolean(draft.content.trim())} onCancel={() => setConfirmEnd(false)} onConfirm={complete} />

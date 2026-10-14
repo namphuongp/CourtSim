@@ -1,5 +1,7 @@
 import { ArrowLeft, BookOpen, Gavel, MessageSquare, Scale, Sparkles, Trophy } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { getCurrentUser } from '../../services/auth';
 import './guide.css';
 
@@ -25,6 +27,10 @@ const notes = [
 ];
 
 export default function GuidePage() {
+  const { hash } = useLocation();
+  useEffect(() => {
+    if (hash) document.getElementById(hash.slice(1))?.scrollIntoView();
+  }, [hash]);
   const authenticated = Boolean(getCurrentUser()?.id);
   return (
     <main className="guide-page">
@@ -70,12 +76,39 @@ export default function GuidePage() {
           </ol>
         </section>
 
-        <section className="guide-notes">
+        <section id="usage" className="guide-notes">
           <div>
             <h2>Lưu ý khi luyện tập</h2>
             <p>CourtSim là môi trường học tập. Hãy dùng kết quả AI như phản hồi hỗ trợ, không thay thế kiểm tra pháp lý chuyên môn.</p>
           </div>
           <ul>{notes.map((item) => <li key={item}>{item}</li>)}</ul>
+        </section>
+        <section id="scoring" className="guide-card">
+          <h2>Hiểu kết quả chấm điểm</h2>
+          <p>Chỉ có điểm toàn bài khi đủ dữ liệu đánh giá. Ví dụ 69/73 là điểm phần đã chấm, không phải điểm toàn bài trên thang 100. Các tiêu chí chưa có đủ dữ liệu được ghi rõ là chưa đánh giá.</p>
+          <p>Đọc nhận xét, trích đoạn minh họa và gợi ý cải thiện để chọn kỹ năng cần luyện tiếp. Điểm số là phản hồi học tập từ AI.</p>
+          <p>Freemium xem điểm và nhận xét tổng quan. Mua lượt lẻ hoặc gói Lite mở trợ lý luật và điểm chi tiết theo tiêu chí. Pro có thêm phân tích kỹ năng qua nhiều phiên. Mỗi phiên có tối đa 20 lượt trình bày và tất cả gói đều chịu hạn mức AI.</p>
+        </section>
+        <section id="faq" className="guide-card guide-faq">
+          <h2>Câu hỏi thường gặp</h2>
+          <details><summary>Tôi có thể chọn những vai nào?</summary><p>Bạn chọn vai luật sư bảo vệ nguyên đơn hoặc bị đơn, tương ứng với phía được nêu trong hồ sơ. AI đảm nhiệm Chủ tọa và bên đối lập.</p></details>
+          <details><summary>Tải lại trang có làm mất phiên không?</summary><p>Các lượt đã gửi được lưu trong phiên của tài khoản. Bạn có thể mở lại phiên chưa kết thúc từ trang luyện tập. Bản nháp được giữ trong cùng thẻ trình duyệt nếu trình duyệt cho phép lưu trữ.</p></details>
+          <details><summary>Tại sao một số tiêu chí chưa được chấm?</summary><p>Phiên có thể thiếu nguồn luật đủ điều kiện hoặc chưa có cơ hội thể hiện kỹ năng tương ứng. Phần chưa đánh giá không được xem là điểm 0.</p></details>
+          <details><summary>Có thể tải hồ sơ riêng, dùng giọng nói hoặc xuất PDF không?</summary><p>Các chức năng này chưa có trong giao diện hiện tại. Bạn luyện tập bằng văn bản trên các hồ sơ được quản trị viên cung cấp.</p></details>
+        </section>
+        <section id="support" className="guide-card">
+          <h2>Hỗ trợ khi gặp lỗi</h2>
+          <p>Kiểm tra kết nối và dùng nút Thử lại ở màn hình báo lỗi. Nếu phiên đăng nhập hết hạn, đăng nhập lại rồi mở phiên từ lịch sử. Kiểm tra các lượt đã lưu trước khi gửi lại lập luận.</p>
+          <div id="feedback"><h3>Gửi góp ý</h3><p>Sau khi kết thúc và chấm điểm, bạn có thể gửi góp ý về phiên trước khi xem kết quả. Góp ý được chuyển đến mục quản trị để xem xét. Không gửi mật khẩu hoặc mã xác thực.</p></div>
+        </section>
+        <section id="privacy" className="guide-card">
+          <h2>Dữ liệu cá nhân</h2>
+          <p>Hệ thống lưu hồ sơ tài khoản, phiên luyện tập, nội dung đã gửi, kết quả và góp ý. Quản trị viên có thể xem thông tin tài khoản và phiên để quản lý hệ thống.</p>
+          <p>Nội dung luyện tập và phần hồ sơ liên quan có thể được gửi đến dịch vụ AI đã cấu hình để tạo phản hồi. Chỉ dùng tình huống đã ẩn danh, tránh nhập thông tin nhạy cảm. Bạn có thể đổi mật khẩu và đăng xuất thiết bị khác trong trang tài khoản.</p>
+        </section>
+        <section id="cookies" className="guide-card">
+          <h2>Cookie và bản nháp</h2>
+          <p>Cookie phiên giúp duy trì đăng nhập. Trình duyệt lưu thông tin tài khoản để hiển thị giao diện và giữ bản nháp trong thẻ đang mở. Khi dùng máy chung, hãy đăng xuất và đóng thẻ sau khi luyện tập.</p>
         </section>
       </div>
     </main>

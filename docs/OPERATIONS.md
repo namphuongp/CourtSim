@@ -15,6 +15,7 @@ Lệnh cài đặt/chạy/test ở [README](../README.md); biến đầy đủ �
 | Vai AI | `AI_JUDGE_MODEL`, `AI_OPPONENT_MODEL`, `AI_EVALUATOR_MODEL`; đổi env rồi restart, không cần seed |
 | Chi phí | Hạn mặc định 80 cuộc gọi/người/15 phút, 200/người/ngày, 2.000 toàn hệ thống/ngày; chỉnh các biến `AI_*_CALLS_*`. Tính cả retry, không phải hạn ngân sách tiền tuyệt đối |
 | Luật | `LEGAL_ONLINE_LOOKUP=false` chỉ dùng bản lưu đã xác minh; không chuyển nguồn khác |
+| Thanh toán | `SEPAY_WEBHOOK_SECRET` bắt buộc trong mọi môi trường; `SEPAY_BANK_ACCOUNT` để đối chiếu tài khoản nhận; `PAYMENT_BANK_CODE`, `PAYMENT_BANK_ACCOUNT_NUMBER`, `PAYMENT_BANK_ACCOUNT_NAME` để tạo QR |
 
 `AUTH_EMAIL_VERIFICATION_DISABLED` chỉ dùng development. `AI_MODEL_PRICING_JSON` cần đơn giá/version đã đối chiếu; thiếu giá thì báo chi phí chưa đầy đủ, không suy đoán. Hạn mức ứng dụng nên đi cùng giới hạn ngân sách tại nhà cung cấp.
 
@@ -39,7 +40,11 @@ Mẫu cấu hình chưa được triển khai hoặc kiểm chứng trên domain
 
 ## Kiểm tra và giới hạn
 
-CI: [.github/workflows/ci.yml](../.github/workflows/ci.yml). Giữ 7 nhóm backend và 2 bài trình duyệt desktop/mobile; dùng `npm test` trong backend và `npm run test:e2e` trong frontend. Mongo dùng DB `courtsim_test_<uuid>` riêng; thiếu URI thì các ca backend tích hợp bị skip. E2E email/model fixture không chứng minh dịch vụ thật hoạt động. Kết quả tạm ở `.test-artifacts/`, dọn bằng `npm run test:clean` trong frontend. JavaScript có lint/kiểm tra cú pháp, chưa có TypeScript typecheck.
+Lockfile đã nâng `proxy-addr` lên 2.0.8 và `source-map-js` lên 1.2.2 theo các bản vá ([proxy-addr](https://github.com/advisories/GHSA-jqcg-44mw-7w3h), [source-map-js](https://github.com/advisories/GHSA-68fv-2mgg-jv7q)). Backend dùng `node --watch` thay `nodemon` để loại nhánh `braces` chưa có bản vá tại lúc kiểm tra ([thông báo braces](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)). Dùng `npm ci` để đồng bộ gói đã cài với lockfile và chạy lại `npm audit --audit-level=high` khi cập nhật dependency.
+
+CI: [.github/workflows/ci.yml](../.github/workflows/ci.yml). Chạy `npm test` trong backend và `npm run test:e2e` trong frontend, gồm tạo hồ sơ admin, webhook thanh toán và trình duyệt desktop/mobile. Mongo dùng DB `courtsim_test_<uuid>` riêng; thiếu URI thì các ca backend tích hợp bị skip. E2E email/model và giao dịch thanh toán là fixture, không chứng minh dịch vụ thật hoạt động. Kết quả tạm ở `.test-artifacts/`, dọn bằng `npm run test:clean` trong frontend. JavaScript có lint/kiểm tra cú pháp, chưa có TypeScript typecheck.
+
+Webhook chính `/api/payments/sepay/webhook` không dùng cookie/Origin, nhưng luôn kiểm tra khóa/chữ ký trước khi xử lý. Các alias `/api/payment` và `/api/v1/checkout`, với hậu tố `/sepay/webhook` hoặc `/webhook/bank-transfer`, có cùng kiểm tra này. API tạo đơn và xác nhận quản trị vẫn cần chống CSRF. Thiếu khóa webhook trả 503. Đơn đã được xử lý không bị thao tác từ chối đồng thời ghi đè. Nếu dịch vụ/DB lỗi giữa lúc cấp quyền và cập nhật trạng thái, cần đối soát giao dịch `processing` với quyền đã cấp trước khi can thiệp; chưa có cơ chế phục hồi tự động cho trường hợp này.
 
 Trong `backend`: `node src/scripts/smokeAi.js` dùng tình huống hư cấu, có phí; `npm run legal:smoke` kiểm tra vbpl trực tiếp, tạo `.test-artifacts/VBPL_LIVE_CHECK.json` khi được chạy. Các script benchmark gắn phiên/tài khoản cụ thể đã bỏ.
 

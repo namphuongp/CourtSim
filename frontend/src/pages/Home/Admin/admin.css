@@ -64,6 +64,15 @@
 .admin-transcript time { margin-left:15px; font-size:12px; color:#62748a; }
 .admin-preserve { white-space:pre-wrap; overflow-wrap:anywhere; }
 .admin-shell .admin-danger { color:#ad3240; border-color:#e5b0b8; }
+.admin-case-form fieldset { min-width:0; border:0; padding:0; }
+.admin-case-form label { display:grid; gap:7px; margin-bottom:18px; font-weight:600; }
+.admin-case-form input,.admin-case-form textarea,.admin-case-form select { width:100%; box-sizing:border-box; }
+.admin-case-form textarea { font:inherit; border:1px solid #becde0; border-radius:8px; padding:12px; background:#fff; color:#244768; resize:vertical; }
+.admin-case-form .admin-evidence-form { border:1px solid var(--admin-border); border-radius:10px; padding:16px; margin:18px 0; }
+.admin-case-actions { margin-top:20px; }
+.admin-case-list { list-style:none; padding:0; }
+.admin-case-list li { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; border-bottom:1px solid var(--admin-border); padding:16px 0; overflow-wrap:anywhere; }
+.admin-case-list li>div { flex:1 1 250px; min-width:0; }
 .admin-payment-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
 .admin-payment-actions small { flex-basis:100%; color:#ad3240; }
 .admin-shell .admin-menu-toggle { display:none; }

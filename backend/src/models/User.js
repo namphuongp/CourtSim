@@ -10,7 +10,7 @@ const userSchema = new mongoose.Schema({
   email_verified: { type: Boolean, default: false },
   auth_providers: { type: [String], enum: ['password', 'google'], default: [] },
   system_role: { type: String, enum: ['user', 'admin'], default: 'user' },
-  subscription_type: { type: String, enum: ['free', 'plus', 'pro'], default: 'free' },
+  subscription_type: { type: String, enum: ['free', 'plus', 'pay-per-use', 'lite', 'pro'], default: 'free' },
   status: { type: String, enum: ['active', 'banned'], default: 'active' },
   created_at: { type: Date, default: Date.now }
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });

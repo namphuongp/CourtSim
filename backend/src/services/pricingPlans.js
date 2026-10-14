@@ -1,3 +1,5 @@
+import { MEMBERSHIP_PLANS } from '../../../shared/membershipPolicy.mjs';
+
 export const PAYMENT_PRODUCTS = Object.freeze({
   case: {
     type: 'case',
@@ -8,7 +10,7 @@ export const PAYMENT_PRODUCTS = Object.freeze({
     price: '30.000 VND/case',
     cadence: 'Mua tung case',
     paymentPurpose: 'Mua truoc 01 luot mo phong',
-    entitlement: { type: 'case_credit', quantity: 1, unit: 'case' },
+    entitlement: { type: 'case_credit', quantity: 1, unit: 'case', plan: 'pay-per-use' },
   },
   lite: {
     type: 'lite',
@@ -19,7 +21,7 @@ export const PAYMENT_PRODUCTS = Object.freeze({
     price: '99.000 VND',
     cadence: 'Bundle 5 case',
     paymentPurpose: 'Mua goi Lite 5 luot mo phong',
-    entitlement: { type: 'case_credit', quantity: 5, unit: 'case' },
+    entitlement: { type: 'case_credit', quantity: 5, unit: 'case', plan: 'lite' },
   },
   pro: {
     type: 'pro',
@@ -72,5 +74,6 @@ export function publicCheckoutPlan(plan) {
     cadence: plan.cadence,
     paymentPurpose: plan.paymentPurpose,
     entitlement: plan.entitlement,
+    features: MEMBERSHIP_PLANS[plan.id],
   };
 }

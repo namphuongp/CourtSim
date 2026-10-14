@@ -49,7 +49,7 @@ export default function AuthForm({ register = false }) {
     <GoogleButton /><div className="auth-divider"><span>hoặc dùng tài khoản</span></div>
     <form onSubmit={submit} aria-busy={busy}>
       {register && <label>Họ và tên<input name="full_name" autoComplete="name" required minLength={2} maxLength={100} /></label>}
-      <label>Tài khoản<input name="email" type="email" autoComplete="email" maxLength={254} required /></label>
+      <label>Email<input name="email" type="email" autoComplete="email" maxLength={254} required /></label>
       <PasswordField creating={register} forgot={!register} />
       {register && <><p className="auth-hint">Dùng ít nhất 8 ký tự, có chữ hoa và số.</p><PasswordField name="confirm_password" label="Nhập lại mật khẩu" creating error={confirmationError} onChange={() => setConfirmationError('')} /></>}
       {error && <p role="alert">{error}</p>}

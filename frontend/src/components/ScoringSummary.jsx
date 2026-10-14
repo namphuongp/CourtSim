@@ -17,7 +17,7 @@ export default function ScoringSummary({ result, sessionId }) {
       {summary.partial && <p className="mt-3 text-sm leading-6">{summary.remaining}% trọng số chưa đánh giá và không bị tính thành 0 điểm.</p>}
       {missingLaw && <p className="mt-2 max-w-3xl text-sm leading-6">Phần căn cứ pháp luật chưa đủ nguồn để chấm. CourtSim chưa xác minh được nguồn phù hợp từ vbpl.vn, đây không phải lỗi của bạn. Nhận xét dưới đây chỉ dựa trên phần đã đánh giá.</p>}
     </section>
-    <div className="score-highlight-grid grid gap-6 md:grid-cols-2">
+    {result.features?.detailedScoring !== false && <div className="score-highlight-grid grid gap-6 md:grid-cols-2">
       <section className="score-card rounded-2xl border border-slate-200 bg-white p-6" aria-labelledby="strengths-heading">
         <h2 id="strengths-heading" className="text-lg font-bold">Bạn đã làm tốt</h2>
         {highlights.strengths.length ? <ul className="mt-4 space-y-5">{highlights.strengths.map(item => <li key={item.id}>
@@ -32,7 +32,7 @@ export default function ScoringSummary({ result, sessionId }) {
           <p>{item.improvement}</p><p className="mt-1 text-sm text-slate-500">{item.label}</p>
         </li>)}</ol> : <p className="mt-3 text-sm">Chưa ghi nhận mục cần cải thiện trong phần đã chấm. Bạn có thể xem các nhận xét chi tiết bên dưới.</p>}
       </section>
-    </div>
+    </div>}
     {result.criteria && <section className="score-groups" aria-labelledby="groups-heading">
       <h2 id="groups-heading" className="text-xl font-bold">Các nhóm kỹ năng</h2>
       <p className="mt-1 text-sm text-slate-600">Mở từng nhóm khi muốn xem điểm, nhận xét và căn cứ của từng tiêu chí.</p>

@@ -17,7 +17,10 @@ export function corsOptions(requestOrigin, callback) {
 }
 
 function isSepayWebhook(request) {
-  return request.method === 'POST' && request.path === '/api/payments/sepay/webhook';
+  // Các đường dẫn này đều xác thực chữ ký/secret trong CheckoutRoutes.
+  const prefixes = ['/api/v1/checkout', '/api/payment', '/api/payments'];
+  const suffixes = ['/sepay/webhook', '/webhook/bank-transfer'];
+  return request.method === 'POST' && prefixes.some(prefix => suffixes.some(suffix => request.path === prefix + suffix));
 }
 
 export function browserMutationGuard(request, _response, next) {

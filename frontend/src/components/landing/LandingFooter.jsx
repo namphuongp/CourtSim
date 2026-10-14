@@ -4,20 +4,20 @@ import { ArrowUpRight, Gavel } from 'lucide-react';
 const groups = [
   { title: 'Sản phẩm', links: [
     { label: 'Chọn vụ án', to: '/dashboard/setup' },
-    { label: 'Cách học', href: '#how-it-works' },
-    { label: 'Kỹ năng luyện tập', href: '#skills' },
-    { label: 'Cách nhận góp ý', href: '#feedback' },
+    { label: 'Cách học', href: '#workflow' },
+    { label: 'Kỹ năng luyện tập', href: '#features' },
+    { label: 'Cách nhận góp ý', to: '/guide#scoring' },
   ] },
   { title: 'Hỗ trợ', links: [
     { label: 'Hướng dẫn sử dụng', to: '/guide' },
-    { label: 'Câu hỏi thường gặp' },
-    { label: 'Liên hệ hỗ trợ' },
-    { label: 'Gửi góp ý' },
+    { label: 'Câu hỏi thường gặp', to: '/guide#faq' },
+    { label: 'Hỗ trợ khi gặp lỗi', to: '/guide#support' },
+    { label: 'Gửi góp ý', to: '/guide#feedback' },
   ] },
-  { title: 'Pháp lý', links: [
-    { label: 'Điều khoản sử dụng' },
-    { label: 'Chính sách bảo mật' },
-    { label: 'Chính sách cookie' },
+  { title: 'Thông tin sử dụng', links: [
+    { label: 'Phạm vi sử dụng', to: '/guide#usage' },
+    { label: 'Dữ liệu cá nhân', to: '/guide#privacy' },
+    { label: 'Cookie và bản nháp', to: '/guide#cookies' },
     { label: 'Lưu ý sử dụng', href: '#footer-disclaimer' },
   ] },
 ];
@@ -35,9 +35,6 @@ export default function LandingFooter() {
       <div className="landing-footer-about">
         <Link to="/" className="landing-brand" aria-label="CourtSim — Trang chủ"><Gavel size={25} aria-hidden="true" />Court<span>Sim</span></Link>
         <p className="landing-footer-copyright">© {new Date().getFullYear()} CourtSim.<br />Bảo lưu mọi quyền.</p>
-        <div className="landing-footer-social" aria-label="Kết nối với CourtSim">
-          {[['f', 'Facebook'], ['in', 'LinkedIn'], ['▶', 'YouTube']].map(([mark, label]) => <FooterLink key={label} label={label} className="landing-social-link"><span aria-hidden="true">{mark}</span></FooterLink>)}
-        </div>
       </div>
       {groups.map(group => <nav key={group.title} aria-label={group.title}><h2>{group.title}</h2><ul>{group.links.map(link => <li key={link.label}><FooterLink {...link} /></li>)}</ul></nav>)}
       <div className="landing-footer-note">

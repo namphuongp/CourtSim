@@ -3,6 +3,7 @@ import { CourtRecord, SimulationSession } from '../models/index.js';
 import { AppError } from '../utils/AppError.js';
 import { learnerCase } from './learnerPresentation.js';
 import { publicConversation } from './conversationPolicy.js';
+import { sessionFeatures } from '../../../shared/membershipPolicy.mjs';
 
 export const MAX_TURNS = 20;
 const LEASE_MS = 10 * 60_000;
@@ -44,9 +45,9 @@ export async function withSessionLock(session, action, { leaseMs = LEASE_MS } = 
   }
 }
 
-export function publicSession(session) {
+export function publicSession(session, user) {
   const value = session.toObject ? session.toObject() : session;
-  const { feedback, feedback_prompted_at, feedback_submitted_at, operation, turns, evaluation, opening, case_snapshot, creation_request_id, ...safe } = value;
-  return { ...safe, conversation: publicConversation(value, Boolean(operation && new Date(operation.expires_at) > new Date())), ...(case_snapshot ? { case_id: learnerCase(case_snapshot) } : typeof safe.case_id === 'object' && safe.case_id?.title ? { case_id: learnerCase(safe.case_id) } : {}), max_turns: MAX_TURNS,
+  const { feedback, feedback_prompted_at, feedback_submitted_at, operation, turns, evaluation, opening, case_snapshot, creation_request_id, access_ready, ...safe } = value;
+  return { ...safe, features: sessionFeatures(value, user), conversation: publicConversation(value, Boolean(operation && new Date(operation.expires_at) > new Date())), ...(case_snapshot ? { case_id: learnerCase(case_snapshot) } : typeof safe.case_id === 'object' && safe.case_id?.title ? { case_id: learnerCase(safe.case_id) } : {}), max_turns: MAX_TURNS,
     processing: Boolean(operation && new Date(operation.expires_at) > new Date()) };
 }

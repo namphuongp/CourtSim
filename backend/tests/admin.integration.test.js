@@ -50,6 +50,23 @@ test('admin API: MongoDB thật, phân quyền, số liệu, tìm kiếm, chi ti
     assert.ok(!JSON.stringify(value).match(/SECRET_HASH|PRIVATE_GOOGLE|SECRET_PROMPT|SECRET_LOCK|tokenHash|password_hash|system_prompt/));
     return { status: res.status, ...value };
   }
+  await t.test('tạo vụ án chỉ cho admin, kiểm tra nội dung và chứng cứ', async () => {
+    const body = { title: 'Hồ sơ mới', category: 'dân sự', summary: 'Tình huống kiểm thử.', full_document: 'Hai bên có hợp đồng vay.' };
+    async function create(cookie, payload) {
+      return fetch(`http://127.0.0.1:${server.address().port}/api/v1/cases`, { method: 'POST', headers: { Cookie: cookie, Origin: 'http://localhost:5173', 'X-CourtSim-Request': '1', 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    }
+    assert.equal((await create('', body)).status, 401);
+    assert.equal((await create(cookies[1], body)).status, 403);
+    assert.equal((await create(cookies[0], { ...body, evidence_inventory: [{ name: 'Hợp đồng', availability: 'provided' }] })).status, 400);
+    const valid = { ...body, evidence_inventory: [{ name: 'Hợp đồng', availability: 'provided', content: body.full_document }, { name: 'Biên nhận', availability: 'mentioned_only' }] };
+    const response = await create(cookies[0], valid);
+    assert.equal(response.status, 201);
+    const result = (await response.json()).data;
+    assert.equal(result.evidence_inventory.length, 2);
+    assert.equal(result.evidence_inventory[0].content, body.full_document);
+    assert.equal(result.evidence_inventory[1].availability, 'mentioned_only');
+    assert.equal((await Case.findById(result._id)).title, body.title);
+  });
   await t.test('tất cả API chặn user thường, chưa xác minh và chưa đăng nhập', async () => {
     for (const path of ['/dashboard', '/users', `/users/${user._id}`, '/sessions', `/sessions/${modern._id}`, '/ai/usage', '/ai/cost', '/system/health', '/audit', '/analytics/activity']) {
       assert.equal((await request(path, { cookie: '' })).status, 401);

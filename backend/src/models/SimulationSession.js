@@ -8,6 +8,8 @@ const simulationSessionSchema = new mongoose.Schema({
   difficulty: { type: String, enum: ['beginner', 'balanced', 'advanced'], default: 'balanced' },
   turn_count: { type: Number, default: 0, min: 0 },
   creation_request_id: { type: String },
+  access_ready: { type: Boolean },
+  access_plan: { type: String, enum: ['freemium', 'pay-per-use', 'lite', 'pro'] },
   case_snapshot: { type: mongoose.Schema.Types.Mixed, default: null },
   opening: { type: mongoose.Schema.Types.Mixed, default: null },
   // Ghi cả lượt và biên bản trong một document để MongoDB standalone cũng nguyên tử.

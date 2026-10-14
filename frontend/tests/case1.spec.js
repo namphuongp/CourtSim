@@ -10,9 +10,10 @@ test.afterAll(async () => { await harness?.close(); });
 test('Case1: chọn vai, hồ sơ, kéo thả, đối đáp, tải lại, chấm điểm và lịch sử', async ({ page }, info) => {
   const role = info.project.name === 'mobile' ? 'plaintiff_lawyer' : 'defense_lawyer';
   const label = caseRoleLabel(role, case1Appeal);
+  const email = `case1-${info.project.name}@example.test`;
   await page.goto('/register');
   await page.getByLabel('Họ và tên').fill('Kiểm thử Case1');
-  await page.getByLabel('Email').fill(`case1-${info.project.name}@example.test`);
+  await page.getByLabel('Email').fill(email);
   await page.getByLabel('Mật khẩu', { exact: true }).fill('Test-only-password-123');
   await page.getByLabel('Nhập lại mật khẩu', { exact: true }).fill('Test-only-password-123');
   await page.getByRole('button', { name: 'Đăng ký', exact: true }).click();
@@ -20,6 +21,8 @@ test('Case1: chọn vai, hồ sơ, kéo thả, đối đáp, tải lại, chấm
   await page.getByLabel('Mã xác thực').fill(harness.emails.at(-1).otp);
   await page.getByRole('button', { name: 'Xác nhận', exact: true }).click();
   await expect(page).toHaveURL(/dashboard$/);
+  await harness.grantPlan(email, 'lite');
+  await page.reload();
   await page.getByRole('link', { name: 'Tạo phiên mới', exact: true }).click();
   await page.getByRole('button', { name: new RegExp('Phúc thẩm tranh chấp đất') }).click();
   await page.getByRole('button', { name: label, exact: true }).click();

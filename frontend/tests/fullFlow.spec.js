@@ -30,6 +30,7 @@ test('trình duyệt → API thật → MongoDB riêng: tài khoản, hồ sơ, 
   await page.getByLabel('Mã xác thực').fill(harness.emails.at(-1).otp);
   await page.getByRole('button', { name: 'Xác nhận', exact: true }).click();
   await expect(page).toHaveURL(/dashboard$/);
+  await harness.grantPlan(email, 'case');
   await page.reload();
   await page.getByRole('link', { name: 'Tạo phiên mới', exact: true }).click();
   await page.getByRole('button', { name: /Hồ sơ kiểm thử trình duyệt/ }).click();
@@ -116,15 +117,21 @@ test('trình duyệt → API thật → MongoDB riêng: tài khoản, hồ sơ, 
   harness.control.delayMs = 4000;
   await page.getByLabel('Lập luận của bạn').fill('Tôi phân biệt việc có hợp đồng với việc đã trả tiền. Hồ sơ chưa có biên nhận nên cần đối chiếu diễn biến thanh toán.');
   await page.getByRole('button', { name: 'Gửi lập luận', exact: true }).click();
-  await expect.poll(async () => (await page.request.get(`http://127.0.0.1:5019/api/v1/sessions/${sessionId}`).then(r => r.json())).data.processing).toBe(true);
-  await expect(page.locator('[data-actor="opponent"]')).toHaveAttribute('data-state', 'preparing');
-  await expect(page.locator('[data-actor="opponent"] .state-listening')).toHaveCSS('opacity', '1');
+  let preparingActor;
+  await expect.poll(async () => {
+    const { data } = await page.request.get(`http://127.0.0.1:5019/api/v1/sessions/${sessionId}`).then(r => r.json());
+    preparingActor = data.conversation.next_speaker;
+    return data.processing && ['judge', 'opponent'].includes(preparingActor);
+  }).toBe(true);
+  // Vai tiếp theo tùy lời vừa trình bày và trạng thái điều hành, lấy từ backend đã lưu.
+  await expect(page.locator(`[data-actor="${preparingActor}"]`)).toHaveAttribute('data-state', 'preparing');
+  await expect(page.locator(`[data-actor="${preparingActor}"] .state-listening`)).toHaveCSS('opacity', '1');
   await expect(page.getByRole('button', { name: 'Kết thúc và chấm điểm', exact: true })).toBeDisabled();
   await page.reload();
-  await expect(page.getByRole('button', { name: 'Tiếp tục: Chủ tọa' })).toBeVisible({ timeout: 20000 });
+  await expect(page.getByRole('button', { name: /^Tiếp tục:/ })).toBeVisible({ timeout: 20000 });
   harness.control.delayMs = 0;
   harness.control.failNext = true; expectedFailures++;
-  await page.getByRole('button', { name: 'Tiếp tục: Chủ tọa' }).click();
+  await page.getByRole('button', { name: /^Tiếp tục:/ }).click();
   await expect(page.getByRole('button', { name: 'Thử lại lời thoại' })).toBeVisible();
   await page.getByRole('button', { name: 'Thử lại lời thoại' }).click();
   await expect(page.getByRole('button', { name: 'Trình bày ý kiến' })).toBeVisible();
@@ -223,11 +230,27 @@ test('trình duyệt → API thật → MongoDB riêng: tài khoản, hồ sơ, 
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   }
   await harness.makeAdmin(email);
-  for (const route of ['admin', 'admin/users', 'admin/sessions', 'admin/feedback', 'admin/ai', 'admin/system', 'admin/audit']) {
+  for (const route of ['admin', 'admin/users', 'admin/cases', 'admin/sessions', 'admin/feedback', 'admin/payments', 'admin/ai', 'admin/system', 'admin/audit']) {
     await page.goto('/' + route);
     await expect(page.locator('#admin-content h1')).toBeVisible();
     await expect(page.getByRole('alert')).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   }
+  // Tạo hồ sơ qua giao diện, lưu MongoDB riêng và dùng được ở màn hình luyện tập.
+  await page.goto('/admin/cases');
+  await page.getByLabel('Tên vụ án', { exact: true }).fill('Vụ án được admin tạo');
+  await page.getByLabel('Tóm tắt vụ án').fill('Tình huống hư cấu kiểm thử tạo hồ sơ.');
+  await page.getByLabel('Nội dung hồ sơ').fill('Hai bên có hợp đồng vay. Nội dung chỉ dùng kiểm thử.');
+  await page.getByRole('button', { name: 'Thêm chứng cứ' }).click();
+  await page.getByLabel('Tên chứng cứ 1', { exact: true }).fill('Hợp đồng kiểm thử');
+  await page.getByLabel('Nội dung chứng cứ 1').fill('Hai bên có hợp đồng vay.');
+  await page.getByRole('button', { name: 'Tạo vụ án', exact: true }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Đã tạo vụ án' })).toBeVisible();
+  await page.reload();
+  await page.getByRole('button', { name: 'Xem hồ sơ: Vụ án được admin tạo', exact: true }).click();
+  await page.getByRole('button', { name: 'Mở rộng chứng cứ' }).click();
+  await expect(page.getByRole('region', { name: 'Chi tiết hồ sơ' })).toContainText('Hợp đồng kiểm thử');
+  await page.goto('/dashboard/setup');
+  await expect(page.getByRole('button', { name: /Vụ án được admin tạo/ })).toBeVisible();
   expect(browserErrors).toEqual([]);
 });

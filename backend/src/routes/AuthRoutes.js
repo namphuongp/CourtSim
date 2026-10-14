@@ -13,6 +13,7 @@ import { validateBody, normalizeEmail, validatePassword, startChallenge, resendC
 import { assertEmailReady } from '../services/emailService.js';
 import { cookie, cookieOptions, hash, SESSION_COOKIE, issueSession, publicUser } from '../services/authSession.js';
 import { securityAudit } from '../services/securityAudit.js';
+import { membershipStatus } from '../services/paymentAccess.js';
 import { startGoogle, completeGoogle } from '../services/googleAuthService.js';
 
 // Hash giả cân bằng công việc bcrypt khi email không tồn tại; không phải mật khẩu tài khoản.
@@ -84,6 +85,7 @@ export function createAuthRoutes({ sendEmail } = {}) {
     res.clearCookie(SESSION_COOKIE, cookieOptions).json({ message: 'Đã đổi mật khẩu. Vui lòng đăng nhập lại.' });
   }));
   router.get('/me', authenticate, (req, res) => res.json({ user: publicUser(req.authUser) }));
+  router.get('/membership', authenticate, asyncHandler(async (req, res) => res.json({ data: await membershipStatus(req.authUser) })));
   router.post('/logout', asyncHandler(async (req, res) => {
     const token = cookie(req, SESSION_COOKIE);
     if (token) await AuthSession.deleteOne({ tokenHash: hash(token) });

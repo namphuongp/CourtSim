@@ -11,7 +11,8 @@ const rows = [80, 90].map((score, i) => ({
 async function mock(page, data, fail = false) {
   await page.route('**/api/**', route => {
     const url = new URL(route.request().url());
-    if (url.pathname.endsWith('/auth/me')) return route.fulfill({ json: { user: { id: 'skill-user', role: 'user', full_name: 'Người học' } } });
+    if (url.pathname.endsWith('/auth/me')) return route.fulfill({ json: { user: { id: 'skill-user', role: 'user', tier: 'pro', full_name: 'Người học' } } });
+    if (url.pathname.endsWith('/auth/membership')) return route.fulfill({ json: { data: { id: 'pro', skillAnalytics: true } } });
     expect(url.searchParams.get('include')).toBe('skills');
     return route.fulfill(fail ? { status: 503, json: { message: 'Không tải được đánh giá.' } } : { json: { data } });
   });

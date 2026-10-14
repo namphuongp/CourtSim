@@ -980,3 +980,9 @@
   .landing-page a:hover,
   .landing-page a:active { transform: none !important; }
 }
+.pricing-comparison { max-width:100%; overflow:auto; margin-top:30px; background:white; border:1px solid #d7e5ed; border-radius:16px; color:#163852; }
+.pricing-comparison table { width:100%; border-collapse:collapse; min-width:660px; text-align:left; }
+.pricing-comparison caption { padding:18px; font-weight:700; text-align:left; }
+.pricing-comparison th,.pricing-comparison td { padding:14px 18px; border-top:1px solid #e1eaf2; }
+.pricing-comparison thead th { background:#edf6fa; }
+.pricing-comparison th[scope="row"] { font-weight:600; }

@@ -10,7 +10,7 @@ import {
   publicPayment,
   verifySepayWebhook,
 } from '../services/paymentService.js';
-import { findCheckoutPlan, findPaymentProduct, normalizePaymentType } from '../services/pricingPlans.js';
+import { findCheckoutPlan, findPaymentProduct, normalizePaymentType, publicCheckoutPlan } from '../services/pricingPlans.js';
 import PaymentTransaction from '../models/PaymentTransaction.js';
 
 const router = Router();
@@ -57,7 +57,7 @@ router.get('/orders/:transactionId', asyncHandler(async (request, response) => {
 router.get('/plans/:planId', asyncHandler(async (request, response) => {
   const plan = findCheckoutPlan(request.params.planId);
   if (!plan) throw new AppError('Goi thanh toan khong hop le.', 404, 'PLAN_NOT_FOUND');
-  response.json({ data: plan });
+  response.json({ data: publicCheckoutPlan(plan) });
 }));
 
 // Legacy endpoint kept read-only: frontend must not mark a payment paid.

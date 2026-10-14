@@ -5,6 +5,7 @@ import UserHeader from '../../components/UserHeader';
 import api, { getApiError } from '../../services/api';
 import { findPricingPlan } from '../../services/pricingPlans';
 import './checkout.css';
+import { setCurrentUser } from '../../services/auth';
 
 const formatMoney = (amount) => amount ? new Intl.NumberFormat('vi-VN').format(amount) + ' VNĐ' : '0 VNĐ';
 const statusText = {
@@ -31,8 +32,17 @@ export default function CheckoutPage() {
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState('');
   const [now, setNow] = useState(() => Date.now());
+  const [accessSynced, setAccessSynced] = useState(false);
 
   const countdown = order?.expiresAt ? remaining(order.expiresAt, now) : '';
+  useEffect(() => {
+    if (order?.status !== 'paid') return;
+    const controller = new AbortController();
+    api.get('/auth/me', { signal: controller.signal }).then(({ data }) => {
+      if (!controller.signal.aborted) { setCurrentUser(data.user); setAccessSynced(true); }
+    }).catch(() => {}); // Quyền thực tế vẫn do backend kiểm tra ở mỗi yêu cầu.
+    return () => controller.abort();
+  }, [order?.status]);
 
   async function createOrder() {
     if (!plan || busy || plan.amount === 0) return;
@@ -108,7 +118,7 @@ export default function CheckoutPage() {
         <div>
           <p className="checkout-eyebrow"><Sparkles size={16} aria-hidden="true" /> Thanh toán CourtSim</p>
           <h1 id="checkout-heading">{isFree ? 'Kích hoạt trải nghiệm miễn phí' : `Thanh toán gói ${plan.name}`}</h1>
-          <p>{isFree ? 'Freemium mở 2 case đầu tiên mà không cần tạo payment.' : payPerUse ? 'Pay-per-use là mua trước 01 lượt mô phỏng. Khi SePay gửi webhook khớp số tiền và nội dung, hệ thống sẽ tự cộng lượt.' : 'Kiểm tra gói đã chọn trước khi tạo yêu cầu thanh toán chính thức của CourtSim.'}</p>
+          <p>{isFree ? 'Freemium có 2 lượt mô phỏng và kết quả tổng quan. Mỗi tài khoản được dùng thử một lần.' : payPerUse ? 'Pay-per-use cộng 01 lượt mô phỏng, mở trợ lý luật và chấm điểm chi tiết sau khi thanh toán được xác nhận.' : 'Kiểm tra gói đã chọn trước khi tạo yêu cầu thanh toán chính thức của CourtSim.'}</p>
         </div>
         <aside aria-label="Gói đã chọn">
           <span>{plan.cadence}</span>
@@ -176,6 +186,7 @@ export default function CheckoutPage() {
               {order.status === 'expired' && <button type="button" onClick={() => { setOrder(null); setError(''); setQrMissing(false); }}>Tạo đơn mới</button>}
               {order.status === 'paid' && <Link to="/dashboard/setup">Tiếp tục luyện tập <ArrowRight size={16} aria-hidden="true" /></Link>}
             </div>
+            {accessSynced && <p>Quyền lợi thành viên đã được cập nhật.</p>}
           </div>}
         </section>
       </div>

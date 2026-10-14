@@ -9,8 +9,18 @@ import SkillDetails from '../../../components/skills/SkillDetails';
 import RecentEvaluations from '../../../components/skills/RecentEvaluations';
 import '../../../components/dashboard/dashboard.css';
 import '../../../components/skills/skills.css';
+import UpgradeNotice from '../../../components/membership/UpgradeNotice';
+import useMembership from '../../../components/membership/useMembership';
 
 export default function Analytics() {
+  const membership = useMembership();
+  if (membership.loading) return <p role="status">Đang kiểm tra quyền lợi phân tích kỹ năng…</p>;
+  if (membership.error) return <section className="practice-dashboard"><p role="alert">{membership.error}</p><button onClick={membership.refresh}>Thử lại</button></section>;
+  if (!membership.data?.skillAnalytics) return <section className="practice-dashboard"><h1 className="text-3xl font-bold">Đánh giá kỹ năng</h1><UpgradeNotice analytics /></section>;
+  return <SkillAnalytics />;
+}
+
+function SkillAnalytics() {
   const { sessions, loading, error, retry } = useDashboardSessions({ includeSkills: true });
   const profile = useMemo(() => skillProfile(sessions), [sessions]);
   const comments = useMemo(() => profileComments(profile.evaluated), [profile]);

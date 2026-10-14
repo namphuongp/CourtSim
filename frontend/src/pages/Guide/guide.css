@@ -6,6 +6,10 @@
     radial-gradient(circle at 92% 2%, rgb(255 211 83 / 0.16), transparent 25%),
     linear-gradient(180deg, #f4fbfc 0%, #f8fbfc 58%, #f7fafc 100%);
 }
+.guide-page [id] { scroll-margin-top:24px; }
+.guide-faq details { border-bottom:1px solid #dce5ef; padding:16px 0; }
+.guide-faq summary { cursor:pointer; font-weight:700; }
+.guide-page :focus-visible { outline:3px solid #08798a; outline-offset:4px; }
 
 .guide-container {
   width: min(1120px, calc(100% - 48px));

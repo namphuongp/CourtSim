@@ -2,6 +2,7 @@ import { deviceLabel, providerNames } from './accountService.js';
 import { createHash, randomBytes } from 'node:crypto';
 import { AuthSession } from '../models/AuthState.js';
 import { env } from '../config/env.js';
+import { memberFeatures } from '../../../shared/membershipPolicy.mjs';
 
 export const hash = value => createHash('sha256').update(value).digest('hex');
 export const secret = () => randomBytes(32).toString('base64url');
@@ -12,7 +13,7 @@ export function cookie(request, name) {
   return typeof value === 'string' && /^[A-Za-z0-9_-]{20,200}$/.test(value) ? value : null;
 }
 export function publicUser(user) {
-  return { id: String(user._id), full_name: user.username, email: user.email, role: user.system_role, tier: user.subscription_type, emailVerified: user.email_verified, authProviders: user.password_hash !== undefined ? providerNames(user) : user.auth_providers ?? [] };
+  return { id: String(user._id), full_name: user.username, email: user.email, role: user.system_role, tier: user.subscription_type, membership: memberFeatures(user), emailVerified: user.email_verified, authProviders: user.password_hash !== undefined ? providerNames(user) : user.auth_providers ?? [] };
 }
 export async function issueSession(request, response, user) {
   const previous = cookie(request, SESSION_COOKIE);

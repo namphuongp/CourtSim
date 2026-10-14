@@ -7,6 +7,8 @@ import api, { getApiError } from '../../../services/api';
 import { roleLabel } from '../../../services/simulation';
 import { draftKey, readDraft, saveDraft } from '../../../services/auth';
 import '../../../components/dashboard/dashboard.css';
+import useMembership from '../../../components/membership/useMembership';
+import MembershipSummary from '../../../components/membership/MembershipSummary';
 
 const roles = [
   { id: 'defense_lawyer', label: 'Luật sư bảo vệ bị đơn/bị cáo' },
@@ -15,6 +17,7 @@ const roles = [
 
 export default function SimulationSetup() {
   const navigate = useNavigate();
+  const membership = useMembership();
   const [cases, setCases] = useState([]);
   const storageKey = draftKey('setup');
   const [form, updateForm] = useState(() => {
@@ -59,7 +62,7 @@ export default function SimulationSetup() {
   const eventDate = fixedDate || form.case_event_date;
 
   async function startSession() {
-    if (busy.current || selectedCase?._id !== form.case_id) return;
+    if (busy.current || selectedCase?._id !== form.case_id || !membership.data?.canCreateSession || membership.loading) return;
     busy.current = true;
     setState((current) => ({ ...current, submitting: true, error: '' }));
     try {
@@ -69,6 +72,7 @@ export default function SimulationSetup() {
     } catch (error) {
       setState((current) => ({ ...current, submitting: false, error: getApiError(error, 'Chưa thể bắt đầu phiên. Lựa chọn của bạn vẫn được giữ lại. Vui lòng thử lại.') }));
       busy.current = false;
+      if (error.response?.status === 402) membership.refresh();
     }
   }
 
@@ -78,6 +82,7 @@ export default function SimulationSetup() {
         <div><h1 className="text-3xl font-bold text-white">Thiết lập phiên tòa</h1><p className="mt-2 text-slate-400">Chọn vụ án và vai luật sư để bắt đầu.</p></div>
         <Link to="/guide" className="setup-guide-link flex items-center gap-2 rounded-xl border border-slate-700 px-4 py-2 text-sm text-blue-300"><CircleHelp size={18} /> Xem hướng dẫn</Link>
       </header>
+      <MembershipSummary resource={membership} />
       {state.error && <p role="alert" className="dashboard-card dashboard-alert">{state.error} <button className="underline" onClick={() => setReload((n) => n + 1)}>Thử lại</button></p>}
       <fieldset disabled={state.submitting} className="setup-grid grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
@@ -92,7 +97,7 @@ export default function SimulationSetup() {
             <input id="case-event-date" type="date" required readOnly={Boolean(fixedDate)} value={eventDate} onChange={(event) => setForm({ ...form, case_event_date: event.target.value })} className="setup-date rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white" />
           </div>
         </div>
-        <aside className="setup-aside h-fit rounded-3xl border border-slate-800 bg-slate-900 p-6 lg:sticky lg:top-24"><Gavel className="mb-3 text-blue-400" /><h2 className="font-bold text-white">Sẵn sàng tranh tụng?</h2><p className="my-4 text-sm text-slate-400">Chủ tọa hoặc bên đối lập sẽ phát biểu tùy nội dung và giai đoạn luyện tập. Đọc từng lời thoại rồi bấm Tiếp tục để chuyển lượt.</p><button onClick={startSession} disabled={selectedCase?._id !== form.case_id || Boolean(detailError) || !form.case_id || !form.user_court_role || !eventDate || state.submitting} className="setup-start w-full rounded-xl bg-blue-600 p-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">{state.submitting ? 'Đang khởi tạo...' : 'Bắt đầu phiên tòa'}</button></aside>
+        <aside className="setup-aside h-fit rounded-3xl border border-slate-800 bg-slate-900 p-6 lg:sticky lg:top-24"><Gavel className="mb-3 text-blue-400" /><h2 className="font-bold text-white">Sẵn sàng tranh tụng?</h2><p className="my-4 text-sm text-slate-400">Chủ tọa hoặc bên đối lập sẽ phát biểu tùy nội dung và giai đoạn luyện tập. Đọc từng lời thoại rồi bấm Tiếp tục để chuyển lượt.</p><button onClick={startSession} disabled={selectedCase?._id !== form.case_id || Boolean(detailError) || !form.case_id || !form.user_court_role || !eventDate || state.submitting || membership.loading || !membership.data?.canCreateSession} className="setup-start w-full rounded-xl bg-blue-600 p-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">{state.submitting ? 'Đang khởi tạo...' : 'Bắt đầu phiên tòa'}</button></aside>
       </fieldset>
     </section>
   );

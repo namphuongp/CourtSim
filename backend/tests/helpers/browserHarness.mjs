@@ -91,6 +91,15 @@ export async function startBrowserHarness({ courtCase, webReference = false, loc
   const api = createApp({ sendEmail: async mail => emails.push(mail) }).listen(5019, '127.0.0.1');
   await new Promise(resolve => api.once('listening', resolve));
   return { emails, control, calls: () => calls,
+    grantPlan: async (email, type) => {
+      if (mongoose.connection.name !== dbName || !/^courtsim_test_[a-f0-9]{32}$/.test(dbName)) throw new Error('Không đúng DB kiểm thử');
+      const { applyPaymentEntitlement } = await import('../../src/services/paymentAccess.js');
+      const { findPaymentProduct } = await import('../../src/services/pricingPlans.js');
+      const user = await User.findOne({ email });
+      const product = findPaymentProduct(type);
+      if (!user || !product) throw new Error('Thiếu tài khoản/gói kiểm thử');
+      await applyPaymentEntitlement({ userId: user._id, entitlement: product.entitlement });
+    },
     // Chỉ cấp quyền trong DB kiểm thử ngẫu nhiên, không thay tài khoản thật.
     makeAdmin: async email => {
       if (mongoose.connection.name !== dbName || !/^courtsim_test_[a-f0-9]{32}$/.test(dbName)) throw new Error('Không đúng DB kiểm thử');

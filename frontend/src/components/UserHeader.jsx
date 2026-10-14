@@ -3,6 +3,8 @@ import CourtSimBrand from './CourtSimBrand';
 import { LogoutButton } from '../pages/Auth/AccountActions';
 import { getCurrentUser } from '../services/auth';
 import './userShell.css';
+import { memberFeatures } from '../../../shared/membershipPolicy.mjs';
+import './membership/membership.css';
 
 const navigation = [['/dashboard', 'Tổng quan'], ['/dashboard/sessions', 'Phiên đang học'], ['/dashboard/history', 'Lịch sử'], ['/dashboard/analytics', 'Đánh giá kỹ năng'], ['/guide', 'Hướng dẫn'], ['/account', 'Tài khoản']];
 export default function UserHeader() {
@@ -12,6 +14,7 @@ export default function UserHeader() {
       <CourtSimBrand/>
       <div className="user-header-actions">
         {user?.role === 'admin' && <NavLink to="/admin">Quản trị</NavLink>}
+        <NavLink to="/account/membership" className="user-header-membership">{memberFeatures(user).name}</NavLink>
         <NavLink to="/account" className="user-header-name">{user?.full_name || 'Tài khoản'}</NavLink><LogoutButton/>
       </div>
     </div>
