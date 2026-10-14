@@ -10,6 +10,8 @@ node_modules/
 .env.*
 !.env.example
 !.env.*.example
+# Cấu hình frontend công khai để build production; không đặt secret trong file này.
+!frontend/.env.production
 
 # File rác sinh ra trong quá trình build của Vite hoặc Node
 dist/

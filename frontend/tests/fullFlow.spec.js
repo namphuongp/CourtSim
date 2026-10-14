@@ -138,15 +138,10 @@ test('trình duyệt → API thật → MongoDB riêng: tài khoản, hồ sơ, 
   expect(failedCompletion.data.processing).toBe(false);
   await page.getByRole('button', { name: 'Kết thúc và chấm điểm', exact: true }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Xác nhận kết thúc', exact: true }).click();
-  await expect(page.getByLabel('Góp ý của bạn')).toBeVisible();
-  await page.getByLabel('Góp ý của bạn').fill('Góp ý trong dữ liệu kiểm thử riêng.');
-  expectedFailures++;
-  await page.route('**/sessions/*/feedback', route => route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ message: 'Chưa gửi được góp ý. Hãy thử lại hoặc bỏ qua.' }) }), { times: 1 });
-  await page.getByRole('button', { name: 'Gửi góp ý', exact: true }).click();
-  await expect(page.getByRole('alert')).toBeVisible();
-  await expect(page.getByLabel('Góp ý của bạn')).toHaveValue('Góp ý trong dữ liệu kiểm thử riêng.');
+  await expect(page.getByRole('dialog')).toContainText('khảo sát Google Forms');
+  await expect(page.getByRole('dialog').locator('textarea')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Bỏ qua và xem kết quả' })).toBeEnabled();
-  await page.getByRole('button', { name: 'Gửi góp ý', exact: true }).click();
+  await page.getByRole('button', { name: 'Bỏ qua và xem kết quả' }).click();
   await expect(page.getByRole('heading', { name: 'Kết quả luyện tập' })).toBeVisible();
   const completedCalls = harness.calls();
   const getResult = () => page.request.get(`http://127.0.0.1:5019/api/v1/sessions/${sessionId}/result`).then(r => r.json());

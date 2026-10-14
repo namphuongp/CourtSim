@@ -1,7 +1,10 @@
 import React, { lazy, Suspense, useEffect, useState } from 'react';
 import api from './services/api';
 import { getCurrentUser, setCurrentUser, clearAuth, safeReturnPath } from './services/auth';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
+import AnalyticsTracker from './components/analytics/AnalyticsTracker';
+import ConsentBanner from './components/analytics/ConsentBanner';
+const PrivacySettings = lazy(() => import('./pages/Privacy/PrivacySettings'));
 
 const AccountSettings = lazy(() => import('./pages/Account/AccountSettings'));
 const AdminLayout = lazy(() => import('./pages/Home/Admin/AdminLayout'));
@@ -102,6 +105,7 @@ function App() {
   if (authStatus === 'error') return <main className="auth-page"><section className="auth-card"><p role="alert">Chưa thể kết nối CourtSim. Kiểm tra kết nối và thử lại.</p><button className="auth-primary" onClick={() => window.location.reload()}>Thử lại</button></section></main>;
   return (
     <BrowserRouter>
+      <ConsentBanner />
       <Suspense fallback={<main className="auth-page"><p role="status">Đang mở trang…</p></main>}>
       <Routes>
         {/* PUBLIC ROUTES */}
@@ -114,6 +118,7 @@ function App() {
         <Route path="/reset-password" element={<PublicOnlyRoute><VerifyEmail reset /></PublicOnlyRoute>} />
         <Route path="/auth/callback" element={<Navigate to={isAuthenticated() ? safeReturnPath(new URLSearchParams(window.location.search).get('returnTo')) + (new URLSearchParams(window.location.search).get('linked') === '1' ? '?linked=1' : '') : '/login?googleError=failed'} replace />} />
         <Route path="/guide" element={<GuidePage />} />
+        <Route path="/privacy" element={<PrivacySettings />} />
         <Route path="/account/:section?" element={<ProtectedUserRoute><AccountSettings /></ProtectedUserRoute>} />
         <Route path="/checkout/:planId" element={<ProtectedUserRoute><CheckoutPage /></ProtectedUserRoute>} />
 
@@ -154,7 +159,9 @@ function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
         
       </Routes>
+      <AnalyticsTracker />
       </Suspense>
+      <footer className="privacy-footer"><Link to="/privacy">Cài đặt quyền riêng tư</Link></footer>
     </BrowserRouter>
   );
 }

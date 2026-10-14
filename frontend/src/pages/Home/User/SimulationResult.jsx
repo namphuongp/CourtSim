@@ -17,7 +17,6 @@ export default function SimulationResult() {
 function SessionResult({ sessionId }) {
   const navigate = useNavigate();
   const [feedbackOpen, setFeedbackOpen] = useState(false);
-  const [feedbackSent, setFeedbackSent] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [reload, setReload] = useState(0);
@@ -37,14 +36,13 @@ function SessionResult({ sessionId }) {
 
   if (error) return <main className="result-page result-state"><section className="result-card"><p role="alert">{error}</p><button onClick={() => setReload((n) => n + 1)}>Thử lại</button><Link to={`/simulation/${sessionId}`}>Trở lại phiên</Link></section></main>;
   if (!result) return <main className="result-page result-state" role="status"><section className="result-card">Đang tải kết quả...</section></main>;
-  const finishFeedback = (sent) => {
-    setFeedbackSent(sent); setFeedbackOpen(false);
+  const finishFeedback = () => {
+    setFeedbackOpen(false);
     requestAnimationFrame(() => document.getElementById('result-heading')?.focus());
   };
-  if (feedbackOpen) return <main className="result-page result-feedback"><LearnerFeedback sessionId={sessionId} onDone={finishFeedback} /></main>;
+  if (feedbackOpen) return <main className="result-page result-feedback"><LearnerFeedback onDone={finishFeedback} /></main>;
   return (
     <main className="result-page"><div className="result-container space-y-6">
-      {feedbackSent && <p role="status" className="result-notice">Đã gửi góp ý. Cảm ơn bạn đã chia sẻ!</p>}
       <header className="result-hero flex flex-wrap items-center justify-between gap-4"><div><p>Kết quả phiên mô phỏng</p><h1 id="result-heading" tabIndex={-1}>Kết quả luyện tập</h1></div><button onClick={() => navigate('/dashboard')}><Home size={17} /> Tổng quan</button></header>
       <ScoringSummary result={result} sessionId={sessionId} />
       <details className="result-details"><summary>Nhận xét lưu cùng kết quả và nguồn pháp luật</summary>
