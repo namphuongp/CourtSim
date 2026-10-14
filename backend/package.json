@@ -21,6 +21,7 @@
     "openai:sync": "node src/scripts/syncOpenAiBilling.js",
     "case1:import": "node src/scripts/importCase1.js",
     "legal:web:smoke": "node src/scripts/smokeWebLaw.js",
+    "legal:public:smoke": "node src/scripts/smokePublicLaw.js",
     "seed:export": "node src/scripts/exportSeed.js"
   },
   "keywords": [],

@@ -44,7 +44,7 @@ Luồng đối chiếu chính thức vẫn kiểm tra `official_original` hoặc
 
 `LegalCorpusVersion`: fingerprint bất biến, định danh văn bản/loại bản, provenance, quyền, URL/hash/ngày đối chiếu, các tệp nguồn, `version_rules`, quan hệ có trích đoạn bằng chứng, trạng thái và ngày thu hồi. `LegalCorpusProvision`: điều/khoản/điểm, chương/mục, nguyên văn, vị trí trang/tệp, token tìm kiếm; index duy nhất theo phiên bản và locator. Không lưu blob vào phiên hoặc frontend bundle.
 
-`verified` chỉ xác nhận nội dung nguồn. Muốn xác nhận **áp dụng**, review phải có `version_review.rules`: khoảng `from/to`, danh sách điều/ngoại lệ, loại mốc `event_kinds`, phiên bản, ghi chú, ngày duyệt, nguồn và bằng chứng riêng cho nội dung/lịch sử; chuyển tiếp phải `reviewed`. Bộ kiểm tra tải nguồn bằng chứng và so URL/hash/trích đoạn. Không có rule thì vẫn xem được nội dung đã đối chiếu nhưng chưa chấm luật. Văn bản hợp nhất không được tự mang khoảng hiệu lực độc lập.
+`verified` chỉ xác nhận nội dung nguồn. Muốn xác nhận **áp dụng**, review phải có `version_review.rules`: khoảng `from/to`, danh sách điều/ngoại lệ, loại mốc `event_kinds`, phiên bản, ghi chú, ngày duyệt, nguồn và bằng chứng riêng cho nội dung/lịch sử; chuyển tiếp phải `reviewed`. Bộ kiểm tra tải nguồn bằng chứng và so URL/hash/trích đoạn. Không có rule thì chưa xác nhận điều kiện áp dụng; chấm tham khảo từ nguồn web tuân theo chế độ riêng bên dưới. Văn bản hợp nhất không được tự mang khoảng hiệu lực độc lập.
 
 Quan hệ `amends/supplements/replaces/guides` chỉ được nhập khi `target`, `source_url`, `quote` khớp nguồn; không tự sinh quan hệ từ model. Phụ lục và sửa đổi có cấu trúc chưa tách chắc chắn giữ cần duyệt, không gán nhầm số điều lồng trong nội dung sửa luật.
 
@@ -52,9 +52,11 @@ Quan hệ `amends/supplements/replaces/guides` chỉ được nhập khi `target
 
 Trợ lý/mô phỏng ưu tiên kho `verified/reference + allowed + chưa thu hồi`; web bổ sung khi thiếu căn cứ và bật `LEGAL_WEB_REFERENCE_SCORING=true`. Không giới hạn tên miền, không cần `LEGAL_WEB_USAGE_GRANTS`; phạm vi là pháp luật Việt Nam phục vụ tranh chấp đất đai. Server vẫn chặn địa chỉ nội bộ, redirect nguy hiểm, nội dung quá lớn và trích dẫn chưa đọc được. Kết quả tìm kiếm chỉ có tiêu đề không trở thành nguyên văn điều luật.
 
-Hội thoại dùng được nội dung đã đọc, kèm trạng thái áp dụng riêng. Bộ chấm vẫn để phần luật chưa đánh giá khi chưa xác định được phiên bản/thời điểm áp dụng; việc mở kho và web không tự tạo điểm luật hay tính lại phiên cũ.
+Hội thoại dùng được nội dung đã đọc, kèm trạng thái áp dụng riêng. Khi có nguyên văn web, bộ chấm dùng chế độ `web_reference` để đánh giá kỹ năng lựa chọn, hiểu và vận dụng điều luật trong bài luyện tập. Giao diện ghi “Điểm luyện tập · Tham khảo”. Mỗi tiêu chí luật cần nguồn riêng, số điều người học viện dẫn phải có trong nội dung đã tải; không tự tạo điểm nếu không đọc được nguồn. Trạng thái `application_status` vẫn tách biệt với điểm tham khảo, không tự xác nhận hiệu lực, sửa đổi hay chuyển tiếp. Phiên cũ không bị tính lại.
 
-Truy xuất tối đa 5 đơn vị, tổng 8.000 ký tự; số hiệu/locator được ưu tiên, không gửi cả bộ luật. Nội dung nguồn là dữ liệu, không phải chỉ dẫn. Giao diện hiển thị trạng thái áp dụng riêng với trạng thái đã đọc nguồn, ngày đối chiếu và link. Thiếu mốc thì hỏi rõ hoặc nêu giới hạn; không dùng luật mới nhất cho mọi sự kiện.
+Tra cứu thử các bản công khai trong `publicLawCatalog.js` theo mốc hồ sơ trước, nên không phụ thuộc vào web search của model cho các luật đã có địa chỉ xuất bản. Trang thuộc tính được đọc tiếp PDF đính kèm, kể cả Công báo trả `application/octet-stream` (bắt buộc chữ ký PDF). Chỉ tìm web bổ sung khi chưa phủ đủ số hiệu/số điều. Giới hạn hai tài liệu tải đồng thời; HTML 3 MB, PDF 12 MB/150 trang; cache 6 giờ. Giữ kiểm tra HTTPS/DNS/redirect, không gửi tên, địa chỉ hay lời khai vào truy vấn tìm kiếm. `LEGAL_ONLINE_LOOKUP=false` ngừng tải mới; `LEGAL_WEB_REFERENCE_SCORING=false` ngừng đường chấm tham khảo web.
+
+Kho nội bộ truy xuất tối đa 5 đơn vị/8.000 ký tự; web tối đa 8 điều/24.000 ký tự. Số hiệu/locator được ưu tiên, không gửi cả bộ luật. Nội dung nguồn là dữ liệu, không phải chỉ dẫn. Giao diện giữ ngày đối chiếu và link trong phần nguồn có thể mở xem. Không dùng luật mới nhất cho mọi sự kiện.
 
 Thay đổi nguồn hoặc hồ sơ duyệt tạo fingerprint mới; chạy lại bản không đổi không nhân đôi units. Ghi bản nháp trước, chỉ công bố sau khi đếm đủ units. Lỗi giữa chừng để `needs_review`, chạy lại có thể hoàn tất. Không sửa nội dung của trích dẫn phiên cũ.
 
@@ -67,5 +69,7 @@ node src/scripts/inventoryLegalCorpus.js --retire FINGERPRINT_64_KY_TU --apply
 Thu hồi chỉ ngừng phục vụ tìm kiếm mới, giữ nội dung và trích dẫn cũ để kiểm toán. Không xóa collection hoặc restore đè DB đang chạy. Muốn đưa lại vào sử dụng, sửa hồ sơ/nguồn và duyệt thành một phiên bản mới. Sao lưu DB bằng quy trình vận hành trước đợt nhập lớn.
 
 ## Kiểm tra
+
+`npm run legal:public:smoke` kiểm tra tải nguồn thật và cache bằng dữ liệu công khai, không kết nối MongoDB hoặc gọi model. Báo cáo lưu ở `.test-artifacts/public-law-smoke.json`; kiểm tra này xác nhận nguồn vào bộ chấm, không thay thế kiểm tra chất lượng nhận xét AI trên production. Deploy lại cả backend và frontend để dùng luồng mới; hai cờ tra cứu ở trên cần bật trên backend Render.
 
 `node --test tests/legalCorpus.test.js` kiểm tra nguồn/quyền, thời kỳ, sửa đổi/chuyển tiếp, hợp nhất, lỗi nguồn, idempotency và thu hồi. Đặt `COURTSIM_TEST_MONGO_URI` để chạy phần tích hợp trong DB ngẫu nhiên riêng. Chạy `npm run legal:inventory` rồi `node src/scripts/auditCorpusSources.js` để đối chiếu số hiệu công khai; kết quả nằm trong `.test-artifacts/`. Kiểm thử bằng fixture không phải chứng nhận nguồn thật.

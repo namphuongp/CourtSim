@@ -7,15 +7,11 @@ const excerpt = text => text.length <= 250 ? text : `${text.slice(0, 250).replac
 export default function ScoringSummary({ result, sessionId }) {
   const summary = scoreSummary(result);
   const highlights = learningHighlights(result.criteria);
-  const missingLaw = summary.assessed > 0 && result.criteria?.some(group => group.items.some(item => (item.id.startsWith('2.') || item.id === '4.2') && item.status === 'not_assessed'));
   return <div className="score-summary">
     <section aria-labelledby="score-heading" className="score-main-card rounded-3xl border border-blue-200 bg-blue-50 p-6 sm:p-8">
-      <h2 id="score-heading" className="text-sm font-semibold text-blue-700">{summary.provisional ? 'Điểm tham khảo từ nguồn web' : summary.partial ? 'Kết quả phần đã đánh giá' : 'Điểm luyện tập'}</h2>
-      {summary.provisional && <p className="mt-2 font-medium">{result.assessment_note || 'Chưa xác minh đầy đủ hiệu lực, sửa đổi và điều kiện áp dụng của nguồn luật.'}</p>}
+      <h2 id="score-heading" className="text-sm font-semibold text-blue-700">{summary.provisional ? 'Điểm luyện tập · Tham khảo' : summary.partial ? 'Kết quả phần đã đánh giá' : 'Điểm luyện tập'}</h2>
       <p className="mt-2 text-4xl font-black text-slate-900 sm:text-5xl">{Number.isFinite(summary.earned) ? <>{summary.earned}<span className="text-2xl font-semibold">/{summary.assessed}</span></> : 'Chưa có điểm'}</p>
-      <p className="mt-2 font-medium">{summary.partial ? 'Điểm ở phần đã đánh giá · Chưa có điểm toàn bài' : 'Đã đánh giá đủ 100 điểm của rubric'}</p>
-      {summary.partial && <p className="mt-3 text-sm leading-6">{summary.remaining}% trọng số chưa đánh giá và không bị tính thành 0 điểm.</p>}
-      {missingLaw && <p className="mt-2 max-w-3xl text-sm leading-6">Phần căn cứ pháp luật chưa đủ nguồn để chấm. CourtSim chưa xác minh được nguồn phù hợp từ vbpl.vn, đây không phải lỗi của bạn. Nhận xét dưới đây chỉ dựa trên phần đã đánh giá.</p>}
+      <p className="mt-2 font-medium">{summary.partial ? `Đã đánh giá ${summary.assessed}/100 điểm tiêu chí` : 'Đã đánh giá đầy đủ các tiêu chí'}</p>
     </section>
     <div className="score-highlight-grid grid gap-6 md:grid-cols-2">
       <section className="score-card rounded-2xl border border-slate-200 bg-white p-6" aria-labelledby="strengths-heading">
@@ -37,12 +33,12 @@ export default function ScoringSummary({ result, sessionId }) {
       <h2 id="groups-heading" className="text-xl font-bold">Các nhóm kỹ năng</h2>
       <p className="mt-1 text-sm text-slate-600">Mở từng nhóm khi muốn xem điểm, nhận xét và căn cứ của từng tiêu chí.</p>
       <div className="mt-4 space-y-3">{result.criteria.map(group => <details key={group.id} className="score-group rounded-2xl border border-slate-200 bg-white p-5">
-        <summary className="cursor-pointer rounded-lg focus-visible:outline-2 focus-visible:outline-blue-600"><span className="ml-2 font-semibold">{groupNames[group.id] ?? group.label}</span><span className="ml-3 text-sm text-slate-600">{group.assessed_max ? `${group.earned}/${group.assessed_max}${group.assessed_max < group.max ? ' ở phần đã chấm' : ' điểm'}` : 'Chưa đủ dữ liệu'}</span></summary>
+        <summary className="cursor-pointer rounded-lg focus-visible:outline-2 focus-visible:outline-blue-600"><span className="ml-2 font-semibold">{groupNames[group.id] ?? group.label}</span><span className="ml-3 text-sm text-slate-600">{group.assessed_max ? `${group.earned}/${group.assessed_max}${group.assessed_max < group.max ? ' ở phần đã chấm' : ' điểm'}` : 'Chưa đánh giá'}</span></summary>
         {group.items.map(item => <article key={item.id} className="mt-5 space-y-2 border-t border-slate-200 pt-4 text-sm leading-6">
           <h3 className="font-bold">{item.id}. {item.label} · {item.score === null ? 'Chưa chấm' : `${item.score}/${item.max}`}</h3>
-          <p>{item.reason}</p>
+          <p>{item.status === 'not_assessed' && (item.id.startsWith('2.') || item.id === '4.2') ? 'Không tính vào điểm của phiên này.' : item.reason}</p>
           {item.quote && <blockquote className="border-l-2 border-blue-300 pl-3">“{item.quote}” <Link className="text-blue-700 underline" to={`/simulation/${sessionId}#record-${item.record_id}`}>Xem phát biểu</Link></blockquote>}
-          {item.status === 'assessed' ? <><p><strong>Điểm mạnh:</strong> {item.strength}</p><p><strong>Cách cải thiện:</strong> {item.improvement}</p></> : <p>{(item.id.startsWith('2.') || item.id === '4.2') ? 'CourtSim cần xác minh nguồn luật để đánh giá mục này, không tính lỗi cho người học.' : item.improvement}</p>}
+          {item.status === 'assessed' ? <><p><strong>Điểm mạnh:</strong> {item.strength}</p><p><strong>Cách cải thiện:</strong> {item.improvement}</p></> : !(item.id.startsWith('2.') || item.id === '4.2') && <p>{item.improvement}</p>}
         </article>)}
       </details>)}</div>
     </section>}

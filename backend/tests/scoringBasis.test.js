@@ -44,6 +44,43 @@ test('nguồn tham khảo thêm không vô hiệu hóa nguồn đủ điều ki�
   assert.throws(() => validateScoringBasis([{ id: '4.2', score: 2, citation_ids: ['law1'] }], contentOnly));
 });
 
+test('chấm tham khảo từ nguyên văn web, giữ nguyên trạng thái áp dụng và buộc nguồn riêng từng tiêu chí', () => {
+  const source = { ...citation, assessment_mode: 'web_reference', law_number: '999/2020/QH14' };
+  const basis = legalScoringBasis({ citations: [source], legal_assessment_mode: 'web_reference', legal_assessment_available: false }, records);
+  assert.equal(basis.content, true);
+  assert.equal(basis.application, true);
+  assert.equal(basis.mode, 'web_reference');
+  assert.equal(source.application_status, 'unverified');
+  for (const id of ['2.1', '2.2', '2.3', '2.4', '4.2']) {
+    assert.equal(scoringEligibility(records, basis)[id], null);
+    assert.doesNotThrow(() => validateScoringBasis([{ id, score: 1, citation_ids: [source.id] }], basis));
+    assert.throws(() => validateScoringBasis([{ id, score: 1, citation_ids: ['invented'] }], basis));
+  }
+  const missing = legalScoringBasis({ citations: [source], legal_assessment_mode: 'web_reference' }, [{ sender_type: 'user', content: 'Theo Điều 2 Luật 999/2020/QH14.' }]);
+  assert.equal(missing.application, false);
+  const empty = legalScoringBasis({ citations: [{ ...source, text: '' }], legal_assessment_mode: 'web_reference' });
+  assert.equal(empty.application, false);
+});
+
+test('evaluator chấm đủ tiêu chí từ nguồn web và lưu nhãn tham khảo', async () => {
+  process.env.JWT_SECRET ||= 'scoring-basis-test-secret-at-least-32-characters';
+  const { evaluateSession } = await import('../src/services/simulationService.js');
+  const context = { citations: [{ ...citation, assessment_mode: 'web_reference', context_text: citation.text }], issues: [], candidates: [], warnings: [],
+    legal_assessment_available: false, legal_assessment_mode: 'web_reference', assessment_note: 'Đánh giá tham khảo.' };
+  const result = await evaluateSession({ session: { case_event_date: '2024-03-29', user_court_role: 'plaintiff_lawyer' },
+    courtCase: { title: 'Bài tập kiểm thử', summary: 'Bất đồng về chứng cứ.', full_document: 'Bất đồng về chứng cứ.' }, records }, {
+    persona: async () => ({ model_id: 'fixture' }), research: async () => context,
+    complete: async () => JSON.stringify({ criteria: SCORING_RUBRIC.groups.flatMap(g => g.items).map(i => ({
+      id: i.id, score: i.max * 0.8, quote_id: 'q1', reason: 'Có giải thích nhưng chưa đầy đủ.', strength: 'Bám nội dung.', improvement: 'Liên hệ rõ với yêu cầu.',
+      citation_ids: i.id.startsWith('2.') || i.id === '4.2' ? ['law1'] : [],
+    })), verdict: 'Đã có lập luận.', feedback: 'Cần hoàn thiện liên hệ.', improvement_suggestions: 'Nêu rõ căn cứ.', citation_ids: ['law1'] }),
+  });
+  assert.equal(result.assessed_max, 100);
+  assert.equal(result.score, 80);
+  assert.equal(result.legal_assessment_mode, 'web_reference');
+  assert.equal(result.citations[0].application_status, 'unverified');
+});
+
 test('luồng evaluator sửa nguồn sai, giữ điểm phần có căn cứ và không mở mục hiệu lực', async () => {
   process.env.JWT_SECRET ||= 'scoring-basis-test-secret-at-least-32-characters';
   const { evaluateSession } = await import('../src/services/simulationService.js');
