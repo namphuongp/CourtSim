@@ -356,7 +356,16 @@ export async function generateDebateTurn({ session, courtCase, records, speakers
     }
     metrics.total_ms = performance.now() - roleStarted + preparationMs;
     metrics.outcome = accepted ? 'model' : 'guided_continuation';
-    const turn = accepted ? { ...accepted, generation_mode: 'model' } : guidedContinuation(role, courtCase, history, next, phase, context);
+    let turn;
+    try {
+      turn = accepted ? { ...accepted, generation_mode: 'model' } : guidedContinuation(role, courtCase, history, next, phase, context);
+    } catch (error) {
+      // Giữ lỗi kiểm định để resume đúng lượt; không lưu lời mẫu như phản biện thành công.
+      metrics.outcome = 'error';
+      error.generation_metrics = metrics;
+      dependencies.onProgress?.({ role, content: '' });
+      throw error;
+    }
     generated.push({ sender_type: role === 'judge' ? 'ai_judge' : 'ai_prosecutor', sender_name: role === 'judge' ? 'Chủ tọa' : 'Bên đối lập', ...turn,
       generation_metrics: metrics, citation_warnings: legalContext.warnings,
       legal_research: { issues: legalContext.issues, candidates: legalContext.candidates.map(({ context_text, text, ...metadata }) => metadata), legal_assessment_available: legalContext.legal_assessment_available } });

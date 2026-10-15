@@ -7,7 +7,7 @@ import FeedbackModal from './FeedbackModal';
 
 export default function LearnerFeedback({ sessionId, onDone, required = true, initialFormUrl = '' }) {
   const [formUrl, setFormUrl] = useState(() => feedbackFormUrl(initialFormUrl));
-  const [message, setMessage] = useState('Đang kiểm tra trạng thái khảo sát...');
+  const [message, setMessage] = useState('CourtSim đang kiểm tra giúp bạn...');
   const [error, setError] = useState('');
   const [checking, setChecking] = useState(false);
   const checkRef = useRef(null);
@@ -36,7 +36,7 @@ export default function LearnerFeedback({ sessionId, onDone, required = true, in
         if (!url) throw new Error('Survey unavailable');
         setFormUrl(url);
         setError('');
-        setMessage('Chưa nhận được xác nhận gửi. Sau khi gửi form, hãy quay lại đây; kết quả sẽ tự mở.');
+        setMessage('CourtSim chưa nhận được xác nhận gửi. Nếu bạn vừa gửi xong, chờ một chút rồi kiểm tra lại nhé.');
       } catch (requestError) {
         if (active) setError(getApiError(requestError, 'Chưa kiểm tra được khảo sát. Kết quả đã được lưu, bạn có thể thử lại.'));
       } finally {
@@ -61,18 +61,21 @@ export default function LearnerFeedback({ sessionId, onDone, required = true, in
     };
   }, [sessionId, required]);
 
-  return <FeedbackModal title={required ? 'Hoàn thành khảo sát để xem kết quả' : 'Phiên luyện tập của bạn thế nào?'} onClose={required ? undefined : onDone}>
-    <p>{required ? 'Kết quả luyện tập đã được lưu. Tài khoản của bạn cần gửi khảo sát Google Forms một lần trước khi xem kết quả.' : 'Bạn đã hoàn thành khảo sát trước đây. Bạn có thể góp ý thêm về phiên này hoặc bỏ qua để xem kết quả ngay.'}</p>
-    {required && <p className="feedback-help">Mở form bằng nút bên dưới để mã phiên được điền sẵn. Giữ nguyên mã này và nhấn Gửi sau khi trả lời các câu hỏi.</p>}
+  return <FeedbackModal title={required ? 'Cho CourtSim xin một chút góp ý nhé 💙' : 'Phiên luyện tập của bạn thế nào?'} onClose={required ? undefined : onDone}>
+    {required ? <>
+      <p>Kết quả phiên luyện tập của bạn đã được lưu rồi.<br />Trước khi xem kết quả, bạn vui lòng gửi khảo sát Google Forms 1 lần duy nhất để giúp CourtSim cải thiện trải nghiệm tốt hơn.</p>
+      <p className="feedback-help">Mã phiên đã được điền sẵn trong form. Bạn chỉ cần giữ nguyên mã đó, điền các câu hỏi và nhấn Gửi.</p>
+      <p className="feedback-help">Sau khi gửi xong, quay lại đây và bấm 'Mình đã gửi xong' để CourtSim kiểm tra và mở kết quả cho bạn.</p>
+    </> : <p>Bạn đã hoàn thành khảo sát trước đây. Bạn có thể góp ý thêm về phiên này hoặc bỏ qua để xem kết quả ngay.</p>}
     {required && <p className="feedback-help" role="status" aria-live="polite">{message}</p>}
     {error && <p className="feedback-error" role="alert">{error}</p>}
     <div className="feedback-actions feedback-survey-actions">
       {formUrl ? <a className="feedback-primary" href={formUrl} target="_blank" rel="noopener noreferrer" onClick={required ? undefined : onDone}>
         Điền khảo sát Google Forms <ExternalLink size={16} aria-hidden="true" />
       </a> : <button type="button" className="feedback-primary" disabled>Điền khảo sát Google Forms</button>}
-      {required ? <button type="button" onClick={() => checkRef.current?.()} disabled={checking}>{checking ? 'Đang kiểm tra...' : 'Kiểm tra xác nhận gửi'}</button>
+      {required ? <button type="button" onClick={() => checkRef.current?.()} disabled={checking}>{checking ? 'Đang kiểm tra...' : 'Mình đã gửi xong'}</button>
         : <button type="button" onClick={onDone}>Bỏ qua và xem kết quả</button>}
-      <Link to="/">Trở về trang chủ</Link>
+      <Link to="/">Về trang chủ</Link>
     </div>
   </FeedbackModal>;
 }

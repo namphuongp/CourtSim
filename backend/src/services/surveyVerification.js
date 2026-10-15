@@ -2,7 +2,6 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import { AppError } from '../utils/AppError.js';
 import { SimulationSession, User } from '../models/index.js';
 
-export const SURVEY_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSeYO6CF-le_0AmzokC1iQNvLcjf8QxwNZM0f-ufeRNNosnQQw/viewform';
 const hmac = (secret, value) => createHmac('sha256', secret).update(value).digest('hex');
 const equalHex = (a, b) => typeof a === 'string' && /^[a-f0-9]{64}$/.test(a)
   && timingSafeEqual(Buffer.from(a, 'hex'), Buffer.from(b, 'hex'));
@@ -36,10 +35,14 @@ export function surveyToken(session) {
 
 export function surveyLink(session) {
   const entry = process.env.SURVEY_TOKEN_ENTRY;
-  if (!/^entry\.\d{1,20}$/.test(entry ?? '')) {
+  const url = URL.parse(process.env.VITE_FEEDBACK_FORM_URL?.trim() ?? '');
+  // Đọc cấu hình backend; chỉ dùng link đầy đủ để Google giữ mã phiên điền sẵn.
+  if (!/^entry\.\d{1,20}$/.test(entry ?? '') || !url
+    || url.protocol !== 'https:' || url.hostname !== 'docs.google.com'
+    || url.username || url.password || url.port
+    || !/^\/forms\/(?:u\/\d+\/)?d\/(?:e\/)?[a-zA-Z0-9_-]+\/viewform\/?$/.test(url.pathname)) {
     throw new AppError('Khảo sát chưa sẵn sàng. Kết quả được lưu; vui lòng quay lại sau.', 503, 'SURVEY_UNAVAILABLE');
   }
-  const url = new URL(SURVEY_FORM_URL);
   url.searchParams.set('usp', 'pp_url');
   url.searchParams.set(entry, surveyToken(session));
   return url.href;
