@@ -1,5 +1,6 @@
 import { EVIDENCE_ASSUMPTION_POLICY } from '../../../shared/casePresentation.mjs';
 import { dossierQuotes } from './caseKnowledge.js';
+import { AppError } from '../utils/AppError.js';
 
 // Một nơi định nghĩa trách nhiệm chung; không trộn điều hành với rubric.
 export const SOURCE_POLICY = [EVIDENCE_ASSUMPTION_POLICY,
@@ -25,7 +26,8 @@ export function roleTask(role, phase = 'debate') {
     ? 'Chủ tọa trung lập, chỉ nói đủ để điều hành: chuyển lời thường một câu, làm rõ một điểm có thể 2–3 câu. Không có độ dài tối thiểu. Chọn đúng một mục đích: invite, clarify_claim, clarify_evidence, transition hoặc close. Tối đa một câu hỏi chính. Đi thẳng vào điểm cần xử lý, không mở đầu mặc định bằng “Hội đồng xét xử ghi nhận” hoặc “Đề nghị trình bày căn cứ”. Không đọc lại toàn bộ lời người học, không phản biện thay bên kia, không gợi sẵn lập luận. '
       + (phase === 'summary' ? 'Ghi nhận kết thúc phần trình bày, không tuyên kết quả vụ án.' : 'Không kết thúc phiên ở giai đoạn này.')
     : 'Bên đối lập bảo vệ đúng phía đã được gán. Chọn purpose=rebut. Thường 40–100 từ, 1–2 điểm, ngắn hơn khi người học nói ngắn. Phản biện đúng luận điểm họ thực sự nêu, nếu chưa có cơ sở, chỉ rõ mắt xích còn thiếu, không dựng luận điểm mạnh hơn để bác. Thừa nhận phần chứng cứ bất lợi thực sự hỗ trợ rồi tranh luận về phạm vi, không phủ nhận sạch. Chỉ dùng giả thiết nếu/thì khi cần làm rõ một tình tiết chưa xác minh. Không điều hành, không hỏi dồn, không lặp luận điểm đã được đáp lại. '
-      + 'Nếu người học chỉ đề nghị đối chiếu hoặc giới hạn nguồn, không gán cho họ kết luận rằng giấy tờ vô giá trị, ranh giới không trùng hay yêu cầu bên kia đã sai. Bạn phải tự nêu lập luận của phía mình, không yêu cầu luật sư bị đơn chứng minh yêu cầu nguyên đơn và ngược lại. Khi người học đã thừa nhận không có thông tin ranh giới/bản gốc, không đòi lại thông tin đó: chuyển sang hệ quả của giới hạn, một nguồn khác thực có hoặc thừa nhận chưa có phản biện mới. Không liên tục gọi người học giải thích theo cùng một mẫu. Nếu dùng giả thiết có lợi cho phía mình về tình tiết chưa xác minh, nêu cả hệ quả khi giả thiết không đúng.';
+      + 'Nói như đang trao đổi tại phiên: gọi thẳng chi tiết đang tranh luận, nêu chỗ đồng ý hoặc không đồng ý và giải thích lý do bằng câu ngắn. Không trả lời trống bằng “chưa bổ sung ý kiến phản biện ở lượt này”. Khi Chủ tọa vừa hỏi, trả lời ý đó trước, không lảng sang lời mời tiếp tục. '
+      + 'Nếu người học chỉ đề nghị đối chiếu hoặc giới hạn nguồn, không gán cho họ kết luận rằng giấy tờ vô giá trị, ranh giới không trùng hay yêu cầu bên kia đã sai. Bạn phải tự nêu lập luận của phía mình, không yêu cầu luật sư bị đơn chứng minh yêu cầu nguyên đơn và ngược lại. Khi người học đã thừa nhận không có thông tin ranh giới/bản gốc, không đòi lại thông tin đó: chuyển sang hệ quả của giới hạn, một nguồn khác thực có hoặc nói rõ điểm nào chưa thể phản bác và vì sao. Không liên tục gọi người học giải thích theo cùng một mẫu. Nếu dùng giả thiết có lợi cho phía mình về tình tiết chưa xác minh, nêu cả hệ quả khi giả thiết không đúng.';
 }
 
 export function turnTask(role, context) {
@@ -46,7 +48,7 @@ export function turnTask(role, context) {
           : 'Hỏi đúng chỗ chưa rõ trong lời vừa nói. Nếu ý quá chung, gọi tên yêu cầu hoặc thông tin cần xác định, không hỏi “căn cứ” chung chung.');
     if (state.last_question_with_reply) tasks.push('Đã có lời đáp cho câu hỏi trước: chỉ hỏi phần còn thiếu, nếu đủ thì chuyển ý, không yêu cầu người học trả lời lại.');
     if (latest.length > 1600) tasks.push('Lời trình bày dài: chỉ thu hẹp vào một điểm gắn yêu cầu đang xét, không suy ra dài đồng nghĩa lan man.');
-  } else tasks.push('Chọn một mắt xích cụ thể trong luận điểm mới nhất: thông tin nào hỗ trợ kết luận nào, còn thiếu liên hệ gì. Phản hồi giới hạn mà người học thực sự nhận, không bác kết luận họ không nêu. Yêu cầu của một bên trong hồ sơ không tự trở thành điều người học vừa khẳng định, không nói “bạn viện dẫn” nếu họ chưa viện dẫn. Nếu hai bên cùng nhận thiếu dữ kiện, có thể thừa nhận chưa có phản biện mới.');
+  } else tasks.push('Chọn một mắt xích cụ thể trong luận điểm mới nhất: thông tin nào hỗ trợ kết luận nào, còn thiếu liên hệ gì. Phản hồi giới hạn mà người học thực sự nhận, không bác kết luận họ không nêu. Yêu cầu của một bên trong hồ sơ không tự trở thành điều người học vừa khẳng định, không nói “bạn viện dẫn” nếu họ chưa viện dẫn. Nếu hai bên cùng nhận thiếu dữ kiện, gọi tên điểm chưa thể kết luận và giải thích giới hạn đó ảnh hưởng thế nào tới quan điểm của phía mình; không chỉ nói chưa có ý kiến.');
   if (!context.retrievedLaw.length && /(?:điều\s+\d+|luật|quy định)/iu.test(latest)) tasks.push('Chưa có nguồn luật xác minh: trao đổi về việc cần đối chiếu tên văn bản, phiên bản và nội dung, không lặp số điều người học nêu, kể cả trong câu hỏi hoặc lời phủ định. Không đòi nguồn hồ sơ cho nhận xét thuần túy về giới hạn tra cứu.');
   if (state.repeated_learner_points?.length) tasks.push('Có câu lặp lại từ lượt đã gửi: không đáp lại y hệt, hỏi thông tin mới hoặc xác định điểm bất đồng còn lại.');
   if (/(?:chưa|không)\s+(?:có|được cung cấp|đủ|xem|kiểm tra|xác minh)|thiếu\s+(?:chứng cứ|tài liệu|bản gốc)/iu.test(latest)) tasks.push('Người học nêu giới hạn thông tin: giữ nguyên giới hạn đó, không biến thành đã chứng minh hoặc tài liệu vô giá trị. Nếu họ đã nói không có, không đòi cung cấp ngay chính thông tin đó, hỏi nguồn cần đối chiếu hoặc phạm vi kết luận còn giữ được.');
@@ -90,13 +92,19 @@ export function dialogueProblem(turn, role, records, courtCase, phase = 'debate'
     if ((turn.content.match(/[^.!?\n]*\?/gu) ?? []).some(q => questions.includes(normalize(q)))) return 'Câu hỏi đã được nêu, đọc lời đáp rồi chọn điểm chưa được làm rõ.';
     if (phase !== 'summary' && turn.purpose === 'close') return 'Chưa đến giai đoạn kết thúc, tiếp tục điều hành.';
   } else {
+    const emptyReply = /^(?:(?:phía tôi|tôi|chúng tôi) )?(?:chưa|không) (?:(?:có|bổ sung|đưa ra) )?(?:thêm )?(?:ý kiến(?: phản biện)?|phản biện)(?: mới| thêm)?(?: ở lượt này| về điểm này)?$/u;
+    if (sentences(turn.content).every(sentence => emptyReply.test(normalize(sentence))
+      || /^đề nghị chủ tọa tiếp tục(?: điều hành)?$/u.test(normalize(sentence)))) {
+      return 'Phản hồi chưa trả lời luận điểm hoặc câu hỏi đang chờ. Nêu cụ thể điểm đồng ý/chưa đồng ý và lý do từ hồ sơ; nếu chưa đủ căn cứ, chỉ rõ điểm chưa thể kết luận.';
+    }
     if (/mời\s+(?:bên đối lập|nguyên đơn|bị đơn|bạn)\s+(?:trình bày|phát biểu)|(?:hội đồng xét xử|tòa)\s+(?:tuyên|quyết định chấp nhận)/iu.test(turn.content)) return 'Bên đối lập không điều hành hoặc tuyên kết quả, chỉ trình bày ý kiến của phía mình.';
   }
   return null;
 }
 
-// Fallback là lời nối ngắn, không giả làm phản biện có căn cứ và không sinh tình tiết.
+// Chỉ Chủ tọa có thể nối lời điều hành; không biến lỗi sinh phản biện thành lời của một bên.
 export function guidedContinuation(role, courtCase, records, invitedNext = 'learner', phase = 'debate', context) {
+  if (role !== 'judge') throw new AppError('Chưa tạo được phản hồi phù hợp của bên đối lập. Bạn hãy thử lại lượt này. Các lượt trước đã được lưu.', 502, 'AI_INVALID_TURN');
   const hearing = context?.hearing;
   const content = role === 'judge' && phase === 'summary'
     ? 'Phần trình bày đã kết thúc. Những điểm chưa đủ căn cứ vẫn được giữ là chưa xác định, không suy ra bên nào đã chứng minh được yêu cầu. Bạn có thể kết thúc luyện tập để xem nhận xét.'
@@ -106,12 +114,8 @@ export function guidedContinuation(role, courtCase, records, invitedNext = 'lear
       ? 'Các tranh điểm đã được trao đổi trong phạm vi tài liệu hiện có. Không yêu cầu lặp lại phần thiếu thông tin. Mời bạn tổng kết yêu cầu còn giữ và những điểm chưa thể kết luận.'
     : role === 'judge' && hearing?.judge_intervention === 'request_direct_answer'
       ? `Lời đáp trước chưa trả lời trực tiếp về tài liệu cụ thể. Mời ${invitedNext === 'opponent' ? 'bên đối lập' : 'bạn'} chỉ rõ tài liệu hiện có hoặc giới hạn thông tin được cung cấp.`
-    : role === 'judge'
-    ? phase === 'summary' ? 'Ghi nhận phần trình bày cuối của bạn. Bạn có thể kết thúc luyện tập để xem nhận xét.'
-      : invitedNext === 'opponent' ? 'Mời bên đối lập trình bày ý kiến về luận điểm vừa nêu.'
-        : 'Mời bạn làm rõ mối liên hệ giữa thông tin vừa nêu và yêu cầu của bên mình.'
-    : invitedNext === 'judge' ? 'Phía tôi chưa bổ sung ý kiến phản biện ở lượt này. Đề nghị Chủ tọa tiếp tục điều hành.'
-      : 'Phía tôi chưa bổ sung ý kiến phản biện ở lượt này.';
+    : invitedNext === 'opponent' ? 'Mời bên đối lập trình bày ý kiến về luận điểm vừa nêu.'
+      : 'Mời bạn làm rõ mối liên hệ giữa thông tin vừa nêu và yêu cầu của bên mình.';
   return { role, purpose: role === 'opponent' ? 'rebut' : phase === 'summary' ? 'close' : 'transition', issue: role === 'judge' && phase !== 'summary' && hearing?.stalled && hearing.next_issue ? hearing.next_issue.id : context?.state.current_issue.id ?? null, next_speaker: invitedNext,
     content, citations: [], fact_analysis: { established_facts: [], learner_claims: [], inferences: [], missing_facts: [] },
     generation_mode: 'guided_continuation' };

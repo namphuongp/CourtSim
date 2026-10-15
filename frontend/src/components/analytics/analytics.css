@@ -1,0 +1,21 @@
+.consent-banner { display:flex; align-items:center; gap:16px; margin:12px auto; padding:14px 20px; width:calc(100% - 32px); max-width:1180px; border:1px solid #d9e5f2; border-radius:16px; background:#fff; color:#334e68; box-shadow:0 4px 18px rgb(15 43 67 / 5%); }
+.consent-banner>svg,.privacy-card>svg { flex-shrink:0; color:#2563eb; }
+.consent-copy { flex:1; min-width:0; font-size:13px; line-height:1.6; }
+.consent-copy strong { color:#102a43; font-size:14px; }
+.consent-copy p { margin:3px 0 0; }
+.consent-copy a,.privacy-card a,.privacy-footer a { color:#1d4ed8; text-decoration:underline; text-underline-offset:3px; }
+.consent-actions { display:flex; flex-wrap:wrap; gap:10px; }
+.consent-actions button { min-height:44px; padding:10px 18px; border:1px solid #a9bed5; border-radius:10px; background:#fff; color:#243b53; font:inherit; font-size:14px; font-weight:650; cursor:pointer; white-space:nowrap; }
+.consent-actions button:hover { background:#eff6ff; }
+.consent-actions .consent-accept { background:#1d4ed8; border-color:#1d4ed8; color:#fff; }
+.consent-actions .consent-accept:hover { background:#1e40af; }
+.consent-banner :focus-visible,.privacy-page :focus-visible,.privacy-footer :focus-visible { outline:3px solid #2563eb; outline-offset:3px; }
+.privacy-footer { padding:12px 20px; text-align:center; font-size:12px; background:#f7fafc; }
+.privacy-page { max-width:800px; margin:0 auto; padding:32px 20px; }
+.privacy-card { margin-top:24px; padding:32px; border:1px solid #d9e5f2; border-radius:20px; background:#fff; }
+.privacy-card h1 { margin:14px 0; font-size:30px; }
+.privacy-card h2 { margin:24px 0 10px; font-size:19px; }
+.privacy-card p { margin:12px 0; font-size:15px; line-height:1.75; }
+.privacy-status { padding:12px; border-radius:10px; background:#eff6ff; color:#1e40af; }
+.privacy-back { display:inline-block; margin-top:16px; }
+@media(max-width:640px) { .consent-banner { align-items:flex-start; flex-wrap:wrap; gap:10px; padding:14px; margin:8px auto; width:calc(100% - 16px); } .consent-copy { flex-basis:calc(100% - 40px); } .consent-banner .consent-actions { width:100%; } .consent-banner button { flex:1; } .privacy-card { padding:20px; } .privacy-card h1 { font-size:26px; } }

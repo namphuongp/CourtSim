@@ -18,7 +18,7 @@ export default function SimulationResult() {
 function SessionResult({ sessionId }) {
   const navigate = useNavigate();
   const [feedbackOpen, setFeedbackOpen] = useState(false);
-  const [feedbackSent, setFeedbackSent] = useState(false);
+  const [optionalFeedback, setOptionalFeedback] = useState(null);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [reload, setReload] = useState(0);
@@ -27,25 +27,30 @@ function SessionResult({ sessionId }) {
     let active = true;
     api.get(`/v1/sessions/${sessionId}/result`).then(async ({ data }) => {
       if (!active) return;
-      // Chỉ mời góp ý sau khi kết quả tải thành công; quyền hiển thị do backend cấp một lần.
-      let show = false;
-      try { const response = await api.post('/v1/sessions/' + sessionId + '/feedback/prompt', {}, { timeout: 5000 }); show = response.data.data?.show === true; }
-      catch (error) { getApiError(error); /* Góp ý không bắt buộc, vẫn cho xem kết quả. */ }
-      if (active) { setFeedbackOpen(show); setResult(data.data); setError(''); }
-    }).catch((requestError) => { if (active) setError(getApiError(requestError, 'Chưa tải được kết quả. Vui lòng thử lại hoặc trở về phiên.')); });
+      let invitation = null;
+      try {
+        const response = await api.post(`/v1/sessions/${sessionId}/feedback/prompt`, {}, { timeout: 5000 });
+        if (response.data.data?.show === true) invitation = response.data.data;
+      } catch { /* Tài khoản đã xác minh; lỗi lời mời góp ý không khóa kết quả. */ }
+      if (active) { setOptionalFeedback(invitation); setFeedbackOpen(false); setResult(data.data); setError(''); }
+    }).catch((requestError) => {
+      if (!active) return;
+      if (requestError.response?.data?.error?.code === 'SURVEY_REQUIRED') setFeedbackOpen(true);
+      else setError(getApiError(requestError, 'Chưa tải được kết quả. Vui lòng thử lại hoặc trở về phiên.'));
+    });
     return () => { active = false; };
   }, [sessionId, reload]);
 
-  if (error) return <main className="result-page result-state"><section className="result-card"><p role="alert">{error}</p><button onClick={() => setReload((n) => n + 1)}>Thử lại</button><Link to={`/simulation/${sessionId}`}>Trở lại phiên</Link></section></main>;
-  if (!result) return <main className="result-page result-state" role="status"><section className="result-card">Đang tải kết quả...</section></main>;
-  const finishFeedback = (sent) => {
-    setFeedbackSent(sent); setFeedbackOpen(false);
-    requestAnimationFrame(() => document.getElementById('result-heading')?.focus());
+  if (error) return <main className="result-page result-state"><section className="result-card"><p role="alert">{error}</p><button onClick={() => { setError(''); setReload((n) => n + 1); }}>Thử lại</button><Link to={`/simulation/${sessionId}`}>Trở lại phiên</Link></section></main>;
+  const finishFeedback = () => {
+    setFeedbackOpen(false);
+    setReload(n => n + 1);
   };
   if (feedbackOpen) return <main className="result-page result-feedback"><LearnerFeedback sessionId={sessionId} onDone={finishFeedback} /></main>;
+  if (optionalFeedback) return <main className="result-page result-feedback"><LearnerFeedback required={false} initialFormUrl={optionalFeedback.form_url} onDone={() => setOptionalFeedback(null)} /></main>;
+  if (!result) return <main className="result-page result-state" role="status"><section className="result-card">Đang tải kết quả...</section></main>;
   return (
     <main className="result-page"><div className="result-container space-y-6">
-      {feedbackSent && <p role="status" className="result-notice">Đã gửi góp ý. Cảm ơn bạn đã chia sẻ!</p>}
       <header className="result-hero flex flex-wrap items-center justify-between gap-4"><div><p>Kết quả phiên mô phỏng</p><h1 id="result-heading" tabIndex={-1}>Kết quả luyện tập</h1></div><button onClick={() => navigate('/dashboard')}><Home size={17} /> Tổng quan</button></header>
       <ScoringSummary result={result} sessionId={sessionId} />
       {result.features?.detailedScoring === false ? <><section className="result-card"><h2>Nhận xét tổng quan</h2><p>{result.feedback}</p><h3>Hướng cải thiện</h3><p>{result.improvement_suggestions}</p></section><UpgradeNotice /></> : <details className="result-details"><summary>Nhận xét lưu cùng kết quả và nguồn pháp luật</summary>

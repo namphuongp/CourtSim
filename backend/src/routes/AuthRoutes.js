@@ -97,6 +97,10 @@ export function createAuthRoutes({ sendEmail } = {}) {
     if (token) await AuthSession.deleteOne({ tokenHash: hash(token) });
     res.clearCookie(SESSION_COOKIE, cookieOptions).json({ message: 'Đã đăng xuất.' });
   }));
+  router.get('/google/start', async (req, res) => {
+    try { res.redirect(await startGoogle(req, res, req.query.returnTo)); }
+    catch { res.redirect(env.CLIENT_ORIGINS[0] + '/login?googleError=failed'); }
+  });
   router.post('/google/start', asyncHandler(async (req, res) => {
     validateBody(req.body, ['returnTo']);
     res.json({ url: await startGoogle(req, res, req.body.returnTo) });

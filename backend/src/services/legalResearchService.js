@@ -1,9 +1,9 @@
 import { buildLegalPlan, assessVersion } from './legalTimeline.js';
 import { rankProvisions } from './legalRetrievalService.js';
-import { hasVerifiedSource } from '../../../shared/legalSourcePolicy.mjs';
+import { hasReadableLawSource, hasVerifiedSource } from '../../../shared/legalSourcePolicy.mjs';
 import { parseLegalArticles, createProvisionUnits } from './legalTextParser.js';
 import { researchCorpusForSimulation } from './legalCorpusRetrieval.js';
-import { researchWebLaw, webReferenceEnabled } from './webLegalResearch.js';
+import { researchWebLaw, webReferenceEnabled, WEB_REFERENCE_NOTE } from './webLegalResearch.js';
 
 const MAX_CONTEXT = 8000;
 
@@ -90,7 +90,10 @@ export async function researchLegalBasis(input, dependencies = {}) {
     for (const citation of web.citations ?? []) {
       if (!citations.some(c => c.id && c.id === citation.id)) citations.push(citation);
     }
-    return { ...result, citations, source_diagnostics: web.diagnostics ?? [], warnings: [...new Set([...(result.warnings ?? []), ...(web.warnings ?? [])])] };
+    const reference = citations.some(c => c.assessment_mode === 'web_reference' && hasReadableLawSource(c) && c.article && c.text?.trim());
+    return { ...result, citations,
+      ...(reference ? { legal_assessment_mode: 'web_reference', assessment_note: WEB_REFERENCE_NOTE } : {}),
+      source_diagnostics: web.diagnostics ?? [], warnings: [...new Set([...(result.warnings ?? []), ...(web.warnings ?? [])])] };
   } catch {
     return { ...result, warnings: [...(result.warnings ?? []), 'Chưa truy cập được nguồn web, giữ phần đánh giá có căn cứ hiện có.'] };
   }

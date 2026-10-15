@@ -36,7 +36,7 @@ test('dashboard API: ngày hoạt động, kết quả legacy, gợi ý và quy�
   let server;
   t.after(async () => { if (server) await new Promise(r => server.close(r)); if (mongoose.connection.name === dbName) await mongoose.connection.dropDatabase(); await mongoose.disconnect(); });
   await mongoose.connect(process.env.COURTSIM_TEST_MONGO_URI, { dbName });
-  const user = await User.create({ username: 'Dashboard test', email: 'dashboard@example.test', email_verified: true, subscription_type: 'pro' });
+  const user = await User.create({ username: 'Dashboard test', email: 'dashboard@example.test', email_verified: true, subscription_type: 'pro', survey_verified_at: new Date() });
   const token = secret();
   await AuthSession.create({ tokenHash: hash(token), userId: user._id, authVersion: user.auth_version ?? 0, expiresAt: new Date(Date.now() + 600000), idleExpiresAt: new Date(Date.now() + 600000) });
   const session = await SimulationSession.create({ user_id: user._id, case_id: new mongoose.Types.ObjectId(), user_court_role: 'defense_lawyer', created_at: new Date('2026-01-01'), turns: [{ records: [{ created_at: new Date('2026-02-02'), content: 'private transcript' }] }] });

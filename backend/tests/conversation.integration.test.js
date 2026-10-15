@@ -58,9 +58,10 @@ test('validator chặn điều hành sai vai, lộ chỉ dẫn và mở đầu l
   }
   assert.ok(dialogueProblem({ ...turn, content: 'Mời bị đơn trình bày ý kiến.' }, 'opponent', records, sampleLandCase));
   assert.equal(dialogueProblem({ ...turn, content: 'Bạn muốn đối chiếu phần nào của giấy chứng nhận?' }, 'judge', records, sampleLandCase), null);
-  const fallback = guidedContinuation('opponent', sampleLandCase, records, 'learner');
-  assert.equal(fallback.purpose, 'rebut');
-  assert.doesNotMatch(fallback.content, /Chủ tọa/);
+  assert.throws(() => guidedContinuation('opponent', sampleLandCase, records, 'learner'), { code: 'AI_INVALID_TURN' });
+  const fallback = guidedContinuation('judge', sampleLandCase, records, 'learner');
+  assert.equal(fallback.purpose, 'transition');
+  assert.equal(fallback.next_speaker, 'learner');
 });
 
 test('không ép nguồn không liên quan; chặn số đo mới kể cả do AI trước đó bịa', () => {
@@ -140,10 +141,8 @@ test('pipeline: kiểm schema, phục hồi có hạn, lỗi mạng không giả
     assert.equal(calls, 2); assert.equal(turn.generation_mode, 'model');
     assert.ok(turn.generation_metrics.attempts[0].rejection_code);
   }
-  const fallback = await generateDebateTurn({ session, courtCase: sampleLandCase, records, speakers: ['opponent'] }, { ...deps, complete: async () => '{' });
-  assert.equal(fallback[0].generation_mode, 'guided_continuation');
-  assert.equal(fallback[0].generation_metrics.attempts.length, 2);
-  assert.ok(fallback[0].content.length < 180);
+  await assert.rejects(generateDebateTurn({ session, courtCase: sampleLandCase, records, speakers: ['opponent'] }, { ...deps, complete: async () => '{' }),
+    error => error.code === 'AI_INVALID_TURN' && error.generation_metrics.attempts.length === 2);
   network = true;
   await assert.rejects(generateDebateTurn({ session, courtCase: sampleLandCase, records, speakers: ['judge'] }, deps), error => error.code === 'AI_TIMEOUT' && error.generation_metrics.outcome === 'error');
   const before = calls;

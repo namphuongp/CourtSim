@@ -16,6 +16,12 @@
 .feedback-actions .feedback-primary,.feedback-admin .feedback-primary { background:#2459cf; border-color:#2459cf; color:white; }
 .feedback-actions .feedback-delete { background:#b92343; border-color:#b92343; color:white; }
 .feedback-actions button:disabled { opacity:.55; }
+.feedback-survey-actions { display:grid; grid-template-columns:1fr; }
+.feedback-survey-actions a,.feedback-survey-actions button { display:flex; align-items:center; justify-content:center; gap:8px; min-height:44px; padding:11px 14px; border:1px solid #b8cbe0; border-radius:9px; text-align:center; text-decoration:none; font:inherit; font-weight:600; }
+.feedback-survey-actions .feedback-primary { grid-row:1; }
+.feedback-survey-actions a:hover { background:#edf3ff; }
+.feedback-survey-actions a.feedback-primary:hover { background:#1e46a6; }
+.feedback-survey-actions a:focus-visible { outline:3px solid #2563eb; outline-offset:3px; }
 .feedback-error { color:#a6233f; }
 .feedback-modal button:focus-visible,.feedback-admin a:focus-visible { outline:3px solid #2563eb; outline-offset:3px; }
 .feedback-admin { max-width:1100px; margin:auto; padding:28px 20px; color:#243b53; }

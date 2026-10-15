@@ -1,6 +1,6 @@
 import http from 'node:http';
 import mongoose from 'mongoose';
-import { randomUUID } from 'node:crypto';
+import { createHmac, randomUUID } from 'node:crypto';
 import { SCORING_RUBRIC } from '../../src/data/scoringRubric.js';
 import { mkdir, writeFile, unlink } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -26,7 +26,9 @@ export async function startBrowserHarness({ courtCase, webReference = false, loc
       const user = context.recentProceedings.findLast(r => r.speaker_type === 'user');
       const judge = prompt.includes('Chủ tọa trung lập,');
       const opponentNext = prompt.includes('Người được mời tiếp duy nhất: bên đối lập');
-      const replying = context.recentProceedings.filter(r => r.speaker_type === 'user').length > 1;
+      const replying = courtCase ? user.text.includes('Tôi phân biệt lời trực tiếp')
+        : context.recentProceedings.filter(r => r.speaker_type === 'user').length > 1;
+      const thirdArgument = courtCase && user.text.includes('Tôi chưa kết luận ai');
       const fact_analysis = { established_facts: courtCase ? [] : ['Có hợp đồng vay.'], learner_claims: [], inferences: [], missing_facts: ['Chưa có biên nhận'] };
       const payload = prompt.includes('unassessedReasons') ? {
         verdict: 'Đạt yêu cầu thực hành', score: 1, fact_analysis, citation_ids: context.legalAssessmentMode === 'web_reference' ? [context.retrievedLaw[0].citationId] : [],
@@ -37,7 +39,7 @@ export async function startBrowserHarness({ courtCase, webReference = false, loc
         role: judge ? 'judge' : 'opponent', purpose: judge ? 'clarify_claim' : 'rebut',
         issue: context.state.current_issue.id, next_speaker: context.state.invited_next,
         focus: { learner: context.learner[0].id, dossier: [(context.dossier.find(s => s.text === 'Có hợp đồng vay.') ?? context.dossier[0]).id] }, citation_ids: [],
-        content: courtCase ? (judge ? (opponentNext ? 'Mời bên đối lập phản hồi về nguồn biết việc giao gạch. Phía đối lập phân biệt lời kể trực tiếp và gián tiếp thế nào?' : 'Bạn đã nêu giới hạn nguồn lời khai. Bạn còn cần đối chiếu tài liệu nào để làm rõ nội dung thỏa thuận?') : replying ? 'Bạn đã giữ giới hạn của lời kể. Phía tôi đề nghị đối chiếu nội dung thỏa thuận với phạm vi điều người kể trực tiếp biết, chưa suy ra quyền sử dụng đất từ lời kể đó.' : 'Lời tự nhận gánh gạch cần được xem trong giới hạn điều người kể biết. Phía tôi chưa đồng ý suy ra đã có thỏa thuận về quyền sử dụng đất chỉ từ lời trình bày này.') : judge ? opponentNext ? 'Mời bên đối lập làm rõ căn cứ phản hồi. Bên đối lập giải thích mối liên hệ giữa hợp đồng và việc thanh toán như thế nào?' : 'Bạn viện dẫn hợp đồng trong hồ sơ. Bạn giải thích chứng cứ nào cho thấy khoản tiền còn phải trả?'
+        content: courtCase ? (judge ? (opponentNext ? 'Mời bên đối lập phản hồi về nguồn biết việc giao gạch. Phía đối lập phân biệt lời kể trực tiếp và gián tiếp thế nào?' : 'Bạn đã nêu giới hạn nguồn lời khai. Bạn còn cần đối chiếu tài liệu nào để làm rõ nội dung thỏa thuận?') : thirdArgument ? 'Điểm bạn vừa nêu liên quan đến giới hạn suy luận từ chứng cứ. Phía đối lập đề nghị tách riêng yêu cầu bồi thường khỏi việc xác định quyền sử dụng, đồng thời giữ những chi tiết chưa được đối chiếu ở trạng thái chưa rõ.' : replying ? 'Bạn đã giữ giới hạn của lời kể. Phía tôi đề nghị đối chiếu nội dung thỏa thuận với phạm vi điều người kể trực tiếp biết, chưa suy ra quyền sử dụng đất từ lời kể đó.' : 'Lời tự nhận gánh gạch cần được xem trong giới hạn điều người kể biết. Phía tôi chưa đồng ý suy ra đã có thỏa thuận về quyền sử dụng đất chỉ từ lời trình bày này.') : judge ? opponentNext ? 'Mời bên đối lập làm rõ căn cứ phản hồi. Bên đối lập giải thích mối liên hệ giữa hợp đồng và việc thanh toán như thế nào?' : 'Bạn viện dẫn hợp đồng trong hồ sơ. Bạn giải thích chứng cứ nào cho thấy khoản tiền còn phải trả?'
           : replying ? 'Bạn đã phân biệt việc vay với việc thanh toán. Phía tôi đề nghị đối chiếu khoản tiền còn yêu cầu với diễn biến được hồ sơ ghi nhận, thay vì suy ra toàn bộ nghĩa vụ chỉ từ hợp đồng.' : 'Bạn viện dẫn hợp đồng để yêu cầu đối chiếu việc trả tiền. Hợp đồng thể hiện việc vay, nhưng tự nó không chứng minh đã thanh toán; vì vậy lời trình bày trả tiền còn phải được liên kết với diễn biến trong hồ sơ.',
       };
       const raw = JSON.stringify(payload);
@@ -55,6 +57,8 @@ export async function startBrowserHarness({ courtCase, webReference = false, loc
   await new Promise((resolve, reject) => { ai.once('error', reject); ai.listen(fixtureAiPort, '127.0.0.1', resolve); });
   fixtureAiPort = ai.address().port;
   Object.assign(process.env, { NODE_ENV: 'test', AUTH_EMAIL_VERIFICATION_DISABLED: 'false', JWT_SECRET: 'browser-integration-only-secret-at-least-32',
+    SURVEY_WEBHOOK_SECRET: 'browser-survey-fixture-only-secret-at-least-32', SURVEY_TOKEN_ENTRY: 'entry.123456',
+    VITE_FEEDBACK_FORM_URL: 'https://docs.google.com/forms/d/e/courtsim-fixture/viewform',
     CLIENT_ORIGIN: 'http://127.0.0.1:4175', AI_BASE_URL: `http://127.0.0.1:${ai.address().port}`, GEMINI_API_KEY: '', AI_API_KEY: '', LEGAL_ONLINE_LOOKUP: 'false', LEGAL_WEB_REFERENCE_SCORING: String(webReference) });
   const { createApp } = await import('../../src/app.js');
   const { Case, User, SimulationSession, AiPersonal } = await import('../../src/models/index.js');
@@ -99,6 +103,16 @@ export async function startBrowserHarness({ courtCase, webReference = false, loc
       const product = findPaymentProduct(type);
       if (!user || !product) throw new Error('Thiếu tài khoản/gói kiểm thử');
       await applyPaymentEntitlement({ userId: user._id, entitlement: product.entitlement });
+    },
+    // Giả lập Google gửi callback có chữ ký; đi qua API thật thay vì sửa biên nhận trong DB.
+    submitSurvey: async formUrl => {
+      const payload = JSON.stringify({ token: new URL(formUrl).searchParams.get('entry.123456'), response_id: randomUUID() });
+      const timestamp = String(Date.now());
+      const signature = createHmac('sha256', process.env.SURVEY_WEBHOOK_SECRET).update(`${timestamp}.${payload}`).digest('hex');
+      const response = await fetch('http://127.0.0.1:5019/api/v1/survey/google-forms', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CourtSim-Timestamp': timestamp, 'X-CourtSim-Signature': signature }, body: payload,
+      });
+      if (!response.ok) throw new Error(`Survey fixture callback: HTTP ${response.status}`);
     },
     // Chỉ cấp quyền trong DB kiểm thử ngẫu nhiên, không thay tài khoản thật.
     makeAdmin: async email => {

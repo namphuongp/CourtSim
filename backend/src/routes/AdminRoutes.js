@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import mongoose from 'mongoose';
+import openAiBillingRoutes from './OpenAiBillingRoutes.js';
 import { User, Case, SimulationSession, TrialResult, AiPersonal } from '../models/index.js';
 import { AuthSession } from '../models/AuthState.js';
 import AiUsage from '../models/AiUsage.js';
@@ -21,6 +22,7 @@ import { adminPaymentList, adminPaymentDetail, findAdminPayment, publicAdminPaym
 import { consumeAuthLimit } from '../middlewares/rateLimit.js';
 const router = Router();
 router.use(authenticate, requireAdmin);
+router.use('/ai/openai', openAiBillingRoutes);
 const userFields = '_id username email email_verified system_role status auth_providers created_at';
 const pageResult = (data, total, opts) => ({ data, pagination: { total, page: opts.page, limit: opts.limit } });
 const run = handler => asyncHandler(async (req, res) => res.json(await handler(req)));

@@ -14,7 +14,7 @@ Lệnh cài đặt/chạy/test ở [README](../README.md); biến đầy đủ �
 | AI | `OPENAI_API_KEY` hoặc `GEMINI_API_KEY`; nếu cùng có thì Gemini được ưu tiên. Endpoint tùy chỉnh cần `AI_BASE_URL` và khóa riêng `AI_API_KEY` |
 | Vai AI | `AI_JUDGE_MODEL`, `AI_OPPONENT_MODEL`, `AI_EVALUATOR_MODEL`; đổi env rồi restart, không cần seed |
 | Chi phí | Hạn mặc định 80 cuộc gọi/người/15 phút, 200/người/ngày, 2.000 toàn hệ thống/ngày; chỉnh các biến `AI_*_CALLS_*`. Tính cả retry, không phải hạn ngân sách tiền tuyệt đối |
-| Luật | `LEGAL_ONLINE_LOOKUP=false` chỉ dùng bản lưu đã xác minh; không chuyển nguồn khác |
+| Luật | `LEGAL_ONLINE_LOOKUP=false` ngừng tải mới; bản lưu còn hạn vẫn dùng được. `LEGAL_WEB_REFERENCE_SCORING=false` tắt đường chấm tham khảo web. |
 | Thanh toán | Polling API với `PAYMENT_PROVIDER=sepay_gateway`, `SEPAY_ENV`, `SEPAY_MERCHANT_ID`, `SEPAY_SECRET_KEY`, `SEPAY_POLL_INTERVAL_MS`, `PAYMENT_RETURN_ORIGIN`; không dùng IPN. Xem [tích hợp SePay](SEPAY_PAYMENTS.md). QR trực tiếp cũ dùng `PAYMENT_PROVIDER=sepay_bank_transfer` và các biến `SEPAY_WEBHOOK_SECRET`, `SEPAY_BANK_ACCOUNT`, `PAYMENT_BANK_*` |
 
 `AUTH_EMAIL_VERIFICATION_DISABLED` chỉ dùng development. `AI_MODEL_PRICING_JSON` cần đơn giá/version đã đối chiếu; thiếu giá thì báo chi phí chưa đầy đủ, không suy đoán. Hạn mức ứng dụng nên đi cùng giới hạn ngân sách tại nhà cung cấp.

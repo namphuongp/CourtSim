@@ -70,7 +70,11 @@ test('Case1: chọn vai, hồ sơ, kéo thả, đối đáp, tải lại, chấm
   }
   await page.getByRole('button', { name: 'Kết thúc và chấm điểm', exact: true }).click();
   await page.getByRole('button', { name: 'Xác nhận kết thúc', exact: true }).click();
-  await page.getByRole('button', { name: 'Bỏ qua và xem kết quả', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Bỏ qua và xem kết quả', exact: true })).toHaveCount(0);
+  const survey = page.getByRole('link', { name: /Điền khảo sát Google Forms/ });
+  await expect(survey).toBeVisible();
+  await harness.submitSurvey(await survey.getAttribute('href'));
+  await page.getByRole('button', { name: 'Mình đã gửi xong', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Kết quả luyện tập' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Điểm tham khảo từ nguồn web' })).toHaveCount(0);
   await page.reload();

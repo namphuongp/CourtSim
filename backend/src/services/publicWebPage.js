@@ -28,7 +28,8 @@ export async function fetchPublicLawPage(value, { resolver = lookup, request = (
           if ([301, 302, 303, 307, 308].includes(response.statusCode)) {
             response.resume(); resolve({ redirect: response.headers.location }); return;
           }
-          const isPdf = /^application\/pdf(?:;|$)/iu.test(response.headers['content-type'] ?? '');
+          // Công báo có tệp PDF được phục vụ dưới nhãn octet-stream; vẫn bắt buộc chữ ký %PDF- bên dưới.
+          const isPdf = /^application\/(?:pdf|octet-stream)(?:;|$)/iu.test(response.headers['content-type'] ?? '');
           if (response.statusCode !== 200 || (!isPdf && !/text\/html|text\/plain/iu.test(response.headers['content-type'] ?? ''))) {
             const error = new Error('WEB_PAGE_UNREADABLE');
             error.http_status = response.statusCode;
@@ -37,7 +38,7 @@ export async function fetchPublicLawPage(value, { resolver = lookup, request = (
           let length = 0; const chunks = [];
           for await (const chunk of response) {
             length += chunk.length;
-            if (length > 3_000_000) throw new Error('WEB_PAGE_TOO_LARGE');
+            if (length > (isPdf ? 12_000_000 : 3_000_000)) throw new Error('WEB_PAGE_TOO_LARGE');
             chunks.push(chunk);
           }
           const bytes = Buffer.concat(chunks);

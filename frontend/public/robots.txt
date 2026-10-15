@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Keep pages crawlable so crawlers can read their noindex directives.
+Sitemap: https://www.courtsimvn.com/sitemap.xml

@@ -65,14 +65,9 @@
   letter-spacing: 0;
   text-decoration: none;
 }
-.auth-brand svg {
+.auth-brand .courtsim-mark {
   width: 34px;
   height: 34px;
-  padding: 6px;
-  color: #07243e;
-  border-radius: 50%;
-  background: linear-gradient(180deg, #fff5ad, #ffd150);
-  box-shadow: 0 10px 22px rgb(255 201 59 / 0.34);
 }
 .auth-brand span span { color: #0d8b98; }
 

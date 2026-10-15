@@ -21,7 +21,7 @@ async function start() {
     console.error('Cần kiểm tra cấu hình thanh toán trong backend/.env:', { code: error.code ?? 'PAYMENT_CONFIG_INVALID' });
   }
   stopPaymentPolling = startPaymentPolling();
-  server = app.listen(env.PORT, process.env.HOST || '127.0.0.1', () => console.info('CourtSim API đã sẵn sàng.'));
+  server = app.listen(env.PORT, process.env.HOST || '0.0.0.0', () => console.info('CourtSim API đã sẵn sàng.'));
 }
 
 async function shutdown(signal) {

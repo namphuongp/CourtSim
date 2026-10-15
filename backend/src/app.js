@@ -10,6 +10,7 @@ import { learnerFeedbackRoutes, adminFeedbackRoutes } from './routes/FeedbackRou
 import sessionRoutes from './routes/SessionRoutes.js';
 import legalSourceRoutes from './routes/LegalSourceRoutes.js';
 import checkoutRoutes from './routes/CheckoutRoutes.js';
+import surveyRoutes from './routes/SurveyRoutes.js';
 
 export function createApp(authDependencies, paymentDependencies = {}) {
   const app = express();
@@ -27,6 +28,7 @@ export function createApp(authDependencies, paymentDependencies = {}) {
   }));
 
   app.use('/api/v1/health', healthRoutes);
+  app.use('/api/v1/survey', surveyRoutes);
   app.use('/api/auth', createAuthRoutes(authDependencies));
   app.use('/api/v1/cases', caseRoutes);
   app.use('/api/v1/legal-sources', legalSourceRoutes);

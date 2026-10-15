@@ -11,6 +11,8 @@ const { legalWebQuery, parseWebLawPage, webReferenceCitations, researchWebLaw, r
 const { researchLegalBasis } = await import('../src/services/legalResearchService.js');
 const { learnerCitation } = await import('../src/services/learnerPresentation.js');
 const { webSourceUrls } = await import('../src/services/aiClient.js');
+const { loadPublicLaw, publicLawTargets } = await import('../src/services/publicLawCatalog.js');
+const { lawPdfLinks } = await import('../src/services/webLawParser.js');
 const now = new Date();
 const courtCase = { category: 'đất đai', summary: 'Tranh chấp đất đai', full_document: 'Chưa có biên nhận.', practice_context: { legal_assessment: 'unverified' } };
 // Toàn bộ văn bản/điều khoản fixture là giả lập, không đưa vào cơ sở dữ liệu nguồn thật.
@@ -67,7 +69,7 @@ test('chặn DNS nội bộ và redirect về nội bộ trước khi gửi requ
 
 test('tìm, đọc, cache nguồn thật; lỗi nguồn không sinh điểm tham khảo', async () => {
   let discoveries = 0; const saved = [];
-  const dependencies = { now, cache: { find: async () => saved, save: async s => saved.push(s) },
+  const dependencies = { now, catalogue: [], cache: { find: async () => saved, save: async s => saved.push(s) },
     persona: async () => ({ model_id: 'fixture' }), discover: async () => { discoveries++; return [page.url]; }, fetchPage: async () => page };
   const first = await researchWebLaw({ courtCase }, dependencies);
   assert.equal(first.citations.length, 1);
@@ -116,4 +118,60 @@ test('PDF chính thức cần nhận diện văn bản, bỏ điều cuối có 
   assert.doesNotMatch(snapshot.source_text, /Điều 2/);
   assert.equal(parseWebLawPage({ ...pdf, content: pdf.content.replace('Luật số:', 'Trích dẫn:') }, now), null);
   assert.equal(parseWebLawPage({ ...pdf, source_sha256: undefined }, now), null);
+});
+
+test('đọc PDF đính kèm Công báo và chặn tài liệu sai số hiệu', async () => {
+  const url = 'https://congbao.chinhphu.vn/fixture';
+  const pdfUrl = 'https://congbaocdn.chinhphu.vn/CongBaoCP/VanBan/fixturepdf';
+  const index = { url, content: `<a href="/details" data-href="${pdfUrl}">Toàn văn</a><a href="http://127.0.0.1/secret.pdf">X</a><script><a href="https://evil.test/law.pdf"></a></script>` };
+  assert.deepEqual(lawPdfLinks(index), [pdfUrl]);
+  const pdf = { url: pdfUrl, format: 'pdf', source_sha256: 'c'.repeat(64), content: 'Số: 111/2020/L-CTN\nLỆNH CÔNG BỐ LUẬT\nCỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\nLuật số: 999/2020/QH14\nĐiều 1. Chứng cứ đất đai\nNội dung giả lập đủ dài để kiểm thử chứ không phải luật thật.\nĐiều 2. Tiếp theo\nĐiều cuối có thể bị cắt nên không dùng để chấm điểm.' };
+  const fetchPage = async requested => requested === url ? index : pdf;
+  const loaded = await loadPublicLaw({ url, law_number: '999/2020/QH14' }, { fetchPage, now });
+  assert.equal(loaded.snapshots.length, 1);
+  assert.equal(loaded.snapshots[0].law_number, '999/2020/QH14');
+  assert.equal(loaded.snapshots[0].source_url, pdfUrl);
+  assert.equal((await loadPublicLaw({ url, law_number: '998/2020/QH14' }, { fetchPage, now })).snapshots.length, 0);
+});
+
+test('nguồn chính thức không cần công cụ tìm kiếm AI; cache/offline không tải lại', async () => {
+  const saved = []; let fetches = 0; let searches = 0;
+  const officialPage = { ...page, url: 'https://vanban.chinhphu.vn/fixture' };
+  const deps = { now, catalogue: [{ url: officialPage.url, law_number: '999/2020/QH14' }],
+    cache: { find: async () => saved, save: async s => saved.push(s) },
+    fetchPage: async () => { fetches++; return officialPage; },
+    persona: async () => null, discover: async () => { searches++; throw Error('WEB_SEARCH_UNSUPPORTED'); } };
+  const first = await researchWebLaw({ courtCase, question: 'Điều 1 999/2020/QH14' }, deps);
+  assert.equal(first.citations.length, 1);
+  assert.equal(searches, 0);
+  assert.equal(fetches, 1);
+  const second = await researchWebLaw({ courtCase, question: 'Điều 1 999/2020/QH14' }, deps);
+  assert.equal(second.citations.length, 1);
+  assert.equal(fetches, 1);
+  const legal = await researchLegalBasis({ courtCase }, { corpus: async () => ({ citations: [], warnings: [], legal_assessment_available: false }), web: async () => first });
+  assert.equal(legal.legal_assessment_mode, 'web_reference');
+  assert.equal(legal.legal_assessment_available, false);
+  assert.equal(legal.citations[0].application_status, 'unverified');
+  await researchWebLaw({ courtCase, online: false }, { ...deps, cache: { find: async () => [] } });
+  assert.equal(fetches, 1);
+  const partial = await researchWebLaw({ courtCase, question: 'Điều 99 999/2020/QH14' }, { ...deps, cache: { find: async () => [], save: async () => {} } });
+  assert.ok(partial.citations.length);
+  assert.ok(partial.diagnostics.some(d => d.reason === 'search_unavailable'));
+});
+
+test('truy vấn giữ số điều ở đầu phiên và chọn phiên bản theo mốc hồ sơ', () => {
+  const input = { courtCase, eventDate: '2010-01-01', records: [{ sender_type: 'user', content: 'Điều 1 999/2020/QH14' }, ...Array.from({ length: 4 }, () => ({ sender_type: 'user', content: 'Tôi yêu cầu đối chiếu chứng cứ đất đai.' }))] };
+  const search = legalWebQuery(input);
+  assert.ok(search.numbers.includes('999/2020/QH14'));
+  assert.ok(search.articles.includes('Điều 1'));
+  assert.ok(publicLawTargets(input, search).some(t => t.law_number === '13/2003/QH11'));
+  assert.ok(!publicLawTargets(input, search).some(t => t.law_number === '31/2024/QH15'));
+});
+
+test('tệp octet-stream không có chữ ký PDF bị từ chối', async () => {
+  await assert.rejects(fetchPublicLawPage(page.url, { resolver: async () => [{ address: '8.8.8.8', family: 4 }], request: (_url, _options, callback) => {
+    const response = Readable.from([Buffer.from('<html>not a PDF</html>')]);
+    response.statusCode = 200; response.headers = { 'content-type': 'application/octet-stream' };
+    queueMicrotask(() => callback(response)); return new EventEmitter();
+  } }), /WEB_PDF_INVALID/);
 });

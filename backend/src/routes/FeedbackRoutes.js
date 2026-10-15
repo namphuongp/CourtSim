@@ -5,6 +5,7 @@ import { SimulationSession, TrialResult } from '../models/index.js';
 import { authenticate, requireAdmin } from '../middlewares/auth.js';
 import { AppError } from '../utils/AppError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { requireSurvey, surveyLink, surveyVerified } from '../services/surveyVerification.js';
 
 const statuses = ['new', 'viewed', 'resolved'];
 const id = value => {
@@ -16,7 +17,7 @@ const text = (value, max, required = false) => {
   return value.trim();
 };
 async function completedSession(request) {
-  const session = await SimulationSession.findOne({ _id: id(request.params.sessionId), user_id: request.auth.userId }).select('status evaluation feedback feedback_prompted_at feedback_submitted_at').lean();
+  const session = await SimulationSession.findOne({ _id: id(request.params.sessionId), user_id: request.auth.userId }).select('user_id status evaluation.score survey_receipt feedback feedback_prompted_at feedback_submitted_at').lean();
   if (!session) throw new AppError('Không tìm thấy phiên luyện tập.', 404);
   if (session.status !== 'completed' || (!session.evaluation && !await TrialResult.exists({ session_id: session._id }))) throw new AppError('Phiên chưa có kết quả chấm điểm. Hãy quay lại phiên để kiểm tra.', 409);
   return session;
@@ -24,11 +25,22 @@ async function completedSession(request) {
 
 export const learnerFeedbackRoutes = Router({ mergeParams: true });
 learnerFeedbackRoutes.use(authenticate);
+learnerFeedbackRoutes.get('/survey', asyncHandler(async (request, response) => {
+  const session = await completedSession(request);
+  const verified = await surveyVerified(request.authUser);
+  response.set('Cache-Control', 'no-store').json({ data: { verified, form_url: verified ? null : surveyLink(session) } });
+}));
 learnerFeedbackRoutes.post('/prompt', asyncHandler(async (request, response) => {
   const session = await completedSession(request);
+  await requireSurvey(request.authUser);
   // Đánh dấu trước khi hiển thị: tải lại hoặc mở tab khác không hỏi thêm lần nữa.
   const claimed = await SimulationSession.updateOne({ _id: session._id, feedback_prompted_at: null, feedback_submitted_at: null }, { $set: { feedback_prompted_at: new Date() } });
-  response.json({ data: { show: claimed.modifiedCount === 1 } });
+  let formUrl = null;
+  if (claimed.modifiedCount === 1) {
+    try { formUrl = surveyLink(session); }
+    catch (error) { if (error.code !== 'SURVEY_UNAVAILABLE') throw error; }
+  }
+  response.json({ data: { show: claimed.modifiedCount === 1, form_url: formUrl } });
 }));
 learnerFeedbackRoutes.post('/', asyncHandler(async (request, response) => {
   const content = text(request.body?.content, 2000, true);

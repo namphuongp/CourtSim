@@ -64,6 +64,17 @@ test('API thành viên: hạn lượt, chống giả gói, quyền API và tạo
   }
   const setup = (request_id = randomUUID()) => ({ request_id, case_id: String(courtCase._id), user_court_role: 'defense_lawyer', case_event_date: '2023-01-01', tier: 'pro', subscription_type: 'pro', features: { legalAssistant: true }, case_credits: 999 });
 
+  await t.test('khảo sát và quyền gói cùng được thực thi: chưa xác minh không lộ điểm', async () => {
+    const denied = await request(`/v1/sessions/${completed.free._id}/result`);
+    assert.equal(denied.status, 403);
+    assert.equal(denied.body.error.code, 'SURVEY_REQUIRED');
+    const finished = await request(`/v1/sessions/${completed.free._id}/complete`, 'free', 'POST', {});
+    assert.deepEqual(finished.body.data, { status: 'completed', survey_required: true });
+    assert.ok((await request('/v1/sessions')).body.data.every(session => session.result === null));
+    // The following cases test membership independently after the required survey is verified.
+    await User.updateMany({ _id: { $in: Object.values(users).map(user => user._id) } }, { $set: { survey_verified_at: new Date() } });
+  });
+
   await t.test('Freemium: đúng 2 lượt, không thể giả gói; vẫn đọc phiên và kết quả tổng quan', async () => {
     assert.equal((await request('/auth/membership')).body.data.remainingSessions, 2);
     let sessionId;

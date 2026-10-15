@@ -1,10 +1,11 @@
 import { useId, useState } from 'react';
-import { Eye, EyeOff, Gavel } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
+import CourtSimMark from '../../components/CourtSimMark';
 import { Link } from 'react-router-dom';
 import './auth.css';
 
 export function AuthShell({ children }) {
-  return <main className="auth-page"><section className="auth-card"><Link to="/" className="auth-brand" aria-label="CourtSim — Trang chủ"><Gavel size={25} aria-hidden="true" /><span>Court<span>Sim</span></span></Link>{children}</section><footer className="auth-footer"><span>© {new Date().getFullYear()} CourtSim</span><Link to="/guide">Hướng dẫn sử dụng</Link><Link to="/">Về trang chủ</Link></footer></main>;
+  return <main className="auth-page"><section className="auth-card"><Link to="/" className="auth-brand" aria-label="CourtSim — Trang chủ"><CourtSimMark /><span>Court<span>Sim</span></span></Link>{children}</section><footer className="auth-footer"><span>© {new Date().getFullYear()} CourtSim</span><Link to="/guide">Hướng dẫn sử dụng</Link><Link to="/">Về trang chủ</Link></footer></main>;
 }
 export function PasswordField({ name = 'password', label = 'Mật khẩu', creating = false, forgot = false, error, onChange }) {
   const id = useId(); const [visible, setVisible] = useState(false); const [caps, setCaps] = useState(false);
