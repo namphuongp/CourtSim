@@ -10,6 +10,15 @@
   gap: 24px;
 }
 
+.checkout-order > strong {
+  overflow-wrap: anywhere;
+}
+
+.checkout-gateway-result h3 {
+  margin: 18px 0 8px;
+  color: #092943;
+}
+
 .checkout-back {
   width: fit-content;
   display: inline-flex;

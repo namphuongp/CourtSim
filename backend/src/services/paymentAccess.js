@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { FREE_SESSION_LIMIT, memberFeatures, normalizeMembership } from '../../../shared/membershipPolicy.mjs';
 import User from '../models/User.js';
 import UserUsageQuota from '../models/UserUsageQuota.js';
+import SimulationSession from '../models/SimulationSession.js';
 import { AppError } from '../utils/AppError.js';
 
 function nextYear() {
@@ -19,10 +20,19 @@ export async function addCaseCredits(userId, quantity) {
   );
 }
 
-export async function applyPaymentEntitlement({ userId, entitlement }) {
+export async function applyPaymentEntitlement({ userId, entitlement, paymentId }) {
   if (!entitlement) return null;
   if (entitlement.type === 'case_credit') {
-    const quota = await addCaseCredits(userId, entitlement.quantity);
+    let quota;
+    if (paymentId) {
+      await ensureQuota(userId);
+      // The credit increment and deduplication marker commit in the same document.
+      quota = await UserUsageQuota.findOneAndUpdate(
+        { user_id: userId, applied_payment_ids: { $ne: String(paymentId) } },
+        { $inc: { case_credits: entitlement.quantity }, $addToSet: { applied_payment_ids: String(paymentId) } },
+        { returnDocument: 'after' },
+      );
+    } else quota = await addCaseCredits(userId, entitlement.quantity);
     const plan = entitlement.plan === 'lite' ? 'lite' : 'pay-per-use';
     // Mua lượt lẻ không hạ gói Lite/Pro; Lite không hạ Pro.
     await User.updateOne({ _id: userId, subscription_type: { $in: plan === 'lite' ? ['free', 'pay-per-use'] : ['free'] } },
@@ -52,7 +62,7 @@ async function ensureQuota(userId) {
   return quota;
 }
 
-export async function membershipStatus(user) {
+export async function membershipStatus(user, creationRequestId) {
   const features = memberFeatures(user);
   const quota = await UserUsageQuota.findOne({ user_id: user._id }).lean();
   const freeUsed = quota?.free_cases_used ?? Math.min(FREE_SESSION_LIMIT, Math.max(0, quota?.cases_played ?? 0));
@@ -61,8 +71,10 @@ export async function membershipStatus(user) {
   // Lượt mua từ phiên bản cũ vẫn có đầy đủ quyền của phiên trả phí.
   const plan = features.id === 'freemium' && credits > 0 ? 'pay-per-use' : features.id;
   const effective = plan === 'pay-per-use' ? memberFeatures({ tier: plan }) : features;
+  const resumable = creationRequestId ? await SimulationSession.exists({ user_id: user._id, creation_request_id: creationRequestId }) : null;
   return { ...effective, freeLimit: FREE_SESSION_LIMIT, freeUsed, freeRemaining, caseCredits: credits,
     remainingSessions: effective.unlimitedSessions ? null : freeRemaining + credits,
+    resumeRequestId: resumable ? creationRequestId : null,
     canCreateSession: effective.unlimitedSessions || freeRemaining + credits > 0 };
 }
 

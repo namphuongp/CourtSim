@@ -11,8 +11,9 @@ import sessionRoutes from './routes/SessionRoutes.js';
 import legalSourceRoutes from './routes/LegalSourceRoutes.js';
 import checkoutRoutes from './routes/CheckoutRoutes.js';
 
-export function createApp(authDependencies) {
+export function createApp(authDependencies, paymentDependencies = {}) {
   const app = express();
+  app.locals.paymentDependencies = paymentDependencies;
   app.disable('x-powered-by');
   if (process.env.TRUST_PROXY) app.set('trust proxy', process.env.TRUST_PROXY.split(',').map(value => value.trim()));
   app.use(securityHeaders);

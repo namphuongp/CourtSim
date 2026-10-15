@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "node --test",
-    "dev": "node --watch src/server.js",
+    "dev": "node --watch --watch-path=src --watch-path=.env src/server.js",
     "start": "node src/server.js",
     "seed": "node src/scripts/seed.js",
     "legal:import": "node src/scripts/importLegalDocuments.js",
@@ -34,6 +34,7 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.7.0",
     "pdfjs-dist": "^4.10.38",
+    "sepay-pg-node": "^1.0.0",
     "word-extractor": "^1.0.4"
   },
   "engines": {

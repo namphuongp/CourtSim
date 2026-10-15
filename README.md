@@ -30,7 +30,7 @@ Hướng dẫn khởi tạo đầy đủ dữ liệu: [SEED.md](docs/SEED.md). C
 - Email/OTP, Google, cookie HttpOnly, hồ sơ tài khoản, đổi/đặt mật khẩu, thu hồi phiên đăng nhập.
 - Danh sách vụ án, hồ sơ/chứng cứ, vai luật sư, phiên theo từng lời thoại, bản nháp qua reload, trợ lý luật, kết thúc, góp ý, kết quả và lịch sử.
 - Admin: người dùng, phiên/biên bản, góp ý, thống kê, usage AI, thanh toán và nhật ký. Mục **Hồ sơ vụ án** (`/admin/cases`) cho phép tạo tình huống, thêm chứng cứ, xem hồ sơ và phân trang. Có nội dung chứng cứ thì chọn “Có nội dung được cung cấp”; tài liệu chỉ được nhắc đến không nhập thành tài liệu đã cung cấp. Chưa có giao diện sửa/xóa vụ án hiện có.
-- Thanh toán chuyển khoản có tạo đơn, webhook SePay, xác nhận quản trị và cấp lượt/gói. Cần cấu hình ngân hàng và khóa webhook, chưa chứng minh đối soát với dịch vụ ngân hàng thật. Giọng nói, xuất PDF và tải hồ sơ riêng **chưa triển khai**.
+- Thanh toán qua cổng SePay có tạo đơn, form đã ký, đối soát API bằng polling, xác nhận quản trị và cấp lượt/gói; không dùng IPN. Cần cấu hình Merchant ID/Secret Key của cổng thanh toán. Kiểm thử fixture chưa chứng minh giao dịch ngân hàng thật. Giọng nói, xuất PDF và tải hồ sơ riêng **chưa triển khai**.
 - Trang hướng dẫn có FAQ, giải thích điểm phần đã chấm, cách gửi góp ý và thông tin dữ liệu/cookie. Nội dung này chưa thay thế bộ điều khoản và chính sách chính thức của đơn vị vận hành.
 - Phiên, trạng thái hội thoại, cursor, điểm và góp ý nằm trong SimulationSession; API vẫn đọc CourtRecord/TrialResult cũ. Không xóa collection cũ.
 - Điểm thiếu dữ liệu ghi rõ earned_score/assessed_max (ví dụ 69/73), **chưa có điểm toàn bài**; không quy đổi thành 94,52/100. Vẫn giữ đủ rubric 23 tiêu chí.
@@ -55,7 +55,9 @@ Backend .env.example liệt kê biến cấu hình. Chỉ đặt khóa ở backe
 
 Email cần EMAIL_API_KEY/EMAIL_FROM của Resend và domain gửi đã xác minh. Google cần client ID/secret/redirect URI. Bỏ qua OTP chỉ dùng development, không có hiệu lực production. Hạn mức AI tính cả retry, lưu Mongo dùng chung; xem cấu hình trong hướng dẫn vận hành.
 
-Thanh toán cần `SEPAY_WEBHOOK_SECRET` (hoặc `PAYMENT_WEBHOOK_SECRET`) trong mọi môi trường. Thiếu khóa thì webhook trả 503, không cấp quyền. Cấu hình `SEPAY_BANK_ACCOUNT`, `PAYMENT_BANK_CODE`, `PAYMENT_BANK_ACCOUNT_NUMBER`, `PAYMENT_BANK_ACCOUNT_NAME` cho ngân hàng nhận. URL webhook chính: `/api/payments/sepay/webhook`; kiểm thử nội bộ dùng khóa và giao dịch giả, không chuyển tiền.
+Thanh toán mặc định dùng `PAYMENT_PROVIDER=sepay_gateway`, cần `SEPAY_ENV`, `SEPAY_MERCHANT_ID`, `SEPAY_SECRET_KEY`, `PAYMENT_RETURN_ORIGIN` và `CLIENT_ORIGIN` phù hợp; xem [hướng dẫn SePay polling](docs/SEPAY_PAYMENTS.md). `PAYMENT_RETURN_ORIGIN` là origin frontend mà khách quay về sau khi thanh toán. Backend gọi API SePay theo lịch, kể cả khi khách đóng trang; callback trình duyệt không tự cấp quyền. Không cần khóa webhook/IPN hoặc tunnel nhận IPN cho luồng này. Production dùng merchant/secret Production, `SEPAY_ENV=production`, `NODE_ENV=production` và origin HTTPS.
+
+Chỉ khi bật chuyển khoản QR cũ bằng `PAYMENT_PROVIDER=sepay_bank_transfer` mới dùng `SEPAY_WEBHOOK_SECRET` (hoặc `PAYMENT_WEBHOOK_SECRET`), `SEPAY_BANK_ACCOUNT`, `PAYMENT_BANK_CODE`, `PAYMENT_BANK_ACCOUNT_NUMBER`, `PAYMENT_BANK_ACCOUNT_NAME`. Endpoint cũ `/api/payments/sepay/webhook` kiểm khóa/chữ ký riêng; thiếu khóa trả 503. Kiểm thử tự động dùng dịch vụ và giao dịch giả, không chuyển tiền.
 
 ## Kiểm tra
 
@@ -88,5 +90,6 @@ CI chạy tại .github/workflows/ci.yml. Từ backend: `npm run legal:smoke` ki
 - [Kiến trúc, xác thực và luồng dữ liệu](docs/ARCHITECTURE.md)
 - [Nguồn luật và chấm điểm](docs/SCORING_AND_LEGAL_RESEARCH.md)
 - [Vận hành, cấu hình domain, backup/restore và giới hạn](docs/OPERATIONS.md)
+- [Cấu hình và kiểm thử cổng thanh toán SePay](docs/SEPAY_PAYMENTS.md)
 
 Hướng dẫn nhập kho luật: [LEGAL_CORPUS.md](docs/LEGAL_CORPUS.md). Hồ sơ đầu vào nhập luật nằm trong `backend/src/data/legal-reviews/`; không xóa thư mục này khi chuyển máy. Kết quả kiểm thử có thể dọn bằng `npm run test:clean` trong frontend. Chưa tự triển khai hoặc đổi cấu hình production.

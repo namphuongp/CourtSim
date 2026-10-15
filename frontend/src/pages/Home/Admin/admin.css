@@ -1,4 +1,7 @@
-.admin-shell { --admin-border:#dce5ef; min-height:100dvh; background:#f5f8fc; color:#29445e; font-size:14px; }
+.admin-shell { --admin-border:#dce5ef; min-height:100dvh; background:#f5f8fc; color:#29445e; font-family:"Segoe UI",Arial,sans-serif; font-synthesis:weight; font-size:14px; line-height:1.6; letter-spacing:normal; }
+.admin-shell :is(h1,h2,h3,h4) { font-family:inherit; font-weight:700; line-height:1.4; letter-spacing:normal; text-wrap:wrap; }
+.admin-shell :is(input,textarea,select,button) { font-family:inherit; letter-spacing:normal; }
+.admin-shell .feedback-modal { font-family:inherit; }
 .admin-shell h1 { font-size:clamp(24px,3vw,32px); margin:0 0 10px; }
 .admin-shell h2 { font-size:19px; margin:0 0 15px; }
 .admin-shell h3 { font-size:16px; margin:15px 0 8px; }
@@ -75,6 +78,17 @@
 .admin-case-list li>div { flex:1 1 250px; min-width:0; }
 .admin-payment-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
 .admin-payment-actions small { flex-basis:100%; color:#ad3240; }
+.admin-money { white-space:nowrap; font-variant-numeric:tabular-nums; font-weight:600; }
+.admin-payment-code { overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
+.admin-payment-views { display:flex; flex-wrap:wrap; gap:10px; }
+.admin-payment-views button[aria-pressed="true"] { color:#1853b9; border-color:#8daee1; background:#ecf3ff; }
+.admin-success { color:#11624a; }
+.admin-payment-confirm { padding:16px; margin-block:16px; border:1px solid #ead7aa; border-radius:10px; background:#fffaf0; }
+.admin-payment-confirm label { display:grid; gap:8px; }
+.admin-payment-confirm textarea { width:100%; font:inherit; }
+.admin-payment-history { margin:0; padding-left:20px; }
+.admin-payment-history li { padding:8px 0; }
+.admin-payment-history time { display:block; color:#62758d; font-size:12px; }
 .admin-shell .admin-menu-toggle { display:none; }
 .admin-skip { position:fixed; left:15px; top:-80px; z-index:100; background:white; padding:12px; }
 .admin-skip:focus { top:10px; }

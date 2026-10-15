@@ -17,7 +17,6 @@ const roles = [
 
 export default function SimulationSetup() {
   const navigate = useNavigate();
-  const membership = useMembership();
   const [cases, setCases] = useState([]);
   const storageKey = draftKey('setup');
   const [form, updateForm] = useState(() => {
@@ -26,6 +25,9 @@ export default function SimulationSetup() {
     return { case_id: '', user_court_role: '', case_event_date: '', ...saved, difficulty: 'balanced', request_id: saved?.difficulty === 'balanced' && saved.request_id ? saved.request_id : crypto.randomUUID() };
   });
   const setForm = (value) => updateForm({ ...value, request_id: crypto.randomUUID() });
+  const membership = useMembership(form.request_id);
+  const canResume = membership.data?.resumeRequestId === form.request_id;
+  const canStart = membership.data?.canCreateSession || canResume;
   const busy = useRef(false);
   const [selectedCase, setSelectedCase] = useState(null);
   const [detailError, setDetailError] = useState('');
@@ -62,7 +64,7 @@ export default function SimulationSetup() {
   const eventDate = fixedDate || form.case_event_date;
 
   async function startSession() {
-    if (busy.current || selectedCase?._id !== form.case_id || !membership.data?.canCreateSession || membership.loading) return;
+    if (busy.current || selectedCase?._id !== form.case_id || !canStart || membership.loading) return;
     busy.current = true;
     setState((current) => ({ ...current, submitting: true, error: '' }));
     try {
@@ -97,7 +99,7 @@ export default function SimulationSetup() {
             <input id="case-event-date" type="date" required readOnly={Boolean(fixedDate)} value={eventDate} onChange={(event) => setForm({ ...form, case_event_date: event.target.value })} className="setup-date rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white" />
           </div>
         </div>
-        <aside className="setup-aside h-fit rounded-3xl border border-slate-800 bg-slate-900 p-6 lg:sticky lg:top-24"><Gavel className="mb-3 text-blue-400" /><h2 className="font-bold text-white">Sẵn sàng tranh tụng?</h2><p className="my-4 text-sm text-slate-400">Chủ tọa hoặc bên đối lập sẽ phát biểu tùy nội dung và giai đoạn luyện tập. Đọc từng lời thoại rồi bấm Tiếp tục để chuyển lượt.</p><button onClick={startSession} disabled={selectedCase?._id !== form.case_id || Boolean(detailError) || !form.case_id || !form.user_court_role || !eventDate || state.submitting || membership.loading || !membership.data?.canCreateSession} className="setup-start w-full rounded-xl bg-blue-600 p-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">{state.submitting ? 'Đang khởi tạo...' : 'Bắt đầu phiên tòa'}</button></aside>
+        <aside className="setup-aside h-fit rounded-3xl border border-slate-800 bg-slate-900 p-6 lg:sticky lg:top-24"><Gavel className="mb-3 text-blue-400" /><h2 className="font-bold text-white">Sẵn sàng tranh tụng?</h2><p className="my-4 text-sm text-slate-400">Chủ tọa hoặc bên đối lập sẽ phát biểu tùy nội dung và giai đoạn luyện tập. Đọc từng lời thoại rồi bấm Tiếp tục để chuyển lượt.</p>{canResume && <p className="my-4">Bạn có thể tiếp tục khởi tạo phiên đã yêu cầu. Hệ thống sẽ không trừ thêm lượt.</p>}<button onClick={startSession} disabled={selectedCase?._id !== form.case_id || Boolean(detailError) || !form.case_id || !form.user_court_role || !eventDate || state.submitting || membership.loading || !canStart} className="setup-start w-full rounded-xl bg-blue-600 p-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">{state.submitting ? 'Đang khởi tạo...' : canResume ? 'Tiếp tục khởi tạo phiên' : 'Bắt đầu phiên tòa'}</button></aside>
       </fieldset>
     </section>
   );

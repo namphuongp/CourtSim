@@ -51,6 +51,26 @@ export function findPricingPlan(planId) {
   return pricingPlans.find((plan) => plan.id === planId) ?? null;
 }
 
+export function savedCheckoutPlan(order) {
+  const id = order.plan?.id ?? (order.type === 'case' ? 'pay-per-use' : order.type);
+  const current = findPricingPlan(id);
+  if (!current && !order.plan?.name) return null;
+  const plan = { ...current, ...order.plan, id, amount: order.amount };
+  const features = plan.features ?? MEMBERSHIP_PLANS[id] ?? {};
+  const entitlement = plan.entitlement;
+  // Benefits and totals describe the purchased snapshot, including older prices/quantities.
+  const bullets = [
+    ...(entitlement?.type === 'case_credit' ? [`Cộng ${entitlement.quantity} lượt mô phỏng`]
+      : features.unlimitedSessions ? ['Không trừ lượt mở phiên'] : []),
+    'Chọn vai luật sư, đối đáp với AI',
+    ...(features.legalAssistant ? ['Trợ lý tra cứu luật'] : []),
+    features.detailedScoring ? 'Chấm điểm và feedback chi tiết theo dữ liệu đủ điều kiện' : 'Kết quả và nhận xét tổng quan',
+    ...(features.skillAnalytics ? ['Phân tích kỹ năng và theo dõi tiến bộ'] : []),
+    'Lưu lịch sử kết quả',
+  ];
+  return { ...plan, price: new Intl.NumberFormat('vi-VN').format(order.amount) + ' VNĐ', bullets };
+}
+
 export function pricingFeatures(planId) {
   return MEMBERSHIP_PLANS[planId];
 }

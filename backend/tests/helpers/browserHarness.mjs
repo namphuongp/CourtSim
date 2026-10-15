@@ -8,7 +8,7 @@ import { resolve } from 'node:path';
 // Worker có thể chạy nhiều tệp; env của backend đã cache nên giữ cổng AI giữa các harness.
 let fixtureAiPort = 0;
 
-export async function startBrowserHarness({ courtCase, webReference = false, localLaw = false } = {}) {
+export async function startBrowserHarness({ courtCase, webReference = false, localLaw = false, paymentDependencies = {} } = {}) {
   let localArchive;
   const dbName = `courtsim_test_${randomUUID().replaceAll('-', '')}`;
   const emails = [];
@@ -88,7 +88,7 @@ export async function startBrowserHarness({ courtCase, webReference = false, loc
       source_files: [{ path: 'fixture.txt', sha256: sourceHash, archive_file: `${sourceHash}.txt` }] });
     await Provision.create({ document_id: document._id, article: '1', paragraph: null, point: null, locator: 'Điều 1', locator_key: 'A:1|P:|D:', text, search_tokens: ['hop', 'dong', 'vay'] });
   }
-  const api = createApp({ sendEmail: async mail => emails.push(mail) }).listen(5019, '127.0.0.1');
+  const api = createApp({ sendEmail: async mail => emails.push(mail) }, paymentDependencies).listen(5019, '127.0.0.1');
   await new Promise(resolve => api.once('listening', resolve));
   return { emails, control, calls: () => calls,
     grantPlan: async (email, type) => {

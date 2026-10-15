@@ -14,6 +14,7 @@ import { assertEmailReady } from '../services/emailService.js';
 import { cookie, cookieOptions, hash, SESSION_COOKIE, issueSession, publicUser } from '../services/authSession.js';
 import { securityAudit } from '../services/securityAudit.js';
 import { membershipStatus } from '../services/paymentAccess.js';
+import { readRequestId } from '../services/sessionStore.js';
 import { startGoogle, completeGoogle } from '../services/googleAuthService.js';
 
 // Hash giả cân bằng công việc bcrypt khi email không tồn tại; không phải mật khẩu tài khoản.
@@ -85,7 +86,12 @@ export function createAuthRoutes({ sendEmail } = {}) {
     res.clearCookie(SESSION_COOKIE, cookieOptions).json({ message: 'Đã đổi mật khẩu. Vui lòng đăng nhập lại.' });
   }));
   router.get('/me', authenticate, (req, res) => res.json({ user: publicUser(req.authUser) }));
-  router.get('/membership', authenticate, asyncHandler(async (req, res) => res.json({ data: await membershipStatus(req.authUser) })));
+  router.get('/membership', authenticate, asyncHandler(async (req, res) => {
+    if (Object.keys(req.query).some(key => key !== 'creation_request_id')) throw new AppError('Tùy chọn quyền thành viên không hợp lệ.');
+    const requestId = req.query.creation_request_id;
+    if (requestId !== undefined) readRequestId(requestId);
+    res.json({ data: await membershipStatus(req.authUser, requestId) });
+  }));
   router.post('/logout', asyncHandler(async (req, res) => {
     const token = cookie(req, SESSION_COOKIE);
     if (token) await AuthSession.deleteOne({ tokenHash: hash(token) });

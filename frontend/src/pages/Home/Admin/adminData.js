@@ -15,5 +15,7 @@ export function useAdminData(path) {
 export const date = value => value ? new Date(value).toLocaleString('vi-VN') : 'Chưa có dữ liệu';
 export const number = value => value == null ? 'Chưa có dữ liệu' : new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 2 }).format(value);
 export const money = value => value == null ? 'Chưa có dữ liệu' : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 6 }).format(value);
+export const vnd = value => value == null ? 'Chưa có dữ liệu' : new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(value);
+export const paymentStatusLabel = value => ({ pending: 'Chờ thanh toán', processing: 'Đang xác minh', paid: 'Đã thanh toán', expired: 'Đã hết hạn', cancelled: 'Đã hủy', refunded: 'Đã hoàn tiền' })[value] ?? value;
 export const duration = value => value == null ? 'Chưa có dữ liệu' : `${number(value / 60000)} phút`;
 export const roleLabel = value => ({ defense_lawyer: 'Luật sư bảo vệ bị đơn / bào chữa', plaintiff_lawyer: 'Luật sư bảo vệ nguyên đơn / bị hại', judge: 'Chủ tọa', opponent: 'Bên đối lập', evaluator: 'Chấm điểm', legal_assistant: 'Trợ lý luật', voice: 'Giọng nói', other: 'Khác' })[value] ?? value;

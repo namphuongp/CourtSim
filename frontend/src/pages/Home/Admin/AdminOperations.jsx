@@ -4,36 +4,6 @@ import api, { getApiError } from '../../../services/api';
 import { useAdminData, number, money, date, roleLabel } from './adminData';
 import { LoadState, Metric, RangeSelect, Pagination } from './AdminElements';
 
-const vnd = value => value == null ? 'Chưa có dữ liệu' : new Intl.NumberFormat('vi-VN').format(value) + ' VNĐ';
-
-export function AdminPayments() {
-  const [filter, setFilter] = useState({ page: 1, q: '', status: 'pending', sort: 'created_at', order: 'desc' });
-  const [action, setAction] = useState({ id: '', busy: false, error: '', notice: '' });
-  const resource = useAdminData('/v1/admin/payments?' + new URLSearchParams(filter));
-  const change = (key, value) => setFilter(f => ({ ...f, [key]: value, page: 1 }));
-  async function updatePayment(transactionId, status) {
-    setAction({ id: transactionId, busy: true, error: '', notice: '' });
-    try {
-      await api.patch(`/v1/admin/payments/${transactionId}`, { status }, { timeout: 15000 });
-      setAction({ id: '', busy: false, error: '', notice: status === 'success' ? 'Đã xác nhận thanh toán và mở quyền sử dụng.' : 'Đã từ chối giao dịch.' });
-      resource.reload();
-    } catch (error) {
-      setAction({ id: transactionId, busy: false, error: getApiError(error, 'Chưa xử lý được giao dịch.'), notice: '' });
-    }
-  }
-  const statusLabel = value => ({ pending: 'Chờ chuyển khoản', processing: 'Đang xác minh', paid: 'Đã thanh toán', expired: 'Đã hết hạn', cancelled: 'Đã hủy', submitted: 'Chờ xác minh', success: 'Đã xác minh', failed: 'Đã từ chối', refunded: 'Đã hoàn tiền' }[value] ?? value);
-  return <><header className="admin-page-heading"><div><h1>Thanh toán</h1><p>Theo dõi webhook chuyển khoản; xử lý thủ công khi giao dịch cần đối soát lại.</p></div></header>
-    {action.notice && <p className="admin-notice" role="status">{action.notice}</p>}
-    <form className="admin-filters" onSubmit={e => { e.preventDefault(); change('q', new FormData(e.currentTarget).get('q').trim()); }}>
-      <label>Tìm giao dịch<input name="q" maxLength={100} placeholder="Mã giao dịch, tên hoặc email" /></label><button>Tìm kiếm</button>
-      <label>Trạng thái<select value={filter.status} onChange={e => change('status', e.target.value)}><option value="">Tất cả</option><option value="pending">Chờ chuyển khoản</option><option value="processing">Đang xác minh</option><option value="paid">Đã thanh toán</option><option value="expired">Đã hết hạn</option><option value="cancelled">Đã hủy</option></select></label>
-      <label>Sắp xếp<select value={filter.sort} onChange={e => change('sort', e.target.value)}><option value="created_at">Ngày tạo</option><option value="updated_at">Cập nhật</option><option value="amount">Số tiền</option><option value="status">Trạng thái</option></select></label>
-      <label>Thứ tự<select value={filter.order} onChange={e => change('order', e.target.value)}><option value="desc">Giảm dần</option><option value="asc">Tăng dần</option></select></label>
-    </form>
-    <LoadState resource={resource}>{d => <section className="admin-card">{!d.data.length ? <p className="admin-empty">Chưa có giao dịch phù hợp.</p> : <div className="admin-table-scroll"><table><thead><tr>{['Giao dịch', 'Người dùng', 'Gói', 'Số tiền', 'Nội dung CK', 'Trạng thái', 'Thời gian', 'Xử lý'].map(v => <th key={v}>{v}</th>)}</tr></thead><tbody>{d.data.map(item => <tr key={item.transaction_id}><td><strong>{item.transaction_id}</strong><small>{item.payment?.account_name} · {item.payment?.account_mask}</small></td><td>{item.user ? <Link to={`/admin/users/${item.user._id}`}>{item.user.username}</Link> : 'Tài khoản không còn tồn tại'}<small>{item.user?.email}</small></td><td>{item.plan?.name}<small>{item.plan?.payment_purpose}</small></td><td>{vnd(item.amount)}</td><td>{item.payment?.transfer_content}</td><td><span className="admin-badge">{statusLabel(item.status)}</span><small>{item.user_confirmed_at ? `Báo đã chuyển: ${date(item.user_confirmed_at)}` : ''}</small></td><td>{date(item.created_at)}<small>Cập nhật: {date(item.updated_at)}</small></td><td>{['pending'].includes(item.status) ? <div className="admin-payment-actions"><button disabled={action.busy && action.id === item.transaction_id} onClick={() => updatePayment(item.transaction_id, 'success')}>Xác nhận</button><button className="admin-danger" disabled={action.busy && action.id === item.transaction_id} onClick={() => updatePayment(item.transaction_id, 'failed')}>Từ chối</button>{action.id === item.transaction_id && action.error && <small role="alert">{action.error}</small>}</div> : '—'}</td></tr>)}</tbody></table></div>}<Pagination pagination={d.pagination} onChange={page => setFilter({ ...filter, page })}/></section>}</LoadState>
-  </>;
-}
-
 export function AdminAi() {
   const [range, setRange] = useState('month');
   const resource = useAdminData(`/v1/admin/ai/usage?range=${range}`);
@@ -55,7 +25,7 @@ export function AdminSystem() {
 export function AdminAudit() {
   const [page, setPage] = useState(1);
   const resource = useAdminData(`/v1/admin/audit?page=${page}`);
-  return <><h1>Hoạt động quản trị</h1><p>Lịch sử các thay đổi được ghi nhận kể từ khi bật chức năng.</p><LoadState resource={resource}>{d => <section className="admin-card">{!d.data.length ? <p>Chưa có hoạt động quản trị.</p> : <div className="admin-table-scroll"><table><thead><tr><th>Thời gian</th><th>Quản trị viên</th><th>Hành động</th><th>Đối tượng</th></tr></thead><tbody>{d.data.map(e => <tr key={e._id}><td>{date(e.created_at)}</td><td>{e.admin_user_id?.username || 'Tài khoản không còn tồn tại'}</td><td>{{ USER_DISABLED: 'Vô hiệu hóa tài khoản', USER_ENABLED: 'Mở lại tài khoản', FEEDBACK_STATUS_CHANGED: 'Cập nhật góp ý', FEEDBACK_DELETED: 'Xóa góp ý', PAYMENT_APPROVED: 'Xác nhận thanh toán', PAYMENT_REJECTED: 'Từ chối thanh toán' }[e.action]}</td><td><Link to={e.target_type === 'user' ? `/admin/users/${e.target_id}` : e.target_type === 'payment' ? '/admin/payments' : '/admin/feedback'}>{e.target_id}</Link></td></tr>)}</tbody></table></div>}<Pagination pagination={d.pagination} onChange={setPage}/></section>}</LoadState></>;
+  return <><h1>Hoạt động quản trị</h1><p>Lịch sử các thay đổi được ghi nhận kể từ khi bật chức năng.</p><LoadState resource={resource}>{d => <section className="admin-card">{!d.data.length ? <p>Chưa có hoạt động quản trị.</p> : <div className="admin-table-scroll"><table><thead><tr><th>Thời gian</th><th>Quản trị viên</th><th>Hành động</th><th>Đối tượng</th></tr></thead><tbody>{d.data.map(e => <tr key={e._id}><td>{date(e.created_at)}</td><td>{e.admin_user_id?.username || 'Tài khoản không còn tồn tại'}</td><td>{{ USER_DISABLED: 'Vô hiệu hóa tài khoản', USER_ENABLED: 'Mở lại tài khoản', FEEDBACK_STATUS_CHANGED: 'Cập nhật góp ý', FEEDBACK_DELETED: 'Xóa góp ý', PAYMENT_APPROVED: 'Xác nhận thanh toán', PAYMENT_REJECTED: 'Từ chối thanh toán', PAYMENT_RECONCILED: 'Đối soát thanh toán với SePay' }[e.action]}</td><td><Link to={e.target_type === 'user' ? `/admin/users/${e.target_id}` : e.target_type === 'payment' ? '/admin/payments' : '/admin/feedback'}>{e.target_id}</Link></td></tr>)}</tbody></table></div>}<Pagination pagination={d.pagination} onChange={setPage}/></section>}</LoadState></>;
 }
 
 

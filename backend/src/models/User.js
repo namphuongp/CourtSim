@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { adminAuditOutboxSchema } from '../schemas/adminAuditOutboxSchema.js';
 
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, trim: true, minlength: 2, maxlength: 100 },
@@ -12,6 +13,7 @@ const userSchema = new mongoose.Schema({
   system_role: { type: String, enum: ['user', 'admin'], default: 'user' },
   subscription_type: { type: String, enum: ['free', 'plus', 'pay-per-use', 'lite', 'pro'], default: 'free' },
   status: { type: String, enum: ['active', 'banned'], default: 'active' },
+  admin_audit_outbox: { type: [adminAuditOutboxSchema], default: undefined, select: false },
   created_at: { type: Date, default: Date.now }
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
 userSchema.index({ google_id: 1 }, { unique: true, partialFilterExpression: { google_id: { $type: 'string' } } });

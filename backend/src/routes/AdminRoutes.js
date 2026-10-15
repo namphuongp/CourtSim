@@ -1,9 +1,11 @@
 import { Router } from 'express';
 import mongoose from 'mongoose';
-import { User, Case, SimulationSession, TrialResult, AiPersonal, PaymentTransaction } from '../models/index.js';
+import { User, Case, SimulationSession, TrialResult, AiPersonal } from '../models/index.js';
 import { AuthSession } from '../models/AuthState.js';
 import AiUsage from '../models/AiUsage.js';
 import AdminAudit from '../models/AdminAudit.js';
+import PaymentTransaction from '../models/PaymentTransaction.js';
+import { adminAuditEvent, flushAdminAuditOutbox, flushPendingAdminAudits } from '../services/adminAuditOutbox.js';
 import { authenticate, requireAdmin } from '../middlewares/auth.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { AppError } from '../utils/AppError.js';
@@ -14,7 +16,9 @@ import { dashboard, activity, aiAnalytics } from '../services/adminAnalytics.js'
 import { getRecords } from '../services/sessionStore.js';
 import { learnerCase, learnerRecord, learnerEvaluation } from '../services/learnerPresentation.js';
 import { scoreSummary } from '../../../shared/scorePresentation.mjs';
-import { manuallySetPaymentStatus } from '../services/paymentService.js';
+import { manuallySetPaymentStatus, pollGatewayPayment } from '../services/paymentService.js';
+import { adminPaymentList, adminPaymentDetail, findAdminPayment, publicAdminPayment } from '../services/adminPayments.js';
+import { consumeAuthLimit } from '../middlewares/rateLimit.js';
 const router = Router();
 router.use(authenticate, requireAdmin);
 const userFields = '_id username email email_verified system_role status auth_providers created_at';
@@ -26,60 +30,28 @@ router.get('/analytics/activity', run(async req => ({ data: await activity(timed
 router.get('/ai/usage', run(async req => ({ data: await aiAnalytics(timed(req.query)) })));
 router.get('/ai/cost', run(async req => ({ data: await aiAnalytics(timed(req.query)) })));
 
-function publicPayment(transaction) {
-  return {
-    _id: transaction._id,
-    id: transaction._id,
-    transaction_id: transaction.transaction_id,
-    orderCode: transaction.order_code ?? transaction.provider_payload?.order_code ?? transaction.transaction_id,
-    order_code: transaction.order_code ?? transaction.provider_payload?.order_code ?? transaction.transaction_id,
-    amount: transaction.amount,
-    status: transaction.status === 'success' ? 'paid' : transaction.status === 'failed' ? 'cancelled' : transaction.status,
-    provider: transaction.provider,
-    type: transaction.type,
-    paid_at: transaction.paid_at,
-    expires_at: transaction.expires_at,
-    reference_code: transaction.reference_code,
-    sepay_transaction_id: transaction.sepay_transaction_id,
-    created_at: transaction.created_at,
-    updated_at: transaction.updated_at,
-    user: transaction.user,
-    plan: {
-      id: transaction.provider_payload?.plan_id,
-      name: transaction.provider_payload?.plan_name,
-      payment_purpose: transaction.provider_payload?.payment_purpose,
-      entitlement: transaction.provider_payload?.entitlement,
-    },
-    payment: transaction.provider_payload?.payment,
-    user_confirmed_at: transaction.provider_payload?.user_confirmed_at,
-    verified_at: transaction.provider_payload?.verified_at,
-  };
-}
-
-router.get('/payments', run(async req => {
-  const opts = queryOptions(req.query, ['created_at', 'updated_at', 'amount', 'status']);
-  const filter = {};
-  if (req.query.status) {
-    if (!['pending', 'processing', 'paid', 'expired', 'cancelled', 'submitted', 'success', 'failed', 'refunded'].includes(req.query.status)) throw new AppError('Trang thai thanh toan khong hop le.');
-    filter.status = req.query.status === 'success' ? { $in: ['paid', 'success'] } : req.query.status === 'failed' ? { $in: ['cancelled', 'failed'] } : req.query.status;
-  }
-  if (req.query.range) filter.created_at = dateRange(req.query).match;
-  const joins = [{ $lookup: { from: User.collection.name, localField: 'user_id', foreignField: '_id', pipeline: [{ $project: { username: 1, email: 1 } }], as: 'user' } }];
-  const search = opts.search ? { $match: { $or: [{ transaction_id: { $regex: literalRegex(opts.search), $options: 'i' } }, { order_code: { $regex: literalRegex(opts.search), $options: 'i' } }, { 'user.username': { $regex: literalRegex(opts.search), $options: 'i' } }, { 'user.email': { $regex: literalRegex(opts.search), $options: 'i' } }] } } : null;
-  const [result] = await PaymentTransaction.aggregate([{ $match: filter }, ...joins, ...(search ? [search] : []), { $facet: {
-    total: [{ $count: 'count' }],
-    items: [{ $sort: opts.sort }, { $skip: opts.skip }, { $limit: opts.limit }, { $set: { user: { $arrayElemAt: ['$user', 0] } } }],
-  } }]);
-  return pageResult(result.items.map(publicPayment), result.total[0]?.count ?? 0, opts);
+router.get('/payments', run(req => adminPaymentList(req.query)));
+router.get('/payments/:transactionId', run(req => adminPaymentDetail(req.params.transactionId)));
+router.post('/payments/:transactionId/reconcile', run(async req => {
+  await consumeAuthLimit(`admin-payment-reconcile:${req.auth.userId}`, 30);
+  const payment = await findAdminPayment(req.params.transactionId);
+  if (payment.provider !== 'sepay_gateway' && payment.status !== 'processing') throw new AppError('Giao dịch này cần được đối soát thủ công.', 409, 'PAYMENT_PROVIDER_UNSUPPORTED');
+  // Persist the reconciliation request before it can change the payment.
+  await PaymentTransaction.updateOne({ _id: payment._id }, { $push: { admin_audit_outbox:
+    adminAuditEvent(req.auth.userId, 'PAYMENT_RECONCILED', 'payment', payment._id) } });
+  try { await pollGatewayPayment(payment, req.app.locals.paymentDependencies); }
+  finally { await flushAdminAuditOutbox(PaymentTransaction, payment._id); }
+  return adminPaymentDetail(payment.transaction_id);
 }));
 
 router.patch('/payments/:transactionId', run(async req => {
   const status = req.body?.status;
-  if (!['paid', 'cancelled', 'success', 'failed'].includes(status)) throw new AppError('Trang thai xac nhan khong hop le.');
+  if (!req.body || Object.keys(req.body).some(key => !['status', 'note'].includes(key))
+    || !['paid', 'cancelled', 'success', 'failed'].includes(status)
+    || (req.body.note !== undefined && (typeof req.body.note !== 'string' || req.body.note.length > 500))) throw new AppError('Thông tin xác nhận thanh toán không hợp lệ.');
   const transaction = await manuallySetPaymentStatus({ transactionId: req.params.transactionId, status, adminUserId: req.auth.userId, note: req.body?.note });
-  await AdminAudit.create({ admin_user_id: req.auth.userId, action: ['paid', 'success'].includes(status) ? 'PAYMENT_APPROVED' : 'PAYMENT_REJECTED', target_type: 'payment', target_id: transaction._id });
   await transaction.populate('user_id', 'username email');
-  return { data: publicPayment({ ...transaction.toObject(), user: transaction.user_id }) };
+  return { data: publicAdminPayment({ ...transaction.toObject(), user: transaction.user_id }) };
 }));
 
 async function sessionList(query, userId) {
@@ -146,20 +118,28 @@ router.get('/users', run(async req => {
 router.get('/users/:id', run(async req => {
   const id = objectId(req.params.id), user = await User.findById(id).select(userFields).lean();
   if (!user) throw new AppError('Không tìm thấy tài khoản.', 404);
-  const [sessions, feedback] = await Promise.all([sessionList({ limit: '10' }, id), SimulationSession.find({ user_id: id, 'feedback.created_at': { $exists: true } }).select('_id feedback.content feedback.status feedback.created_at').sort({ 'feedback.created_at': -1 }).limit(10).lean()]);
-  return { data: { ...user, sessions: sessions.data, sessionCount: sessions.pagination.total, feedback } };
+  const [sessions, feedback, payments] = await Promise.all([sessionList({ limit: '10' }, id), SimulationSession.find({ user_id: id, 'feedback.created_at': { $exists: true } }).select('_id feedback.content feedback.status feedback.created_at').sort({ 'feedback.created_at': -1 }).limit(10).lean(), adminPaymentList({ limit: '10' }, id)]);
+  return { data: { ...user, sessions: sessions.data, sessionCount: sessions.pagination.total, feedback, payments } };
 }));
 router.patch('/users/:id', run(async req => {
   const id = objectId(req.params.id), status = req.body?.status;
   if (!req.body || Object.keys(req.body).some(k => k !== 'status') || !['active', 'banned'].includes(status)) throw new AppError('Trạng thái tài khoản không hợp lệ.');
   // Không khóa bất kỳ admin nào: tránh mất quản trị kể cả hai yêu cầu đồng thời.
-  const user = await User.findOneAndUpdate({ _id: id, system_role: { $ne: 'admin' } }, { $set: { status }, ...(status === 'banned' ? { $inc: { auth_version: 1 } } : {}) }, { returnDocument: 'before' }).select(userFields).lean();
+  const user = await User.findOneAndUpdate({ _id: id, system_role: { $ne: 'admin' }, status: { $ne: status } },
+    { $set: { status }, ...(status === 'banned' ? { $inc: { auth_version: 1 } } : {}),
+      $push: { admin_audit_outbox: adminAuditEvent(req.auth.userId, status === 'banned' ? 'USER_DISABLED' : 'USER_ENABLED', 'user', id) } },
+    { returnDocument: 'before' }).select(userFields).lean();
+  if (!user) {
+    const current = await User.findOne({ _id: id, system_role: { $ne: 'admin' }, status }).select(userFields).lean();
+    if (current) { await flushAdminAuditOutbox(User, id); return { data: current }; }
+  }
   if (!user) throw new AppError('Không thể đổi trạng thái tài khoản quản trị hoặc tài khoản không tồn tại.', 409);
   if (status === 'banned') await AuthSession.deleteMany({ userId: id });
-  if (user.status !== status) await AdminAudit.create({ admin_user_id: req.auth.userId, action: status === 'banned' ? 'USER_DISABLED' : 'USER_ENABLED', target_type: 'user', target_id: id });
+  await flushAdminAuditOutbox(User, id);
   return { data: { ...user, status } };
 }));
 router.get('/audit', run(async req => {
+  await flushPendingAdminAudits();
   const opts = queryOptions(req.query);
   const [items, total] = await Promise.all([AdminAudit.find().select('admin_user_id action target_type target_id created_at').populate('admin_user_id', 'username').sort(opts.sort).skip(opts.skip).limit(opts.limit).lean(), AdminAudit.countDocuments()]);
   return pageResult(items, total, opts);

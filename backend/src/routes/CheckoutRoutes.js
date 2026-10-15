@@ -7,6 +7,7 @@ import {
   createPaymentOrder,
   findUserPayment,
   handleSepayWebhook,
+  resumeGatewayCheckout,
   publicPayment,
   verifySepayWebhook,
 } from '../services/paymentService.js';
@@ -43,14 +44,19 @@ const createOrderHandler = asyncHandler(async (request, response) => {
 
 router.post('/create', createOrderHandler);
 router.post('/orders', createOrderHandler);
+router.post('/:paymentId/checkout', asyncHandler(async (request, response) => {
+  await consumeAuthLimit(`payment-create:${request.auth.userId}`, 20);
+  const payment = await resumeGatewayCheckout({ paymentId: request.params.paymentId, userId: request.auth.userId }, request.app.locals.paymentDependencies);
+  response.json({ success: true, payment, data: payment });
+}));
 
 router.get('/:paymentId/status', asyncHandler(async (request, response) => {
-  const payment = await findUserPayment({ paymentId: request.params.paymentId, userId: request.auth.userId });
+  const payment = await findUserPayment({ paymentId: request.params.paymentId, userId: request.auth.userId }, request.app.locals.paymentDependencies);
   response.json({ success: true, payment, data: payment });
 }));
 
 router.get('/orders/:transactionId', asyncHandler(async (request, response) => {
-  const payment = await findUserPayment({ paymentId: request.params.transactionId, userId: request.auth.userId });
+  const payment = await findUserPayment({ paymentId: request.params.transactionId, userId: request.auth.userId }, request.app.locals.paymentDependencies);
   response.json({ success: true, payment, data: payment });
 }));
 
@@ -68,7 +74,7 @@ router.post('/orders/:transactionId/confirm-paid', asyncHandler(async (request, 
     { new: true },
   );
   if (!transaction) {
-    const payment = await findUserPayment({ paymentId: request.params.transactionId, userId: request.auth.userId });
+    const payment = await findUserPayment({ paymentId: request.params.transactionId, userId: request.auth.userId }, request.app.locals.paymentDependencies);
     return response.json({ success: true, payment, data: payment });
   }
   const payment = publicPayment(transaction);

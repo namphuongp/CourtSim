@@ -6,6 +6,7 @@ import mongoose from 'mongoose';
 test('thanh toán: webhook xác thực, alias, replay, số tiền và xử lý đồng thời', { skip: !process.env.COURTSIM_TEST_MONGO_URI, timeout: 60000 }, async t => {
   process.env.JWT_SECRET = 'payment-test-isolated-secret-at-least-32';
   process.env.NODE_ENV = 'test';
+  process.env.PAYMENT_PROVIDER = 'sepay_bank_transfer';
   process.env.SEPAY_WEBHOOK_SECRET = 'payment-test-webhook-secret';
   process.env.PAYMENT_WEBHOOK_SECRET = '';
   process.env.SEPAY_BANK_ACCOUNT = 'test-account';

@@ -13,7 +13,7 @@ const AdminAi = lazy(() => import('./pages/Home/Admin/AdminOperations').then(mod
 const AdminSystem = lazy(() => import('./pages/Home/Admin/AdminOperations').then(module => ({ default: module.AdminSystem })));
 const AdminAudit = lazy(() => import('./pages/Home/Admin/AdminOperations').then(module => ({ default: module.AdminAudit })));
 const AdminCases = lazy(() => import('./pages/Home/Admin/AdminCases'));
-const AdminPayments = lazy(() => import('./pages/Home/Admin/AdminOperations').then(module => ({ default: module.AdminPayments })));
+const AdminPayments = lazy(() => import('./pages/Home/Admin/AdminPayments'));
 const VerifyEmail = lazy(() => import('./pages/Auth/VerifyEmail'));
 const ForgotPassword = lazy(() => import('./pages/Auth/VerifyEmail').then(module => ({ default: module.ForgotPassword })));
 
