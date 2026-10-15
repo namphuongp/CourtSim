@@ -18,11 +18,13 @@ import { consumeAuthLimit } from '../middlewares/rateLimit.js';
 import { runConversation } from '../services/conversationService.js';
 import { openingStatement } from '../services/casePractice.js';
 import { consumeCaseAccess } from '../services/paymentAccess.js';
+import { requireSurvey, surveyVerified } from '../services/surveyVerification.js';
 
 const router = Router();
 const allowedRoles = ['defense_lawyer', 'plaintiff_lawyer'];
 const allowedDifficulties = ['beginner', 'balanced', 'advanced'];
 router.use(authenticate);
+router.use((_request, response, next) => { response.set('Cache-Control', 'no-store'); next(); });
 
 async function getOwnedSession(sessionId, userId) {
   if (!mongoose.isObjectIdOrHexString(sessionId)) throw new AppError('Mã phiên không hợp lệ.', 400);
@@ -84,6 +86,7 @@ router.post('/', asyncHandler(async (request, response) => {
 router.get('/', asyncHandler(async (request, response) => {
   if (request.query.include !== undefined && request.query.include !== 'skills') throw new AppError('Tùy chọn dữ liệu không hợp lệ.', 400);
   const includeSkills = request.query.include === 'skills';
+  const canViewResults = await surveyVerified(request.authUser);
   // Tính từ mốc đã lưu để cả phiên cũ cũng có ngày hoạt động, không tải biên bản về client.
   const sessions = await SimulationSession.aggregate([
     { $match: { user_id: new mongoose.Types.ObjectId(request.auth.userId) } },
@@ -101,7 +104,7 @@ router.get('/', asyncHandler(async (request, response) => {
     .select(`session_id score earned_score assessed_max assessment_status legal_assessment_mode rubric_scores improvement_suggestions${includeSkills ? ' criteria feedback' : ''}`).lean();
   const bySession = new Map(legacyResults.map((result) => [String(result.session_id), result]));
   response.json({ data: sessions.map((session) => {
-    const result = session.evaluation ?? bySession.get(String(session._id));
+    const result = canViewResults ? session.evaluation ?? bySession.get(String(session._id)) : null;
     return { ...publicSession(session), result: result ? { score: scoreSummary(result).score, earned_score: result.earned_score, assessment_status: result.assessment_status, rubric_scores: result.rubric_scores, rubric_version: result.rubric_version, assessed_max: result.assessed_max, score_scope: result.score_scope, legal_assessment_mode: result.legal_assessment_mode, assessment_note: result.assessment_note,
       improvement_suggestions: typeof result.improvement_suggestions === 'string' ? result.improvement_suggestions.trim().slice(0, 1200) : null,
       ...(includeSkills ? { skill_insights: skillPresentation(result) } : {}) } : null };
@@ -255,6 +258,7 @@ router.post('/:sessionId/complete', asyncHandler(async (request, response) => {
     if (!saved.matchedCount) throw new AppError('Yêu cầu đã hết thời gian xử lý. Vui lòng tải lại phiên.', 409, 'SESSION_LOCK_EXPIRED');
     return result;
   }, { leaseMs: 210_000 });
+  if (!await surveyVerified(request.authUser)) return response.json({ data: { status: 'completed', survey_required: true } });
   response.json({ data: learnerEvaluation(result, session.case_snapshot ?? await Case.findById(session.case_id).lean() ?? {}) });
 }));
 
@@ -262,6 +266,7 @@ router.get('/:sessionId/result', asyncHandler(async (request, response) => {
   const session = await getOwnedSession(request.params.sessionId, request.auth.userId);
   const result = session.evaluation ?? await TrialResult.findOne({ session_id: session._id }).lean();
   if (!result) throw new AppError('Phiên chưa có kết quả. Hãy trở lại phiên và chọn Kết thúc.', 404, 'RESULT_NOT_FOUND');
+  await requireSurvey(request.authUser);
   response.json({ data: learnerEvaluation(result) });
 }));
 

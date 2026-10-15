@@ -18,6 +18,10 @@ const simulationSessionSchema = new mongoose.Schema({
   status: { type: String, enum: ['ongoing', 'completed'], default: 'ongoing' },
   feedback_prompted_at: { type: Date, default: null },
   feedback_submitted_at: { type: Date, default: null },
+  survey_receipt: { type: new mongoose.Schema({
+    response_id: { type: String, required: true, maxlength: 256 },
+    verified_at: { type: Date, required: true },
+  }, { _id: false }), default: undefined },
   feedback: { type: new mongoose.Schema({
     content: { type: String, required: true, maxlength: 2000 },
     status: { type: String, enum: ['new', 'viewed', 'resolved'], default: 'new' },
@@ -31,6 +35,7 @@ const simulationSessionSchema = new mongoose.Schema({
 
 simulationSessionSchema.index({ 'feedback.status': 1, 'feedback.created_at': -1 }, { partialFilterExpression: { 'feedback.created_at': { $exists: true } } });
 simulationSessionSchema.index({ user_id: 1, created_at: -1 });
+simulationSessionSchema.index({ 'survey_receipt.response_id': 1 }, { unique: true, partialFilterExpression: { 'survey_receipt.response_id': { $type: 'string' } } });
 simulationSessionSchema.index({ user_id: 1, creation_request_id: 1 }, { unique: true, partialFilterExpression: { creation_request_id: { $type: 'string' } } });
 
 simulationSessionSchema.index({ created_at: -1 });

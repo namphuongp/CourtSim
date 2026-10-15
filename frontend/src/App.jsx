@@ -59,14 +59,13 @@ const getDefaultRoute = () => {
 // COMPONENT BẢO VỆ ROUTE
 // ==========================================
 
-// 1. Chỉ dành cho người chưa đăng nhập (VD: Landing, Login, Register)
+// 1. Chỉ dành cho người chưa đăng nhập (Login, Register).
 const PublicOnlyRoute = ({ children }) => {
   const location = useLocation();
   const params = new URLSearchParams(location.search);
   const googleError = params.get('googleError');
   const returnTo = safeReturnPath(params.get('returnTo'));
-  const pricingHash = location.pathname === '/' && ['#pricing', '#pricing-details'].includes(location.hash);
-  return isAuthenticated() && !pricingHash ? <Navigate to={(params.get('returnTo') ? returnTo : getDefaultRoute()) + (googleError ? '?googleError=failed' : '')} replace /> : children;
+  return isAuthenticated() ? <Navigate to={(params.get('returnTo') ? returnTo : getDefaultRoute()) + (googleError ? '?googleError=failed' : '')} replace /> : children;
 };
 
 // 2. Chỉ dành cho Admin
@@ -111,7 +110,7 @@ function App() {
       <Suspense fallback={<main className="auth-page"><p role="status">Đang mở trang…</p></main>}>
       <Routes>
         {/* PUBLIC ROUTES */}
-        <Route path="/" element={ <PublicOnlyRoute><LandingPage /></PublicOnlyRoute> } />
+        <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={ <PublicOnlyRoute><LoginPage /></PublicOnlyRoute> } />
         <Route path="/register" element={ <PublicOnlyRoute><RegisterPage /></PublicOnlyRoute> } />
         <Route path="/auth" element={<Navigate to="/login" replace />} />

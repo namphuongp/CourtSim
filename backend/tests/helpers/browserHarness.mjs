@@ -1,6 +1,6 @@
 import http from 'node:http';
 import mongoose from 'mongoose';
-import { randomUUID } from 'node:crypto';
+import { createHmac, randomUUID } from 'node:crypto';
 import { SCORING_RUBRIC } from '../../src/data/scoringRubric.js';
 import { mkdir, writeFile, unlink } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -55,6 +55,7 @@ export async function startBrowserHarness({ courtCase, webReference = false, loc
   await new Promise((resolve, reject) => { ai.once('error', reject); ai.listen(fixtureAiPort, '127.0.0.1', resolve); });
   fixtureAiPort = ai.address().port;
   Object.assign(process.env, { NODE_ENV: 'test', AUTH_EMAIL_VERIFICATION_DISABLED: 'false', JWT_SECRET: 'browser-integration-only-secret-at-least-32',
+    SURVEY_WEBHOOK_SECRET: 'browser-survey-fixture-only-secret-at-least-32', SURVEY_TOKEN_ENTRY: 'entry.123456',
     CLIENT_ORIGIN: 'http://127.0.0.1:4175', AI_BASE_URL: `http://127.0.0.1:${ai.address().port}`, GEMINI_API_KEY: '', AI_API_KEY: '', LEGAL_ONLINE_LOOKUP: 'false', LEGAL_WEB_REFERENCE_SCORING: String(webReference) });
   const { createApp } = await import('../../src/app.js');
   const { Case, User, SimulationSession, AiPersonal } = await import('../../src/models/index.js');
@@ -91,6 +92,16 @@ export async function startBrowserHarness({ courtCase, webReference = false, loc
   const api = createApp({ sendEmail: async mail => emails.push(mail) }).listen(5019, '127.0.0.1');
   await new Promise(resolve => api.once('listening', resolve));
   return { emails, control, calls: () => calls,
+    // Giả lập Google gửi callback có chữ ký; đi qua API thật thay vì sửa biên nhận trong DB.
+    submitSurvey: async formUrl => {
+      const payload = JSON.stringify({ token: new URL(formUrl).searchParams.get('entry.123456'), response_id: randomUUID() });
+      const timestamp = String(Date.now());
+      const signature = createHmac('sha256', process.env.SURVEY_WEBHOOK_SECRET).update(`${timestamp}.${payload}`).digest('hex');
+      const response = await fetch('http://127.0.0.1:5019/api/v1/survey/google-forms', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CourtSim-Timestamp': timestamp, 'X-CourtSim-Signature': signature }, body: payload,
+      });
+      if (!response.ok) throw new Error(`Survey fixture callback: HTTP ${response.status}`);
+    },
     // Chỉ cấp quyền trong DB kiểm thử ngẫu nhiên, không thay tài khoản thật.
     makeAdmin: async email => {
       if (mongoose.connection.name !== dbName || !/^courtsim_test_[a-f0-9]{32}$/.test(dbName)) throw new Error('Không đúng DB kiểm thử');

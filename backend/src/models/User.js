@@ -8,6 +8,7 @@ const userSchema = new mongoose.Schema({
   google_email: { type: String, maxlength: 254 },
   google_id: { type: String },
   email_verified: { type: Boolean, default: false },
+  survey_verified_at: { type: Date, default: null },
   auth_providers: { type: [String], enum: ['password', 'google'], default: [] },
   system_role: { type: String, enum: ['user', 'admin'], default: 'user' },
   subscription_type: { type: String, enum: ['free', 'plus', 'pro'], default: 'free' },

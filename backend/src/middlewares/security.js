@@ -23,6 +23,8 @@ function isSepayWebhook(request) {
 export function browserMutationGuard(request, _response, next) {
   if (['GET', 'HEAD', 'OPTIONS'].includes(request.method)) return next();
   if (isSepayWebhook(request)) return next();
+  // Endpoint máy chủ xác thực bằng HMAC; các API dùng cookie vẫn giữ kiểm tra CSRF.
+  if (request.method === 'POST' && request.path === '/api/v1/survey/google-forms') return next();
   // Cookie xác thực cần chống CSRF kể cả khi trình duyệt không gửi Origin.
   if (!env.CLIENT_ORIGINS.includes(request.headers.origin) || request.headers['x-courtsim-request'] !== '1') {
     return next(new AppError('Yêu cầu không hợp lệ. Hãy tải lại trang và thử lại.', 403, 'CSRF_DENIED'));
