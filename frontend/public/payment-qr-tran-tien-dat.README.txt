@@ -1,0 +1,9 @@
+The QR folder is now:
+
+frontend/public/payment-assets/
+
+Place the original scannable QR image there with this exact filename:
+
+tran-tien-dat-qr.png
+
+The checkout page reads /payment-assets/tran-tien-dat-qr.png. Do not use a screenshot with masked or blurred QR areas, because banking apps may fail to scan it.

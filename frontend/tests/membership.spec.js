@@ -1,0 +1,77 @@
+import { randomUUID } from 'node:crypto';
+import { test, expect } from '@playwright/test';
+import { startBrowserHarness } from '../../backend/tests/helpers/browserHarness.mjs';
+
+let harness;
+test.beforeAll(async () => { harness = await startBrowserHarness(); });
+test.afterAll(async () => { await harness?.close(); });
+
+test('Freemium: trợ lý và phân tích bị khóa, hết 2 lượt không mở thêm phiên, thanh toán mở đúng quyền', async ({ page }, info) => {
+  const email = `membership-${info.project.name}@example.test`;
+  await page.goto('/register');
+  await page.getByLabel('Họ và tên').fill('Kiểm thử quyền thành viên');
+  await page.getByLabel('Email').fill(email);
+  await page.getByLabel('Mật khẩu', { exact: true }).fill('Test-only-password-123');
+  await page.getByLabel('Nhập lại mật khẩu', { exact: true }).fill('Test-only-password-123');
+  await page.getByRole('button', { name: 'Đăng ký', exact: true }).click();
+  await expect(page.getByLabel('Mã xác thực')).toBeVisible();
+  await page.getByLabel('Mã xác thực').fill(harness.emails.at(-1).otp);
+  await page.getByRole('button', { name: 'Xác nhận', exact: true }).click();
+  await expect(page).toHaveURL(/dashboard$/);
+  await page.goto('/dashboard/setup');
+  await expect(page.getByRole('region', { name: 'Gói và lượt luyện tập' })).toContainText('Miễn phí còn 2/2 lượt');
+  await page.getByRole('button', { name: /Hồ sơ kiểm thử trình duyệt/ }).click();
+  await page.getByRole('button', { name: 'Luật sư bảo vệ bị đơn', exact: true }).click();
+  await page.getByLabel('3. Ngày sự kiện làm phát sinh tranh chấp').fill('2023-01-01');
+  await page.getByRole('button', { name: 'Bắt đầu phiên tòa', exact: true }).click();
+  await expect(page).toHaveURL(/simulation\/[a-f0-9]{24}$/);
+  const sessionId = page.url().split('/').at(-1);
+  await page.getByRole('button', { name: 'Trợ lý luật', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Quyền lợi thành viên' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Hỏi trợ lý' })).toHaveCount(0);
+  expect((await page.request.get(`http://127.0.0.1:5019/api/v1/sessions/${sessionId}/assistant`)).status()).toBe(403);
+  await page.goto('/dashboard/analytics');
+  await expect(page.getByRole('heading', { name: 'Phân tích kỹ năng dành cho Pro' })).toBeVisible();
+  const { data: session } = await page.request.get(`http://127.0.0.1:5019/api/v1/sessions/${sessionId}`).then(response => response.json());
+  const request = { request_id: randomUUID(), case_id: session.case_id._id, user_court_role: 'plaintiff_lawyer', case_event_date: '2023-01-01' };
+  const headers = { Origin: 'http://127.0.0.1:4175', 'X-CourtSim-Request': '1' };
+  expect((await page.request.post('http://127.0.0.1:5019/api/v1/sessions', { headers, data: request })).status()).toBe(201);
+  await page.goto('/dashboard/setup');
+  await expect(page.getByRole('region', { name: 'Gói và lượt luyện tập' })).toContainText('Đã hết lượt');
+  await page.getByRole('button', { name: /Hồ sơ kiểm thử trình duyệt/ }).click();
+  await page.getByRole('button', { name: 'Luật sư bảo vệ bị đơn', exact: true }).click();
+  await page.getByLabel('3. Ngày sự kiện làm phát sinh tranh chấp').fill('2023-01-01');
+  await expect(page.getByRole('button', { name: 'Bắt đầu phiên tòa', exact: true })).toBeDisabled();
+  expect((await page.request.post('http://127.0.0.1:5019/api/v1/sessions', { headers, data: { ...request, request_id: randomUUID(), tier: 'pro' } })).status()).toBe(402);
+  expect(harness.calls()).toBe(0);
+  await harness.grantPlan(email, 'lite');
+  await page.goto('/account/membership');
+  await expect(page.getByRole('region', { name: 'Gói và lượt luyện tập' })).toContainText('Gói Lite');
+  await expect(page.getByRole('region', { name: 'Gói và lượt luyện tập' })).toContainText('Lượt đã mua còn 5');
+  await page.goto(`/simulation/${sessionId}`);
+  await page.getByRole('button', { name: 'Trợ lý luật', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Hỏi trợ lý' })).toBeVisible();
+  await page.goto('/dashboard/analytics');
+  await expect(page.getByRole('heading', { name: 'Phân tích kỹ năng dành cho Pro' })).toBeVisible();
+  await harness.grantPlan(email, 'pro');
+  await page.goto('/dashboard/analytics');
+  await expect(page.locator('.skill-metrics')).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+test('kết quả Freemium hiển thị tổng quan và lời mời nâng gói, giữ điểm phần đã chấm', async ({ page }) => {
+  await page.route('**/api/**', route => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith('/auth/me')) return route.fulfill({ json: { user: { id: 'summary-user', role: 'user', tier: 'free' } } });
+    if (path.endsWith('/feedback/prompt')) return route.fulfill({ json: { data: { show: false } } });
+    return route.fulfill({ json: { data: { earned_score: 69, assessed_max: 73, feedback: 'Nhận xét tổng quan của phiên.', improvement_suggestions: 'Liên hệ chứng cứ với yêu cầu.', features: { detailedScoring: false } } } });
+  });
+  await page.goto('/simulation/free-summary/result');
+  await expect(page.getByRole('heading', { name: 'Nhận xét tổng quan' })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Kết quả phần đã đánh giá' })).toContainText('69/73');
+  await expect(page.getByRole('heading', { name: 'Các nhóm kỹ năng' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Bạn đã làm tốt' })).toHaveCount(0);
+  await expect(page.getByRole('region', { name: 'Quyền lợi thành viên' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Xem lại toàn bộ biên bản' })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});

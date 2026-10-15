@@ -1,2 +1,6 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Seed checksums must survive checkout on Windows and Linux.
+backend/src/data/seed/*.json text eol=lf
+backend/src/data/seed/sources/* binary

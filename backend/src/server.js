@@ -1,28 +1,45 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import mongoose from 'mongoose';
+import 'dotenv/config';
+import { createApp } from './app.js';
+import { connectDatabase, disconnectDatabase } from './config/database.js';
+import { env } from './config/env.js';
+import { startPaymentPolling } from './services/paymentPolling.js';
+import { gatewayConfig, paymentProvider } from './services/sepayGateway.js';
 
-dotenv.config();
+const app = createApp();
+let server;
+let stopPaymentPolling;
 
-const app = express();
-const PORT = process.env.PORT || 5000;
-
-app.use(cors());
-app.use(express.json());
-// --- KẾT NỐI MONGODB ---
-if (process.env.MONGO_URI) {
-  mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log('🍃 MongoDB đã kết nối thành công qua Cloud!'))
-    .catch((err) => console.error('❌ Lỗi kết nối MongoDB:', err));
-} else {
-  console.log('⚠️ Cảnh báo: Chưa tìm thấy chuỗi kết nối MONGO_URI trong file .env');
+async function start() {
+  // Chỉ nhận request sau khi MongoDB sẵn sàng.
+  await connectDatabase();
+  try {
+    if (paymentProvider() === 'sepay_gateway') {
+      const config = gatewayConfig();
+      console.info(`Đã nạp cấu hình SePay (${config.environment}), xác nhận thanh toán bằng polling.`);
+    }
+  } catch (error) {
+    console.error('Cần kiểm tra cấu hình thanh toán trong backend/.env:', { code: error.code ?? 'PAYMENT_CONFIG_INVALID' });
+  }
+  stopPaymentPolling = startPaymentPolling();
+  server = app.listen(env.PORT, process.env.HOST || '127.0.0.1', () => console.info('CourtSim API đã sẵn sàng.'));
 }
 
-// --- API ---
-app.get('/', (req, res) => {
-  res.send('Server CourtSim đang chạy!');
-});
-app.listen(PORT, () => {
-  console.log(`🚀 Server Backend đang chạy tại port: ${PORT}`);
+async function shutdown(signal) {
+  console.log(`Nhận ${signal}, đang dừng server...`);
+  if (stopPaymentPolling) await stopPaymentPolling();
+  if (server) await new Promise((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
+  await disconnectDatabase();
+  process.exit(0);
+}
+
+for (const signal of ['SIGINT', 'SIGTERM']) {
+  process.on(signal, () => shutdown(signal).catch((error) => {
+    console.error('Không thể dừng server an toàn:', { name: error.name });
+    process.exit(1);
+  }));
+}
+
+start().catch((error) => {
+  console.error('Không thể khởi động CourtSim API:', { name: error.name });
+  process.exit(1);
 });

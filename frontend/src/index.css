@@ -1,0 +1,121 @@
+@import "tailwindcss";
+
+@theme {
+  --color-legal-dark: #1A1612;
+  --color-legal-panel: #2A241E;
+  --color-legal-gold: #D9C3A3;
+  --color-legal-text-main: #F2E7D5;
+  --color-legal-text-sub: #A39684;
+}
+
+/* Bảng màu sáng, tối ưu cho việc đọc nội dung học tập trong thời gian dài. */
+:root {
+  color: #243b53;
+  background: #f7fafc;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  background: #f7fafc;
+  color: #334e68;
+  font-family: "Be Vietnam Pro", "Aptos", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  letter-spacing: 0.005em;
+}
+
+h1, h2, h3, h4 {
+  color: #102a43;
+  font-family: "Aptos Display", "Segoe UI Variable Display", "Be Vietnam Pro", "Segoe UI", sans-serif;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+
+h1 { font-weight: 750; line-height: 1.12; }
+h2 { font-weight: 700; line-height: 1.22; }
+h3, h4 { font-weight: 650; line-height: 1.32; }
+p { text-wrap: pretty; }
+
+::selection { background: #bfdbfe; color: #102a43; }
+
+/* Giữ cấu trúc Tailwind hiện có nhưng chuyển các bề mặt tối sang không gian học tập sáng. */
+.bg-slate-950 { background-color: #f7fafc !important; }
+.bg-slate-950\/50 { background-color: rgb(247 250 252 / 0.92) !important; }
+.bg-slate-950\/80, .bg-slate-950\/90 { background-color: rgb(255 255 255 / 0.94) !important; }
+.bg-slate-900 { background-color: #ffffff !important; }
+.bg-slate-900\/50 { background-color: rgb(255 255 255 / 0.78) !important; }
+.bg-slate-900\/80 { background-color: rgb(255 255 255 / 0.9) !important; }
+.bg-black\/40 { background-color: rgb(226 236 244 / 0.88) !important; }
+.bg-slate-800 { background-color: #eaf2f8 !important; }
+.bg-slate-800\/50 { background-color: rgb(234 242 248 / 0.7) !important; }
+.bg-slate-800\/30 { background-color: rgb(234 242 248 / 0.5) !important; }
+.border-slate-800 { border-color: #d9e2ec !important; }
+.border-slate-800\/50, .border-slate-800\/60 { border-color: rgb(217 226 236 / 0.72) !important; }
+.border-slate-700 { border-color: #bcccdc !important; }
+.text-white { color: #102a43 !important; }
+.text-slate-200, .text-slate-300 { color: #243b53 !important; }
+.text-slate-400 { color: #526d82 !important; }
+.text-slate-500, .text-slate-600 { color: #627d98 !important; }
+.text-blue-300, .text-blue-400 { color: #1d4ed8 !important; }
+.text-violet-300, .text-violet-400 { color: #6d28d9 !important; }
+.text-emerald-300, .text-emerald-400 { color: #047857 !important; }
+.text-amber-300, .text-amber-400 { color: #a16207 !important; }
+.text-rose-300, .text-rose-400 { color: #be123c !important; }
+
+.shadow-2xl, .shadow-xl, .shadow-lg {
+  box-shadow: 0 12px 32px rgb(15 43 67 / 0.08) !important;
+}
+
+/* Trạng thái tương tác của light theme. */
+.hover\:bg-slate-800:hover,
+.hover\:bg-slate-800\/30:hover,
+.hover\:bg-slate-800\/50:hover,
+.hover\:bg-slate-900:hover {
+  background-color: #eaf3ff !important;
+}
+
+.hover\:text-white:hover { color: #1d4ed8 !important; }
+.hover\:bg-blue-500:hover, .hover\:bg-blue-600:hover { background-color: #1d4ed8 !important; }
+.hover\:bg-violet-500:hover { background-color: #6d28d9 !important; }
+.hover\:border-slate-700:hover { border-color: #93b4ce !important; }
+.group:hover .group-hover\:bg-blue-600 { background-color: #2563eb !important; }
+.group:hover .group-hover\:text-white { color: #fff !important; }
+
+.from-blue-900\/40 {
+  --tw-gradient-from: rgb(239 246 255 / 0.96) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgb(239 246 255 / 0) var(--tw-gradient-to-position) !important;
+}
+.to-violet-900\/40 { --tw-gradient-to: rgb(245 243 255 / 0.96) var(--tw-gradient-to-position) !important; }
+
+input, textarea, select {
+  color: #243b53;
+  caret-color: #2563eb;
+}
+
+input::placeholder, textarea::placeholder { color: #829ab1; }
+button, a {
+  transition-property: color, background-color, border-color, box-shadow, transform, opacity;
+  transition-duration: 180ms;
+  transition-timing-function: ease-out;
+}
+button { font-weight: 650; letter-spacing: 0.01em; }
+button:not(:disabled):active, a:active { transform: translateY(1px) scale(0.99); }
+button:disabled { cursor: not-allowed; }
+.uppercase { letter-spacing: 0.085em; }
+
+/* Ngoại lệ đảm bảo chữ luôn tương phản trên CTA có màu. */
+.bg-blue-500, .bg-blue-600, .bg-violet-500, .bg-violet-600, .bg-emerald-500, .bg-emerald-600, .bg-rose-500, .bg-rose-600 {
+  color: #fff !important;
+}
+.bg-blue-500 .text-white, .bg-blue-600 .text-white, .bg-violet-500 .text-white, .bg-violet-600 .text-white, .bg-emerald-500 .text-white, .bg-emerald-600 .text-white, .bg-rose-500 .text-white, .bg-rose-600 .text-white {
+  color: #fff !important;
+}
+
+button, input, textarea, select { font: inherit; }
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 3px solid rgb(37 99 235 / 0.26);
+  outline-offset: 2px;
+}

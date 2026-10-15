@@ -1,0 +1,182 @@
+.user-shell {
+  min-height: 100dvh;
+  color: #092943;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.6;
+  background:
+    radial-gradient(circle at 14% 6%, rgb(0 206 205 / 0.16), transparent 22%),
+    radial-gradient(circle at 92% 2%, rgb(255 211 83 / 0.16), transparent 24%),
+    linear-gradient(180deg, #f4fbfc 0%, #f7fbfc 46%, #f7fafc 100%);
+}
+
+.user-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  color: #fff;
+  border-bottom: 1px solid rgb(123 220 229 / 0.25);
+  background:
+    radial-gradient(circle at 85% 0%, rgb(255 224 111 / 0.22), transparent 20%),
+    linear-gradient(135deg, #041c34 0%, #062b4b 55%, #08798a 100%);
+  box-shadow: 0 18px 38px rgb(4 28 52 / 0.18);
+}
+
+.user-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgb(2 18 34 / 0.88), rgb(2 26 46 / 0.52), rgb(3 54 70 / 0.2)),
+    url('/courtsim-courtroom-background-v2.png') center 36% / cover;
+  opacity: 0.28;
+}
+
+.user-header-inner,
+.user-content {
+  max-width: 1280px;
+  margin-inline: auto;
+  padding-inline: 32px;
+}
+
+.user-header-inner {
+  position: relative;
+  padding-block: 18px 16px;
+}
+
+.user-header-top,
+.user-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.user-header .courtsim-brand {
+  color: #fff;
+  font-size: 28px;
+  letter-spacing: 0;
+}
+.user-header .courtsim-brand svg,
+.user-header .courtsim-brand span { color: #ffe177; }
+
+.user-header a:not(.courtsim-brand) {
+  color: rgb(255 255 255 / 0.86);
+  text-decoration: none;
+}
+
+.user-header-actions {
+  justify-content: flex-end;
+  font-size: 14px;
+  min-width: 0;
+}
+
+.user-header-name {
+  overflow-wrap: anywhere;
+  max-width: 260px;
+}
+
+.user-header button {
+  min-height: 44px;
+  border: 1px solid rgb(255 225 119 / 0.55);
+  border-radius: 999px;
+  padding: 9px 18px;
+  color: #15233b;
+  background: linear-gradient(180deg, #fff6b9, #ffd04a);
+  box-shadow: 0 12px 26px rgb(255 205 77 / 0.24);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 850;
+}
+.user-header button:disabled { opacity: .65; cursor: wait; }
+
+.user-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.user-navigation a {
+  border: 1px solid rgb(126 239 255 / 0.22);
+  border-radius: 999px;
+  padding: 9px 15px;
+  font-size: 14px;
+  font-weight: 800;
+  background: rgb(255 255 255 / 0.08);
+  backdrop-filter: blur(12px);
+}
+
+.user-navigation a.active {
+  color: #08213a !important;
+  border-color: rgb(255 225 119 / 0.8);
+  background: linear-gradient(180deg, #fff6b9, #ffd04a);
+  box-shadow: 0 10px 22px rgb(255 205 77 / 0.22);
+}
+
+.user-header a:not(.courtsim-brand):hover {
+  color: #ffe177;
+}
+.user-navigation a:hover {
+  border-color: rgb(126 239 255 / 0.55);
+  background: rgb(255 255 255 / 0.15);
+}
+.user-header button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 32px rgb(255 205 77 / 0.34);
+}
+
+.user-header :focus-visible {
+  outline: 3px solid rgb(56 237 241 / 0.55);
+  outline-offset: 3px;
+}
+
+.user-content {
+  padding-block: 34px 64px;
+}
+
+.user-content h1 {
+  font-size: 34px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+.user-content h2 {
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+@media(max-width:760px) {
+  .user-header { position: relative; }
+  .user-header-inner,
+  .user-content { padding-inline: 16px; }
+  .user-header-top { gap: 12px; }
+  .user-header .courtsim-brand { font-size: 24px; }
+  .user-header-actions {
+    gap: 12px;
+    flex: 1 1 auto;
+  }
+  .user-header-name { max-width: 180px; }
+  .user-navigation {
+    gap: 7px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 3px;
+  }
+  .user-navigation a {
+    flex: 0 0 auto;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  .user-content { padding-block: 24px 40px; }
+  .user-content h1 { font-size: 29px; }
+}
+
+@media(max-width:420px) {
+  .user-header-actions {
+    justify-content: space-between;
+    width: 100%;
+  }
+}

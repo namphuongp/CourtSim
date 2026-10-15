@@ -4,21 +4,40 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon src/server.js"
+    "test": "node --test",
+    "dev": "node --watch --watch-path=src --watch-path=.env src/server.js",
+    "start": "node src/server.js",
+    "seed": "node src/scripts/seed.js",
+    "legal:import": "node src/scripts/importLegalDocuments.js",
+    "legal:inventory": "node src/scripts/inventoryLegalCorpus.js",
+    "legal:local:import": "node src/scripts/importLocalLaws.js",
+    "sample:import": "node src/scripts/importSampleCase.js",
+    "legal:check": "node src/scripts/checkLegalSources.js",
+    "legal:smoke": "node src/scripts/smokeVbpl.js",
+    "legal:verify": "node src/scripts/verifyVbplDocument.js",
+    "legal:review": "node src/scripts/reviewLegalVersion.js",
+    "auth:migrate": "node src/scripts/migrateAuth.js",
+    "admin:indexes": "node src/scripts/createAdminIndexes.js",
+    "case1:import": "node src/scripts/importCase1.js",
+    "legal:web:smoke": "node src/scripts/smokeWebLaw.js",
+    "seed:export": "node src/scripts/exportSeed.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.7.0",
-    "multer": "^2.1.1"
+    "pdfjs-dist": "^4.10.38",
+    "sepay-pg-node": "^1.0.0",
+    "word-extractor": "^1.0.4"
   },
-  "devDependencies": {
-    "nodemon": "^3.1.14"
+  "engines": {
+    "node": "^22.13.0 || >=24"
   }
 }

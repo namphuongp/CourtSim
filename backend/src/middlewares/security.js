@@ -1,0 +1,34 @@
+import { env } from '../config/env.js';
+import { AppError } from '../utils/AppError.js';
+
+export function securityHeaders(_request, response, next) {
+  if (env.NODE_ENV === 'production') response.setHeader('Strict-Transport-Security', 'max-age=31536000');
+  response.setHeader('X-Content-Type-Options', 'nosniff');
+  response.setHeader('X-Frame-Options', 'DENY');
+  response.setHeader('Referrer-Policy', 'no-referrer');
+  response.setHeader('Permissions-Policy', 'camera=(), geolocation=(), microphone=()');
+  next();
+}
+
+export function corsOptions(requestOrigin, callback) {
+  // Cho phép Postman/health check không gửi Origin; trình duyệt phải thuộc allowlist.
+  if (!requestOrigin || env.CLIENT_ORIGINS.includes(requestOrigin)) return callback(null, true);
+  return callback(new AppError('Không thể thực hiện yêu cầu từ trang này. Hãy mở lại CourtSim.', 403, 'CORS_DENIED'));
+}
+
+function isSepayWebhook(request) {
+  // Các đường dẫn này đều xác thực chữ ký/secret trong CheckoutRoutes.
+  const prefixes = ['/api/v1/checkout', '/api/payment', '/api/payments'];
+  const suffixes = ['/sepay/webhook', '/webhook/bank-transfer'];
+  return request.method === 'POST' && prefixes.some(prefix => suffixes.some(suffix => request.path === prefix + suffix));
+}
+
+export function browserMutationGuard(request, _response, next) {
+  if (['GET', 'HEAD', 'OPTIONS'].includes(request.method)) return next();
+  if (isSepayWebhook(request)) return next();
+  // Cookie xác thực cần chống CSRF kể cả khi trình duyệt không gửi Origin.
+  if (!env.CLIENT_ORIGINS.includes(request.headers.origin) || request.headers['x-courtsim-request'] !== '1') {
+    return next(new AppError('Yêu cầu không hợp lệ. Hãy tải lại trang và thử lại.', 403, 'CSRF_DENIED'));
+  }
+  next();
+}

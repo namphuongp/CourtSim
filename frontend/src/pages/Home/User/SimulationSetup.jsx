@@ -1,0 +1,106 @@
+import { caseIntroduction } from '../../../../../shared/casePresentation.mjs';
+import CaseDossier from '../../../components/CaseDossier';
+import { useEffect, useRef, useState } from 'react';
+import { BookOpen, CircleHelp, Gavel } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import api, { getApiError } from '../../../services/api';
+import { roleLabel } from '../../../services/simulation';
+import { draftKey, readDraft, saveDraft } from '../../../services/auth';
+import '../../../components/dashboard/dashboard.css';
+import useMembership from '../../../components/membership/useMembership';
+import MembershipSummary from '../../../components/membership/MembershipSummary';
+
+const roles = [
+  { id: 'defense_lawyer', label: 'Luật sư bảo vệ bị đơn/bị cáo' },
+  { id: 'plaintiff_lawyer', label: 'Luật sư bảo vệ nguyên đơn/người bị hại' },
+];
+
+export default function SimulationSetup() {
+  const navigate = useNavigate();
+  const [cases, setCases] = useState([]);
+  const storageKey = draftKey('setup');
+  const [form, updateForm] = useState(() => {
+    const saved = readDraft(storageKey);
+    // Bản nháp cũ không được âm thầm giữ mức phản biện đã bỏ khỏi giao diện.
+    return { case_id: '', user_court_role: '', case_event_date: '', ...saved, difficulty: 'balanced', request_id: saved?.difficulty === 'balanced' && saved.request_id ? saved.request_id : crypto.randomUUID() };
+  });
+  const setForm = (value) => updateForm({ ...value, request_id: crypto.randomUUID() });
+  const membership = useMembership(form.request_id);
+  const canResume = membership.data?.resumeRequestId === form.request_id;
+  const canStart = membership.data?.canCreateSession || canResume;
+  const busy = useRef(false);
+  const [selectedCase, setSelectedCase] = useState(null);
+  const [detailError, setDetailError] = useState('');
+  const [reload, setReload] = useState(0);
+  useEffect(() => { saveDraft(storageKey, form); }, [storageKey, form]);
+  useEffect(() => {
+    let active = true;
+    if (form.case_id) api.get(`/v1/cases/${form.case_id}`).then(({ data }) => { if (active) { setSelectedCase(data.data); setDetailError(''); } }).catch((e) => { if (active) setDetailError(getApiError(e)); });
+    return () => { active = false; };
+  }, [form.case_id, reload]);
+  const [state, setState] = useState({ loading: true, submitting: false, error: '' });
+
+  useEffect(() => {
+    let active = true;
+    async function loadCases() {
+      const { data } = await api.get('/v1/cases?limit=50');
+      const items = [...data.data];
+      for (let page = 2; items.length < data.pagination.total; page += 1) {
+        const response = await api.get(`/v1/cases?limit=50&page=${page}`);
+        if (!response.data.data.length) break;
+        items.push(...response.data.data);
+      }
+      return items;
+    }
+    loadCases().then((items) => {
+      if (!active) return;
+      setCases(items);
+      setState((current) => ({ ...current, loading: false }));
+    }).catch((error) => { if (active) setState({ loading: false, submitting: false, error: getApiError(error) }); });
+    return () => { active = false; };
+  }, [reload]);
+
+  const fixedDate = selectedCase?._id === form.case_id ? selectedCase.reference_date : null;
+  const eventDate = fixedDate || form.case_event_date;
+
+  async function startSession() {
+    if (busy.current || selectedCase?._id !== form.case_id || !canStart || membership.loading) return;
+    busy.current = true;
+    setState((current) => ({ ...current, submitting: true, error: '' }));
+    try {
+      const { data } = await api.post('/v1/sessions', { ...form, case_event_date: eventDate });
+      saveDraft(storageKey, null);
+      navigate(`/simulation/${data.data.session._id}`);
+    } catch (error) {
+      setState((current) => ({ ...current, submitting: false, error: getApiError(error, 'Chưa thể bắt đầu phiên. Lựa chọn của bạn vẫn được giữ lại. Vui lòng thử lại.') }));
+      busy.current = false;
+      if (error.response?.status === 402) membership.refresh();
+    }
+  }
+
+  return (
+    <section className="practice-dashboard simulation-setup mx-auto max-w-5xl space-y-6">
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div><h1 className="text-3xl font-bold text-white">Thiết lập phiên tòa</h1><p className="mt-2 text-slate-400">Chọn vụ án và vai luật sư để bắt đầu.</p></div>
+        <Link to="/guide" className="setup-guide-link flex items-center gap-2 rounded-xl border border-slate-700 px-4 py-2 text-sm text-blue-300"><CircleHelp size={18} /> Xem hướng dẫn</Link>
+      </header>
+      <MembershipSummary resource={membership} />
+      {state.error && <p role="alert" className="dashboard-card dashboard-alert">{state.error} <button className="underline" onClick={() => setReload((n) => n + 1)}>Thử lại</button></p>}
+      <fieldset disabled={state.submitting} className="setup-grid grid gap-6 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
+          <div className="setup-card rounded-3xl border border-slate-800 bg-slate-900 p-6"><h2 className="mb-4 flex items-center gap-2 font-bold text-white"><BookOpen size={20} /> 1. Chọn vụ án</h2>
+            {state.loading ? <p>Đang tải hồ sơ...</p> : <div className="space-y-3">{!cases.length && <p>Chưa có vụ án để lựa chọn. Bạn có thể tải lại sau.</p>}{cases.map((item) => <button key={item._id} onClick={() => setForm({ ...form, case_id: item._id })} className={`setup-option w-full rounded-2xl border p-4 text-left ${form.case_id === item._id ? 'is-selected border-blue-500 bg-blue-500/10' : 'border-slate-800 bg-slate-950'}`}><strong className="text-white">{caseIntroduction(item).title}</strong><p className="mt-1 text-sm text-slate-400">{caseIntroduction(item).summary}</p><span className="mt-2 inline-block text-xs text-blue-300">{item.category}</span></button>)}</div>}
+          </div>
+          {form.case_id && <article className="setup-card setup-dossier rounded-3xl border border-slate-800 bg-slate-900 p-6"><h2 className="mb-3 font-bold">Giới thiệu vụ án</h2>{detailError ? <p role="alert">{detailError} <button className="underline" onClick={() => setReload((n) => n + 1)}>Thử lại</button></p> : selectedCase?._id !== form.case_id ? <p>Đang tải hồ sơ...</p> : <CaseDossier courtCase={selectedCase} role={form.user_court_role} />}</article>}
+          <div className="setup-card rounded-3xl border border-slate-800 bg-slate-900 p-6"><h2 className="mb-4 font-bold text-white">2. Chọn vai của bạn</h2><div className="grid gap-3 md:grid-cols-2">{roles.map((role) => <button key={role.id} onClick={() => setForm({ ...form, user_court_role: role.id })} className={`setup-option rounded-2xl border p-4 text-left ${form.user_court_role === role.id ? 'is-selected border-blue-500 bg-blue-500/10' : 'border-slate-800 bg-slate-950'}`}>{roleLabel(role.id, selectedCase?.category, selectedCase)}</button>)}</div></div>
+          <div className="setup-card rounded-3xl border border-slate-800 bg-slate-900 p-6">
+            <label htmlFor="case-event-date" className="mb-2 block font-bold text-white">{fixedDate ? '3. Mốc tra cứu của bài tập' : '3. Ngày sự kiện làm phát sinh tranh chấp'}</label>
+            <p className="mb-4 text-sm text-slate-400">{selectedCase?.practice_context ? 'Dùng ngày xét xử sơ thẩm làm mốc tham khảo khi tra cứu luật. Ngày xét xử phúc thẩm chưa được nêu trong hồ sơ.' : 'Chọn ngày xảy ra sự việc để tra cứu luật. Nếu hồ sơ không nêu rõ, bạn có thể chọn ngày giả định cho bài tập. Cần đối chiếu thêm thời điểm áp dụng của từng quy định.'}</p>
+            <input id="case-event-date" type="date" required readOnly={Boolean(fixedDate)} value={eventDate} onChange={(event) => setForm({ ...form, case_event_date: event.target.value })} className="setup-date rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white" />
+          </div>
+        </div>
+        <aside className="setup-aside h-fit rounded-3xl border border-slate-800 bg-slate-900 p-6 lg:sticky lg:top-24"><Gavel className="mb-3 text-blue-400" /><h2 className="font-bold text-white">Sẵn sàng tranh tụng?</h2><p className="my-4 text-sm text-slate-400">Chủ tọa hoặc bên đối lập sẽ phát biểu tùy nội dung và giai đoạn luyện tập. Đọc từng lời thoại rồi bấm Tiếp tục để chuyển lượt.</p>{canResume && <p className="my-4">Bạn có thể tiếp tục khởi tạo phiên đã yêu cầu. Hệ thống sẽ không trừ thêm lượt.</p>}<button onClick={startSession} disabled={selectedCase?._id !== form.case_id || Boolean(detailError) || !form.case_id || !form.user_court_role || !eventDate || state.submitting || membership.loading || !canStart} className="setup-start w-full rounded-xl bg-blue-600 p-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">{state.submitting ? 'Đang khởi tạo...' : canResume ? 'Tiếp tục khởi tạo phiên' : 'Bắt đầu phiên tòa'}</button></aside>
+      </fieldset>
+    </section>
+  );
+}
