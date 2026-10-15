@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "test:e2e": "playwright test",
     "test:analytics": "node --test tests/analytics.test.mjs",
+    "test:seo": "node scripts/check-seo.mjs",
     "test:analytics:e2e": "npm run build -- --outDir ../.test-artifacts/analytics-build && playwright test --config playwright.analytics.config.js",
     "test:clean": "node ../scripts/clean-test-artifacts.mjs"
   },

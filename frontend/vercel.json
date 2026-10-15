@@ -1,12 +1,40 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "redirects": [
+    { "source": "/index.html", "destination": "/", "permanent": true },
+    { "source": "/guide.html", "destination": "/guide", "permanent": true },
+    { "source": "/privacy.html", "destination": "/privacy", "permanent": true }
+  ],
+  "headers": [
+    {
+      "source": "/:path((?:login|register|auth|verify-email|forgot-password|reset-password|account|checkout|admin|dashboard|simulation|api)(?:/.*)?)",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, follow" }]
+    },
+    {
+      "source": "/private.html",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, follow" }]
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/:path*",
       "destination": "https://courtsim-api.onrender.com/api/:path*"
     },
     {
-      "source": "/(.*)",
+      "source": "/",
       "destination": "/index.html"
+    },
+    {
+      "source": "/guide",
+      "destination": "/guide.html"
+    },
+    {
+      "source": "/privacy",
+      "destination": "/privacy.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/private.html"
     }
   ]
 }

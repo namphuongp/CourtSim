@@ -4,6 +4,7 @@ import { getCurrentUser, setCurrentUser, clearAuth, safeReturnPath } from './ser
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import AnalyticsTracker from './components/analytics/AnalyticsTracker';
 import ConsentBanner from './components/analytics/ConsentBanner';
+import SeoMetadata from './components/SeoMetadata';
 const PrivacySettings = lazy(() => import('./pages/Privacy/PrivacySettings'));
 
 const AccountSettings = lazy(() => import('./pages/Account/AccountSettings'));
@@ -105,6 +106,7 @@ function App() {
   if (authStatus === 'error') return <main className="auth-page"><section className="auth-card"><p role="alert">Chưa thể kết nối CourtSim. Kiểm tra kết nối và thử lại.</p><button className="auth-primary" onClick={() => window.location.reload()}>Thử lại</button></section></main>;
   return (
     <BrowserRouter>
+      <SeoMetadata />
       <ConsentBanner />
       <Suspense fallback={<main className="auth-page"><p role="status">Đang mở trang…</p></main>}>
       <Routes>

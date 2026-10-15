@@ -171,7 +171,7 @@ export default function LandingPage() {
         <div id="pricing-details" className="landing-container pricing-block" aria-labelledby="pricing-heading">
           <p className="section-pill">Bảng giá</p>
           <h2 id="pricing-heading">Linh hoạt cho từng nhịp luyện tập</h2>
-          <p className="pricing-intro">CourtSim sử dụng chiến lược Penetration Pricing để giảm rào cản gia nhập cho sinh viên luật. Bên cạnh đó, CourtSim kết hợp Freemium, Pay-per-use và Bundle Pricing để đáp ứng các mức độ nhu cầu khác nhau.</p>
+          <p className="pricing-intro">Bắt đầu với 2 tình huống miễn phí để làm quen với phiên tòa mô phỏng. Sau đó, bạn có thể chọn mua từng tình huống hoặc gói luyện tập phù hợp với nhu cầu học tập.</p>
           <div className="pricing-grid">
             {pricingPlans.map((plan) => <article className={`pricing-card ${plan.name === 'Pro' ? 'is-featured' : ''}`} key={plan.id}>
               <div>
@@ -184,7 +184,7 @@ export default function LandingPage() {
               <Link className="pricing-action" to={checkoutPath(plan.id)}>{plan.checkoutLabel}<ArrowRight size={16} aria-hidden="true" /></Link>
             </article>)}
           </div>
-          <p className="pricing-note">Các gói bundle giúp người dùng tiết kiệm hơn so với việc mua từng case riêng lẻ, đồng thời khuyến khích luyện tập thường xuyên hơn.</p>
+          <p className="pricing-note">Chọn từng tình huống để luyện tập theo chủ đề hoặc chọn gói nhiều tình huống để học tập thường xuyên hơn.</p>
         </div>
         <div className="landing-container final-grid">
           <div className="hand-note left-note">Hiểu luật để phản biện tốt hơn</div>
