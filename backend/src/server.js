@@ -40,6 +40,6 @@ for (const signal of ['SIGINT', 'SIGTERM']) {
 }
 
 start().catch((error) => {
-  console.error('Không thể khởi động CourtSim API:', { name: error.name });
+  console.error('Không thể khởi động CourtSim API:', error.message || error);
   process.exit(1);
 });
