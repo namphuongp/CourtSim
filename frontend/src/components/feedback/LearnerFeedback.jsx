@@ -1,11 +1,16 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api, { getApiError } from '../../services/api';
 import { feedbackFormUrl } from '../../services/feedbackForm';
 import FeedbackModal from './FeedbackModal';
 
-export default function LearnerFeedback({ sessionId, onDone, required = true, initialFormUrl = '' }) {
+function FeedbackSheet({ title, children, onClose }) {
+  const titleId = useId();
+  return <dialog open aria-labelledby={titleId} className="feedback-modal feedback-sheet"><header className="feedback-modal-heading"><h2 id={titleId}>{title}</h2>{onClose && <button type="button" onClick={onClose} aria-label="Đóng góp ý">×</button>}</header>{children}</dialog>;
+}
+
+export default function LearnerFeedback({ sessionId, onDone, required = true, initialFormUrl = '', embedded = false }) {
   const [formUrl, setFormUrl] = useState(() => feedbackFormUrl(initialFormUrl));
   const [message, setMessage] = useState('CourtSim đang kiểm tra giúp bạn...');
   const [error, setError] = useState('');
@@ -61,7 +66,8 @@ export default function LearnerFeedback({ sessionId, onDone, required = true, in
     };
   }, [sessionId, required]);
 
-  return <FeedbackModal title={required ? 'Cho CourtSim xin một chút góp ý nhé 💙' : 'Phiên luyện tập của bạn thế nào?'} onClose={required ? undefined : onDone}>
+  const Surface = embedded ? FeedbackSheet : FeedbackModal;
+  return <Surface title={required ? 'Cho CourtSim xin một chút góp ý nhé 💙' : 'Phiên luyện tập của bạn thế nào?'} onClose={required ? undefined : onDone}>
     {required ? <>
       <p>Kết quả phiên luyện tập của bạn đã được lưu rồi.<br />Trước khi xem kết quả, bạn vui lòng gửi khảo sát Google Forms 1 lần duy nhất để giúp CourtSim cải thiện trải nghiệm tốt hơn.</p>
       <p className="feedback-help">Mã phiên đã được điền sẵn trong form. Bạn chỉ cần giữ nguyên mã đó, điền các câu hỏi và nhấn Gửi.</p>
@@ -77,5 +83,5 @@ export default function LearnerFeedback({ sessionId, onDone, required = true, in
         : <button type="button" onClick={onDone}>Bỏ qua và xem kết quả</button>}
       <Link to="/">Về trang chủ</Link>
     </div>
-  </FeedbackModal>;
+  </Surface>;
 }

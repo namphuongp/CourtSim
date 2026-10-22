@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { getCurrentUser } from '../../services/auth';
 import './guide.css';
+import WorkspaceHeader from '../../components/WorkspaceHeader';
 
 const steps = [
   { icon: BookOpen, title: '1. Chọn hồ sơ', text: 'Đọc tình tiết, yêu cầu của các bên và chứng cứ trước khi chọn vụ án. Trong bài tập, các chứng cứ được nhắc trong hồ sơ được giả định có bản gốc và tài liệu kèm theo. Chỉ lập luận trên nội dung đã nêu.' },
@@ -33,7 +34,7 @@ export default function GuidePage() {
   }, [hash]);
   const authenticated = Boolean(getCurrentUser()?.id);
   return (
-    <main className="guide-page">
+    <div className="user-shell"><WorkspaceHeader/><main className="guide-page">
       <section className="guide-hero">
         <div className="guide-container">
           <Link to={authenticated ? '/dashboard/setup' : '/'} className="guide-back"><ArrowLeft size={17} /> Quay lại</Link>
@@ -89,13 +90,14 @@ export default function GuidePage() {
           <p>Đọc nhận xét, trích đoạn minh họa và gợi ý cải thiện để chọn kỹ năng cần luyện tiếp. Điểm số là phản hồi học tập từ AI.</p>
           <p>Freemium xem điểm và nhận xét tổng quan. Mua lượt lẻ hoặc gói Lite mở trợ lý luật và điểm chi tiết theo tiêu chí. Pro có thêm phân tích kỹ năng qua nhiều phiên. Mỗi phiên có tối đa 20 lượt trình bày và tất cả gói đều chịu hạn mức AI.</p>
         </section>
-        <section id="faq" className="guide-card guide-faq">
+        <div className="guide-help-layout"><nav aria-label="Chủ đề hỗ trợ" className="guide-topic-nav"><strong>Câu hỏi thường gặp</strong><a href="#faq">Bắt đầu luyện tập</a><a href="#scoring">Kết quả & chấm điểm</a><Link to="/pricing">Gói & thanh toán</Link><a href="#support">Tài khoản & hỗ trợ</a><a href="#privacy">Dữ liệu & quyền riêng tư</a></nav><section id="faq" className="guide-card guide-faq">
           <h2>Câu hỏi thường gặp</h2>
           <details><summary>Tôi có thể chọn những vai nào?</summary><p>Bạn chọn vai luật sư bảo vệ nguyên đơn hoặc bị đơn, tương ứng với phía được nêu trong hồ sơ. AI đảm nhiệm Chủ tọa và bên đối lập.</p></details>
           <details><summary>Tải lại trang có làm mất phiên không?</summary><p>Các lượt đã gửi được lưu trong phiên của tài khoản. Bạn có thể mở lại phiên chưa kết thúc từ trang luyện tập. Bản nháp được giữ trong cùng thẻ trình duyệt nếu trình duyệt cho phép lưu trữ.</p></details>
           <details><summary>Tại sao một số tiêu chí chưa được chấm?</summary><p>Phiên có thể thiếu nguồn luật đủ điều kiện hoặc chưa có cơ hội thể hiện kỹ năng tương ứng. Phần chưa đánh giá không được xem là điểm 0.</p></details>
           <details><summary>Có thể tải hồ sơ riêng, dùng giọng nói hoặc xuất PDF không?</summary><p>Các chức năng này chưa có trong giao diện hiện tại. Bạn luyện tập bằng văn bản trên các hồ sơ được quản trị viên cung cấp.</p></details>
-        </section>
+          <details><summary>Quyền lợi được cập nhật khi nào sau thanh toán?</summary><p>Quyền lợi chỉ được cấp sau khi máy chủ xác nhận giao dịch. Nếu đã chuyển tiền, mở lại đơn và kiểm tra trạng thái trước khi thực hiện thêm giao dịch.</p></details>
+        </section></div>
         <section id="support" className="guide-card">
           <h2>Hỗ trợ khi gặp lỗi</h2>
           <p>Kiểm tra kết nối và dùng nút Thử lại ở màn hình báo lỗi. Nếu phiên đăng nhập hết hạn, đăng nhập lại rồi mở phiên từ lịch sử. Kiểm tra các lượt đã lưu trước khi gửi lại lập luận.</p>
@@ -111,6 +113,6 @@ export default function GuidePage() {
           <p>Cookie phiên giúp duy trì đăng nhập. Trình duyệt lưu thông tin tài khoản để hiển thị giao diện và giữ bản nháp trong thẻ đang mở. Khi dùng máy chung, hãy đăng xuất và đóng thẻ sau khi luyện tập.</p>
         </section>
       </div>
-    </main>
+    </main></div>
   );
 }

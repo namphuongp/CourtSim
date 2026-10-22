@@ -26,6 +26,7 @@ const LandingPage = lazy(() => import('./pages/Home/LandingPage'));
 const LoginPage = lazy(() => import('./pages/Auth/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/Auth/RegisterPage'));
 const CheckoutPage = lazy(() => import('./pages/Checkout/CheckoutPage'));
+const PricingPage = lazy(() => import('./pages/Checkout/PricingPage'));
 
 // -- CÁC TRANG CỦA USER DASHBOARD --
 const DashboardLayout = lazy(() => import('./pages/Home/User/DashboardLayout'));
@@ -120,6 +121,7 @@ function App() {
         <Route path="/reset-password" element={<PublicOnlyRoute><VerifyEmail reset /></PublicOnlyRoute>} />
         <Route path="/auth/callback" element={<Navigate to={isAuthenticated() ? safeReturnPath(new URLSearchParams(window.location.search).get('returnTo')) + (new URLSearchParams(window.location.search).get('linked') === '1' ? '?linked=1' : '') : '/login?googleError=failed'} replace />} />
         <Route path="/guide" element={<GuidePage />} />
+        <Route path="/pricing" element={<PricingPage />} />
         <Route path="/privacy" element={<PrivacySettings />} />
         <Route path="/account/:section?" element={<ProtectedUserRoute><AccountSettings /></ProtectedUserRoute>} />
         <Route path="/checkout/:planId" element={<ProtectedUserRoute><CheckoutPage /></ProtectedUserRoute>} />

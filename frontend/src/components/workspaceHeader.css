@@ -1,0 +1,9 @@
+.workspace-public-header { background:#0b143e; color:#d4e0ff; }
+.workspace-public-header>div { max-width:1240px; margin:auto; padding:16px 28px; display:flex; align-items:center; gap:22px; }
+.workspace-public-header nav { display:flex; gap:24px; margin:auto; font-size:12px; }
+.workspace-public-header a { text-decoration:none; font-size:12px; }
+.workspace-public-header a.courtsim-brand { color:#fff; font-size:22px; }
+.workspace-public-header .courtsim-brand span { color:#fff; }
+.workspace-public-header nav a.active { color:#b9d7ff; }
+.workspace-public-header .workspace-signup { padding:9px 15px; background:#2c78ff; border-radius:999px; color:white; font-weight:600; }
+@media(max-width:650px) { .workspace-public-header>div { flex-wrap:wrap; gap:12px; padding:14px 18px; }.workspace-public-header nav { order:3; width:100%; gap:20px; }.workspace-public-header>div>a:nth-last-child(2) { margin-left:auto; }.workspace-public-header .workspace-signup { font-size:10px; } }

@@ -1,0 +1,73 @@
+.legal-assistant { color:#38517b; font-size:12px; line-height:1.8; }
+.assistant-intro { display:flex; align-items:center; gap:12px; padding:15px; border:1px solid #cddfff; border-radius:10px; background:linear-gradient(110deg,#f7faff,#e9f2ff); }
+.assistant-intro>svg { box-sizing:content-box; padding:9px; border-radius:10px; color:white; background:#347cff; }
+.assistant-intro h3 { font-weight:750; font-size:16px; color:#1c3a75; }
+.assistant-intro small { color:#7e92b3; font-size:10px; }
+.assistant-form { background:white; border:1px solid #dbe5f9; border-radius:10px; padding:15px; }
+.assistant-form label { color:#234d92; font-weight:700; }
+.assistant-form textarea { background:#fafcff; border-color:#c9dafa; color:#294776; font-size:12px; }
+.assistant-form>div { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+.assistant-form small { color:#8fa0bb; font-size:10px; }
+.assistant-form button { display:flex; align-items:center; gap:7px; padding:7px 15px; border-radius:999px; background:#2d77ff; color:white; font-size:11px; }
+.assistant-form button:disabled { opacity:.4; cursor:not-allowed; }
+.assistant-workspace { display:grid; grid-template-columns:minmax(120px,.7fr) minmax(0,1.5fr); gap:14px; align-items:start; }
+.assistant-workspace nav { display:grid; gap:9px; max-height:65dvh; overflow:auto; scrollbar-width:thin; }
+.assistant-workspace h4 { display:flex; align-items:center; gap:6px; font-size:11px; color:#6780a9; }
+.assistant-workspace nav button { text-align:left; border:1px solid #d5e2fa; background:white; border-radius:8px; padding:12px; color:#466391; }
+.assistant-workspace nav button[aria-pressed=true] { border-color:#4f90ff; background:#eaf3ff; box-shadow:inset 3px 0 #4385fb; }
+.assistant-workspace nav strong { display:block; font-size:11px; font-weight:600; }
+.assistant-workspace nav small { display:block; margin-top:7px; color:#8b9dba; font-size:9px; }
+.assistant-answer { min-width:0; border:1px solid #d9e5fa; border-radius:10px; padding:18px; background:white; overflow-wrap:anywhere; }
+.assistant-answer>h3 { font-weight:750; color:#1e4584; margin-bottom:16px; }
+.transcript-workspace { color:#38517b; }
+.transcript-filters { display:grid; gap:12px; padding:15px; margin:12px 0 18px; border:1px solid #d8e4f9; border-radius:10px; background:#fff; }
+.transcript-filters>label { display:flex; align-items:center; gap:8px; padding:9px 12px; border:1px solid #d6e2f8; border-radius:7px; background:#fafcff; }
+.transcript-filters input { width:100%; min-width:0; border:0; color:#38517b; background:transparent; font-size:12px; outline:none; }
+.transcript-filters>label:focus-within { outline:2px solid #4c8fff; }
+.transcript-filters>div { display:flex; flex-wrap:wrap; gap:7px; }
+.transcript-filters button { background:#f6f9ff; border:1px solid #d9e5fa; border-radius:999px; padding:5px 10px; font-size:10px; color:#6581ad; }
+.transcript-filters button[aria-pressed=true] { background:#2e77ff; border-color:#2e77ff; color:white; }
+.transcript-filters small { color:#8c9db9; font-size:10px; }
+body .transcript-entry { border:1px solid #dae5f8; border-radius:10px; background:#fff; padding:16px; margin-bottom:14px; font-size:12px; line-height:1.9; }
+body .transcript-entry[data-selected=true] { border-color:#4f93ff; box-shadow:0 0 0 2px #5596ff18; }
+.transcript-entry>h3 { display:flex; align-items:center; gap:8px; margin-bottom:12px; color:#326bcc; font-size:12px; }
+.transcript-entry time { margin-left:auto; font-size:10px; font-weight:400; color:#96a6be; }
+.transcript-avatar { display:grid; place-items:center; width:28px; height:28px; border-radius:8px; background:#e9f2ff; color:#2a74f3; }
+.transcript-avatar.actor-judge { color:#9b7523; background:#fff6dd; }
+.transcript-avatar.actor-opponent { color:#cb5d76; background:#fff0f3; }
+body .transcript-entry>button { background:#f0f6ff; color:#2a73eb; border:1px solid #c8ddff; border-radius:999px; font-size:10px; padding:5px 11px; margin-top:12px; }
+.court-action-deck { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:12px; max-width:920px; margin:14px auto 0; padding:0 6px; }
+.court-action-deck button { display:grid; justify-items:center; gap:5px; padding:11px 8px; min-width:0; background:linear-gradient(145deg,#224aa5,#132c75); color:#dce9ff; border:1px solid #719dfb80; border-radius:10px; box-shadow:0 4px 0 #061544,0 6px 20px #010a3830; transition:transform .15s,border-color .15s; }
+.court-action-deck button:nth-child(2) { background:linear-gradient(145deg,#366fe0,#1841a2); }
+.court-action-deck button:nth-child(3) { background:linear-gradient(145deg,#50449d,#26215f); }
+.court-action-deck button:hover:not(:disabled) { transform:translateY(-4px); border-color:#dcff55; }
+.court-action-deck button:focus-visible { outline:2px solid #d7ff43; outline-offset:3px; }
+.court-action-deck button:disabled { opacity:.38; cursor:not-allowed; box-shadow:none; }
+.court-action-deck svg { width:19px; height:19px; color:#a9ceff; }
+.court-action-deck strong { font-size:11px; font-weight:650; }
+.court-action-deck small { font-size:9px; color:#86a7e5; }
+.composer-turn-status { font-size:10px; color:#d3f883; padding-left:10px; }
+body .courtroom-controls .end-session { background:#26375e; color:#ddff5f; border-color:#a8bc6b; }
+body .courtroom-controls .end-session:disabled { background:#1c2c53; color:#859bc2; border-color:#435b8b; opacity:1; cursor:not-allowed; }
+.session-notebook { display:grid; gap:18px; color:#53709b; }
+.session-notebook>label { font-size:12px; color:#33578e; font-weight:650; }
+.session-notebook>textarea { width:100%; min-height:320px; resize:vertical; padding:16px; border:1px solid #bfd5fa; border-radius:9px; background:#fff; font-size:13px; line-height:1.9; }
+.session-notebook>div:not(.assistant-intro) { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+.session-notebook small,.session-notebook>p { font-size:10px; color:#90a3bf; line-height:1.8; }
+.session-notebook button { border:0; border-radius:999px; padding:8px 14px; color:white; background:#2d77ff; font-size:11px; }
+.session-notebook button:disabled { opacity:.4; }
+.stage-session-info,.stage-transcript-info { position:absolute; z-index:4; top:5%; width:21%; border:1px solid #758be665; border-radius:9px; padding:12px; background:linear-gradient(120deg,#182359ce,#1c3e77a0); color:#d5e4ff; text-align:left; }
+.stage-session-info { left:3%; border-left:3px solid #db8498; }
+.stage-transcript-info { right:3%; border-right:3px solid #64c9ff; }
+.stage-session-info>span,.stage-transcript-info>span { display:block; font-size:9px; color:#98b2e1; letter-spacing:.03em; }
+.stage-session-info strong,.stage-transcript-info strong { display:block; font-size:22px; margin:5px 0; }
+.stage-session-info small,.stage-transcript-info small { font-size:10px; font-weight:400; color:#96b3e8; }
+.stage-session-info progress { display:block; width:100%; height:4px; accent-color:#d8ff43; border:0; border-radius:99px; overflow:hidden; }
+.stage-session-info progress::-webkit-progress-bar { background:#ffffff20; }
+.stage-session-info progress::-webkit-progress-value { background:#d8ff43; }
+.stage-transcript-info:hover { border-color:#9cceff; }
+body .case-dossier .evidence-detail article>button { color:#fff; }
+@media(min-width:851px) { body .court-scene { min-height:440px; height:clamp(440px,calc(100dvh - 380px),700px); }.court-versus { top:76%; font-size:44px; }body .character-opponent .character-portrait,body .character-learner .character-portrait { top:22%; height:65%; }body .character-judge .character-name { top:34%; }body .court-speech { top:44%; max-height:34%; }body .court-turn-badge { top:90%; }.court-action-deck button:first-child { transform:rotate(-4deg); }.court-action-deck button:last-child { transform:rotate(4deg); } }
+@media(max-width:850px) { body .courtroom-controls { display:grid; grid-template-columns:1fr 1fr; }.courtroom-controls>:last-child { grid-column:1/-1; }.stage-session-info,.stage-transcript-info { display:none; }.court-action-deck { grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; }.court-action-deck button { padding:10px 6px; }.court-action-deck small { display:none; }.composer-turn-status { padding:0; } }
+@media(max-width:520px) { .assistant-workspace { grid-template-columns:1fr; }.assistant-workspace nav { max-height:170px; grid-template-columns:repeat(2,minmax(0,1fr)); }.assistant-workspace h4 { grid-column:1/-1; }.assistant-answer { padding:14px; } }
+@media(prefers-reduced-motion:reduce) { .court-action-deck button { transition:none; } }

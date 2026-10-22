@@ -35,6 +35,7 @@ export default function LandingFooter() {
     <div className="landing-container landing-footer-grid">
       <div className="landing-footer-about">
         <CourtSimBrand />
+        <p>Nền tảng luyện tranh tụng bằng phiên tòa mô phỏng. Từng lập luận, từng phản biện giúp bạn tự tin hơn.</p>
         <p className="landing-footer-copyright">© {new Date().getFullYear()} CourtSim.<br />Bảo lưu mọi quyền.</p>
       </div>
       {groups.map(group => <nav key={group.title} aria-label={group.title}><h2>{group.title}</h2><ul>{group.links.map(link => <li key={link.label}><FooterLink {...link} /></li>)}</ul></nav>)}

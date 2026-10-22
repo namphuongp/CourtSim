@@ -36,6 +36,12 @@ test('kết quả cũ 69/73: không hiện điểm quy đổi, chi tiết đóng
   await expect(page.getByRole('heading', { name: /^1\.1\./ })).not.toBeVisible();
   await expect(page.getByRole('link', { name: 'Xem lại toàn bộ biên bản' })).toHaveAttribute('href', '/simulation/test-session#transcript');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.getByRole('button', { name: 'Điểm & nhận xét chi tiết', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Điểm & nhận xét chi tiết', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^1\.1\./ })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.getByRole('button', { name: 'Xem tổng quan phiên', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Kết quả phần đã đánh giá' })).toContainText('69/73');
 });
 
 test('điểm có nguồn web hiển thị tham khảo và không có cảnh báo thiếu nguồn', async ({ page }, testInfo) => {

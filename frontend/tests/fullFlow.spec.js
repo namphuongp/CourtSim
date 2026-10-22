@@ -22,7 +22,7 @@ test('trình duyệt → API thật → MongoDB riêng: tài khoản, hồ sơ, 
   const email = `browser-${info.project.name}@example.test`, password = 'Test-only-password-123';
   await page.goto('/');
   await expect(page.getByText(/Chỉ có điểm toàn bài khi đủ dữ liệu/)).toBeAttached();
-  await page.getByRole('link', { name: 'Bắt đầu luyện tập', exact: true }).first().click();
+  await page.getByRole('link', { name: 'Bắt đầu miễn phí', exact: true }).first().click();
   await expect(page).toHaveURL(/register|login/);
   await page.goto('/register');
   await page.getByLabel('Họ và tên').fill('Người kiểm thử');
@@ -39,9 +39,12 @@ test('trình duyệt → API thật → MongoDB riêng: tài khoản, hồ sơ, 
   await page.getByRole('link', { name: 'Tạo phiên mới', exact: true }).click();
   await page.getByRole('button', { name: /Hồ sơ kiểm thử trình duyệt/ }).click();
   const plaintiff = info.project.name === 'mobile';
+  await page.getByRole('button', { name: '3 Vai', exact: true }).click();
   await page.getByRole('button', { name: plaintiff ? 'Luật sư bảo vệ nguyên đơn' : 'Luật sư bảo vệ bị đơn', exact: true }).click();
+  await page.getByRole('button', { name: '4 Mốc tra cứu', exact: true }).click();
   await page.getByLabel('3. Ngày sự kiện làm phát sinh tranh chấp').fill('2023-01-01');
   await page.getByRole('button', { name: 'Bắt đầu phiên tòa', exact: true }).click();
+  await page.getByRole('button', { name: 'Xác nhận bắt đầu', exact: true }).click();
   await expect(page).toHaveURL(/simulation\/[a-f0-9]{24}$/);
   const room = page.url();
   const sessionId = room.split('/').at(-1);

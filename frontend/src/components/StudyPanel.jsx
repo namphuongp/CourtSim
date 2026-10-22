@@ -10,11 +10,14 @@ export default function StudyPanel({ open, title, onClose, children, compact = f
   useEffect(() => {
     if (!open) return;
     const previous = document.activeElement;
+    const mobile = window.matchMedia('(max-width: 850px)');
+    const previousOverflow = document.body.style.overflow;
+    if (mobile.matches) document.body.style.overflow = 'hidden';
     closeRef.current?.focus();
     const escape = (event) => {
       if (event.key === 'Escape') { event.preventDefault(); onCloseRef.current(); }
       // Trên điện thoại panel che màn hình: giữ Tab ở các thao tác đang nhìn thấy.
-      if (event.key === 'Tab' && window.matchMedia('(max-width: 767px)').matches) {
+      if (event.key === 'Tab' && mobile.matches) {
         const controls = [...panelRef.current.querySelectorAll('button:not(:disabled), a[href], textarea:not(:disabled), summary, input:not(:disabled), [role=tabpanel]')].filter((element) => element.getClientRects().length && element.tabIndex >= 0);
         const first = controls[0], last = controls.at(-1);
         if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
@@ -22,7 +25,7 @@ export default function StudyPanel({ open, title, onClose, children, compact = f
       }
     };
     document.addEventListener('keydown', escape);
-    return () => { document.removeEventListener('keydown', escape); if (previous?.isConnected) previous.focus(); };
+    return () => { document.removeEventListener('keydown', escape); document.body.style.overflow = previousOverflow; if (previous?.isConnected) previous.focus(); };
   }, [open]);
   if (!open) return null;
   return <aside ref={panelRef} role="region" aria-labelledby={id} className={`study-panel ${compact ? 'study-panel-compact' : ''} fixed inset-y-0 right-0 z-40 flex w-full max-w-lg flex-col break-words border-l border-slate-700 bg-slate-900 text-slate-200 shadow-2xl`}>

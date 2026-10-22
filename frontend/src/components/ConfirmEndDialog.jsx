@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Gavel, LoaderCircle } from 'lucide-react';
 
 export default function ConfirmEndDialog({ open, pending, hasDraft, onCancel, onConfirm }) {
   const ref = useRef(null);
@@ -15,7 +16,8 @@ export default function ConfirmEndDialog({ open, pending, hasDraft, onCancel, on
     dialog.showModal();
     return () => { dialog.close(); previous?.focus?.(); };
   }, [open]);
-  return <dialog ref={ref} aria-labelledby="end-title" aria-describedby="end-description" onCancel={(event) => { event.preventDefault(); if (!pending) onCancel(); }} className="m-auto w-[calc(100%-2rem)] max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-6 text-slate-200 backdrop:bg-black/70">
+  return <dialog ref={ref} aria-labelledby="end-title" aria-describedby="end-description" onCancel={(event) => { event.preventDefault(); if (!pending) onCancel(); }} className="court-end-dialog m-auto w-[calc(100%-2rem)] max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-6 text-slate-200 backdrop:bg-black/70">
+    <span className={`end-dialog-icon${pending ? ' is-pending' : ''}`} aria-hidden="true">{pending ? <LoaderCircle size={28}/> : <Gavel size={23}/>}</span>
     <h2 id="end-title" className="text-xl font-bold">{pending ? 'Đang chấm điểm' : 'Kết thúc và nhận đánh giá?'}</h2>
     <p id="end-description" className="my-4 leading-7">{pending ? 'Đang đánh giá các lượt đã gửi. Bạn không cần gửi lại yêu cầu, kết quả sẽ hiện khi chấm xong.' : 'Các lượt đã gửi sẽ được chấm theo 6 nhóm tiêu chí. Sau khi hoàn thành, bạn có thể xem lại biên bản và kết quả.'}</p>
     {hasDraft && !pending && <p className="mb-4 text-amber-300">Bạn còn bản nháp chưa gửi. Bản nháp không được tính vào kết quả.</p>}

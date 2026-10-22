@@ -1,11 +1,11 @@
 import { useId, useState } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Scale, CheckCircle2 } from 'lucide-react';
 import CourtSimMark from '../../components/CourtSimMark';
 import { Link } from 'react-router-dom';
 import './auth.css';
 
 export function AuthShell({ children }) {
-  return <main className="auth-page"><section className="auth-card"><Link to="/" className="auth-brand" aria-label="CourtSim — Trang chủ"><CourtSimMark /><span>Court<span>Sim</span></span></Link>{children}</section><footer className="auth-footer"><span>© {new Date().getFullYear()} CourtSim</span><Link to="/guide">Hướng dẫn sử dụng</Link><Link to="/">Về trang chủ</Link></footer></main>;
+  return <main className="auth-page auth-split"><aside className="auth-story"><Link to="/" className="auth-story-brand" aria-label="CourtSim — Trang chủ"><CourtSimMark />CourtSim</Link><Scale className="auth-story-emblem" aria-hidden="true" /><div className="auth-story-copy"><h2>LUYỆN TRANH TỤNG<br />VỚI PHIÊN TÒA AI</h2><ul><li><CheckCircle2 />Thực hành nhập vai qua các tình huống mô phỏng</li><li><CheckCircle2 />Chủ tọa và bên đối lập do AI đảm nhiệm</li><li><CheckCircle2 />Nhận phản hồi sau phiên để tiến bộ mỗi ngày</li></ul></div><small>© {new Date().getFullYear()} CourtSim · Mô phỏng phục vụ học tập</small></aside><div className="auth-form-area"><section className="auth-card"><Link to="/" className="auth-brand" aria-label="CourtSim — Trang chủ"><CourtSimMark /><span>Court<span>Sim</span></span></Link>{children}</section><footer className="auth-footer"><Link to="/guide">Hướng dẫn sử dụng</Link><Link to="/">Về trang chủ</Link></footer></div></main>;
 }
 export function PasswordField({ name = 'password', label = 'Mật khẩu', creating = false, forgot = false, error, onChange }) {
   const id = useId(); const [visible, setVisible] = useState(false); const [caps, setCaps] = useState(false);

@@ -6,7 +6,7 @@ import { formatDate, sessionTime } from './dashboardData.mjs';
 export default function SessionCard({ session, resume = false }) {
   const completed = session.status === 'completed';
   const score = session.result ? scoreSummary(session.result) : null;
-  return <article className="dashboard-card space-y-3" aria-label={`${resume ? 'Tiếp tục: ' : ''}${session.case_id?.title ?? 'Hồ sơ không còn trong thư viện'}`}>
+  return <article className="dashboard-card session-record-card space-y-3" aria-label={`${resume ? 'Tiếp tục: ' : ''}${session.case_id?.title ?? 'Hồ sơ không còn trong thư viện'}`}>
     <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
       <span className={`dashboard-status ${completed ? 'is-completed' : ''}`}>{completed ? 'Đã hoàn thành' : 'Đang luyện tập'}</span>
       <span className="text-slate-400">Cập nhật {formatDate(sessionTime(session))}</span>

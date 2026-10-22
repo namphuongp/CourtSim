@@ -13,6 +13,6 @@ test('trang chủ: liên kết nội bộ, FAQ, thông tin điểm và đăng nh
   await expect(page.locator('#faq')).toContainText('luật sư bảo vệ nguyên đơn');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.goto('/');
-  await page.getByRole('link', { name: 'Bắt đầu luyện tập', exact: true }).click();
+  await page.getByRole('link', { name: 'Bắt đầu miễn phí', exact: true }).first().click();
   await expect(page).toHaveURL(/login\?returnTo=%2Fdashboard%2Fsetup$/);
 });
