@@ -261,7 +261,7 @@ export async function generateDebateTurn({ session, courtCase, records, speakers
   if (roleMismatch(session, latestContent)) {
     const side = participantSides(session).player === 'defendant' ? 'bị đơn' : 'nguyên đơn';
     return [{ sender_type: 'ai_judge', sender_name: 'Chủ tọa', role: 'judge', purpose: 'clarify_claim', next_speaker: 'learner',
-      content: `Trong phiên luyện tập, bạn đang bảo vệ phía ${side}. Đề nghị bạn trình bày lại lập luận theo vai này.`,
+      content: `Tại phiên tòa, Luật sư đang bảo vệ phía ${side}. Đề nghị Luật sư trình bày lại lập luận theo đúng tư cách tố tụng này.`,
       generation_mode: 'role_correction', citations: [], evidence_ids: [],
       fact_analysis: { established_facts: [], learner_claims: [latestContent], inferences: [], missing_facts: [] },
       generation_metrics: { total_ms: performance.now() - started, attempts: [], outcome: 'role_correction' } }];
@@ -312,7 +312,7 @@ export async function generateDebateTurn({ session, courtCase, records, speakers
     context.state.speaking_role = role;
     context.state.invited_next = next;
     const phase = session.conversation?.phase ?? 'debate';
-    const direction = `Giai đoạn: ${phase}. Người được mời tiếp duy nhất: ${next === 'opponent' ? 'bên đối lập' : next === 'judge' ? 'Chủ tọa' : 'người học (xưng bạn)'}. Không mời bên khác.`;
+    const direction = `Giai đoạn: ${phase}. Người được mời tiếp duy nhất: ${next === 'opponent' ? 'bên đối lập' : next === 'judge' ? 'Chủ tọa' : 'Luật sư (gọi là Luật sư, tuyệt đối không xưng bạn)'}. Không mời bên khác.`;
     // Persona chỉ chọn model/nhiệt độ; nhiệm vụ vai dùng một bản chuẩn có kiểm thử.
     const systemPrompt = makeTurnPrompt([roleContext(session, courtCase), practiceInstructions(courtCase), roleTask(role, phase), direction, turnTask(role, context)].join('\n'), context);
     const metrics = { preparation_ms: preparationMs, legal_ms: legalMs, legal_lookup: needsLaw, context_ms: performance.now() - roleStarted, input_chars: systemPrompt.length, attempts: [] };

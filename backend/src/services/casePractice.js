@@ -25,5 +25,5 @@ export function practiceInstructions(courtCase) {
 export function openingStatement(courtCase, role) {
   const context = courtCase.practice_context;
   if (!context) return null;
-  return `Bạn ${caseRoleLabel(role, courtCase)}. Mời nêu nội dung kháng cáo phía mình bảo vệ và chọn một vấn đề cần làm rõ.`;
+  return `Hội đồng xét xử thông báo: Luật sư ${caseRoleLabel(role, courtCase)}. Mời Luật sư nêu nội dung kháng cáo của phía mình bảo vệ và làm rõ một vấn đề trọng tâm.`;
 }

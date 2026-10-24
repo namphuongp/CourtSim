@@ -64,7 +64,7 @@ router.post('/', asyncHandler(async (request, response) => {
     const id = new mongoose.Types.ObjectId();
     const opening = record(id, {
       sender_type: 'ai_judge', sender_name: 'Chủ tọa',
-      content: openingStatement(courtCase, role) ?? `Phiên mô phỏng “${courtCase.title}” bắt đầu. Bạn bảo vệ phía ${/hình sự/iu.test(courtCase.category) ? (role === 'defense_lawyer' ? 'bị cáo' : 'người bị hại') : (role === 'defense_lawyer' ? 'bị đơn' : 'nguyên đơn')}. Mời trình bày yêu cầu, luận điểm mở đầu và chứng cứ có trong hồ sơ.`,
+      content: openingStatement(courtCase, role) ?? `Hội đồng xét xử tuyên bố mở phiên tòa xét xử sơ thẩm vụ án “${courtCase.title}”. Luật sư tham gia tố tụng bảo vệ quyền và lợi ích hợp pháp cho phía ${/hình sự/iu.test(courtCase.category) ? (role === 'defense_lawyer' ? 'bị cáo' : 'người bị hại') : (role === 'defense_lawyer' ? 'bị đơn' : 'nguyên đơn')}. Tòa án mời Luật sư trình bày yêu cầu, quan điểm bảo vệ và các tài liệu chứng cứ trong hồ sơ.`,
     });
     try {
       session = await SimulationSession.create({ ...filter, _id: id, case_id: caseId, case_snapshot: courtCase,
