@@ -87,6 +87,10 @@ function getRetryDelay(response, responseBody, attempt) {
     // Provider có thể trả HTML/text; dùng exponential backoff mặc định.
   }
 
+  if (response.status === 429) {
+    return Math.min(3_000 * (attempt + 1), 10_000);
+  }
+
   return 1_500 * (2 ** attempt);
 }
 

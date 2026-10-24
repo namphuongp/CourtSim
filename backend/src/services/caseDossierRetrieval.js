@@ -6,6 +6,9 @@ import { embed, embedBatch } from './embeddingService.js';
 
 // Cache embeddings theo case id để không phải nhúng lại toàn bộ hồ sơ ở mỗi lượt đối đáp.
 const caseVectorCache = new Map();
+const queryVectorCache = new Map();
+const MAX_QUERY_CACHE = 100;
+let circuitBreakerUntil = 0;
 
 /**
  * Tính cosine similarity giữa 2 vector.
@@ -33,7 +36,10 @@ export function cosineSimilarity(a, b) {
  */
 export function clearCaseVectorCache(caseId) {
   if (caseId) caseVectorCache.delete(String(caseId));
-  else caseVectorCache.clear();
+  else {
+    caseVectorCache.clear();
+    queryVectorCache.clear();
+  }
 }
 
 /**
@@ -78,8 +84,22 @@ export async function retrieveDossierSemanticScores({ courtCase, sentences, quer
   // Bỏ qua gọi embedding ra ngoài khi chạy unit test trừ khi có cờ EMBEDDING_TEST_REAL
   if (isTest || (process.env.NODE_ENV === 'test' && !process.env.EMBEDDING_TEST_REAL)) return null;
 
+  // Câu quá ngắn hoặc đang trong thời gian circuit-breaker (tránh spam API khi quota đang bị rate-limit)
+  const trimmed = queryText.trim();
+  if (trimmed.length < 5 || Date.now() < circuitBreakerUntil) return null;
+
   try {
-    const queryVector = await embed(queryText, 'query');
+    let queryVector = queryVectorCache.get(trimmed);
+    if (!queryVector) {
+      queryVector = await embed(trimmed, 'query');
+      if (queryVector?.length) {
+        if (queryVectorCache.size >= MAX_QUERY_CACHE) {
+          const firstKey = queryVectorCache.keys().next().value;
+          queryVectorCache.delete(firstKey);
+        }
+        queryVectorCache.set(trimmed, queryVector);
+      }
+    }
     if (!queryVector?.length) return null;
 
     const caseId = courtCase?._id ?? courtCase?.id ?? courtCase?.title;
@@ -95,7 +115,13 @@ export async function retrieveDossierSemanticScores({ courtCase, sentences, quer
     }
     return scores;
   } catch (error) {
-    console.warn('[retrieveDossierSemanticScores] Fallback to keyword:', error?.message ?? error);
+    if (error?.message?.includes('429')) {
+      // Đặt circuit breaker 30 giây để nhường toàn bộ quota cho LLM chat
+      circuitBreakerUntil = Date.now() + 30_000;
+      console.warn('[retrieveDossierSemanticScores] Rate limit 429 detected, pausing embedding for 30s. Fallback to keyword.');
+    } else {
+      console.warn('[retrieveDossierSemanticScores] Fallback to keyword:', error?.message ?? error);
+    }
     return null;
   }
 }
