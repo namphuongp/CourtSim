@@ -324,7 +324,7 @@ export async function generateDebateTurn({ session, courtCase, records, speakers
       dependencies.onProgress?.({ role, content: '' });
       let raw;
       try { raw = await complete({ usageContext: { userId: session.user_id, sessionId: session._id, role }, model: settings[index].model_id, temperature: settings[index].temperature,
-        json: true, maxAttempts: 1, maxCompletionTokens: role === 'judge' ? 2500 : 3500,
+        json: true, maxAttempts: 2, maxCompletionTokens: role === 'judge' ? 2500 : 3500,
         ...(/^gpt-5\.6-(?:terra|luna)$/u.test(settings[index].model_id) ? { reasoningEffort: 'none' } : {}),
         onMetrics: value => Object.assign(measurement, value),
         ...(dependencies.onProgress ? { onDelta: raw => {
@@ -416,7 +416,7 @@ export async function evaluateSession({ session, courtCase, records }, dependenc
     temperature: evaluator.temperature,
     json: true,
     timeoutMs: 90_000,
-    maxAttempts: 1,
+    maxAttempts: 2,
     systemPrompt: [EVIDENCE_ASSUMPTION_POLICY,
       commonContext(session, courtCase, records, legalContext, true),
       'Đánh giá lập luận pháp lý, chất lượng suy luận, cách dùng chứng cứ và kỹ năng tranh tụng. Phân biệt dữ kiện đã có, suy luận và thông tin còn thiếu.',
