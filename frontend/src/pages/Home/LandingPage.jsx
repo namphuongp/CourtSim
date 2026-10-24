@@ -1,5 +1,8 @@
+import { useEffect, useState } from 'react';
 import CourtSimBrand from '../../components/CourtSimBrand';
 import { Link } from 'react-router-dom';
+import api from '../../services/api';
+import { getCurrentUser, setCurrentUser } from '../../services/auth';
 import {
   ArrowRight,
   BarChart3,
@@ -23,8 +26,10 @@ import { checkoutPath, pricingPlans, pricingFeatures } from '../../services/pric
 
 const START_PATH = '/dashboard/setup';
 
-function StartLink({ className = '', children = 'Bắt đầu luyện tập' }) {
-  return <Link to={START_PATH} className={`landing-cta ${className}`}>{children}<ArrowRight size={18} aria-hidden="true" /></Link>;
+function StartLink({ className = '', children, user }) {
+  const text = children || (user ? 'Vào phòng thực hành' : 'Bắt đầu luyện tập');
+  const target = user ? '/dashboard' : START_PATH;
+  return <Link to={target} className={`landing-cta ${className}`}>{text}<ArrowRight size={18} aria-hidden="true" /></Link>;
 }
 
 const audiences = [
@@ -91,6 +96,22 @@ function HeroMockup() {
 }
 
 export default function LandingPage() {
+  const [user, setUser] = useState(() => getCurrentUser());
+
+  useEffect(() => {
+    // Tự động kiểm tra và đồng bộ trạng thái đăng nhập từ cookie / session server
+    let active = true;
+    api.get('/auth/me').then(({ data }) => {
+      if (active && data?.user) {
+        setCurrentUser(data.user);
+        setUser(data.user);
+      }
+    }).catch(() => {
+      // nếu chưa đăng nhập hoặc cookie không hợp lệ
+    });
+    return () => { active = false; };
+  }, []);
+
   return <div className="landing-page">
     <a className="landing-skip" href="#main-content">Đến nội dung chính</a>
     <header className="landing-header">
@@ -102,7 +123,19 @@ export default function LandingPage() {
         <a href="#pricing">Bảng giá</a>
         <Link to="/guide">Tài nguyên</Link>
       </nav>
-      <Link className="landing-login" to="/login">Đăng nhập / Đăng ký</Link>
+      {user ? (
+        <div className="landing-auth-group">
+          <Link to="/account" className="landing-user-chip" title="Cài đặt tài khoản">
+            <UserRound size={17} />
+            <span className="landing-user-name">{user.full_name || 'Tài khoản'}</span>
+          </Link>
+          <Link className="landing-login" to={user.role === 'admin' ? '/admin' : '/dashboard'}>
+            Vào phòng thực hành
+          </Link>
+        </div>
+      ) : (
+        <Link className="landing-login" to="/login">Đăng nhập / Đăng ký</Link>
+      )}
     </header>
     <main id="main-content" tabIndex={-1}>
       <section id="product" className="landing-hero" aria-labelledby="hero-heading">
@@ -113,7 +146,7 @@ export default function LandingPage() {
             <h1 id="hero-heading">Bước vào<br /><span>tình huống pháp lý</span></h1>
             <p className="landing-lead">CourtSim giúp sinh viên Luật thực hành tranh tụng qua các tình huống mô phỏng, với sự hỗ trợ của AI thông minh và phản hồi chi tiết.</p>
             <div className="landing-hero-actions">
-              <StartLink />
+              <StartLink user={user} />
             </div>
             <div className="hero-benefits" aria-label="Lợi ích chính">
               <span><GraduationCap size={28} />Thực hành tranh tụng thực tế</span>
@@ -198,7 +231,7 @@ export default function LandingPage() {
           <div>
             <h2 id="start-heading">Sẵn sàng luyện tư duy pháp lý theo cách chủ động hơn?</h2>
             <p>CourtSim đồng hành cùng bạn trên hành trình trở thành phiên bản tốt hơn của chính mình.</p>
-            <div className="final-actions"><StartLink>Đăng ký trải nghiệm</StartLink><a className="outline-cta" href="#pricing-details">Xem bảng giá</a></div>
+            <div className="final-actions"><StartLink user={user}>{user ? 'Vào phòng thực hành' : 'Đăng ký trải nghiệm'}</StartLink><a className="outline-cta" href="#pricing-details">Xem bảng giá</a></div>
             <div className="final-badges"><span>Dễ sử dụng</span><span>Mô phỏng sát thực tế</span><span>Phù hợp nhiều trình độ</span></div>
           </div>
           <div id="resources" className="book-stack" aria-hidden="true">

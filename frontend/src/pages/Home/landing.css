@@ -90,6 +90,43 @@
   white-space: nowrap;
 }
 
+.landing-auth-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.landing-user-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  backdrop-filter: blur(8px);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.landing-user-chip:hover {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.5);
+  color: var(--gold);
+}
+
+.landing-user-name {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .landing-hero {
   position: relative;
   min-height: 790px;
