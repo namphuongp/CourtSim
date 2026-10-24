@@ -17,9 +17,9 @@ export const isSubstantiveRecord = record => record.sender_type === 'user'
 
 export function controlTurn(kind) {
   const content = kind === 'greeting'
-    ? 'Chào bạn. Mời bạn trình bày quan điểm và yêu cầu của bên mình.'
-    : kind === 'noise' ? 'Tôi chưa nhận được ý kiến về vụ án. Mời bạn nêu điều muốn trao đổi.'
-      : 'Bạn muốn nêu quan điểm nào về vụ án?';
+    ? 'Hội đồng xét xử ghi nhận sự có mặt của các bên. Mời Luật sư bắt đầu trình bày quan điểm và yêu cầu của phía mình.'
+    : kind === 'noise' ? 'Hội đồng xét xử chưa ghi nhận được ý kiến tranh tụng cụ thể về vụ án. Đề nghị Luật sư trình bày rõ quan điểm tranh luận của phía mình.'
+      : 'Chủ tọa đề nghị Luật sư làm rõ quan điểm hoặc yêu cầu cụ thể muốn trình bày trước Hội đồng xét xử.';
   return { role: 'judge', purpose: 'invite', issue: null, next_speaker: 'learner', content,
     generation_mode: 'control', citations: [], fact_analysis: { established_facts: [], learner_claims: [], inferences: [], missing_facts: [] } };
 }

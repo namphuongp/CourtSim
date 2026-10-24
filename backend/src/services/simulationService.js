@@ -246,9 +246,9 @@ function makeTurnPrompt(roleInstructions, context) {
   const schema = { role: context.state.speaking_role, purpose: 'một mục đích được phép', issue: context.state.current_issue.id,
     next_speaker: context.state.invited_next, focus: { learner: 'L1', dossier: [] }, citation_ids: [],
     ...(needsAnswer ? { answer: { question_id: question.id, status: 'supported hoặc not_determined', evidence_ids: [], direct_answer: 'câu trả lời trực tiếp' } } : {}),
-    content: 'lời thoại tự nhiên' };
+    content: 'lời thoại đối đáp tự nhiên tại tòa' };
   return [DEBATE_POLICY, RESPONSE_STYLE, roleInstructions,
-    `Chỉ trả JSON theo cấu trúc này, metadata trước content: ${JSON.stringify(schema)}. Giữ đúng role, issue, next_speaker. focus.learner chọn luận điểm thật trong learner. focus.dossier chọn 1–3 mã D từ dossier khi dùng tình tiết hồ sơ/làm rõ chứng cứ, được rỗng khi chỉ xét suy luận của người học, giới hạn tra cứu, mời hoặc hỏi rõ quan điểm/thủ tục. citation_ids chỉ lấy trong retrievedLaw. Không đưa mã vào content.`,
+    `Chỉ trả JSON theo cấu trúc này, metadata trước content: ${JSON.stringify(schema)}. Giữ đúng role, issue, next_speaker. focus.learner chọn luận điểm thật trong learner. focus.dossier chọn 1–3 mã D từ dossier khi dùng tình tiết hồ sơ/làm rõ chứng cứ, được rỗng khi chỉ xét suy luận của người học, giới hạn tra cứu, mời hoặc hỏi rõ quan điểm/thủ tục. citation_ids chỉ lấy trong retrievedLaw. content phải là lời phát biểu đối đáp tự nhiên, khúc chiết, mang khẩu khí con người tranh tụng tại phiên tòa thực tế, tuyệt đối không đưa mã hoặc nhãn nội bộ vào content.`,
     needsAnswer ? 'answer là bắt buộc. evidence_ids chép chính xác id trong hearing.available_evidence (không tự tạo mã và không dùng mã D). focus.dossier dùng mã D tương ứng với evidence_id đó. content phải bắt đầu nguyên văn bằng direct_answer. supported chỉ dùng bản provided có đoạn trong focus.dossier và gọi đúng tên tài liệu. mentioned_only được giả định có bản gốc, nhưng chỉ trả lời về phần nội dung đã nêu, không tự điền nội dung còn thiếu. Không có tài liệu đủ thì dùng not_determined, evidence_ids rỗng, nói rõ chưa xác định được từ dữ liệu cung cấp, không giả định kết quả sẽ có trong tương lai.' : '',
     '<UNTRUSTED_CASE_AND_LAW_DATA_JSON>', serializeUntrustedData(context), '</UNTRUSTED_CASE_AND_LAW_DATA_JSON>',
   ].join('\n');
