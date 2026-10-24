@@ -264,7 +264,7 @@ router.post('/:sessionId/complete', asyncHandler(async (request, response) => {
   const result = await withSessionLock(session, async (locked, fence) => {
     if (locked.evaluation) return locked.evaluation;
     if (locked.status === 'completed') {
-      const existing = await TrialResult.findOne({ session_id: locked._id }).lean();
+      const existing = locked.evaluation ?? (await SimulationSession.findById(locked._id).select('evaluation').lean())?.evaluation ?? await TrialResult.findOne({ session_id: locked._id }).lean();
       if (!existing) throw new AppError('Chưa tải được kết quả của phiên này. Vui lòng thử lại sau.', 409, 'RESULT_UNAVAILABLE');
       return existing;
     }
@@ -273,7 +273,13 @@ router.post('/:sessionId/complete', asyncHandler(async (request, response) => {
     const evaluation = await evaluateSession({ session: locked, courtCase, records });
     const result = { ...evaluation, session_id: locked._id, created_at: new Date() };
     const saved = await SimulationSession.updateOne(fence, { $set: { evaluation: result, status: 'completed', completed_at: new Date() } });
-    if (!saved.matchedCount) throw new AppError('Yêu cầu đã hết thời gian xử lý. Vui lòng tải lại phiên.', 409, 'SESSION_LOCK_EXPIRED');
+    if (!saved.matchedCount) {
+      const recheck = await SimulationSession.findById(locked._id).select('status evaluation').lean();
+      if (recheck?.status === 'completed' && recheck.evaluation) {
+        return recheck.evaluation;
+      }
+      throw new AppError('Yêu cầu đã hết thời gian xử lý. Vui lòng tải lại phiên.', 409, 'SESSION_LOCK_EXPIRED');
+    }
     return result;
   }, { leaseMs: 210_000 });
   if (!await surveyVerified(request.authUser)) return response.json({ data: { status: 'completed', survey_required: true } });

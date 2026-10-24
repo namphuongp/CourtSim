@@ -183,19 +183,92 @@ function Room({ sessionId }) {
     } finally { busy.current = false; setStreamedSpeech(null); setState(s => ({ ...s, sending: false })); }
   }
 
-  async function complete() {
-    if (busy.current || disabled || !userTurns) return;
+  async function pollStatusManually() {
+    try {
+      const { data } = await api.get(`/v1/sessions/${sessionId}`);
+      setSession(data.data);
+      if (data.data.status === 'completed' || data.data.evaluation) {
+        saveDraft(completionKey, null);
+        saveDraft(storageKey, null);
+        navigate(`/simulation/${sessionId}/result`);
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }
+
+  async function complete(options = {}) {
+    if (busy.current || disabled) return;
+
+    // Nếu người dùng chọn gửi lời tranh tụng dở dang làm phần kết luận trước khi chấm điểm
+    if (options?.sendDraft && draft.content.trim()) {
+      busy.current = true;
+      setState((s) => ({ ...s, ending: true, error: '' }));
+      try {
+        const command = {
+          ...draft,
+          ...(conversation ? { action: 'submit', revision: conversation.revision } : {}),
+          expected_turn_count: userTurns,
+          evidence_ids: evidenceIds(draft.content, session.case_id?.evidence_inventory),
+          legal_reference_ids: draft.content.includes('[PL:') ? [...new Set([...draft.content.matchAll(/\[PL:([^\]\s]+)\]/gu)].map((match) => match[1]))] : undefined
+        };
+        const { data } = conversation ? await postDialogue(sessionId, command, setStreamedSpeech) : await api.post(`/v1/sessions/${sessionId}/messages`, command);
+        if (conversation) {
+          setSession(data.data.session);
+          setRecords(data.data.records);
+        } else {
+          setRecords((current) => [...new Map([...current, ...data.data].map((r) => [r._id, r])).values()]);
+        }
+        setDraft({ content: '', request_id: crypto.randomUUID() });
+        saveDraft(storageKey, null);
+      } catch (submitErr) {
+        busy.current = false;
+        setState((s) => ({ ...s, ending: false, error: getApiError(submitErr, 'Chưa gửi được lời tranh luận cuối cùng. Bạn có thể kiểm tra lại nội dung.') }));
+        return;
+      }
+      busy.current = false;
+    }
+
+    if (userTurns < 1 && !options?.sendDraft) return;
+
     busy.current = true;
     saveDraft(completionKey, { requested: true });
     setState((s) => ({ ...s, ending: true, error: '' }));
+
+    // Tự động kiểm tra trạng thái phiên nếu request mất nhiều thời gian hoặc có gián đoạn mạng
+    async function checkCompletionStatus(attempts = 6, intervalMs = 2500) {
+      for (let i = 0; i < attempts; i++) {
+        await new Promise((r) => setTimeout(r, intervalMs));
+        try {
+          const { data } = await api.get(`/v1/sessions/${sessionId}`);
+          if (data.data?.status === 'completed' || data.data?.evaluation) {
+            saveDraft(completionKey, null);
+            saveDraft(storageKey, null);
+            navigate(`/simulation/${sessionId}/result`);
+            return true;
+          }
+        } catch {
+          // tiếp tục thử lại
+        }
+      }
+      return false;
+    }
+
     try {
       await api.post(`/v1/sessions/${sessionId}/complete`);
       saveDraft(completionKey, null);
       saveDraft(storageKey, null);
       navigate(`/simulation/${sessionId}/result`);
     } catch (error) {
+      const isBusyOrSlow = error.response?.status === 409 || error.response?.status === 504 || error.code === 'ECONNABORTED' || !error.response;
+      if (isBusyOrSlow) {
+        const completed = await checkCompletionStatus(6, 2500);
+        if (completed) return;
+      }
+
       setConfirmEnd(false);
-      // Thoát trạng thái chấm ngay khi POST lỗi, không đợi thêm lần đọc trạng thái.
       setState((s) => ({ ...s, ending: false, error: getApiError(error, 'Chưa thể chấm điểm. Vui lòng thử lại.') }));
       if (error.response?.status >= 500 && /^AI_/u.test(error.response.data?.error?.code ?? '')) {
         saveDraft(completionKey, null);
@@ -250,8 +323,19 @@ function Room({ sessionId }) {
       {panel === 'assistant' && (session?.features?.legalAssistant ? <LegalAssistant sessionId={sessionId} open onInsert={insertIntoArgument} insertionDisabled={!ready} /> : <UpgradeNotice />)}
       {panel === 'speech' && <Transcript session={session} records={records} selected={view.record?._id} fullRecord={panel === 'speech' ? fullRecord : null} onSelect={selectRecord} />}
     </StudyPanel>
-    <ConfirmEndDialog open={confirmEnd} pending={state.ending} hasDraft={Boolean(draft.content.trim())} onCancel={() => setConfirmEnd(false)} onConfirm={complete} />
-    <header className="courtroom-header"><div><Link className="courtroom-back" to="/dashboard/sessions">← Danh sách phiên</Link><h1>{session?.case_id?.title ?? 'Phiên mô phỏng'}</h1><p className="courtroom-meta"><span>{roleLabel(session?.user_court_role, session?.case_id?.category, session?.case_id)}</span><span>· {session?.case_id?.practice_context ? 'Mốc tham chiếu sơ thẩm' : 'Ngày sự kiện'}: {session?.case_event_date ?? 'Chưa xác định'}</span><span>· {userTurns}/{session?.max_turns ?? 20} lượt</span></p></div><nav className="courtroom-controls" aria-label="Công cụ phiên tòa"><button className="tool-guide" aria-expanded={panel === 'guide'} onClick={() => setPanel(panel === 'guide' ? null : 'guide')}>Hướng dẫn</button><button className="tool-case" aria-expanded={panel === 'case' || panel === 'history'} onClick={() => setPanel(panel === 'case' || panel === 'history' ? null : 'case')}>Hồ sơ phiên tòa</button><button className="tool-law" aria-expanded={panel === 'assistant'} onClick={() => setPanel(panel === 'assistant' ? null : 'assistant')}>Trợ lý luật</button>{completed ? <Link to={'/simulation/' + sessionId + '/result'}>Xem kết quả</Link> : <button className="end-session" disabled={disabled || !userTurns} onClick={() => setConfirmEnd(true)}>{state.ending ? 'Đang chấm điểm...' : 'Kết thúc và chấm điểm'}</button>}</nav></header>
+    <ConfirmEndDialog 
+      open={confirmEnd} 
+      pending={state.ending} 
+      hasDraft={Boolean(draft.content.trim())} 
+      draftContent={draft.content}
+      userTurns={userTurns}
+      maxTurns={session?.max_turns ?? 20}
+      userRole={roleLabel(session?.user_court_role, session?.case_id?.category, session?.case_id)}
+      onCancel={() => setConfirmEnd(false)} 
+      onConfirm={complete} 
+      onPollStatus={pollStatusManually}
+    />
+    <header className="courtroom-header"><div><Link className="courtroom-back" to="/dashboard/sessions">← Danh sách phiên</Link><h1>{session?.case_id?.title ?? 'Phiên mô phỏng'}</h1><p className="courtroom-meta"><span>{roleLabel(session?.user_court_role, session?.case_id?.category, session?.case_id)}</span><span>· {session?.case_id?.practice_context ? 'Mốc tham chiếu sơ thẩm' : 'Ngày sự kiện'}: {session?.case_event_date ?? 'Chưa xác định'}</span><span>· {userTurns}/{session?.max_turns ?? 20} lượt</span></p></div><nav className="courtroom-controls" aria-label="Công cụ phiên tòa"><button className="tool-guide" aria-expanded={panel === 'guide'} onClick={() => setPanel(panel === 'guide' ? null : 'guide')}>Hướng dẫn</button><button className="tool-case" aria-expanded={panel === 'case' || panel === 'history'} onClick={() => setPanel(panel === 'case' || panel === 'history' ? null : 'case')}>Hồ sơ phiên tòa</button><button className="tool-law" aria-expanded={panel === 'assistant'} onClick={() => setPanel(panel === 'assistant' ? null : 'assistant')}>Trợ lý luật</button>{completed ? <Link to={'/simulation/' + sessionId + '/result'}>Xem kết quả</Link> : <button className="end-session" disabled={disabled || !userTurns} title={!userTurns ? 'Cần gửi ít nhất 1 lượt tranh luận trước khi kết thúc' : undefined} onClick={() => setConfirmEnd(true)}>{state.ending ? 'Đang chấm điểm...' : 'Kết thúc và chấm điểm'}</button>}</nav></header>
     {insertError && !panel && <p role="alert" className="courtroom-notice">{insertError}</p>}
     {state.error && <div role="alert" className="courtroom-notice">{state.error}<button disabled={state.sending || state.ending} onClick={() => setReload((n) => n + 1)}>Tải lại dữ liệu</button></div>}
     {session && !session.case_event_date && !completed && <form onSubmit={saveEventDate} className="courtroom-notice"><p>Bổ sung ngày trong hồ sơ hoặc một ngày giả định cho bài tập để tiếp tục.</p><label>Ngày tra cứu <input required type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} className="m-2 rounded border p-2" /></label><button disabled={state.sending || !eventDate}>Lưu ngày</button></form>}
