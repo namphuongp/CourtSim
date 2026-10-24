@@ -365,7 +365,6 @@ export async function generateDebateTurn({ session, courtCase, records, speakers
       measurement.rejection_code ??= 'DIALOGUE_REPAIR';
       measurement.rejection_reason = problem;
       dependencies.diagnostic?.({ role, ...measurement });
-      console.warn('Debate quality check:', { role, attempt: attempt + 1, code: measurement.rejection_code, reason: problem });
       repair = '\nBản trả lời trước chưa đạt: ' + problem + '\nViết lại JSON, không thêm tình tiết hay luật ngoài hồ sơ.';
     }
     metrics.total_ms = performance.now() - roleStarted + preparationMs;
@@ -484,11 +483,6 @@ export async function evaluateSession({ session, courtCase, records }, dependenc
     } catch (error) {
       // Chỉ sửa một lần, không nới điều kiện hoặc tự tạo điểm khi model sai nguồn.
       measurement.rejection_code = error.code;
-      if (error.code === 'AI_INVALID_EVALUATION') {
-        // Chỉ ghi loại lỗi và mã tiêu chí, không ghi phản hồi AI hoặc lời người học.
-        console.warn('Evaluation validation failed:', { code: error.code, attempt: attempt + 1,
-          check: error.details?.check, criterion: error.details?.criterion });
-      }
       if (attempt === 1 || !['AI_UNGROUNDED_FACT', 'AI_INVALID_CITATIONS', 'AI_UNVERIFIED_CITATION', 'AI_INVALID_STRUCTURED_RESPONSE', 'AI_INVALID_EVALUATION'].includes(error.code)) throw error;
       // Cho model thấy bản bị từ chối để sửa đúng lỗi, không bắt tạo lại từ một thông báo chung.
       evaluationMessages.push({ role: 'assistant', content: raw }, { role: 'user', content:

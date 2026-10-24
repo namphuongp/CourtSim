@@ -105,8 +105,8 @@ export async function researchCorpus(input) {
         }
         vectorUsed = provisions.length > 0;
       }
-    } catch (error) {
-      console.warn('[researchCorpus] Vector search fallback to keyword:', error?.message ?? error);
+    } catch {
+      // Fallback an toàn về keyword
     }
   }
 

@@ -118,9 +118,6 @@ export async function retrieveDossierSemanticScores({ courtCase, sentences, quer
     if (error?.message?.includes('429')) {
       // Đặt circuit breaker 30 giây để nhường toàn bộ quota cho LLM chat
       circuitBreakerUntil = Date.now() + 30_000;
-      console.warn('[retrieveDossierSemanticScores] Rate limit 429 detected, pausing embedding for 30s. Fallback to keyword.');
-    } else {
-      console.warn('[retrieveDossierSemanticScores] Fallback to keyword:', error?.message ?? error);
     }
     return null;
   }

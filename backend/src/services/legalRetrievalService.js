@@ -155,8 +155,8 @@ export async function retrieveRelevantProvisions({ eventDate, courtCase, records
         }
         vectorUsed = provisions.length > 0;
       }
-    } catch (error) {
-      console.warn('[retrieveRelevantProvisions] Vector search fallback to keyword:', error?.message ?? error);
+    } catch {
+      // Fallback an toàn về keyword
     }
   }
 
