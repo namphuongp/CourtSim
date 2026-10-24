@@ -7,6 +7,7 @@ import mongoose from 'mongoose';
 import { inspectLawText, hash, inventoryFiles } from '../src/services/legalFileInventory.js';
 import { prepareCorpusImport, commitCorpusImport } from '../src/services/legalCorpusImport.js';
 import { resolveCorpusResults, researchCorpus } from '../src/services/legalCorpusRetrieval.js';
+import { rankProvisions } from '../src/services/legalRetrievalService.js';
 import { permittedLegalSource } from '../src/services/legalUsagePolicy.js';
 import { parseLegalArticles } from '../src/services/legalTextParser.js';
 import LegalCorpusVersion from '../src/models/LegalCorpusVersion.js';
@@ -135,4 +136,36 @@ test('nhập lại không nhân đôi; thu hồi giữ nguyên unit nhưng loạ
     if (mongoose.connection.name === dbName && /^courtsim_test_corpus_\d+$/u.test(dbName)) await mongoose.connection.dropDatabase();
     await mongoose.disconnect();
   }
+});
+
+test('hybrid ranking: vector_score ưu tiên ngữ nghĩa và giữ tương thích keyword thuần', () => {
+  const provisions = [
+    { _id: '1', text: 'Điều 1. Phạm vi điều chỉnh quy định về quản lý đất đai.', search_tokens: ['dat', 'dai'], vector_score: 0.1 },
+    { _id: '2', text: 'Điều 2. Chuyển quyền sử dụng nhà ở và tài sản gắn liền.', search_tokens: ['nha'], vector_score: 0.95 },
+  ];
+  const ranked = rankProvisions(provisions, { title: 'Tranh chấp hợp đồng mua bán bất động sản', summary: '' });
+  // Điều 2 có vector_score rất cao (0.95 * 10 = 9.5) nên được xếp đầu dù query không chứa từ 'nha'
+  assert.equal(ranked[0].provision._id, '2');
+  assert.ok(ranked[0].vectorScore > 0.9);
+  assert.equal(ranked[1].provision._id, '1');
+
+  // Khi không có vector_score, fallback hoạt động như keyword thuần
+  const keywordOnly = [
+    { _id: 'a', text: 'Điều a. Đất đai tranh chấp.', search_tokens: ['dat', 'dai'] },
+    { _id: 'b', text: 'Điều b. Quy định chung.', search_tokens: ['chung'] },
+  ];
+  const rankedKeyword = rankProvisions(keywordOnly, { title: 'Tranh chấp đất đai', summary: '' });
+  assert.equal(rankedKeyword[0].provision._id, 'a');
+  assert.equal(rankedKeyword[0].vectorScore, null);
+});
+
+test('cấu hình embedding và vector store fallback an toàn', async () => {
+  const { embeddingConfig } = await import('../src/services/embeddingService.js');
+  const { isQdrantAvailable } = await import('../src/services/vectorStore.js');
+  const cfg = embeddingConfig();
+  assert.ok(['openai', 'ollama'].includes(cfg.provider));
+  assert.ok(typeof cfg.model === 'string' && cfg.model.length > 0);
+  // Khi không có Qdrant server chạy, isQdrantAvailable trả về false an toàn không throw
+  const available = await isQdrantAvailable();
+  assert.equal(typeof available, 'boolean');
 });

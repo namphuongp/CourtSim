@@ -5,6 +5,8 @@ import { assessVersion, buildLegalPlan } from './legalTimeline.js';
 import { rankProvisions } from './legalRetrievalService.js';
 import { getLegalSearchTerms } from './legalTextSearch.js';
 import { hasReadableLawSource } from '../../../shared/legalSourcePolicy.mjs';
+import { embed } from './embeddingService.js';
+import { search as searchVectorStore, isQdrantAvailable } from './vectorStore.js';
 
 export function resolveCorpusResults({ documents, provisions, question = '', courtCase = {}, eventDate, learnerTimeline = [], records = [] }) {
   const plan = planAssistantSearch(question, courtCase, eventDate);
@@ -57,11 +59,82 @@ export async function researchCorpus(input) {
   const documents = await LegalCorpusVersion.find({ status: { $in: ['verified', 'reference'] }, permission_status: 'allowed', retired_at: null,
     ...(plan.numbers.length ? { law_number: { $in: plan.numbers } } : {}) }).limit(40).lean();
   if (!documents.length) return { results: [], plans: plan.plans, source_status: 'unavailable' };
-  const terms = getLegalSearchTerms([input.question, input.courtCase?.title, input.courtCase?.summary,
-    ...(input.records ?? []).filter(r => r.sender_type === 'user').slice(-2).map(r => r.content)].filter(Boolean).join(' '));
-  const provisions = await LegalCorpusProvision.find({ document_id: { $in: documents.map(d => d._id) },
-    paragraph: plan.paragraph ?? null, point: plan.point ?? null,
-    ...(plan.article ? { article: plan.article } : { search_tokens: { $in: terms } }) }).limit(500).lean();
+
+  const queryText = [input.question, input.courtCase?.title, input.courtCase?.summary,
+    ...(input.records ?? []).filter(r => r.sender_type === 'user').slice(-2).map(r => r.content)].filter(Boolean).join(' ');
+
+  let provisions = [];
+  const vectorScores = new Map();
+  let vectorUsed = false;
+
+  // Lớp Semantic Vector Search qua Qdrant (nếu có)
+  if (queryText && await isQdrantAvailable()) {
+    try {
+      const vector = await embed(queryText, 'query');
+      const mustFilters = [
+        { key: 'permission_status', match: { value: 'allowed' } },
+      ];
+      if (plan.numbers.length) {
+        mustFilters.push({ key: 'law_number', match: { any: plan.numbers } });
+      }
+      if (plan.article) {
+        mustFilters.push({ key: 'article', match: { value: plan.article } });
+      }
+
+      const hits = await searchVectorStore('legal_provisions_corpus', {
+        vector,
+        limit: 50,
+        scoreThreshold: 0.25,
+        filter: { must: mustFilters },
+      });
+
+      if (hits.length > 0) {
+        const pointIds = hits.map(h => String(h.id));
+        for (const h of hits) {
+          vectorScores.set(String(h.id), h.score);
+        }
+        provisions = await LegalCorpusProvision.find({
+          _id: { $in: pointIds },
+          document_id: { $in: documents.map(d => d._id) },
+          paragraph: plan.paragraph ?? null,
+          point: plan.point ?? null,
+          ...(plan.article ? { article: plan.article } : {}),
+        }).lean();
+        for (const p of provisions) {
+          p.vector_score = vectorScores.get(String(p._id));
+        }
+        vectorUsed = provisions.length > 0;
+      }
+    } catch (error) {
+      console.warn('[researchCorpus] Vector search fallback to keyword:', error?.message ?? error);
+    }
+  }
+
+  // Kết hợp Keyword Search (nếu chưa dùng vector hoặc bổ sung để không sót điều khoản chính xác)
+  const terms = getLegalSearchTerms(queryText);
+  if (!vectorUsed) {
+    provisions = await LegalCorpusProvision.find({
+      document_id: { $in: documents.map(d => d._id) },
+      paragraph: plan.paragraph ?? null,
+      point: plan.point ?? null,
+      ...(plan.article ? { article: plan.article } : { search_tokens: { $in: terms } }),
+    }).limit(500).lean();
+  } else if (plan.article || terms.length > 0) {
+    const keywordProvisions = await LegalCorpusProvision.find({
+      document_id: { $in: documents.map(d => d._id) },
+      paragraph: plan.paragraph ?? null,
+      point: plan.point ?? null,
+      ...(plan.article ? { article: plan.article } : { search_tokens: { $in: terms } }),
+    }).limit(100).lean();
+    const existingIds = new Set(provisions.map(p => String(p._id)));
+    for (const kp of keywordProvisions) {
+      if (!existingIds.has(String(kp._id))) {
+        provisions.push(kp);
+        existingIds.add(String(kp._id));
+      }
+    }
+  }
+
   return resolveCorpusResults({ ...input, documents, provisions });
 }
 

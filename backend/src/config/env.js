@@ -49,4 +49,10 @@ export const env = Object.freeze({
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean),
+  QDRANT_URL: (process.env.QDRANT_URL?.trim() || 'http://localhost:6333').replace(/\/$/, ''),
+  QDRANT_API_KEY: process.env.QDRANT_API_KEY?.trim() || '',
+  EMBEDDING_PROVIDER: process.env.EMBEDDING_PROVIDER?.trim() || 'openai',
+  EMBEDDING_MODEL: process.env.EMBEDDING_MODEL?.trim() || 'text-embedding-3-small',
+  EMBEDDING_BASE_URL: (process.env.EMBEDDING_BASE_URL?.trim() || '').replace(/\/$/, ''),
+  EMBEDDING_API_KEY: process.env.EMBEDDING_API_KEY?.trim() || process.env.OPENAI_API_KEY?.trim() || '',
 });

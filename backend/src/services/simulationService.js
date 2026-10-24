@@ -1,7 +1,8 @@
 import { EVIDENCE_ASSUMPTION_POLICY } from '../../../shared/casePresentation.mjs';
 import { RESPONSE_STYLE, TECHNICAL_TEXT } from '../../../shared/userCopy.mjs';
 import { caseKnowledge } from './caseKnowledge.js';
-import { dialogueContext, resolveDialogueFocus, needsLegalResearch, validateDialogueQuantities } from './dialogueContext.js';
+import { dialogueContext, resolveDialogueFocus, needsLegalResearch, validateDialogueQuantities, extractDossierSentences } from './dialogueContext.js';
+import { retrieveDossierSemanticScores } from './caseDossierRetrieval.js';
 import { readDialoguePreview } from './dialoguePreview.js';
 import { SOURCE_POLICY, DEBATE_POLICY, roleTask, turnTask, dialogueProblem, guidedContinuation } from './debatePolicy.js';
 import { dialogueText } from '../../../shared/dialogueText.mjs';
@@ -281,10 +282,23 @@ export async function generateDebateTurn({ session, courtCase, records, speakers
     legalMs = performance.now() - at; return result;
   };
   const needsLaw = needsLegalResearch(records);
-  const [settings, legalContext] = await Promise.all([
+  const latestUser = records.findLast(r => r.sender_type === 'user');
+  const dossierRetriever = dependencies.retrieveDossier ?? retrieveDossierSemanticScores;
+  const isMocked = Boolean(dependencies.complete);
+  const [settings, legalContext, dossierScores] = await Promise.all([
     Promise.all(speakers.map(role => persona(role === 'judge' ? 'judge' : 'prosecutor'))),
     needsLaw ? research() : Promise.resolve({ citations: [], candidates: [], issues: [], warnings: [], legal_assessment_available: false }),
+    latestUser?.content && !isMocked
+      ? dossierRetriever({
+          courtCase,
+          sentences: extractDossierSentences(courtCase),
+          queryText: latestUser.content,
+        })
+      : Promise.resolve(null),
   ]);
+  if (dossierScores) {
+    legalContext.dossierSemanticScores = dossierScores;
+  }
   const preparationMs = performance.now() - started;
   const generated = [];
   for (const [index, role] of speakers.entries()) {
@@ -310,7 +324,7 @@ export async function generateDebateTurn({ session, courtCase, records, speakers
       dependencies.onProgress?.({ role, content: '' });
       let raw;
       try { raw = await complete({ usageContext: { userId: session.user_id, sessionId: session._id, role }, model: settings[index].model_id, temperature: settings[index].temperature,
-        json: true, maxAttempts: 1, maxCompletionTokens: role === 'judge' ? 900 : 1500,
+        json: true, maxAttempts: 1, maxCompletionTokens: role === 'judge' ? 2500 : 3500,
         ...(/^gpt-5\.6-(?:terra|luna)$/u.test(settings[index].model_id) ? { reasoningEffort: 'none' } : {}),
         onMetrics: value => Object.assign(measurement, value),
         ...(dependencies.onProgress ? { onDelta: raw => {
