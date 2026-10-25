@@ -36,16 +36,16 @@ body .transcript-entry[data-selected=true] { border-color:#4f93ff; box-shadow:0 
 .transcript-avatar.actor-judge { color:#9b7523; background:#fff6dd; }
 .transcript-avatar.actor-opponent { color:#cb5d76; background:#fff0f3; }
 body .transcript-entry>button { background:#f0f6ff; color:#2a73eb; border:1px solid #c8ddff; border-radius:999px; font-size:10px; padding:5px 11px; margin-top:12px; }
-.court-action-deck { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:12px; max-width:920px; margin:14px auto 0; padding:0 6px; }
-.court-action-deck button { display:grid; justify-items:center; gap:5px; padding:11px 8px; min-width:0; background:linear-gradient(145deg,#224aa5,#132c75); color:#dce9ff; border:1px solid #719dfb80; border-radius:10px; box-shadow:0 4px 0 #061544,0 6px 20px #010a3830; transition:transform .15s,border-color .15s; }
+.court-action-deck { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); flex-shrink:0; gap:8px; width:100%; max-width:920px; margin:8px auto 0; padding:0 6px; }
+.court-action-deck button { display:flex; align-items:center; justify-content:center; gap:6px; min-height:40px; padding:6px 8px; min-width:0; background:linear-gradient(145deg,#224aa5,#132c75); color:#dce9ff; border:1px solid #719dfb80; border-radius:8px; box-shadow:0 2px 0 #061544; transition:transform .15s,border-color .15s; }
 .court-action-deck button:nth-child(2) { background:linear-gradient(145deg,#366fe0,#1841a2); }
 .court-action-deck button:nth-child(3) { background:linear-gradient(145deg,#50449d,#26215f); }
-.court-action-deck button:hover:not(:disabled) { transform:translateY(-4px); border-color:#dcff55; }
+.court-action-deck button:hover:not(:disabled) { transform:translateY(-2px); border-color:#dcff55; }
 .court-action-deck button:focus-visible { outline:2px solid #d7ff43; outline-offset:3px; }
 .court-action-deck button:disabled { opacity:.38; cursor:not-allowed; box-shadow:none; }
-.court-action-deck svg { width:19px; height:19px; color:#a9ceff; }
+.court-action-deck svg { width:16px; height:16px; flex-shrink:0; color:#a9ceff; }
 .court-action-deck strong { font-size:11px; font-weight:650; }
-.court-action-deck small { font-size:9px; color:#86a7e5; }
+.court-action-deck small { display:none; }
 .composer-turn-status { font-size:10px; color:#d3f883; padding-left:10px; }
 body .courtroom-controls .end-session { background:#26375e; color:#ddff5f; border-color:#a8bc6b; }
 body .courtroom-controls .end-session:disabled { background:#1c2c53; color:#859bc2; border-color:#435b8b; opacity:1; cursor:not-allowed; }
@@ -67,7 +67,8 @@ body .courtroom-controls .end-session:disabled { background:#1c2c53; color:#859b
 .stage-session-info progress::-webkit-progress-value { background:#d8ff43; }
 .stage-transcript-info:hover { border-color:#9cceff; }
 body .case-dossier .evidence-detail article>button { color:#fff; }
-@media(min-width:851px) { body .court-scene { min-height:440px; height:clamp(440px,calc(100dvh - 380px),700px); }.court-versus { top:76%; font-size:44px; }body .character-opponent .character-portrait,body .character-learner .character-portrait { top:22%; height:65%; }body .character-judge .character-name { top:34%; }body .court-speech { top:44%; max-height:34%; }body .court-turn-badge { top:90%; }.court-action-deck button:first-child { transform:rotate(-4deg); }.court-action-deck button:last-child { transform:rotate(4deg); } }
-@media(max-width:850px) { body .courtroom-controls { display:grid; grid-template-columns:1fr 1fr; }.courtroom-controls>:last-child { grid-column:1/-1; }.stage-session-info,.stage-transcript-info { display:none; }.court-action-deck { grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; }.court-action-deck button { padding:10px 6px; }.court-action-deck small { display:none; }.composer-turn-status { padding:0; } }
+/* Giữ đủ chiều cao cảnh để khung lời thoại không bị viewport cắt mất. */
+@media(min-width:851px) { body .courtroom-workspace { min-height:512px; }body .court-scene { min-height:480px; height:clamp(480px,calc(100dvh - 330px),700px); }.court-versus { top:76%; font-size:44px; }body .character-opponent .character-portrait,body .character-learner .character-portrait { top:22%; height:65%; }body .character-judge .character-name { top:24%; }body .court-turn-badge { top:92%; } }
+@media(max-width:850px) { body .courtroom-controls { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }.courtroom-controls>:last-child { grid-column:span 2; }.stage-session-info,.stage-transcript-info { display:none; }.court-action-deck { grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }.court-action-deck button { min-height:44px; padding:6px; }.composer-turn-status { padding:0; } }
 @media(max-width:520px) { .assistant-workspace { grid-template-columns:1fr; }.assistant-workspace nav { max-height:170px; grid-template-columns:repeat(2,minmax(0,1fr)); }.assistant-workspace h4 { grid-column:1/-1; }.assistant-answer { padding:14px; } }
 @media(prefers-reduced-motion:reduce) { .court-action-deck button { transition:none; } }
