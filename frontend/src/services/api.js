@@ -25,7 +25,7 @@ api.interceptors.response.use(
     return response.config.url?.startsWith('/v1/admin/') || response.config.url?.startsWith('/auth/') ? response : ({ ...response, data: learnerPayload(response.data) });
   },
   (error) => {
-    if (error.response?.status === 401 && (!error.config?.url?.startsWith('/auth/') || error.config?.url?.startsWith('/auth/account') || error.config?.url === '/auth/membership' || error.config?.url === '/auth/google/link')) {
+    if (error.response?.status === 401 && !error.config?.skipAuthRedirect && (!error.config?.url?.startsWith('/auth/') || error.config?.url?.startsWith('/auth/account') || error.config?.url === '/auth/membership' || error.config?.url === '/auth/google/link')) {
       clearAuth();
       window.location.assign('/login?returnTo=' + encodeURIComponent(window.location.pathname + window.location.search));
     }

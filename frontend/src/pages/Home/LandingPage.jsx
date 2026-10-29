@@ -1,245 +1,86 @@
 import { useEffect, useState } from 'react';
-import CourtSimBrand from '../../components/CourtSimBrand';
 import { Link } from 'react-router-dom';
-import api from '../../services/api';
-import { getCurrentUser, setCurrentUser } from '../../services/auth';
-import {
-  ArrowRight,
-  BarChart3,
-  BookOpenCheck,
-  BrainCircuit,
-  ClipboardCheck,
-  FileText,
-  GraduationCap,
-  Landmark,
-  MessageCircle,
-  Scale,
-  ShieldCheck,
-  Sparkles,
-  Trophy,
-  UserRound,
-  UsersRound,
-} from 'lucide-react';
-import './landing.css';
+import { ArrowRight, BookOpen, CheckCircle2, ClipboardList, FileText, Gavel, Scale, Sparkles } from 'lucide-react';
+import CourtSimBrand from '../../components/CourtSimBrand';
 import LandingFooter from '../../components/landing/LandingFooter';
-import { checkoutPath, pricingPlans, pricingFeatures } from '../../services/pricingPlans';
+import ArenaIllustration from '../../components/landing/ArenaIllustration';
+import FeedbackModal from '../../components/feedback/FeedbackModal';
+import CaseDossier from '../../components/CaseDossier';
+import api, { getApiError } from '../../services/api';
+import { caseIntroduction } from '../../../../shared/casePresentation.mjs';
+import './landing.css';
 
 const START_PATH = '/dashboard/setup';
-
-function StartLink({ className = '', children, user }) {
-  const text = children || (user ? 'Vào phòng thực hành' : 'Bắt đầu luyện tập');
-  const target = user ? '/dashboard' : START_PATH;
-  return <Link to={target} className={`landing-cta ${className}`}>{text}<ArrowRight size={18} aria-hidden="true" /></Link>;
-}
-
-const audiences = [
-  [Landmark, 'Trường đại học & học luật'],
-  [UsersRound, 'Các CLB học thuật về pháp luật'],
-  [BookOpenCheck, 'Trung tâm đào tạo kỹ năng'],
-  [Scale, 'Tổ chức nghiên cứu và chính sách'],
-  [ShieldCheck, 'Cộng đồng sinh viên luật'],
-];
-
-const tools = [
-  [FileText, 'Tình huống pháp lý mô phỏng', 'Tiếp cận các vụ việc gần với thực tế để rèn luyện phân tích.', 'blue'],
-  [UsersRound, 'Chọn phía bạn bảo vệ', 'Nhập vai luật sư bảo vệ nguyên đơn hoặc bị đơn trong tình huống luyện tập.', 'orange'],
-  [BrainCircuit, 'AI nhập vai đa tác nhân', 'AI đảm nhiệm các vai trò còn lại trong phiên tòa mô phỏng.', 'green'],
-  [MessageCircle, 'Lập luận & phản biện', 'Rèn kỹ năng xây dựng luận điểm, trả lời và đối đáp tương phản.', 'orange'],
-  [Trophy, 'Chấm điểm sau phiên', 'Đánh giá mức độ logic, căn cứ và khả năng bảo vệ quan điểm.', 'purple'],
-  [BarChart3, 'Feedback cải thiện kỹ năng', 'Nhận gợi ý cụ thể để phát triển mạnh ở đâu và cần cải thiện gì.', 'blue'],
-];
-
-const workflow = [
-  ['Tình huống', ['Xem thông tin vụ việc', 'Nghiên cứu hồ sơ', 'Tóm tắt điểm chính'], FileText],
-  ['Vai trò của bạn', ['Luật sư bảo vệ nguyên đơn', 'Luật sư bảo vệ bị đơn', 'Chủ tọa do AI đảm nhiệm', 'Bên đối lập do AI đảm nhiệm'], UserRound],
-  ['Kết quả sau phiên', ['Nhận xét theo tiêu chí', 'Điểm phần đã được đánh giá', 'Gợi ý cải thiện lập luận', 'Xem lại biên bản tranh tụng'], Trophy],
-];
-
-function HeroMockup() {
-  return <div className="hero-mockup" aria-hidden="true">
-    <div className="browser-card">
-      <div className="browser-dots"><span /><span /><span /></div>
-      <div className="browser-body">
-        <aside>
-          <div className="mock-brand"><Landmark size={18} aria-hidden="true" />Court<span>Sim</span></div>
-          {['Trang chủ', 'Tình huống pháp lý', 'Thực hành', 'Báo cáo', 'Tài khoản'].map((item) => <span key={item}>{item}</span>)}
-        </aside>
-        <section>
-          <div className="mockup-topline">
-            <div><p>Vụ án dân sự</p><span>Lựa chọn vai trò của bạn để bắt đầu phiên tòa mô phỏng</span></div>
-            <div className="mockup-icons"><span /><span /><span /></div>
-          </div>
-          <div className="role-grid">
-            {['Luật sư nguyên đơn', 'Luật sư bị đơn', 'Chủ tọa AI', 'Bên đối lập AI'].map((role) => <div key={role}><UserRound size={18} />{role}</div>)}
-          </div>
-          <div className="court-preview">
-            <img src="/courtsim-courtroom-background-v2.png" alt="" />
-            <span className="judge-chip">Thẩm phán AI</span>
-            <span className="lawyer-chip left">Luật sư</span>
-            <span className="lawyer-chip right">Bên đối lập</span>
-          </div>
-        </section>
-      </div>
-    </div>
-    <div className="ai-card">
-      <Sparkles size={24} />
-      <h3>AI Phản hồi</h3>
-      <p>Lập luận của bạn khá chặt chẽ, nhưng cần làm rõ hơn về yếu tố chủ quan của hành vi.</p>
-      <span>Phân tích tiếp <ArrowRight size={15} /></span>
-    </div>
-    <div className="score-card">
-      <h3>Đánh giá sau phiên</h3>
-      {['Lập luận', 'Phản biện', 'Tư duy pháp lý', 'Trình bày'].map((item, index) => <div key={item}><span>{item}</span><b>{[8.5, 8.0, 8.8, 7.5][index]}</b></div>)}
-      <strong>8.3<small>/10</small></strong>
-    </div>
-  </div>;
+const filters = ['Tất cả', 'Đất đai', 'Phúc thẩm', 'Sơ thẩm'];
+function StartLink({ children = 'Bắt đầu miễn phí', className = '' }) {
+  return <Link to={START_PATH} className={`landing-cta ${className}`}>{children}<ArrowRight size={17} aria-hidden="true" /></Link>;
 }
 
 export default function LandingPage() {
-  const [user, setUser] = useState(() => getCurrentUser());
-
+  const [catalog, setCatalog] = useState({ loading: true, cases: [], error: '' });
+  const [filter, setFilter] = useState('Tất cả');
+  const [reload, setReload] = useState(0);
+  const [dossier, setDossier] = useState(null);
   useEffect(() => {
-    // Tự động kiểm tra và đồng bộ trạng thái đăng nhập từ cookie / session server
-    let active = true;
-    api.get('/auth/me').then(({ data }) => {
-      if (active && data?.user) {
-        setCurrentUser(data.user);
-        setUser(data.user);
-      }
-    }).catch(() => {
-      // nếu chưa đăng nhập hoặc cookie không hợp lệ
-    });
-    return () => { active = false; };
-  }, []);
-
+    const controller = new AbortController();
+    api.get('/v1/cases?limit=50', { signal: controller.signal, skipAuthRedirect: true }).then(({ data }) => setCatalog({ loading: false, cases: data.data ?? [], error: '' }))
+      .catch(error => { if (!controller.signal.aborted) setCatalog({ loading: false, cases: [], error: getApiError(error) }); });
+    return () => controller.abort();
+  }, [reload]);
+  async function openDossier(id) {
+    setDossier({ loading: true, id });
+    try { const { data } = await api.get(`/v1/cases/${id}`, { skipAuthRedirect: true }); setDossier(current => current?.id === id ? { id, data: data.data } : current); }
+    catch (error) { setDossier(current => current?.id === id ? { id, error: getApiError(error) } : current); }
+  }
+  const visibleCases = catalog.cases.filter(item => filter === 'Tất cả' || `${item.title} ${item.category} ${item.summary ?? ''}`.toLocaleLowerCase('vi').includes(filter.toLocaleLowerCase('vi')));
   return <div className="landing-page">
     <a className="landing-skip" href="#main-content">Đến nội dung chính</a>
-    <header className="landing-header">
+    <header className="landing-header"><div className="landing-container landing-header-inner">
       <CourtSimBrand />
-      <nav aria-label="Điều hướng trang chủ">
-        <a href="#product">Sản phẩm</a>
-        <a href="#features">Tính năng</a>
-        <a href="#workflow">Cách hoạt động</a>
-        <a href="#pricing">Bảng giá</a>
-        <Link to="/guide">Tài nguyên</Link>
-      </nav>
-      {user ? (
-        <div className="landing-auth-group">
-          <Link to="/account" className="landing-user-chip" title="Cài đặt tài khoản">
-            <UserRound size={17} />
-            <span className="landing-user-name">{user.full_name || 'Tài khoản'}</span>
-          </Link>
-          <Link className="landing-login" to={user.role === 'admin' ? '/admin' : '/dashboard'}>
-            Vào phòng thực hành
-          </Link>
-        </div>
-      ) : (
-        <Link className="landing-login" to="/login">Đăng nhập / Đăng ký</Link>
-      )}
-    </header>
+      <nav aria-label="Điều hướng trang chủ"><a href="#workflow">Cách hoạt động</a><a href="#cases">Thư viện vụ án</a><a href="#feedback">Phản hồi AI</a><Link to="/pricing">Bảng giá</Link><Link to="/guide">Hướng dẫn</Link></nav>
+      <div className="landing-header-actions"><Link to="/login">Đăng nhập</Link><StartLink /></div>
+    </div></header>
     <main id="main-content" tabIndex={-1}>
-      <section id="product" className="landing-hero" aria-labelledby="hero-heading">
-        <div className="hero-bg" />
+      <section className="landing-hero" aria-labelledby="hero-heading">
         <div className="landing-container hero-grid">
-          <div className="hero-copy">
-            <p className="landing-eyebrow"><Sparkles size={16} /> Nền tảng mô phỏng phiên tòa bằng AI</p>
-            <h1 id="hero-heading">Bước vào<br /><span>tình huống pháp lý</span></h1>
-            <p className="landing-lead">CourtSim giúp sinh viên Luật thực hành tranh tụng qua các tình huống mô phỏng, với sự hỗ trợ của AI thông minh và phản hồi chi tiết.</p>
-            <div className="landing-hero-actions">
-              <StartLink user={user} />
-            </div>
-            <div className="hero-benefits" aria-label="Lợi ích chính">
-              <span><GraduationCap size={28} />Thực hành tranh tụng thực tế</span>
-              <span><BrainCircuit size={28} />AI phản hồi đa chiều</span>
-              <span><BarChart3 size={28} />Phân tích điểm mạnh, điểm yếu</span>
-            </div>
-          </div>
-          <HeroMockup />
+          <div className="hero-copy"><p className="landing-eyebrow"><Sparkles size={15} /> Mô phỏng phiên tòa bằng AI</p><h1 id="hero-heading">LUYỆN TRANH TỤNG<br />THỰC CHIẾN</h1><p className="hero-subheading">Như đứng trước<br />Hội đồng xét xử</p>
+            <div className="landing-hero-actions"><StartLink /><a className="landing-secondary" href="#workflow">Xem cách học <ArrowRight size={16} /></a></div>
+            <ul className="hero-benefits"><li><CheckCircle2 />2 vụ án đầu tiên miễn phí</li><li><CheckCircle2 />Tối đa 20 lượt mỗi phiên</li><li><CheckCircle2 />Chấm điểm sau phiên</li></ul>
+          </div><ArenaIllustration />
         </div>
+        <div className="hero-evidence-strip" aria-hidden="true">CHỨNG CỨ #14 ⚖ LƯỢT 03/20 ⚖ HỒ SƠ VỤ ÁN ⚖ PHẢN BIỆN ⚖ ĐƠN KHÁNG CÁO ⚖ CHỨNG CỨ #14</div>
       </section>
+      <div className="landing-info-strip" aria-label="Đặc điểm phiên luyện tập">PHẢN HỒI TỨC THÌ <span>✦</span> CHẤM ĐIỂM SAU PHIÊN <span>✦</span> 20 LƯỢT MỖI PHIÊN <span>✦</span> PHIÊN TÒA MÔ PHỎNG <span>✦</span> AI CHỦ TỌA</div>
 
-      <section className="audience-strip" aria-label="Phù hợp cho">
-        <p>Phù hợp cho sinh viên luật, CLB học thuật và môi trường đào tạo thực hành</p>
-        <div className="audience-row">
-          {audiences.map(([Icon, label]) => <div key={label}><Icon size={28} aria-hidden="true" /><span>{label}</span></div>)}
+      <section id="workflow" className="landing-section workflow-section"><div className="landing-container">
+        <div className="landing-section-heading"><p className="section-kicker">CÁCH HOẠT ĐỘNG</p><h2>Bắt đầu phiên đầu tiên trong 3 bước</h2><p>Không cần đọc hướng dẫn dài. Chọn hồ sơ, chọn phía bảo vệ và bước vào phòng xử án.</p></div>
+        <div className="workflow-cards">
+          <article><FileText className="landing-icon" /><b className="step-number">01</b><h3>Chọn vụ án</h3><p>Đọc tóm tắt, các bên, mốc thời gian và chứng cứ trong hồ sơ trước khi vào phiên.</p><div className="step-preview"><span>HỒ SƠ VỤ ÁN</span><strong>Tình tiết rõ ràng, đầy đủ dữ kiện</strong><small><FileText size={13} />Nghiên cứu hồ sơ trước khi tranh luận</small></div></article>
+          <article><Scale className="landing-icon" /><b className="step-number">02</b><h3>Chọn vai của bạn</h3><p>Bảo vệ nguyên đơn hoặc bị đơn. AI đảm nhận Chủ tọa và bên đối lập để phiên diễn ra liền mạch.</p><div className="step-preview role-preview"><span>◉ Luật sư bảo vệ bị đơn</span><span>○ Luật sư bảo vệ nguyên đơn</span></div></article>
+          <article><Gavel className="landing-icon" /><b className="step-number">03</b><h3>Tranh luận và nhận phản hồi</h3><p>Trình bày theo lượt, tra cứu luật bằng Trợ lý, rồi kết thúc phiên để nhận điểm và góp ý.</p><div className="step-preview"><span>Tiến trình phiên <strong>Lượt 3 / 20</strong></span><div className="preview-progress"><i /></div><small>✦ Trợ lý luật  ▤ Biên bản</small></div></article>
         </div>
-      </section>
+      </div></section>
 
-      <section id="features" className="landing-section feature-section" aria-labelledby="features-heading">
-        <div className="landing-container">
-          <p className="section-pill">Tại sao chọn CourtSim?</p>
-          <h2 id="features-heading">Mọi công cụ để học luật bằng thực hành và phản biện</h2>
-          <p className="section-lead">Từ đọc vụ việc đến tranh luận, phản hồi và tự cải thiện, CourtSim giúp việc học luật trở nên sống động hơn.</p>
-          <div className="tool-grid">
-            {tools.map(([Icon, title, description, tone]) => <article key={title} className={`tool-card tone-${tone}`}>
-              <span><Icon size={28} aria-hidden="true" /></span>
-              <div><h3>{title}</h3><p>{description}</p></div>
-            </article>)}
-          </div>
-        </div>
-      </section>
+      <section id="cases" className="landing-section case-library"><div className="landing-container">
+        <p className="section-kicker">THƯ VIỆN VỤ ÁN</p><div className="library-heading"><div><h2>Hồ sơ gần với thực tế, đủ dữ<br className="desktop-break" /> kiện để tranh luận</h2><p>Mỗi vụ án có tóm tắt diễn biến, vấn đề cần làm rõ, các bên và chứng cứ.</p></div><div className="library-filters" aria-label="Lọc thư viện vụ án">{filters.map(label => <button key={label} aria-pressed={filter === label} onClick={() => setFilter(label)}>{label}</button>)}</div></div>
+        {catalog.loading ? <p className="library-notice" role="status">Đang tải thư viện vụ án…</p> : catalog.error ? <div className="library-notice" role="alert"><p>{catalog.error}</p><button onClick={() => { setCatalog(current => ({ ...current, loading: true })); setReload(n => n + 1); }}>Thử lại thư viện</button></div> : <div className="landing-case-grid">
+          {visibleCases.slice(0, 2).map((item, index) => <article className="landing-case-card" key={item._id}>
+            <div className={`case-art case-art-${index}`} aria-hidden="true"><span className="case-category">{item.category}</span><Scale /><div className="case-paper"><FileText /><i /><i /><i /></div><BookOpen /></div>
+            <div className="case-card-body"><span className="case-type">{item.category}</span><h3>{caseIntroduction(item).title}</h3><p>{caseIntroduction(item).summary}</p><div className="case-card-meta">2 vai luật sư <span>□ 20 lượt</span>{item.evidence_inventory && <span>▤ {item.evidence_inventory.length} chứng cứ</span>}</div><div className="case-card-actions"><Link className="landing-cta" to={`${START_PATH}?case=${encodeURIComponent(item._id)}`}>Chọn vụ án <ArrowRight size={15} /></Link><button onClick={() => openDossier(item._id)}>Xem hồ sơ <ArrowRight size={15} /></button></div></div>
+          </article>)}
+          <article className="library-empty"><BookOpen /><h3>{visibleCases.length ? 'Vụ án mới đang được biên soạn' : 'Chưa có hồ sơ phù hợp'}</h3><p>{visibleCases.length ? 'Thư viện được bổ sung thường xuyên theo lĩnh vực và cấp xét xử.' : 'Thử bộ lọc khác hoặc quay lại khi có hồ sơ được công bố.'}</p><Link to="/guide#feedback">Đề xuất tình huống</Link></article>
+        </div>}
+      </div></section>
 
-      <section id="workflow" className="landing-section workflow-section" aria-labelledby="workflow-heading">
-        <div className="landing-container workflow-grid">
-          <div className="workflow-copy">
-            <p className="landing-eyebrow"><ClipboardCheck size={16} /> Quy trình mô phỏng</p>
-            <h2 id="workflow-heading">Từ lý thuyết đến một phiên tòa mô phỏng hoàn chỉnh</h2>
-            <p>Nghiên cứu hồ sơ, chọn vai trò, tranh luận với AI và nhận phản hồi chi tiết sau phiên.</p>
-            <StartLink>Khởi tạo phiên mô phỏng</StartLink>
-          </div>
-          <div className="workflow-cards">
-            {workflow.map(([title, items, Icon], index) => <article key={title}>
-              <b>{index + 1}</b>
-              <h3>{title}</h3>
-              <Icon size={22} aria-hidden="true" />
-              <ul>{items.map((item) => <li key={item}>{item}</li>)}</ul>
-              {index === 0 && <Link to={START_PATH}>Xem toàn bộ tình huống</Link>}
-              {index === 2 && <Link to="/guide#scoring">Tìm hiểu cách đánh giá</Link>}
-            </article>)}
-          </div>
-        </div>
-      </section>
+      <section id="feedback" className="landing-feedback landing-section"><div className="landing-container feedback-grid">
+        <div><p className="section-kicker">PHẢN HỒI SAU PHIÊN</p><h2>Biết rõ mình mạnh ở đâu<br />và cần luyện gì tiếp theo</h2><p>AI đánh giá toàn bộ lượt trình bày của bạn theo từng nhóm kỹ năng tranh tụng, kèm nhận xét cụ thể.</p><ul>{['Chấm điểm theo các nhóm kỹ năng tranh tụng', 'Nhận xét điểm mạnh và điểm cần cải thiện', 'Mục tiêu luyện tập cho phiên tiếp theo', 'Biên bản phiên để xem lại toàn bộ trao đổi'].map(text => <li key={text}><CheckCircle2 />{text}</li>)}</ul><Link to="/guide#scoring" className="landing-cta light-cta">Xem cách đánh giá <ArrowRight size={17} /></Link></div>
+        <article className="feedback-preview"><span className="floating-icon"><Gavel /></span><p className="section-kicker">BÁO CÁO SAU PHIÊN · MINH HỌA</p><h3>Từng lập luận đều có cơ hội để tốt hơn</h3><div className="feedback-preview-top"><span className="preview-score"><ClipboardList size={38} /><small>Theo dữ liệu phiên</small></span><div><span className="case-type">Phản hồi theo tiêu chí</span><p>Điểm và nhận xét của bạn xuất hiện sau khi phiên được hệ thống chấm xong.</p></div></div><div className="preview-skills">{['Lập luận pháp lý', 'Phân tích chứng cứ', 'Phản biện', 'Áp dụng pháp luật', 'Trình bày', 'Kỹ năng tranh tụng'].map((text, i) => <div key={text}><span>{text}</span><div className="preview-progress"><i style={{ width: `${85 - i * 5}%` }} /></div></div>)}</div><div className="preview-goal"><Sparkles size={20} /><div><strong>Mục tiêu phiên tiếp theo</strong><p>Nhận gợi ý luyện tập dựa trên các lượt đã trình bày.</p></div></div><p className="scoring-note">Chỉ có điểm toàn bài khi đủ dữ liệu đánh giá.</p><Link to="/guide#scoring">Tìm hiểu báo cáo chi tiết <ArrowRight size={15} /></Link></article>
+      </div></section>
 
-      <section id="pricing" className="final-cta" aria-labelledby="start-heading">
-        <div id="pricing-details" className="landing-container pricing-block" aria-labelledby="pricing-heading">
-          <p className="section-pill">Bảng giá</p>
-          <h2 id="pricing-heading">Linh hoạt cho từng nhịp luyện tập</h2>
-          <p className="pricing-intro">Bắt đầu với hai lượt mô phỏng miễn phí. Khi muốn luyện tập thêm, bạn có thể mua từng lượt hoặc chọn gói phù hợp với nhu cầu.</p>
-          <div className="pricing-grid">
-            {pricingPlans.map((plan) => <article className={`pricing-card ${plan.name === 'Pro' ? 'is-featured' : ''}`} key={plan.id}>
-              <div>
-                <h3>{plan.name}</h3>
-                <strong>{plan.price}</strong>
-                <span className="pricing-cadence">{plan.cadence}</span>
-                <p>{plan.description}</p>
-              </div>
-              <ul>{plan.bullets.map((item) => <li key={item}>{item}</li>)}</ul>
-              <Link className="pricing-action" to={checkoutPath(plan.id)}>{plan.checkoutLabel}<ArrowRight size={16} aria-hidden="true" /></Link>
-            </article>)}
-          </div>
-          <div className="pricing-comparison" role="region" aria-label="So sánh quyền lợi thành viên" tabIndex={0}>
-            <table><caption>Quyền lợi theo gói thành viên</caption><thead><tr><th scope="col">Chức năng</th>{pricingPlans.map(plan => <th scope="col" key={plan.id}>{plan.name}</th>)}</tr></thead><tbody>
-              <tr><th scope="row">Số lượt mở phiên</th><td>2 lượt miễn phí</td><td>Thêm 1 lượt</td><td>Thêm 5 lượt</td><td>Không trừ lượt</td></tr>
-              {[['legalAssistant', 'Trợ lý luật'], ['detailedScoring', 'Chấm điểm chi tiết'], ['skillAnalytics', 'Phân tích kỹ năng nâng cao']].map(([feature, label]) => <tr key={feature}><th scope="row">{label}</th>{pricingPlans.map(plan => <td key={plan.id}>{pricingFeatures(plan.id)[feature] ? 'Có' : 'Chưa bao gồm'}</td>)}</tr>)}
-              <tr><th scope="row">Lịch sử và biên bản</th>{pricingPlans.map(plan => <td key={plan.id}>Có</td>)}</tr>
-            </tbody></table>
-          </div>
-          <p className="pricing-note">Tất cả gói đều có tối đa 20 lượt trình bày mỗi phiên và chịu hạn mức AI. Chỉ có điểm toàn bài khi đủ dữ liệu đánh giá. Freemium xem kết quả tổng quan; các gói trả phí xem thêm điểm từng tiêu chí. Phân tích kỹ năng nâng cao dành cho Pro.</p>
-        </div>
-        <div className="landing-container final-grid">
-          <div className="hand-note left-note">Hiểu luật để phản biện tốt hơn</div>
-          <div>
-            <h2 id="start-heading">Sẵn sàng luyện tư duy pháp lý theo cách chủ động hơn?</h2>
-            <p>CourtSim đồng hành cùng bạn trên hành trình trở thành phiên bản tốt hơn của chính mình.</p>
-            <div className="final-actions"><StartLink user={user}>{user ? 'Vào phòng thực hành' : 'Đăng ký trải nghiệm'}</StartLink><a className="outline-cta" href="#pricing-details">Xem bảng giá</a></div>
-            <div className="final-badges"><span>Dễ sử dụng</span><span>Mô phỏng sát thực tế</span><span>Phù hợp nhiều trình độ</span></div>
-          </div>
-          <div id="resources" className="book-stack" aria-hidden="true">
-            <span>Luật dân sự</span><span>Luật hình sự</span><span>Tố tụng dân sự</span><span>Tố tụng hình sự</span>
-          </div>
-        </div>
-      </section>
-    </main>
-    <LandingFooter />
+      <section id="features" className="landing-section courtroom-tools"><div className="landing-container"><div className="landing-section-heading"><p className="section-kicker">TRONG PHÒNG XỬ ÁN</p><h2>Mọi công cụ cần thiết luôn ở bên cạnh</h2><p>Không phải chuyển tab hay mở tài liệu rời. Hồ sơ, luật và biên bản đều nằm ngay trong phiên.</p></div><div className="landing-tool-grid">{[[FileText, 'Hồ sơ phiên tòa', 'Tình tiết, các bên, mốc thời gian và chứng cứ luôn mở bên cạnh khi tranh luận.', 'Mở hồ sơ mẫu', '#cases'], [Sparkles, 'Trợ lý luật', 'Tra cứu theo vấn đề hoặc số hiệu văn bản, kèm nguồn và trích đoạn để bạn tự kiểm tra.', 'Tìm hiểu trợ lý', '/guide'], [ClipboardList, 'Biên bản phiên', 'Mọi lời trao đổi được lưu lại theo lượt để xem lại và đối chiếu sau phiên.', 'Tìm hiểu biên bản', '/guide']].map(([Icon, title, text, action, to], index) => <article key={title} className={index === 1 ? 'is-blue' : ''}><span className="floating-icon"><Icon /></span><h3>{title}</h3><p>{text}</p>{to.startsWith('#') ? <a href={to}>{action}<ArrowRight size={16} /></a> : <Link to={to}>{action}<ArrowRight size={16} /></Link>}</article>)}</div></div></section>
+
+      <section id="pricing" className="landing-start-section"><div className="landing-container"><div className="landing-final-banner"><Scale className="banner-scale" aria-hidden="true" /><h2>Sẵn sàng bước vào phiên tòa đầu tiên?</h2><p>2 vụ án đầu tiên miễn phí. Nhập vai luật sư, đối đáp với AI và nhận chấm điểm ngay sau phiên.</p><div className="final-actions"><StartLink className="light-cta" /><Link className="landing-secondary" to="/pricing">Xem bảng giá</Link></div></div></div></section>
+    </main><LandingFooter />
+    {dossier && <FeedbackModal title="Hồ sơ vụ án" onClose={() => setDossier(null)}>{dossier.loading ? <p role="status">Đang tải hồ sơ…</p> : dossier.error ? <p role="alert">{dossier.error}</p> : <CaseDossier courtCase={dossier.data} />}</FeedbackModal>}
   </div>;
 }

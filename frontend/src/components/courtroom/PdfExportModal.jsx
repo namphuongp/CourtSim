@@ -29,16 +29,18 @@ export default function PdfExportModal({
   records: propRecords = null,
 }) {
   const [docType, setDocType] = useState(initialType);
+  const [prevInitialType, setPrevInitialType] = useState(initialType);
+  if (prevInitialType !== initialType) {
+    setPrevInitialType(initialType);
+    setDocType(initialType);
+  }
+
   const [session, setSession] = useState(propSession);
   const [result, setResult] = useState(propResult);
   const [records, setRecords] = useState(propRecords || []);
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    setDocType(initialType);
-  }, [initialType]);
 
   // Tự động tải dữ liệu nếu chưa có sẵn
   useEffect(() => {
@@ -50,13 +52,12 @@ export default function PdfExportModal({
     const needRecords = !propRecords || propRecords.length === 0;
 
     if (!needSession && !needResult && !needRecords) {
-      setSession(propSession);
-      setResult(propResult);
-      setRecords(propRecords);
       return;
     }
 
-    setLoading(true);
+    setTimeout(() => {
+      if (active) setLoading(true);
+    }, 0);
     const promises = [];
 
     if (needSession) promises.push(api.get(`/v1/sessions/${sessionId}`).then(res => ({ type: 'session', data: res.data.data })));

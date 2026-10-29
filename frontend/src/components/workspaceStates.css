@@ -1,0 +1,12 @@
+.workspace-loading { display:flex; flex-wrap:wrap; gap:12px; align-items:center; padding:25px; border:1px solid #dce6fa; border-radius:12px; background:white; color:#7790b5; font-size:13px; }
+.workspace-loading>svg { color:#3178f5; animation:workspace-spin 1s linear infinite; }
+.workspace-skeleton { flex-basis:100%; display:grid; grid-template-columns:2fr 1fr 1fr; gap:12px; margin-top:10px; }
+.workspace-skeleton i { height:58px; border-radius:8px; background:linear-gradient(110deg,#f0f4fc,#e4edfd,#f0f4fc); background-size:200% 100%; animation:workspace-shimmer 1.6s linear infinite; }
+.workspace-empty { display:flex; align-items:center; flex-wrap:wrap; gap:15px; padding:24px; border:1px solid #dfe7f9; border-radius:12px; background:white; color:#637d9e; font-size:12px; }
+.workspace-empty-icon { display:grid; place-items:center; width:44px; height:44px; border-radius:11px; color:#3980f4; background:#f0f6ff; flex-shrink:0; }
+.workspace-empty strong { display:block; color:#34517f; font-size:13px; }
+.workspace-empty p { margin-top:5px; }
+.workspace-empty>a { margin-left:auto; }
+@keyframes workspace-spin { to { transform:rotate(360deg); } }
+@keyframes workspace-shimmer { to { background-position:200% 0; } }
+@media(prefers-reduced-motion:reduce) { .workspace-loading>svg,.workspace-skeleton i { animation:none; } }

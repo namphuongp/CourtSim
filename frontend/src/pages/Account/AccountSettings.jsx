@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import useMembership from '../../components/membership/useMembership';
 import MembershipSummary from '../../components/membership/MembershipSummary';
+import FeatureAccess from '../../components/membership/FeatureAccess';
 import { Link, NavLink, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { UserRound, ShieldCheck, Link2, Monitor } from 'lucide-react';
+import { UserRound, ShieldCheck, Link2, Monitor, CheckCircle2, LockKeyhole } from 'lucide-react';
 import api, { getApiError } from '../../services/api';
 import { clearAuth, setCurrentUser } from '../../services/auth';
 import { PasswordField, GoogleMark } from '../Auth/AuthElements';
@@ -85,7 +86,7 @@ function Linked({ account, update }) {
 }
 function MembershipAccount() {
   const resource = useMembership();
-  return <MembershipSummary resource={resource} />;
+  return <div className="membership-account"><MembershipSummary resource={resource}/>{resource.data && <section className="account-card membership-entitlements"><h2>Quyền lợi của bạn</h2>{[['Mở phiên luyện tập', resource.data.canCreateSession], ['Trợ lý tra cứu luật', resource.data.legalAssistant], ['Điểm và nhận xét chi tiết', resource.data.detailedScoring], ['Phân tích kỹ năng nâng cao', resource.data.skillAnalytics], ['Lịch sử và biên bản', true]].map(([title, enabled]) => <div key={title}>{enabled ? <CheckCircle2 size={18}/> : <LockKeyhole size={18}/>}<strong>{title}</strong><span className={enabled ? 'is-enabled' : ''}>{enabled ? 'Đã mở' : 'Chưa bao gồm'}</span></div>)}<Link to="/pricing">So sánh các gói luyện tập →</Link></section>}</div>;
 }
 
 export default function AccountSettings() {
@@ -100,5 +101,5 @@ export default function AccountSettings() {
   }, [revision, navigate]);
   function update(data) { setState(s => ({ data: { ...s.data, ...data.data } })); if (data.user) setCurrentUser(data.user); }
   const loggedOut = reason => { clearAuth(); navigate(reason === 'password' ? '/login?reset=1' : '/login', { replace: true }); };
-  return <div className="user-shell"><UserHeader/><main className="account-page account-container user-content"><header className="account-hero"><h1>Tài khoản</h1><p className="account-subtitle">Quản lý hồ sơ, gói thành viên và bảo mật tài khoản CourtSim.</p></header><div className="account-layout"><nav aria-label="Cài đặt tài khoản">{[['profile', 'Hồ sơ', UserRound], ['membership', 'Gói và lượt', UserRound], ['security', 'Bảo mật', ShieldCheck], ['linked', 'Tài khoản liên kết', Link2]].map(([key, title, Icon]) => <NavLink className={section === key ? 'active' : ''} key={key} to={`/account/${key}`}><Icon size={19} aria-hidden="true"/>{title}</NavLink>)}<NavLink to="/privacy"><ShieldCheck size={19} aria-hidden="true"/>Quyền riêng tư</NavLink></nav><div className="account-content">{!state ? <p role="status">Đang tải tài khoản…</p> : state.error ? <section className="account-card"><p role="alert">{state.error}</p><button onClick={() => { setState(null); setRevision(v => v + 1); }}>Thử lại</button></section> : section === 'membership' ? <MembershipAccount /> : section === 'security' ? <Security account={state.data} loggedOut={loggedOut}/> : section === 'linked' ? <Linked account={state.data} update={update}/> : <Profile account={state.data} update={update}/>}</div></div></main></div>;
+  return <div className="user-shell"><UserHeader/><main className="account-page account-container user-content"><header className="account-hero"><h1>{section === 'membership' ? 'Gói & lượt luyện tập' : section === 'features' ? 'Kho tính năng & lượt' : 'Tài khoản'}</h1><p className="account-subtitle">Quản lý hồ sơ, gói thành viên và bảo mật tài khoản CourtSim.</p></header><div className="account-layout"><nav aria-label="Cài đặt tài khoản">{[['profile', 'Hồ sơ', UserRound], ['membership', 'Gói và lượt', UserRound], ['features', 'Tính năng & lượt', ShieldCheck], ['security', 'Bảo mật', ShieldCheck], ['linked', 'Tài khoản liên kết', Link2]].map(([key, title, Icon]) => <NavLink className={section === key ? 'active' : ''} key={key} to={`/account/${key}`}><Icon size={19} aria-hidden="true"/>{title}</NavLink>)}<NavLink to="/privacy"><ShieldCheck size={19} aria-hidden="true"/>Quyền riêng tư</NavLink></nav><div className="account-content">{!state ? <p role="status">Đang tải tài khoản…</p> : state.error ? <section className="account-card"><p role="alert">{state.error}</p><button onClick={() => { setState(null); setRevision(v => v + 1); }}>Thử lại</button></section> : section === 'features' ? <FeatureAccess/> : section === 'membership' ? <MembershipAccount /> : section === 'security' ? <Security account={state.data} loggedOut={loggedOut}/> : section === 'linked' ? <Linked account={state.data} update={update}/> : <Profile account={state.data} update={update}/>}</div></div></main></div>;
 }

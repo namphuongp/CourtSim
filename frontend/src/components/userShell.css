@@ -1,182 +1,34 @@
-.user-shell {
-  min-height: 100dvh;
-  color: #092943;
-  font-family: inherit;
-  font-size: 16px;
-  line-height: 1.6;
-  background:
-    radial-gradient(circle at 14% 6%, rgb(0 206 205 / 0.16), transparent 22%),
-    radial-gradient(circle at 92% 2%, rgb(255 211 83 / 0.16), transparent 24%),
-    linear-gradient(180deg, #f4fbfc 0%, #f7fbfc 46%, #f7fafc 100%);
-}
-
-.user-header {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  color: #fff;
-  border-bottom: 1px solid rgb(123 220 229 / 0.25);
-  background:
-    radial-gradient(circle at 85% 0%, rgb(255 224 111 / 0.22), transparent 20%),
-    linear-gradient(135deg, #041c34 0%, #062b4b 55%, #08798a 100%);
-  box-shadow: 0 18px 38px rgb(4 28 52 / 0.18);
-}
-
-.user-header::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    linear-gradient(90deg, rgb(2 18 34 / 0.88), rgb(2 26 46 / 0.52), rgb(3 54 70 / 0.2)),
-    url('/courtsim-courtroom-background-v2.png') center 36% / cover;
-  opacity: 0.28;
-}
-
-.user-header-inner,
-.user-content {
-  max-width: 1280px;
-  margin-inline: auto;
-  padding-inline: 32px;
-}
-
-.user-header-inner {
-  position: relative;
-  padding-block: 18px 16px;
-}
-
-.user-header-top,
-.user-header-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  flex-wrap: wrap;
-}
-
-.user-header .courtsim-brand {
-  color: #fff;
-  font-size: 28px;
-  letter-spacing: 0;
-}
-.user-header .courtsim-brand svg,
-.user-header .courtsim-brand span { color: #ffe177; }
-
-.user-header a:not(.courtsim-brand) {
-  color: rgb(255 255 255 / 0.86);
-  text-decoration: none;
-}
-
-.user-header-actions {
-  justify-content: flex-end;
-  font-size: 14px;
-  min-width: 0;
-}
-
-.user-header-name {
-  overflow-wrap: anywhere;
-  max-width: 260px;
-}
-
-.user-header button {
-  min-height: 44px;
-  border: 1px solid rgb(255 225 119 / 0.55);
-  border-radius: 999px;
-  padding: 9px 18px;
-  color: #15233b;
-  background: linear-gradient(180deg, #fff6b9, #ffd04a);
-  box-shadow: 0 12px 26px rgb(255 205 77 / 0.24);
-  cursor: pointer;
-  font: inherit;
-  font-weight: 850;
-}
-.user-header button:disabled { opacity: .65; cursor: wait; }
-
-.user-navigation {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 16px;
-}
-
-.user-navigation a {
-  border: 1px solid rgb(126 239 255 / 0.22);
-  border-radius: 999px;
-  padding: 9px 15px;
-  font-size: 14px;
-  font-weight: 800;
-  background: rgb(255 255 255 / 0.08);
-  backdrop-filter: blur(12px);
-}
-
-.user-navigation a.active {
-  color: #08213a !important;
-  border-color: rgb(255 225 119 / 0.8);
-  background: linear-gradient(180deg, #fff6b9, #ffd04a);
-  box-shadow: 0 10px 22px rgb(255 205 77 / 0.22);
-}
-
-.user-header a:not(.courtsim-brand):hover {
-  color: #ffe177;
-}
-.user-navigation a:hover {
-  border-color: rgb(126 239 255 / 0.55);
-  background: rgb(255 255 255 / 0.15);
-}
-.user-header button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 16px 32px rgb(255 205 77 / 0.34);
-}
-
-.user-header :focus-visible {
-  outline: 3px solid rgb(56 237 241 / 0.55);
-  outline-offset: 3px;
-}
-
-.user-content {
-  padding-block: 34px 64px;
-}
-
-.user-content h1 {
-  font-size: 34px;
-  font-weight: 900;
-  letter-spacing: 0;
-}
-.user-content h2 {
-  font-size: 24px;
-  font-weight: 900;
-  letter-spacing: 0;
-}
-
-@media(max-width:760px) {
-  .user-header { position: relative; }
-  .user-header-inner,
-  .user-content { padding-inline: 16px; }
-  .user-header-top { gap: 12px; }
-  .user-header .courtsim-brand { font-size: 24px; }
-  .user-header-actions {
-    gap: 12px;
-    flex: 1 1 auto;
-  }
-  .user-header-name { max-width: 180px; }
-  .user-navigation {
-    gap: 7px;
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    padding-bottom: 3px;
-  }
-  .user-navigation a {
-    flex: 0 0 auto;
-    padding: 8px 12px;
-    font-size: 13px;
-  }
-  .user-content { padding-block: 24px 40px; }
-  .user-content h1 { font-size: 29px; }
-}
-
-@media(max-width:420px) {
-  .user-header-actions {
-    justify-content: space-between;
-    width: 100%;
-  }
-}
+.user-shell { min-height:100dvh; background:#edf2fb; color:#152351; font-size:14px; line-height:1.6; }
+.user-header { position:sticky; top:0; z-index:20; background:#0a1245; color:white; border-bottom:1px solid #263573; }
+.user-header-inner,.user-content { max-width:1240px; margin-inline:auto; padding-inline:32px; }
+.user-header-inner { padding-block:16px 12px; }
+.user-header-top,.user-header-actions { display:flex; align-items:center; justify-content:space-between; gap:20px; min-width:0; }
+.user-header .courtsim-brand { color:white; font-size:23px; }
+.user-header .courtsim-brand span { color:white; }
+.user-header .courtsim-mark { width:30px; height:30px; }
+.user-header a:not(.courtsim-brand) { color:#c4cce8; text-decoration:none; }
+.user-header a:not(.courtsim-brand):hover { color:white; }
+.user-header-actions { justify-content:flex-end; gap:16px; font-size:12px; }
+.user-header-name { max-width:210px; overflow-wrap:anywhere; }
+.user-header button { border:1px solid #d7ff43; border-radius:999px; min-height:32px; padding:5px 14px; background:#d7ff43; color:#1b3159; font-size:11px; font-weight:750; cursor:pointer; }
+.user-header button:hover { background:#e6ff8b; }
+.user-header button:disabled { opacity:.55; }
+.user-navigation { display:flex; gap:8px; margin-top:10px; overflow:auto; }
+.user-navigation a { white-space:nowrap; font-size:12px; padding:5px 12px; border-radius:999px; border:1px solid transparent; }
+.user-navigation a.active { background:#ffffff17; border-color:#6270ab80; color:white; }
+.user-navigation a:hover { background:#ffffff10; }
+.user-header :focus-visible { outline:3px solid #a8ceff; outline-offset:3px; }
+.user-header a.user-header-membership { font-size:10px; border-radius:999px; border:1px solid #8fa6dc60; background:#ffffff0c; color:#d4ff57; padding:4px 10px; }
+.user-content { padding-block:26px 64px; }
+.user-content h1 { font-size:29px; font-weight:800; }
+.user-content h2 { font-size:20px; font-weight:750; }
+.account-menu { position:relative; }
+.user-header button.account-menu-trigger { display:flex; align-items:center; gap:8px; background:transparent; color:#e0e7ff; border-color:#ffffff25; max-width:240px; font-size:12px; }
+.account-menu-trigger>span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.account-menu-dropdown { position:absolute; top:calc(100% + 12px); right:0; min-width:225px; padding:8px; border:1px solid #d5e2fc; border-radius:12px; background:white; color:#18295b; box-shadow:0 15px 40px #020b3a30; }
+.user-header .account-menu-dropdown a { display:flex; align-items:center; gap:10px; padding:10px; color:#334a77; border-radius:7px; }
+.user-header .account-menu-dropdown a:hover { background:#edf4ff; color:#2365ec; }
+.account-menu-dropdown>.account-menu-user { border-bottom:1px solid #e5ecf8; padding:8px 10px 14px; margin-bottom:6px; font-weight:700; overflow-wrap:anywhere; }
+.user-header .account-menu-dropdown button { width:100%; margin-top:5px; border-radius:7px; background:#edf3ff; color:#285cae; border-color:#dae6ff; text-align:left; }
+@media(max-width:760px) { .user-header { position:relative; }.user-header-inner,.user-content { padding-inline:16px; }.user-header-top { gap:10px; }.user-header .courtsim-brand { font-size:21px; }.user-header-actions { gap:8px; flex-wrap:wrap; }.user-header-actions>a:first-child:not(.user-header-membership) { font-size:11px; }.user-header button.account-menu-trigger { max-width:155px; padding-inline:10px; }.user-navigation { flex-wrap:nowrap; padding-bottom:3px; }.user-content { padding-block:20px 40px; }.user-content h1 { font-size:26px; }.user-content h2 { font-size:19px; } }
+@media(max-width:420px) { .user-header-top { flex-wrap:wrap; }.user-header-actions { margin-left:auto; }.user-header button.account-menu-trigger { max-width:175px; } }

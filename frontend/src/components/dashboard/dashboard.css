@@ -3,6 +3,15 @@
   min-width: 0;
 }
 
+.practice-dashboard .metric-icon { display:grid; place-items:center; width:30px; height:30px; margin-bottom:12px; color:#3278ee; border-radius:8px; background:#edf4ff; }
+.practice-dashboard .metric-ordinal { position:absolute; right:18px; top:16px; font-size:26px; font-weight:800; color:#dbe7ff; }
+.practice-dashboard .session-list-filters { display:grid; grid-template-columns:minmax(0,1fr) 220px auto; gap:18px; align-items:end; padding:18px; border:1px solid #dfe7fa; border-radius:10px; background:#fff; font-size:12px; color:#6e82a4; }
+.practice-dashboard .session-list-filters>span { padding-bottom:12px; font-size:11px; }
+.practice-dashboard .session-list-cards { grid-template-columns:1fr; gap:12px; }
+.practice-dashboard .session-record-card h3 { font-size:16px; line-height:1.6; color:#203a70; }
+.practice-dashboard .session-record-card>div:last-child { border-top:1px solid #edf1f9; padding-top:12px; font-size:12px; }
+@media(max-width:650px) { .practice-dashboard .session-list-filters { grid-template-columns:1fr; gap:12px; }.practice-dashboard .session-list-filters>span { padding:0; } }
+
 .practice-dashboard::before {
   content: '';
   position: absolute;

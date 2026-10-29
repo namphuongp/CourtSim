@@ -18,4 +18,23 @@
 .privacy-card p { margin:12px 0; font-size:15px; line-height:1.75; }
 .privacy-status { padding:12px; border-radius:10px; background:#eff6ff; color:#1e40af; }
 .privacy-back { display:inline-block; margin-top:16px; }
+.privacy-page .privacy-card { margin-top:0; border-radius:12px; box-shadow:0 6px 18px #1d3b7610; }
+.privacy-card h1 { color:#1c346b; font-size:24px; }
+.privacy-card>p { color:#7e90ad; font-size:12px; }
+.privacy-preferences { display:grid; margin-top:24px; }
+.privacy-preference { display:flex; gap:24px; align-items:center; justify-content:space-between; padding:18px 0; border-bottom:1px solid #e5ecf9; }
+.privacy-preference strong { font-size:13px; color:#2b4476; }
+.privacy-preference p { margin:5px 0; color:#8495b0; font-size:11px; }
+.privacy-preference small { color:#87a493; font-size:9px; }
+.privacy-preference button[role=switch] { flex-shrink:0; position:relative; width:38px; height:22px; padding:3px; border:0; border-radius:999px; background:#cad6e9; cursor:pointer; }
+.privacy-preference button[aria-checked=true] { background:#3480ff; }
+.privacy-preference button:disabled { cursor:default; opacity:.5; }
+.privacy-preference button span { display:block; width:16px; height:16px; border-radius:50%; background:white; box-shadow:0 1px 4px #18377130; }
+.privacy-preference button[aria-checked=true] span { transform:translateX(16px); }
+.privacy-card .privacy-status { font-size:11px; color:#3068bf; }
+.privacy-card .consent-actions { justify-content:end; }
+.privacy-card .consent-actions button { min-height:36px; padding:7px 17px; border-radius:999px; font-size:11px; }
+.privacy-disclosure { margin-top:24px; padding-top:16px; border-top:1px solid #e5ecf9; color:#587399; font-size:12px; }
+.privacy-disclosure summary { cursor:pointer; }
+.privacy-disclosure p { font-size:12px; }
 @media(max-width:640px) { .consent-banner { align-items:flex-start; flex-wrap:wrap; gap:10px; padding:14px; margin:8px auto; width:calc(100% - 16px); } .consent-copy { flex-basis:calc(100% - 40px); } .consent-banner .consent-actions { width:100%; } .consent-banner button { flex:1; } .privacy-card { padding:20px; } .privacy-card h1 { font-size:26px; } }

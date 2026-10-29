@@ -9,14 +9,10 @@ export default function VoiceDebateControls({
   ttsEnabled = false,
   onToggleTts,
 }) {
-  const [supported, setSupported] = useState(true);
+  const [supported] = useState(isSpeechRecognitionSupported);
   const [isListening, setIsListening] = useState(false);
   const [interimText, setInterimText] = useState('');
   const recognizerRef = useRef(null);
-
-  useEffect(() => {
-    setSupported(isSpeechRecognitionSupported());
-  }, []);
 
   const lastEmittedRef = useRef({ text: '', time: 0 });
 

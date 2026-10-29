@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, CheckCircle2, CreditCard, Landmark, ShieldCheck, Sparkles } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle2, Clock3, CircleX, CreditCard, Landmark, ShieldCheck, Sparkles } from 'lucide-react';
 import UserHeader from '../../components/UserHeader';
 import api, { getApiError } from '../../services/api';
 import { findPricingPlan, savedCheckoutPlan } from '../../services/pricingPlans';
@@ -150,7 +150,7 @@ export default function CheckoutPage() {
           <Landmark size={36} aria-hidden="true" />
           <h1>Không tìm thấy gói thanh toán</h1>
           <p>Gói bạn chọn không còn trong bảng giá hiện tại. Hãy quay lại bảng giá để chọn lại.</p>
-          <Link to="/#pricing"><ArrowLeft size={18} aria-hidden="true" /> Về bảng giá</Link>
+          <Link to="/pricing"><ArrowLeft size={18} aria-hidden="true" /> Về bảng giá</Link>
         </section>
       </main>
     </div>;
@@ -163,13 +163,13 @@ export default function CheckoutPage() {
 
   return <div className="user-shell checkout-shell">
     <UserHeader />
-    <main className="checkout-page user-content">
-      <Link className="checkout-back" to="/#pricing"><ArrowLeft size={17} aria-hidden="true" /> Quay lại bảng giá</Link>
+    <main className={`checkout-page user-content${order ? ' has-payment-order' : ''}`}>
+      <Link className="checkout-back" to="/pricing"><ArrowLeft size={17} aria-hidden="true" /> Quay lại bảng giá</Link>
       <section className="checkout-hero" aria-labelledby="checkout-heading">
         <div>
           <p className="checkout-eyebrow"><Sparkles size={16} aria-hidden="true" /> Thanh toán CourtSim</p>
           <h1 id="checkout-heading">{isFree ? 'Kích hoạt trải nghiệm miễn phí' : `Thanh toán gói ${plan.name}`}</h1>
-          <p>{isFree ? 'Freemium có 2 lượt mô phỏng và kết quả tổng quan. Mỗi tài khoản được dùng thử một lần.' : payPerUse ? `${plan.name} cộng ${caseQuantity} lượt mô phỏng, mở trợ lý luật và chấm điểm chi tiết sau khi thanh toán được xác nhận.` : 'Kiểm tra gói đã chọn trước khi tạo yêu cầu thanh toán chính thức của CourtSim.'}</p>
+          <p>{order?.status === 'paid' ? 'Giao dịch đã được máy chủ xác nhận. Xem thông tin đơn và quyền lợi đã mua bên dưới.' : isFree ? 'Freemium có 2 lượt mô phỏng và kết quả tổng quan. Mỗi tài khoản được dùng thử một lần.' : payPerUse ? `${plan.name} cộng ${caseQuantity} lượt mô phỏng, mở trợ lý luật và chấm điểm chi tiết sau khi thanh toán được xác nhận.` : 'Kiểm tra gói đã chọn trước khi tạo yêu cầu thanh toán chính thức của CourtSim.'}</p>
         </div>
         <aside aria-label="Gói đã chọn">
           <span>{plan.cadence}</span>
@@ -178,50 +178,11 @@ export default function CheckoutPage() {
         </aside>
       </section>
 
-      <div className="checkout-grid">
-        <section className="checkout-card checkout-summary" aria-labelledby="summary-heading">
-          <div className="checkout-card-heading">
-            <CreditCard size={22} aria-hidden="true" />
-            <div>
-              <h2 id="summary-heading">Tóm tắt đơn hàng</h2>
-              <p>{payPerUse ? `Bạn đang mua trước ${caseQuantity} lượt mô phỏng để mở ${caseQuantity} case.` : 'Gói luyện tập bạn đang chuẩn bị kích hoạt.'}</p>
-            </div>
-          </div>
-          <dl className="checkout-facts">
-            <div><dt>Gói</dt><dd>{plan.name}</dd></div>
-            <div><dt>Loại</dt><dd>{plan.cadence}</dd></div>
-            <div><dt>Tạm tính</dt><dd>{formatMoney(plan.amount)}</dd></div>
-            <div><dt>Trạng thái</dt><dd>{order ? statusText[order.status] ?? order.status : isFree ? 'Không cần thanh toán' : 'Chờ tạo thanh toán'}</dd></div>
-          </dl>
-          <div className="checkout-total">
-            <span>Tổng thanh toán</span>
-            <strong>{formatMoney(plan.amount)}</strong>
-          </div>
-        </section>
-
-        <section className="checkout-card checkout-method" aria-labelledby="method-heading">
-          <div className="checkout-card-heading">
-            <ShieldCheck size={22} aria-hidden="true" />
-            <div>
-              <h2 id="method-heading">Phương thức thanh toán</h2>
-              <p>{isFree ? 'Bạn có thể bắt đầu luyện tập ngay.' : 'Thanh toán qua cổng SePay, quyền lợi tự cập nhật sau khi được xác nhận.'}</p>
-            </div>
-          </div>
-          <div className="checkout-method-box">
-            <CheckCircle2 size={21} aria-hidden="true" />
-            <div>
-              <strong>{isFree ? 'Kích hoạt Freemium' : 'Thanh toán ngân hàng qua SePay'}</strong>
-              <p>{isFree ? 'Không phát sinh chi phí cho 2 case đầu tiên.' : 'Quét mã QR và làm theo hướng dẫn trên trang thanh toán. Sau đó quay về CourtSim để xem kết quả.'}</p>
-            </div>
-          </div>
-          {isFree ? <Link className="checkout-primary" to="/dashboard/setup">Bắt đầu luyện tập <ArrowRight size={18} aria-hidden="true" /></Link> : <button className="checkout-primary" type="button" disabled={busy || loadingOrder || Boolean(order) || Boolean(orderCode)} onClick={createOrder}>{loadingOrder ? 'Đang tải đơn thanh toán...' : busy ? 'Đang mở thanh toán...' : order ? 'Đã tạo yêu cầu thanh toán' : 'Thanh toán qua SePay'}<ArrowRight size={18} aria-hidden="true" /></button>}
-          {error && <p className="checkout-note checkout-error" role="alert">{error}</p>}
-          {!isFree && !order && <p className="checkout-note">Kiểm tra gói và số tiền trước khi tiếp tục thanh toán.</p>}
-          {order && <div className="checkout-order" role="status">
+          {order && <section className={`checkout-payment-state payment-${order.status}`} aria-label="Trạng thái giao dịch"><span className="payment-state-icon" aria-hidden="true">{order.status === 'paid' ? <CheckCircle2/> : ['expired', 'cancelled'].includes(order.status) || returnResult === 'error' || returnResult === 'cancel' ? <CircleX/> : <Clock3/>}</span><div className="checkout-order" role="status">
             <span>{gateway ? 'Mã đơn thanh toán' : 'Nội dung chuyển khoản'}</span>
             <strong>{order.orderCode ?? order.order_code}</strong>
             {gateway ? <div className="checkout-gateway-result">
-              <h3>{order.status === 'paid' ? 'Thanh toán thành công' : order.status === 'processing' ? 'Đang cập nhật quyền lợi' : returnResult === 'cancel' ? 'Bạn đã hủy thao tác thanh toán' : returnResult === 'error' ? 'Thanh toán chưa hoàn tất' : 'Đang chờ xác nhận thanh toán'}</h3>
+              <h3>{order.status === 'paid' ? 'Thanh toán thành công' : order.status === 'processing' ? 'Đang cập nhật quyền lợi' : order.status === 'expired' ? 'Đơn thanh toán đã hết hạn' : order.status === 'cancelled' ? 'Đơn thanh toán đã hủy' : returnResult === 'cancel' ? 'Bạn đã hủy thao tác thanh toán' : returnResult === 'error' ? 'Thanh toán chưa hoàn tất' : 'Đang chờ xác nhận thanh toán'}</h3>
               <p>{order.status === 'paid' ? 'CourtSim đã xác nhận giao dịch và cấp quyền lợi cho tài khoản của bạn.' : 'CourtSim đang kiểm tra giao dịch với SePay. Nếu đã chuyển tiền, hãy chờ và kiểm tra trạng thái trước khi thanh toán tiếp.'}</p>
               {order.status !== 'paid' && order.verification?.available === false && <p className="checkout-note checkout-error">Chưa thể kiểm tra giao dịch với SePay. Hệ thống sẽ tự thử lại; bạn chưa cần thanh toán thêm.</p>}
               <dl className="checkout-facts">
@@ -248,7 +209,47 @@ export default function CheckoutPage() {
               {order.status === 'paid' && <Link to="/dashboard/setup">Tiếp tục luyện tập <ArrowRight size={16} aria-hidden="true" /></Link>}
             </div>
             {accessSynced && <p>Quyền lợi thành viên đã được cập nhật.</p>}
-          </div>}
+          </div>{error && <p className="checkout-error" role="alert">{error}</p>}</section>}
+      <div className={`checkout-grid${order ? ' has-order' : ''}`}>
+        <section className="checkout-card checkout-summary" aria-labelledby="summary-heading">
+          <div className="checkout-card-heading">
+            <CreditCard size={22} aria-hidden="true" />
+            <div>
+              <h2 id="summary-heading">Tóm tắt đơn hàng</h2>
+              <p>{order?.status === 'paid' ? 'Thông tin gói đã được thanh toán.' : payPerUse ? `Bạn đang mua trước ${caseQuantity} lượt mô phỏng để mở ${caseQuantity} case.` : 'Gói luyện tập bạn đang chuẩn bị kích hoạt.'}</p>
+            </div>
+          </div>
+          <dl className="checkout-facts">
+            <div><dt>Gói</dt><dd>{plan.name}</dd></div>
+            <div><dt>Loại</dt><dd>{plan.cadence}</dd></div>
+            <div><dt>Tạm tính</dt><dd>{formatMoney(plan.amount)}</dd></div>
+            <div><dt>Trạng thái</dt><dd>{order ? statusText[order.status] ?? order.status : isFree ? 'Không cần thanh toán' : 'Chờ tạo thanh toán'}</dd></div>
+          </dl>
+          <div className="checkout-total">
+            <span>Tổng thanh toán</span>
+            <strong>{formatMoney(plan.amount)}</strong>
+          </div>
+        </section>
+
+        <section hidden={Boolean(order)} className="checkout-card checkout-method" aria-labelledby="method-heading">
+          <div className="checkout-card-heading">
+            <ShieldCheck size={22} aria-hidden="true" />
+            <div>
+              <h2 id="method-heading">Phương thức thanh toán</h2>
+              <p>{isFree ? 'Bạn có thể bắt đầu luyện tập ngay.' : 'Thanh toán qua cổng SePay, quyền lợi tự cập nhật sau khi được xác nhận.'}</p>
+            </div>
+          </div>
+          <div className="checkout-method-box">
+            <CheckCircle2 size={21} aria-hidden="true" />
+            <div>
+              <strong>{isFree ? 'Kích hoạt Freemium' : 'Thanh toán ngân hàng qua SePay'}</strong>
+              <p>{isFree ? 'Không phát sinh chi phí cho 2 case đầu tiên.' : 'Quét mã QR và làm theo hướng dẫn trên trang thanh toán. Sau đó quay về CourtSim để xem kết quả.'}</p>
+            </div>
+          </div>
+          {isFree ? <Link className="checkout-primary" to="/dashboard/setup">Bắt đầu luyện tập <ArrowRight size={18} aria-hidden="true" /></Link> : <button className="checkout-primary" type="button" disabled={busy || loadingOrder || Boolean(order) || Boolean(orderCode)} onClick={createOrder}>{loadingOrder ? 'Đang tải đơn thanh toán...' : busy ? 'Đang mở thanh toán...' : order ? 'Đã tạo yêu cầu thanh toán' : 'Thanh toán qua SePay'}<ArrowRight size={18} aria-hidden="true" /></button>}
+          {error && <p className="checkout-note checkout-error" role="alert">{error}</p>}
+          {!isFree && !order && <p className="checkout-note">Kiểm tra gói và số tiền trước khi tiếp tục thanh toán.</p>}
+
         </section>
       </div>
 

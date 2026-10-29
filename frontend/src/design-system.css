@@ -1,0 +1,216 @@
+/* Shared visual treatment, scoped to CourtSim page roots. Business/data modules are unchanged. */
+:root { --courtsim-ink:#142355; --courtsim-muted:#7a8aa5; --courtsim-blue:#2d77f6; --courtsim-background:#edf2fb; }
+body { background:#edf2fb; }
+body .user-shell .practice-dashboard::before,body .account-page::before { display:none; }
+body .user-shell .practice-dashboard>header,body .account-page .account-hero,body .checkout-shell .checkout-hero,body .result-page .result-hero { padding:26px 30px; border:1px solid #4564ac35; border-radius:16px; background:linear-gradient(100deg,#0d164f 0%,#142779 65%,#174ca9 100%); box-shadow:0 7px 14px #142d7725; margin-bottom:24px; }
+body .user-shell .practice-dashboard>header::after,body .account-page .account-hero::after,body .result-page .result-hero::after { width:260px; height:220px; top:-35px; right:0; border:0; border-radius:0; background:repeating-linear-gradient(90deg,#ffffff08 0 18px,transparent 19px 36px),repeating-linear-gradient(0deg,transparent 0 35px,#4d9aff18 36px 65px); transform:skewY(-10deg); }
+body .user-shell .practice-dashboard>header h1,body .account-page .account-hero h1,body .result-page .result-hero h1 { font-size:28px; font-weight:800; }
+body .user-shell .practice-dashboard>header p,body .account-page .account-subtitle { font-size:13px; }
+body .user-shell .practice-dashboard .dashboard-card,body .user-shell .simulation-setup .setup-card,body .user-shell .simulation-setup .setup-aside,body .account-page .account-card,body .checkout-page .checkout-card,body .result-page .result-card,body .result-page .score-card,body .result-page .score-group,body .result-page .score-main-card,body .result-page .result-details { border:1px solid #dfe7fa!important; border-radius:12px!important; background:#fff!important; box-shadow:0 6px 14px #182e7410; }
+body .user-shell .practice-dashboard .dashboard-card { padding:22px; }
+body .user-shell .practice-dashboard .dashboard-metrics .dashboard-card { min-height:110px; }
+body .user-shell .practice-dashboard .dashboard-metrics .dashboard-card::before { inset:0 0 auto; width:auto; height:3px; background:#5c90ff; }
+body .user-shell .practice-dashboard .dashboard-metrics .dashboard-card::after { display:none; }
+body .user-shell .practice-dashboard .dashboard-primary,body .user-shell .simulation-setup .setup-guide-link { min-height:38px; border:0!important; border-radius:999px!important; padding:8px 18px; color:#1a3159!important; background:#d7ff43; box-shadow:none; font-size:12px; }
+body .user-shell .practice-dashboard a:not(.dashboard-primary),body .user-shell .practice-dashboard .dashboard-card .text-blue-400 { color:#2b71eb!important; }
+body .user-shell .practice-dashboard input:focus,body .user-shell .practice-dashboard select:focus,body .account-page input:focus { border-color:#3c83ff; box-shadow:0 0 0 3px #367dff14; }
+body .user-shell .practice-dashboard .dashboard-status { color:#2865c7; background:#e9f2ff; }
+body .user-shell .practice-dashboard .dashboard-status.is-completed { color:#208261; background:#e8faf2; }
+body .user-shell .practice-dashboard .learning-rubric progress { accent-color:#3486ff; }
+body .user-shell .practice-dashboard .learning-rubric progress::-webkit-progress-value { background:linear-gradient(90deg,#2978ff,#8bcfff); }
+body .user-shell .practice-dashboard .learning-rubric progress::-moz-progress-bar { background:linear-gradient(90deg,#2978ff,#8bcfff); }
+body .user-shell .simulation-setup { max-width:1176px!important; }
+body .user-shell .simulation-setup .setup-card::before,body .user-shell .simulation-setup .setup-aside::before { display:none; }
+body .user-shell .simulation-setup .setup-option { border-radius:9px!important; border-color:#dce5f7!important; background:white!important; box-shadow:none; color:#273f70; }
+body .user-shell .simulation-setup .setup-option:hover { border-color:#78aaff!important; background:#f5f8ff!important; transform:none; box-shadow:0 0 0 2px #2d77ff0c; }
+body .user-shell .simulation-setup .setup-option.is-selected { border-color:#347bff!important; background:#f2f7ff!important; box-shadow:0 0 0 1px #347bff; }
+body .user-shell .simulation-setup .setup-option strong { font-size:14px; color:#1e3973!important; }
+body .user-shell .simulation-setup .setup-option p { font-size:12px; line-height:1.75; color:#8493ac!important; }
+body .user-shell .simulation-setup .setup-option span { border-radius:5px; padding:3px 7px; background:#eaf2ff; color:#3978df!important; font-size:10px; }
+body .user-shell .simulation-setup .setup-card h2,body .user-shell .simulation-setup .setup-aside h2 { font-size:19px; }
+body .user-shell .simulation-setup .setup-aside { background:linear-gradient(#fff,#edf4ff)!important; }
+@media(min-width:1024px) { body .user-shell .simulation-setup .setup-aside { position:sticky; top:128px; align-self:start; } }
+@media(max-width:1023px) { body .user-shell .simulation-setup .setup-aside { position:static; } }
+body .user-shell .simulation-setup .setup-aside>svg { width:35px; height:35px; padding:8px; border-radius:10px; color:white!important; background:#2c78ff; box-shadow:0 4px 10px #3d7dff30; }
+.setup-step-tabs { display:flex; flex-wrap:wrap; gap:7px; margin-top:16px; }
+.setup-step-tabs button { background:#ffffff10; color:#c4d3f9; border:1px solid #9eb2ff45; border-radius:999px; padding:4px 11px; font-size:11px; }
+.setup-step-tabs button[aria-current=step] { color:#1c3561; background:#d9ff45; border-color:#d9ff45; }
+.setup-step-tabs button:disabled { opacity:.4; }
+.setup-step-title { display:flex; align-items:center; gap:10px; margin-bottom:15px; }
+.setup-step-title>span { display:grid; place-items:center; width:28px; height:28px; border-radius:9px; background:#2269ef; color:white; font-size:14px; }
+.setup-step-description { color:#8b98b0; font-size:12px; margin:0 0 20px; }
+.setup-step-actions { display:flex; justify-content:space-between; gap:12px; margin-top:18px; }
+.setup-step-actions button,.setup-confirm-actions button { display:inline-flex; align-items:center; justify-content:center; gap:7px; padding:9px 16px; border:1px solid #e0e8f8; border-radius:999px; background:white; color:#3173ed; font-size:12px; font-weight:650; }
+.setup-step-actions button:disabled { opacity:.4; }
+.setup-step-actions button.setup-next,.setup-confirm-actions button.setup-next { background:#2d77ff; color:white; border-color:#2d77ff; box-shadow:0 4px 8px #2b69e120; }
+.setup-step-content { min-width:0; }
+.setup-summary { margin:20px 0; display:grid; gap:12px; font-size:12px; }
+.setup-summary>div { display:grid; grid-template-columns:95px minmax(0,1fr); gap:14px; }
+.setup-summary dt { color:#8b9ab4; }
+.setup-summary dd { text-align:right; color:#254478; font-weight:650; overflow-wrap:anywhere; }
+.setup-checklist { display:grid; gap:10px; border-top:1px solid #e4ebf7; padding-top:18px; font-size:11px; color:#8b9bb1; }
+.setup-checklist li { display:flex; gap:8px; align-items:center; }
+.setup-checklist .is-done { color:#3a7b6b; }
+.setup-checklist .is-done svg { color:#2cb080; }
+body .user-shell .simulation-setup .setup-start { background:#2d77ff!important; color:white!important; border:1px solid #2d77ff; border-radius:999px!important; min-height:40px; font-size:12px; box-shadow:0 4px 8px #2b69e120; }
+body .user-shell .simulation-setup .setup-start:disabled { background:#b5ceff!important; border-color:#b5ceff; box-shadow:none; opacity:.7; }
+.setup-start-note { color:#93a4bf; font-size:10px; line-height:1.7; margin-top:12px; }
+.setup-date-note { color:#9a7c39; background:#fff7e7; padding:12px; border-radius:7px; font-size:12px; margin-top:20px; }
+.setup-preparation { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:20px; }
+.setup-preparation>div { border:1px solid #dfe8fa; border-radius:10px; padding:18px; background:#f8faff; }
+.setup-preparation svg { color:#2c78ff; }
+.setup-preparation h3 { font-size:14px; margin:12px 0 6px; }
+.setup-preparation p { font-size:12px; color:#8090aa; }
+.setup-confirm-actions { display:flex; flex-wrap:wrap; gap:10px; justify-content:end; margin-top:24px; }
+.case-dossier-tabs { display:flex; flex-wrap:wrap; gap:5px; border-bottom:1px solid #e4ebfa; padding:0 0 15px; }
+.case-dossier-tabs button { font-size:10px; color:#7588a8; padding:5px 10px; border:1px solid #e2e9f8; border-radius:999px; background:white; }
+.case-dossier-tabs button[aria-pressed=true] { color:#2169e9; background:#edf4ff; border-color:#82adff; }
+.case-dossier .dossier-overview { display:grid; gap:18px; }
+.case-dossier[data-view]:not([data-view=all]):not([data-view=overview])>.dossier-overview,
+.case-dossier[data-view]:not([data-view=all]):not([data-view=parties])>.dossier-parties,
+.case-dossier[data-view]:not([data-view=all]):not([data-view=evidence])>.dossier-evidence,
+.case-dossier[data-view]:not([data-view=all]):not([data-view=procedure])>.dossier-procedure,
+.case-dossier[data-view]:not([data-view=all]):not([data-view=law])>.dossier-law { display:none; }
+.case-dossier[data-view]:not([data-view=all]):not([data-view=procedure])>.dossier-document { display:none; }
+.case-dossier .dossier-parties>article { border-color:#e0e7fb; background:#fafbff; }
+.case-dossier .dossier-evidence article { border-color:#dce5f9; background:white; }
+.case-dossier .dossier-evidence { padding:18px; }
+.case-dossier .dossier-evidence>div>p { font-size:11px; line-height:1.8; color:#8a9ab4; padding:12px; background:#f5f8ff; border-radius:7px; margin-bottom:18px; }
+.evidence-workspace { display:grid; grid-template-columns:minmax(120px,.9fr) minmax(0,1.4fr); gap:15px; align-items:start; }
+.evidence-list { display:grid; gap:8px; max-height:480px; overflow:auto; padding:3px; scrollbar-width:thin; }
+.evidence-list button { display:flex; gap:9px; align-items:start; text-align:left; border:1px solid #e2e9f9; border-radius:9px; padding:10px; background:#fff; color:#344e7d; font-size:11px; line-height:1.6; }
+.evidence-list button[aria-pressed=true] { border-color:#438bff; background:#f0f6ff; box-shadow:0 0 0 1px #438bff; }
+.evidence-list button>span { flex-shrink:0; font-size:9px; color:#2c75f1; background:#eaf2ff; border-radius:4px; padding:0 4px; }
+.evidence-list strong { display:block; font-weight:650; }
+.evidence-list small { display:block; margin-top:6px; color:#8c9cb6; font-size:9px; }
+.evidence-detail { min-width:0; }
+.case-dossier .evidence-detail>article { margin-top:0; border-radius:9px; border-color:#dce6fa; padding:16px; font-size:12px; }
+.case-dossier .evidence-detail h4 { font-size:15px; color:#263f76; }
+.evidence-availability { display:inline-block; padding:2px 7px; border-radius:999px; background:#eff7ff; color:#4d7cbd; font-size:9px; margin:8px 0; }
+.evidence-detail details { padding:12px; border:1px solid #e7edfa; border-radius:7px; background:#fafcff; margin-top:15px; }
+.evidence-detail article>button { border-radius:999px; background:#2e78ff; color:white; padding:5px 12px; font-size:11px; }
+.setup-role-party { border-top:1px solid #dce7f8; padding-top:12px; margin:16px 0; font-size:12px; }
+@media(max-width:600px) { .evidence-workspace { grid-template-columns:1fr; }.evidence-list { grid-template-columns:repeat(2,minmax(0,1fr)); max-height:210px; }.evidence-list button { font-size:10px; }.case-dossier .dossier-evidence { padding:12px; } }
+body .user-shell .simulation-setup .membership-summary { padding:14px; margin:20px 0; border-radius:9px; border-color:#dce7ff; background:#f3f7ff; font-size:11px; }
+body .user-shell .simulation-setup .membership-summary h2 { font-size:13px; }
+body .user-shell .simulation-setup .membership-summary p { font-size:11px; line-height:1.7; }
+body .user-shell .simulation-setup .membership-actions { gap:7px; margin-top:12px; }
+body .user-shell .simulation-setup .membership-actions a { font-size:10px; padding:5px 9px; min-height:30px; }
+body .user-shell .user-header a.user-header-membership { background:#ffffff0c; color:#d4ff57; border:1px solid #8fa6dc60; border-radius:999px; }
+body .account-page .account-layout { grid-template-columns:180px minmax(0,1fr); gap:24px; }
+body .account-page .account-layout>nav { top:120px; padding:8px; border-radius:10px; background:white; box-shadow:0 5px 12px #1127670c; border-color:#e0e7f8; }
+body .account-page .account-layout>nav a { padding:10px 12px; border-radius:7px; font-size:12px; }
+body .account-page .account-layout>nav a.active { background:#2c78ff; color:white; box-shadow:none; }
+body .account-page .account-card { padding:25px; }
+body .account-page .account-card h2 { font-size:19px; }
+body .account-page .account-avatar { width:48px; height:48px; font-size:22px; background:#edf4ff; color:#2e73ef; border-color:#d0e1ff; box-shadow:none; }
+body .account-page .account-primary,body .account-proof .account-primary { background:#2d77ff; color:white; border-color:#2d77ff; box-shadow:none; border-radius:999px; font-size:12px; }
+body .account-page .account-card input { border-radius:7px; border-color:#d5e0f5; }
+body .account-page button { font-size:12px; }
+.membership-account { display:grid; gap:22px; }
+body .account-page .membership-account>.membership-summary { margin:0; padding:28px; color:#cbdcff; border-radius:13px; border:1px solid #3177ed; background:linear-gradient(125deg,#1639bd,#0860ed); box-shadow:0 8px 22px #153eac20; }
+body .account-page .membership-account>.membership-summary h2 { font-size:30px; font-style:italic; color:white; }
+body .account-page .membership-account>.membership-summary a { color:#d9ff53; }
+body .account-page .membership-account .membership-actions a { border-radius:999px; color:#2b6ae1; background:white; border-color:white; text-decoration:none; font-size:11px; }
+body .account-page .membership-entitlements { margin:0; }
+.membership-entitlements>div { display:flex; align-items:center; gap:12px; padding:15px 0; border-bottom:1px solid #edf1f9; font-size:12px; }
+.membership-entitlements>div svg { color:#95a5bd; flex-shrink:0; }
+.membership-entitlements>div:has(.is-enabled) svg { color:#1caf7b; }
+.membership-entitlements>div strong { font-weight:600; }
+.membership-entitlements>div span { margin-left:auto; color:#a88139; background:#fff6df; border-radius:999px; padding:3px 8px; font-size:9px; white-space:nowrap; }
+.membership-entitlements>div span.is-enabled { color:#22936b; background:#eafaef; }
+.membership-entitlements>a { display:inline-block; margin-top:20px; font-size:12px; color:#2d77ff; }
+.account-feature-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; }
+body .account-page .account-feature-card { display:flex; flex-direction:column; margin:0; padding:24px; }
+.account-feature-card>svg { padding:9px; width:44px; height:44px; color:#2777f5; background:#edf4ff; border-radius:10px; margin-bottom:12px; }
+.account-feature-card:nth-child(2)>svg { background:#f6f1ff; color:#754de7; }
+.account-feature-card:nth-child(3)>svg { background:#fff1f4; color:#d95178; }
+body .account-page .account-feature-card h2 { font-size:18px; }
+.account-feature-card p { font-size:12px; color:#7c8eaa; }
+.account-feature-card .account-feature-status { font-size:10px; color:#398567; background:#edf9f3; width:fit-content; padding:3px 8px; border-radius:999px; }
+.account-feature-card a { display:flex; align-items:center; gap:12px; font-size:12px; color:#2e74ed; margin-top:auto; padding-top:20px; }
+@media(max-width:600px) { .account-feature-grid { grid-template-columns:1fr; } }
+@media(min-width:1150px) { .membership-account { grid-template-columns:1fr 1fr; align-items:start; }.membership-account .membership-actions { display:grid; }.membership-account .membership-summary p { font-size:12px; } }
+body .result-page { background:#edf2fb; }
+body .result-page .result-hero h1 { color:white; }
+body .result-page .result-hero p { color:#b6ccff; font-size:12px; }
+body .result-page .result-hero button,body .result-page .result-state button { min-height:38px; background:#d7ff43; border-color:#d7ff43; box-shadow:none; font-size:12px; }
+body .result-page a { color:#2d77f6; }
+.result-hero-actions { display:flex; flex-wrap:wrap; gap:10px; }
+body .result-page .result-hero .result-view-switch { background:white; color:#2c69d6; border-color:white; }
+.result-group-tabs { display:flex; flex-wrap:wrap; gap:7px; padding:14px 18px; background:white; border:1px solid #e0e8f8; border-radius:12px; }
+.result-group-tabs button { border:1px solid #dce6f8; background:#fff; color:#7b8eae; border-radius:999px; padding:6px 12px; font-size:11px; }
+.result-group-tabs button[aria-pressed=true] { background:#2d77ff; color:white; border-color:#2d77ff; }
+body .result-page .score-summary.score-detail-view { grid-template-columns:1fr; }
+body .result-page .score-detail-view .score-groups>div { display:grid; grid-template-columns:1fr; }
+body .result-page .score-detail-view .score-group article { border-radius:8px; background:#f9fbff; padding:18px; }
+body .result-page .result-card h2 { font-size:20px; }
+body .result-page .score-main-card { background:linear-gradient(135deg,#1338bb,#0759e4)!important; color:white; }
+body .result-page .score-main-card h2,body .result-page .score-main-card p,body .result-page .score-main-card p:nth-of-type(2) { color:#e8f0ff!important; }
+body .result-page .score-main-card::before { width:3px; background:#9acaff; }
+body .result-page .score-main-card::after { display:none; }
+body .result-page .score-card blockquote,body .result-page .score-group blockquote { border-left-color:#83b8ff!important; background:#f5f8ff; }
+body .result-page .score-group summary span:last-child { color:#3379ed!important; }
+body .result-page .score-transcript-link { color:#2b70e4!important; background:white!important; border-color:#b6ceff!important; box-shadow:none; font-size:12px; }
+@media(min-width:1000px) { body .result-page .score-summary { grid-template-columns:minmax(230px,.75fr) 2fr; gap:20px; align-items:start; }body .result-page .score-groups,body .result-page .score-transcript-link { grid-column:1/-1; }body .result-page .score-groups>div { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin-top:10px; }body .result-page .score-groups details { margin:0; }body .result-page .score-groups details[open] { grid-column:1/-1; } }
+body .checkout-shell { background:#edf2fb; }
+body .checkout-shell .checkout-hero { color:white; }
+body .checkout-shell .checkout-hero h1 { color:white; font-size:28px; }
+body .checkout-shell .checkout-hero p { color:#c2d6ff; font-size:13px; }
+body .checkout-shell .checkout-hero aside { background:#ffffff12; border-color:#ffffff20; border-radius:10px; }
+body .checkout-shell .checkout-hero aside strong { color:#d9ff43; font-size:30px; }
+body .checkout-shell .checkout-primary { color:white; border-color:#2d77ff; background:#2d77ff; box-shadow:none; border-radius:999px; min-height:42px; }
+body .checkout-shell .checkout-card { padding:26px; }
+body .checkout-shell .checkout-card h2 { font-size:20px; }
+body .checkout-shell .checkout-method-box { background:#f5f8ff; border-color:#dce7fb; border-radius:10px; }
+body .checkout-shell .checkout-method-box svg { color:#2e7aff; }
+body .checkout-shell .checkout-order-actions a { color:white; border-color:#2d77ff; background:#2d77ff; }
+body .checkout-shell .checkout-back { color:#4779cf; font-size:12px; }
+body .user-shell .skill-card { border-radius:12px; background:#fff; box-shadow:0 6px 14px #182e7410; border-color:#dfe7fa; }
+body .guide-page { background:#edf2fb; }
+body .guide-page .guide-hero { background:linear-gradient(120deg,#0b154b,#174cb4); }
+body .guide-page .guide-card,body .guide-page .guide-notes,body .guide-page .guide-argument { border-radius:13px; box-shadow:0 6px 14px #182e7410; background:white; border-color:#dfe7fa; }
+body .guide-page .guide-icon,body .guide-page .guide-card:nth-child(even) .guide-icon { background:#2878ff; }
+body .guide-page .guide-primary { background:#d7ff43; color:#18305f; border:0; box-shadow:none; }
+body .guide-page .guide-argument li { border-color:#dce7fb; }
+body .guide-page .guide-argument li::before { background:#2e7aff; }
+body .guide-page .guide-notes li::before { background:#3e89ff; box-shadow:0 0 0 4px #edf4ff; }
+body .privacy-page { max-width:860px; }
+body .privacy-card { border-radius:14px; border-color:#dfe7fa; box-shadow:0 6px 14px #182e7410; }
+body .consent-banner { background:#0b1449; color:#b9c8ef; border-color:#263d7a; border-radius:14px; }
+body .consent-banner .consent-copy strong { color:white; }
+body .consent-banner .consent-copy a { color:#c3d9ff; }
+body .consent-banner>svg { color:#d7ff43; }
+body .consent-banner .consent-actions button { min-height:36px; background:#ffffff12; color:#e0e9ff; border-color:#889ece40; border-radius:999px; font-size:12px; }
+body .consent-banner .consent-actions .consent-accept { color:#1c315e; background:#d7ff43; border-color:#d7ff43; }
+body .privacy-footer { background:#edf2fb; color:#627ca6; }
+body .feedback-modal { border-color:#d6e3ff; border-radius:15px; box-shadow:0 20px 70px #020b4a35; }
+body .feedback-modal::backdrop { background:#060d3eb0; backdrop-filter:blur(3px); }
+body .feedback-modal .feedback-modal-heading h2 { color:#193066; font-size:21px; }
+body .feedback-modal .feedback-modal-close:hover { border-color:#8db4ff; color:#2b70e9; background:#edf4ff; box-shadow:none; }
+body .admin-shell { background:#edf2fb; font-family:inherit; --admin-border:#e0e7f8; color:#334d7c; }
+body .admin-shell .admin-header { height:65px; padding-left:245px; border:0; background:#edf2fb; }
+body .admin-shell .admin-header>.courtsim-brand { color:white; }
+body .admin-shell .admin-sidebar { top:0; z-index:30; width:210px; background:#0b1548; color:#b8c7ee; border:0; padding:90px 14px 25px; }
+body .admin-shell .admin-sidebar>p { color:#677fad; font-size:10px; }
+body .admin-shell .admin-sidebar a { padding:11px 13px; font-size:12px; color:#b6c5e9; border-radius:8px; }
+body .admin-shell .admin-sidebar a.active { background:#243e90; color:white; box-shadow:inset 3px 0 #d7ff43; }
+body .admin-shell .admin-sidebar a:hover { background:#1a2e70; text-decoration:none; }
+body .admin-shell .admin-header .courtsim-brand { position:fixed; z-index:40; top:22px; left:22px; color:white; font-size:22px; }
+body .admin-shell .admin-header .courtsim-brand span { color:white; }
+body .admin-shell .admin-header .courtsim-mark { width:30px; height:30px; }
+body .admin-shell .admin-sidebar>.courtsim-brand { position:absolute; top:22px; left:22px; color:white; font-size:22px; }
+body .admin-shell .admin-sidebar>.courtsim-brand span { color:white; }
+body .admin-shell .admin-sidebar>.courtsim-brand .courtsim-mark { width:30px; height:30px; }
+@media(min-width:851px) { body .admin-shell .admin-header .courtsim-brand { display:none; } }
+body .admin-shell .admin-content { margin-left:210px; padding:10px 32px 40px; }
+body .admin-shell .admin-metric,body .admin-shell .admin-card { border-radius:11px; padding:21px; box-shadow:0 5px 12px #122b6a09; }
+body .admin-shell .admin-metric { border-top:2px solid #66a3ff; }
+body .admin-shell .admin-metric strong { color:#17336c; }
+body .admin-shell h1 { font-size:27px; color:#142858; }
+body .admin-shell h2 { color:#1e3565; }
+body .admin-shell th { background:#f4f7ff; color:#7b8eac; font-size:11px; }
+body .admin-shell td { font-size:12px; }
+body .admin-shell .admin-badge { border-radius:999px; font-size:10px; }
+@media(max-width:850px) { body .admin-shell .admin-header { padding-left:16px; height:auto; min-height:65px; }.admin-shell .admin-header .courtsim-brand { position:static!important; color:#18376d!important; }.admin-shell .admin-header .courtsim-brand span { color:#2e78ff!important; }body .admin-shell .admin-content { margin-left:0; padding:18px; }body .account-page .account-layout { grid-template-columns:1fr; }body .account-page .account-layout>nav { position:static; flex-direction:row; flex-wrap:wrap; }.setup-preparation { grid-template-columns:1fr; } }
+@media(max-width:600px) { body .user-shell .practice-dashboard>header,body .account-page .account-hero,body .checkout-shell .checkout-hero,body .result-page .result-hero { padding:22px; }body .user-shell .practice-dashboard>header h1,body .account-page .account-hero h1 { font-size:25px; }.setup-summary>div { grid-template-columns:85px minmax(0,1fr); }.setup-step-tabs { gap:6px; }.setup-step-tabs button { padding:5px 9px; } }

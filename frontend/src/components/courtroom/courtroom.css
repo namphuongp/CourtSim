@@ -274,7 +274,6 @@
 .speech-navigation button:active:not(:disabled) { background:#d5e5fa; }
 .speech-navigation button:disabled { color:#8b99ab; background:#f1f4f8; border-color:#dce3ec; cursor:default; }
 .speech-navigation span { min-width:52px; text-align:center; color:#526477; font-size:12px; font-variant-numeric:tabular-nums; }
-
 /* Tranh tụng bằng giọng nói (Voice Courtroom Controls) */
 .voice-debate-wrapper { margin-top: 6px; display: flex; flex-direction: column; gap: 8px; }
 .voice-actions-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -354,4 +353,130 @@
   display: flex; align-items: center; gap: 8px;
   padding: 8px 12px; background: #fef2f2; border: 1px solid #fecaca;
   border-radius: 8px; font-size: 12px; color: #991b1b;
+}
+/* Arena: characters and speech stay live; the backdrop is built from existing assets and CSS. */
+body .courtroom-page { background:radial-gradient(ellipse at 50% 65%,#123fbc,#08113e 75%); color:#d6e4ff; padding:16px 24px 0; }
+body .courtroom-header { gap:18px; margin-bottom:14px; }
+body .courtroom-header h1 { color:#edf4ff; font-size:18px; font-weight:750; }
+body .courtroom-back { color:#a0b9f1; }
+body .courtroom-meta { color:#829fd7; font-size:11px; }
+body .courtroom-controls button,body .courtroom-controls a { background:#1c2c68; color:#c7d6ff; border-color:#6e8bcd55; border-radius:999px; font-size:11px; padding:7px 12px; }
+body .courtroom-controls button:hover { background:#2b438b; }
+body .courtroom-controls .tool-guide,body .courtroom-controls .tool-case,body .courtroom-controls .tool-law { background:#1c2c68; color:#c7d6ff; border-color:#6e8bcd55; }
+body .courtroom-controls button[aria-expanded=true] { border-color:#d8ff42; color:#d8ff42; }
+body .courtroom-controls .end-session { color:#d8ff42; border-color:#c9ef4d70; }
+body .court-stage-section { border:1px solid #5876ca60; border-radius:18px; background:#0b184e; box-shadow:0 10px 35px #02092560; }
+body .court-stage-toolbar { color:#b8caf4; background:#0a1544; border-bottom:1px solid #405d9e60; min-height:30px; font-size:10px; letter-spacing:.06em; }
+body .court-scene { background:radial-gradient(ellipse at 50% 90%,#1d63f0c0,transparent 60%),linear-gradient(100deg,#1c215e,#071342 50%,#123678); }
+body .court-scene::before { content:''; position:absolute; inset:0; z-index:0; pointer-events:none; background:repeating-linear-gradient(90deg,transparent 0 6%,#6598ff12 6.2% 8.2%,transparent 8.4% 13%),linear-gradient(0deg,#133ecd80,transparent 65%); }
+body .court-background { filter:grayscale(1) sepia(1) hue-rotate(180deg) saturate(4) brightness(.33); opacity:.32; object-fit:fill; }
+.court-emblem { position:absolute; z-index:1; top:7%; left:calc(50% - 52px); width:104px; height:104px; padding:22px; color:#8ab7ff30; border:1px solid #80adff30; border-radius:50%; }
+.court-versus { position:absolute; z-index:5; left:calc(50% - 40px); top:68%; color:white; font-size:50px; font-weight:900; font-style:italic; text-shadow:0 4px 0 #3b87ff,0 0 25px #349cff; line-height:1; pointer-events:none; }
+.court-turn-badge { position:absolute; z-index:6; top:82%; left:35%; width:30%; text-align:center; color:#1d2c5b; background:#d9ff44; border:1px solid #dfff6a; padding:4px 12px; border-radius:999px; font-size:10px; font-weight:750; }
+body .desk-judge { inset:auto; left:41%; top:33%; width:18%; height:12%; clip-path:none; background:linear-gradient(90deg,#09216d,#2868c9,#09216d); border:1px solid #75b9ff; border-top:3px solid #b4e9ff; border-radius:50% 50% 12% 12% / 12% 12% 8% 8%; box-shadow:0 -3px 15px #429fff80,0 10px 20px #102d9160; }
+body .desk-front { display:none; }
+body .character-name { background:linear-gradient(#183481f0,#142058f0); border-color:#627ad080; box-shadow:0 7px 20px #020a3660; padding:9px 12px; border-radius:10px; }
+body .character-name strong { color:#e1edff; font-size:14px; }
+body .character-name span { color:#8faadc; font-size:10px; }
+body button.character-name { cursor:pointer; }
+body button.character-name:hover { border-color:#acd4ff; background:#20418d; }
+.court-role-preview { display:grid; grid-template-columns:140px minmax(0,1fr); gap:22px; margin-top:25px; align-items:start; }
+.court-role-preview>img { width:100%; background:radial-gradient(ellipse at 50% 70%,#2c74e6,#0c1a62); border:1px solid #7dacf8; border-radius:13px; object-fit:contain; }
+.court-role-preview h3 { color:#1a3574; font-size:18px; }
+.court-role-preview article { background:#f2f6ff; border:1px solid #d8e5ff; padding:14px; border-radius:9px; font-size:12px; margin:15px 0; }
+.court-role-preview ul { list-style:disc; padding-left:15px; margin-top:10px; }
+.court-role-close { color:white; background:#2d77ff; border-radius:999px; padding:9px 17px; font-size:12px; }
+@media(max-width:540px) { .court-role-preview { grid-template-columns:1fr; }.court-role-preview>img { max-height:180px; width:140px; margin:auto; } }
+body .character-status { color:#d7ff43; font-size:10px; }
+body .is-speaking .character-name,body .is-invited .character-name { border-color:#74c6ff; background:#153b91; box-shadow:0 0 0 2px #65b7ff40,0 0 18px #2177ff40; }
+body .is-preparing .character-name { border-color:#cfe56c; background:#2b396b; }
+body .is-preparing .character-status { color:#dcff74; }
+body .court-speech { background:#f7faff; color:#17346c; border:2px solid #94baff; box-shadow:0 0 0 5px #3459c340,0 12px 25px #020a4d50; border-radius:15px; }
+body .speech-heading strong { color:#2c6be9; }
+body .speech-heading span { color:#7b91b7; }
+body .speech-content { font-size:14px; line-height:1.75; }
+/* Gom công cụ đọc vào một hàng để dành chiều cao cho lời thoại. */
+body .speech-navigation { gap:4px; }
+body .speech-navigation button { width:32px; height:32px; border-radius:8px; }
+body .speech-navigation span { min-width:40px; font-size:11px; }
+body .speech-footer { flex-direction:row; flex-wrap:wrap; align-items:center; justify-content:space-between; margin-top:10px; padding-top:6px; gap:4px 12px; }
+body .speech-tools { flex-wrap:wrap; gap:4px 12px; }
+body .speech-tools button { min-height:32px; font-size:11px; padding:4px 0; }
+body .speech-controls { flex-basis:auto; gap:4px; }
+body .speech-controls:has(p) { flex-basis:100%; order:1; }
+body .speech-controls p { font-size:12px; line-height:1.5; }
+body .speech-controls .dialogue-next { background:#2d77ff; border-color:#2d77ff; border-radius:8px; font-size:12px; min-height:36px; padding:6px 12px; }
+body .courtroom-composer { margin-top:12px; border:1px solid #5d84df70; border-radius:15px 15px 0 0; padding:14px 18px 10px; background:#102769e8; box-shadow:0 -6px 25px #284c9b40; }
+body .composer-heading label { color:#c0d7ff; font-size:12px; }
+.expand-argument { display:flex; align-items:center; gap:6px; margin-left:auto; padding:4px 10px; border:1px solid #8aa8df55; border-radius:999px; background:#ffffff0a; color:#bdd4ff; font-size:10px; }
+.expand-argument:disabled { opacity:.4; }
+body .courtroom-page .feedback-modal:has(.argument-editor) { max-width:880px; }
+.argument-editor { display:grid; grid-template-columns:minmax(0,2fr) minmax(0,1fr); gap:22px; margin-top:16px; }
+.argument-editor textarea { width:100%; min-height:330px; max-height:55dvh; padding:16px; color:#2f4775; background:#fafcff; border:1px solid #bbd3ff; border-radius:10px; font-size:14px; line-height:1.8; }
+.argument-editor small { color:#8b9ab3; font-size:10px; }
+.argument-editor aside { padding:18px; background:#f2f7ff; border:1px solid #dae7ff; border-radius:11px; align-self:start; margin-top:52px; }
+.argument-editor aside h3 { font-size:14px; color:#2755a6; }
+.argument-editor aside ol { list-style:decimal; padding-left:18px; margin-top:15px; display:grid; gap:12px; font-size:12px; color:#6d83a9; }
+.argument-editor aside p { font-size:11px; color:#9a813f; }
+.argument-editor-actions { display:flex; justify-content:end; margin-top:20px; }
+.argument-editor-actions button { border-radius:999px; background:#2d77ff; color:white; padding:9px 18px; font-size:12px; }
+.end-dialog-icon { display:grid; place-items:center; width:46px; height:46px; border-radius:13px; color:#2f75ed; background:#ecf4ff; margin-bottom:20px; }
+.end-dialog-icon.is-pending { margin-inline:auto; }
+.end-dialog-icon.is-pending svg { animation:completion-spin 1s linear infinite; }
+@keyframes completion-spin { to { transform:rotate(360deg); } }
+@media(max-width:600px) { .argument-editor { grid-template-columns:1fr; }.argument-editor textarea { min-height:260px; }.argument-editor aside { margin-top:0; } }
+body .composer-fields { gap:10px; }
+body .composer-fields textarea { background:#0e2059; color:#e3edff; border-color:#6888d060; border-radius:10px; min-height:70px; padding:10px 12px; font-size:13px; }
+body .composer-fields textarea::placeholder { color:#718fc5; }
+body .composer-fields textarea:disabled { background:#0c1b4b; color:#7a91bd; }
+body .composer-send { background:#d7ff43; color:#163169; border-radius:999px; min-height:42px; padding:10px 20px; font-size:12px; }
+body .composer-send:disabled { color:#94a9d3; background:#2d457b; }
+body .composer-foot { color:#728cbd; font-size:10px; margin-top:5px; }
+body .courtroom-notice { color:#7b5c1e; background:#fff8e6; border-color:#ecdba6; }
+body .courtroom-page .study-panel { max-width:min(720px,58vw); background:#f0f5ff!important; color:#233e71!important; border-color:#738edb; box-shadow:-20px 0 60px #010a3c80!important; }
+body .courtroom-page .study-panel>header { background:linear-gradient(105deg,#0c174f,#19469e); color:white; border:0; padding:20px; }
+body .courtroom-page .study-panel>header h2 { color:white; font-size:20px; }
+body .courtroom-page .study-panel>header button { border-color:#90a7e370; color:#dce8ff; border-radius:999px; font-size:12px; }
+body .courtroom-page .study-panel>div { padding:22px; }
+body .courtroom-page .study-panel-compact { max-width:min(740px,65vw); }
+body .courtroom-page .dossier-tabs { border-color:#cdddf8; }
+body .courtroom-page .dossier-tabs button { font-size:12px; border-radius:999px; background:white; color:#3c73d1; border-color:#c9daf9; }
+body .courtroom-page .dossier-tabs button[aria-selected=true] { background:#2d77ff; color:white; border-color:#2d77ff; }
+body .courtroom-page dialog { border-color:#d0dfff; border-radius:16px; }
+body .courtroom-page dialog::backdrop { background:#030c3bb8; backdrop-filter:blur(3px); }
+body .courtroom-page .tour-spotlight { border-color:#d6ff43; box-shadow:0 0 0 9999px #030b36b8,0 0 18px #d6ff4370; }
+body .courtroom-page .guide-progress { color:#3764bd; background:#edf5ff; }
+body .courtroom-page .tour-card { border-radius:12px; border-color:#bdd2ff; box-shadow:0 15px 35px #020a4340; }
+body .courtroom-page .guide-actions button:last-child { border-radius:999px; background:#2d77ff; color:white; border-color:#2d77ff; }
+@media(min-width:851px) {
+  body .courtroom-page { height:auto; min-height:100dvh; }
+  body .court-scene { height:clamp(470px,calc(100dvh - 295px),800px); aspect-ratio:auto; }
+  body .character-judge .character-portrait { top:1%; left:43%; width:14%; height:28%; }
+  body .character-judge .character-name { left:41%; top:38%; width:18%; padding:6px; }
+  body .character-opponent .character-portrait { left:4%; top:28%; height:58%; width:26%; }
+  body .character-learner .character-portrait { right:4%; top:28%; height:58%; width:26%; }
+  body .character-opponent .character-name { left:5%; top:84%; width:24%; }
+  body .character-learner .character-name { right:5%; top:84%; width:24%; }
+  body .desk-judge { top:24%; }
+  body .court-speech { top:40%; left:25%; right:auto; width:50%; max-height:50%; padding:14px 16px; }
+  body .speech-content { max-height:clamp(160px,28dvh,320px); }
+  body .courtroom-page:has(.study-panel) .court-stage-section { filter:brightness(.65); }
+}
+@media(max-width:850px) {
+  body .courtroom-page { padding:12px 12px 0; }
+  body .court-scene { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); padding:12px; gap:8px; }
+  body .court-character { display:flex; background:#15245b; border-color:#5c79c380; min-width:0; }
+  body .court-character .character-portrait { height:88px; }
+  body .court-character .character-image { top:0; height:150px; }
+  body .court-character .character-name { background:#162d70; padding:8px 4px; min-height:55px; }
+  body .court-character .character-name strong { font-size:12px; }
+  body .court-emblem,body .court-versus { display:none; }
+  body .court-turn-badge { position:relative; top:auto; left:auto; width:auto; grid-column:1/-1; grid-row:2; justify-self:center; margin:6px 0; }
+  body .court-speech { grid-row:3; max-height:none; width:100%; }
+  body .courtroom-page .study-panel,body .courtroom-page .study-panel-compact { max-width:100%; }
+  body .speech-content { max-height:40dvh; font-size:14px; }
+  body .courtroom-composer { padding:14px; }
+  body .composer-heading { flex-wrap:wrap; }
+  body .composer-fields { grid-template-columns:1fr; }
+  body .composer-send { width:100%; }
 }

@@ -1,0 +1,11 @@
+.legal-citation { background:#fff; color:#45618d; font-size:11px; line-height:1.8; border-color:#d9e6fa; }
+.legal-citation>p:first-of-type { color:#27497e; font-size:12px; margin:9px 0 5px; }
+.legal-source-badge { display:inline-flex; align-items:center; gap:6px; background:#eaf3ff; color:#4a83cf; border-radius:999px; padding:2px 8px; font-size:9px; }
+.legal-citation>details { padding:10px; border:1px solid #e1eafa; border-radius:7px; background:#fafcff; }
+.legal-reader-open { display:flex; align-items:center; gap:5px; margin-top:12px; padding:5px 9px; border:1px solid #c4d9fc; border-radius:999px; background:#f1f7ff; color:#3576d9; font-size:10px; }
+.legal-reader { margin-top:18px; color:#41608b; }
+.legal-reader-meta { display:flex; flex-wrap:wrap; gap:10px; font-size:11px; color:#6586b5; }
+.legal-reader .legal-reader-note { font-size:11px; padding:12px; border:1px solid #f1e4be; border-radius:8px; background:#fff9e9; color:#a28546; }
+.legal-reader-content { padding:20px; border:1px solid #d4e2f9; border-radius:9px; background:#fafcff; max-height:55dvh; overflow:auto; white-space:pre-wrap; line-height:1.9; font-size:13px; }
+.legal-reader>button { display:block; margin:18px 0 0 auto; background:#2d77ff; color:white; border:0; border-radius:999px; padding:9px 16px; font-size:12px; }
+body .feedback-modal:has(.legal-reader) { max-width:880px; }
