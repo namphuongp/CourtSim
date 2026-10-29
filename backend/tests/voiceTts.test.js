@@ -43,3 +43,15 @@ test('aiVoiceService: fetchGoogleVietnameseSpeech fallback tạo âm thanh tiế
   assert.ok(buffer instanceof Buffer, 'Fallback trả về Buffer âm thanh');
   assert.ok(buffer.length > 5000, 'Buffer âm thanh có dữ liệu hợp lệ');
 });
+
+test('aiVoiceService: hỗ trợ đầy đủ các vai tố tụng (Chủ tọa, Bên đối lập, Kiểm sát viên)', async () => {
+  const roles = ['judge', 'opponent', 'ai_prosecutor', 'defense_lawyer'];
+  for (const role of roles) {
+    const res = await generateCourtroomSpeech({
+      text: `Vai ${role} trình bày ý kiến tại phiên tòa sơ thẩm.`,
+      role
+    });
+    assert.ok(res.buffer instanceof Buffer, `Âm thanh cho vai ${role} phải là Buffer`);
+    assert.ok(res.buffer.length > 2000, `Kích thước âm thanh cho vai ${role} phải hợp lệ`);
+  }
+});
