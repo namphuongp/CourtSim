@@ -46,6 +46,7 @@ function Room({ sessionId }) {
   const [slow, setSlow] = useState(false);
   const [waitExpired, setWaitExpired] = useState(false);
   const [state, setState] = useState({ loading: true, sending: false, ending: false, error: '' });
+  const [cooldown, setCooldown] = useState(false);
   const [ttsEnabled, setTtsEnabled] = useState(false);
   const [pdfModalOpen, setPdfModalOpen] = useState(false);
   const lastSpokenRecordIdRef = useRef(null);
@@ -192,7 +193,7 @@ function Room({ sessionId }) {
 
   async function send(event) {
     event.preventDefault();
-    if (busy.current || disabled || (conversation && conversation.status !== 'learner') || draft.content.trim().length < 1) return;
+    if (busy.current || disabled || cooldown || (conversation && conversation.status !== 'learner') || draft.content.trim().length < 3) return;
     busy.current = true;
     setSubmittedContent(draft.content);
     setState((s) => ({ ...s, sending: true, error: '' }));
@@ -219,6 +220,9 @@ function Room({ sessionId }) {
       setSubmittedContent('');
       setStreamedSpeech(null);
       setState((s) => ({ ...s, sending: false }));
+      // Kích hoạt cooldown 2.5s để chống click dồn / spam token
+      setCooldown(true);
+      setTimeout(() => setCooldown(false), 2500);
     }
   }
 
@@ -421,7 +425,7 @@ function Room({ sessionId }) {
         ttsEnabled={ttsEnabled}
         onToggleTts={() => setTtsEnabled((v) => !v)}
       />
-      <div className="composer-fields"><textarea ref={argumentRef} onDrop={dropEvidence} onDragOver={(event) => { if (event.dataTransfer.types.includes(EVIDENCE_MIME)) { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; } }} id="argument" disabled={!ready} maxLength={4000} value={draft.content} onChange={(e) => setDraft({ content: e.target.value, request_id: crypto.randomUUID() })} placeholder="Trình bày luận điểm, liên hệ chứng cứ và trả lời vấn đề chủ tọa đặt ra… Hoặc bấm nút Micro ở trên để tranh tụng bằng giọng nói." /><button className="composer-send" disabled={!ready || draft.content.trim().length < 1}>Gửi lập luận <span aria-hidden="true">↗</span></button></div>
+      <div className="composer-fields"><textarea ref={argumentRef} onDrop={dropEvidence} onDragOver={(event) => { if (event.dataTransfer.types.includes(EVIDENCE_MIME)) { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; } }} id="argument" disabled={!ready} maxLength={4000} value={draft.content} onChange={(e) => setDraft({ content: e.target.value, request_id: crypto.randomUUID() })} placeholder="Trình bày luận điểm, liên hệ chứng cứ và trả lời vấn đề chủ tọa đặt ra… Hoặc bấm nút Micro ở trên để tranh tụng bằng giọng nói." /><button className="composer-send" disabled={!ready || state.sending || cooldown || draft.content.trim().length < 3} title={cooldown ? 'Vui lòng chờ ít giây trước khi gửi tiếp' : undefined}>{state.sending ? 'Đang gửi…' : cooldown ? 'Chờ giây lát…' : <>Gửi lập luận <span aria-hidden="true">↗</span></>}</button></div>
       <div className="composer-foot"><span>{draft.content.length}/4000</span></div>{userTurns >= (session?.max_turns ?? 20) && <p>Đã đủ số lượt. Chọn Kết thúc và chấm điểm để xem kết quả.</p>}
     </form>}
     <PdfExportModal

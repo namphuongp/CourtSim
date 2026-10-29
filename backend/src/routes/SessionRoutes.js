@@ -174,6 +174,7 @@ router.post('/:sessionId/assistant', asyncHandler(async (request, response) => {
   const session = await getOwnedSession(request.params.sessionId, request.auth.userId);
   const courtCase = await getCase(session);
   requireSessionFeature(session, request.authUser, 'legalAssistant');
+  await consumeAuthLimit(`assistant-cooldown:${request.auth.userId}`, 1, 2500, 'Bạn đang gửi câu hỏi quá nhanh. Vui lòng chờ 3 giây trước khi tiếp tục.');
   await consumeAuthLimit(`legal-assistant:${request.auth.userId}`, 30);
   await consumeAuthLimit('legal-assistant:outbound', 120);
   response.json({ data: await askLegalAssistant({ session, courtCase, question, requestId }) });
@@ -181,7 +182,12 @@ router.post('/:sessionId/assistant', asyncHandler(async (request, response) => {
 
 router.post('/:sessionId/messages', asyncHandler(async (request, response) => {
   const content = typeof request.body?.content === 'string' ? request.body.content.trim() : '';
-  if (content.length < 1 || content.length > 4_000) throw new AppError('Vui lòng nhập ý kiến, tối đa 4.000 ký tự.');
+  if (content.length < 3 || content.length > 4_000) throw new AppError('Vui lòng nhập ý kiến tranh tụng, tối đa 4.000 ký tự.');
+  if (/(.)\1{9,}/u.test(content) || (content.length > 30 && new Set(content.replace(/\s+/g, '')).size < 4)) {
+    throw new AppError('Nội dung chứa quá nhiều ký tự lặp vô nghĩa. Vui lòng nhập lập luận tranh tụng hợp lệ.', 400, 'SPAM_CONTENT_DETECTED');
+  }
+  await consumeAuthLimit(`dialogue-cooldown:${request.auth.userId}`, 1, 2500, 'Bạn đang gửi lập luận quá nhanh. Vui lòng chờ 3 giây trước khi tiếp tục.');
+  await consumeAuthLimit(`dialogue-submit:${request.auth.userId}`, 15, 3 * 60000, 'Bạn đã gửi quá nhiều lượt tranh tụng trong thời gian ngắn. Vui lòng tạm nghỉ 3 phút.');
   const requestId = readRequestId(request.body?.request_id);
   const session = await getOwnedSession(request.params.sessionId, request.auth.userId);
   if (session.conversation && session.conversation.status !== 'learner') throw new AppError('Hãy đọc hết lượt hiện tại trước khi gửi lập luận mới.', 409, 'TURN_NOT_INVITED');
@@ -233,7 +239,44 @@ router.post('/:sessionId/dialogue', asyncHandler(async (request, response) => {
   const command = { action, revision };
   if (action === 'submit') {
     const content = typeof request.body.content === 'string' ? request.body.content.trim() : '';
-    if (content.length < 1 || content.length > 4000) throw new AppError('Vui lòng nhập ý kiến, tối đa 4.000 ký tự.');
+    if (content.length < 3 || content.length > 4000) throw new AppError('Ý kiến tranh tụng cần từ 3 đến 4.000 ký tự.');
+
+    // 1. Chống spam ký tự rác / lặp vô nghĩa (ví dụ "aaaaaaaaa...", "11111111111...")
+    if (/(.)\1{9,}/u.test(content) || (content.length > 30 && new Set(content.replace(/\s+/g, '')).size < 4)) {
+      throw new AppError('Nội dung chứa quá nhiều ký tự lặp lại vô nghĩa. Vui lòng nhập lập luận tranh tụng hợp lệ.', 400, 'SPAM_CONTENT_DETECTED');
+    }
+
+    // 2. Chống gửi dồn dập (cooldown debounce 2.5s)
+    await consumeAuthLimit(
+      `dialogue-cooldown:${request.auth.userId}`,
+      1,
+      2500,
+      'Bạn đang gửi lập luận quá nhanh. Vui lòng suy nghĩ và chờ 3 giây trước khi tiếp tục.'
+    );
+
+    // 3. Giới hạn tần suất gọi AI sinh lời thoại theo người dùng (15 lượt / 3 phút)
+    await consumeAuthLimit(
+      `dialogue-submit:${request.auth.userId}`,
+      15,
+      3 * 60000,
+      'Bạn đã gửi quá nhiều lượt tranh tụng trong thời gian ngắn. Vui lòng tạm nghỉ 3 phút trước khi tiếp tục.'
+    );
+
+    // 4. Giới hạn theo IP mạng (45 lượt / 15 phút)
+    await consumeAuthLimit(`dialogue-ip:${request.ip}`, 45, 15 * 60000);
+
+    // 5. Chống gọi song song khi phiên đang trong trạng thái sinh lời thoại
+    if (session.conversation?.status === 'generating' || session.processing === true) {
+      throw new AppError('Hội đồng xét xử đang phản hồi lượt trước. Vui lòng đợi trong giây lát.', 409, 'TURN_BUSY');
+    }
+
+    // 6. Chống gửi lặp lại chính xác câu trước đó
+    const previousRecords = await getRecords(session);
+    const lastUserRecord = previousRecords.findLast(r => r.sender_type === 'user');
+    if (lastUserRecord && lastUserRecord.content.trim().toLowerCase() === content.toLowerCase()) {
+      throw new AppError('Nội dung này trùng lặp hoàn toàn với lượt vừa gửi trước đó. Vui lòng bổ sung hoặc phát triển luận điểm mới.', 400, 'DUPLICATE_ARGUMENT');
+    }
+
     Object.assign(command, { content, requestId: readRequestId(request.body.request_id),
       evidenceIds: validateEvidenceReferences(await getCase(session), content, request.body.evidence_ids),
       citations: await validateLegalReferences(session, content, request.body.legal_reference_ids) });
@@ -260,6 +303,13 @@ router.post('/:sessionId/dialogue', asyncHandler(async (request, response) => {
 }));
 
 router.post('/:sessionId/complete', asyncHandler(async (request, response) => {
+  // Giới hạn tần suất gửi yêu cầu chấm điểm để bảo vệ token đánh giá
+  await consumeAuthLimit(
+    `session-complete:${request.auth.userId}`,
+    4,
+    15 * 60000,
+    'Bạn đã gửi yêu cầu chấm điểm quá nhiều lần liên tiếp. Vui lòng chờ 15 phút.'
+  );
   const session = await getOwnedSession(request.params.sessionId, request.auth.userId);
   const result = await withSessionLock(session, async (locked, fence) => {
     if (locked.evaluation) return locked.evaluation;
