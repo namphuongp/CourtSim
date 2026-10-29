@@ -66,6 +66,26 @@ test('admin API: MongoDB thật, phân quyền, số liệu, tìm kiếm, chi ti
     assert.equal(result.evidence_inventory[0].content, body.full_document);
     assert.equal(result.evidence_inventory[1].availability, 'mentioned_only');
     assert.equal((await Case.findById(result._id)).title, body.title);
+
+    // Chỉnh sửa vụ án (PUT /api/v1/cases/:id)
+    async function updateCase(cookie, id, payload) {
+      return fetch(`http://127.0.0.1:${server.address().port}/api/v1/cases/${id}`, { method: 'PUT', headers: { Cookie: cookie, Origin: 'http://localhost:5173', 'X-CourtSim-Request': '1', 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    }
+    assert.equal((await updateCase('', result._id, valid)).status, 401);
+    assert.equal((await updateCase(cookies[1], result._id, valid)).status, 403);
+    const updatedRes = await updateCase(cookies[0], result._id, { ...valid, title: 'Hồ sơ đã cập nhật' });
+    assert.equal(updatedRes.status, 200);
+    assert.equal((await Case.findById(result._id)).title, 'Hồ sơ đã cập nhật');
+
+    // Xóa vụ án (DELETE /api/v1/cases/:id)
+    async function deleteCase(cookie, id) {
+      return fetch(`http://127.0.0.1:${server.address().port}/api/v1/cases/${id}`, { method: 'DELETE', headers: { Cookie: cookie, Origin: 'http://localhost:5173', 'X-CourtSim-Request': '1' } });
+    }
+    assert.equal((await deleteCase('', result._id)).status, 401);
+    assert.equal((await deleteCase(cookies[1], result._id)).status, 403);
+    const deleteRes = await deleteCase(cookies[0], result._id);
+    assert.equal(deleteRes.status, 200);
+    assert.equal(await Case.findById(result._id), null);
   });
   await t.test('tất cả API chặn user thường, chưa xác minh và chưa đăng nhập', async () => {
     for (const path of ['/dashboard', '/users', `/users/${user._id}`, '/sessions', `/sessions/${modern._id}`, '/ai/usage', '/ai/cost', '/system/health', '/audit', '/analytics/activity']) {

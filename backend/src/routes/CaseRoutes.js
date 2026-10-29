@@ -1,5 +1,7 @@
+import mongoose from 'mongoose';
 import { Router } from 'express';
 import Case from '../models/Case.js';
+import SimulationSession from '../models/SimulationSession.js';
 import { authenticate, requireAdmin } from '../middlewares/auth.js';
 import { AppError } from '../utils/AppError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
@@ -29,6 +31,9 @@ router.get('/', asyncHandler(async (request, response) => {
 }));
 
 router.get('/:caseId', asyncHandler(async (request, response) => {
+  if (!mongoose.isObjectIdOrHexString(request.params.caseId)) {
+    throw new AppError('Mã vụ án không hợp lệ.', 400);
+  }
   const item = await Case.findById(request.params.caseId).lean();
   if (!item) throw new AppError('Không tìm thấy vụ án.', 404, 'CASE_NOT_FOUND');
   response.json({ data: learnerCase(item) });
@@ -49,6 +54,71 @@ router.post('/', authenticate, requireAdmin, asyncHandler(async (request, respon
   const practice_context = validatePracticeContext(request.body.practice_context);
   const item = await Case.create({ title: title.trim(), summary: summary.trim(), full_document: document.trim(), category: category.trim(), timeline, case_facts, ...details, practice_context });
   response.status(201).json({ data: learnerCase(item) });
+}));
+
+router.put('/:caseId', authenticate, requireAdmin, asyncHandler(async (request, response) => {
+  if (!mongoose.isObjectIdOrHexString(request.params.caseId)) {
+    throw new AppError('Mã vụ án không hợp lệ.', 400);
+  }
+  const existing = await Case.findById(request.params.caseId);
+  if (!existing) throw new AppError('Không tìm thấy vụ án cần cập nhật.', 404, 'CASE_NOT_FOUND');
+
+  const { title, summary, full_document: document, category } = request.body ?? {};
+  if (![title, summary, document, category].every((value) => typeof value === 'string' && value.trim())) {
+    throw new AppError('Vui lòng nhập tên vụ án, tóm tắt, nội dung hồ sơ và loại vụ án.');
+  }
+  if (title.length > 200 || summary.length > 4000 || document.length > 50000 || category.length > 80) {
+    throw new AppError('Hồ sơ quá dài: tiêu đề tối đa 200, tóm tắt 4.000, nội dung 50.000 và loại vụ án 80 ký tự.');
+  }
+  const timeline = validateTimeline(request.body.timeline);
+  if (timeline.some((event) => !document.includes(event.source_quote))) {
+    throw new AppError('Trích đoạn của mốc thời gian phải có trong nội dung hồ sơ.');
+  }
+  const details = validateCaseDetails(request.body);
+  const case_facts = validateCaseFacts(request.body);
+  const practice_context = validatePracticeContext(request.body.practice_context);
+
+  existing.title = title.trim();
+  existing.summary = summary.trim();
+  existing.full_document = document.trim();
+  existing.category = category.trim();
+  existing.timeline = timeline;
+  existing.case_facts = case_facts;
+  if (details.evidence_inventory) existing.evidence_inventory = details.evidence_inventory;
+  if (details.parties) existing.parties = details.parties;
+  if (details.evidence_absences) existing.evidence_absences = details.evidence_absences;
+  if (details.reference_date !== undefined) existing.reference_date = details.reference_date;
+  if (details.source_url !== undefined) existing.source_url = details.source_url;
+  if (details.source_note !== undefined) existing.source_note = details.source_note;
+  if (details.reference_date_note !== undefined) existing.reference_date_note = details.reference_date_note;
+  if (details.legal_scope_note !== undefined) existing.legal_scope_note = details.legal_scope_note;
+  existing.practice_context = practice_context;
+
+  await existing.save();
+  response.json({ data: learnerCase(existing) });
+}));
+
+router.delete('/:caseId', authenticate, requireAdmin, asyncHandler(async (request, response) => {
+  if (!mongoose.isObjectIdOrHexString(request.params.caseId)) {
+    throw new AppError('Mã vụ án không hợp lệ.', 400);
+  }
+  const existing = await Case.findById(request.params.caseId);
+  if (!existing) throw new AppError('Không tìm thấy vụ án cần xóa.', 404, 'CASE_NOT_FOUND');
+
+  const activeSessions = await SimulationSession.countDocuments({
+    case_id: existing._id,
+    status: 'ongoing',
+  });
+  if (activeSessions > 0) {
+    throw new AppError(
+      `Không thể xóa vụ án này vì đang có ${activeSessions} phiên luyện tập đang diễn ra. Vui lòng hoàn thành hoặc hủy các phiên trước khi xóa.`,
+      409,
+      'CASE_HAS_ACTIVE_SESSIONS'
+    );
+  }
+
+  await Case.deleteOne({ _id: existing._id });
+  response.json({ data: { message: 'Đã xóa vụ án thành công.', deleted_id: existing._id } });
 }));
 
 export default router;
