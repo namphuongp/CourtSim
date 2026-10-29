@@ -18,8 +18,12 @@ api.interceptors.request.use((config) => {
 });
 
 api.interceptors.response.use(
-  // Góp ý là nguyên văn người dùng, có thể chứa lỗi kỹ thuật cần admin đọc.
-  (response) => response.config.url?.startsWith('/v1/admin/') || response.config.url?.startsWith('/auth/') ? response : ({ ...response, data: learnerPayload(response.data) }),
+  (response) => {
+    if (response.config.responseType === 'blob' || response.config.responseType === 'arraybuffer' || (typeof Blob !== 'undefined' && response.data instanceof Blob)) {
+      return response;
+    }
+    return response.config.url?.startsWith('/v1/admin/') || response.config.url?.startsWith('/auth/') ? response : ({ ...response, data: learnerPayload(response.data) });
+  },
   (error) => {
     if (error.response?.status === 401 && (!error.config?.url?.startsWith('/auth/') || error.config?.url?.startsWith('/auth/account') || error.config?.url === '/auth/membership' || error.config?.url === '/auth/google/link')) {
       clearAuth();

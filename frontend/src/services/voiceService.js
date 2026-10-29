@@ -1,5 +1,6 @@
 // Dịch vụ Nhận dạng giọng nói (Speech-to-Text) và Phát âm thanh (Text-to-Speech)
-// Sử dụng chuẩn Web Speech API của trình duyệt: 100% miễn phí, vĩnh viễn, không phụ thuộc API key, không bị ngắt quãng.
+// Hỗ trợ OpenAI TTS tiếng Việt chất lượng cao siêu tự nhiên và Web Speech API
+import api from './api';
 
 /**
  * Kiểm tra trình duyệt có hỗ trợ Web Speech Recognition hay không.
@@ -14,7 +15,7 @@ export function isSpeechRecognitionSupported() {
  */
 export function isSpeechSynthesisSupported() {
   if (typeof window === 'undefined') return false;
-  return 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+  return typeof Audio !== 'undefined' || ('speechSynthesis' in window && 'SpeechSynthesisUtterance' in window);
 }
 
 /**
@@ -232,7 +233,10 @@ export function cleanTextForSpeech(raw) {
     .trim();
 }
 
+let activeAudio = null;
 let activeUtterance = null;
+let activeAbortController = null;
+let currentAudioUrl = null;
 let cachedVoices = [];
 
 function updateVoices() {
@@ -262,7 +266,15 @@ export function getVietnameseVoice() {
 }
 
 /**
+ * Kiểm tra xem hiện tại có đang phát âm thanh lời thoại phòng xử hay không.
+ */
+export function isSpeakingCourtroom() {
+  return Boolean(activeAudio && !activeAudio.paused) || Boolean(activeUtterance);
+}
+
+/**
  * Phát âm thanh lời thoại tòa án (Text-to-Speech)
+ * Ưu tiên gọi backend AI TTS (OpenAI TTS) chuẩn tiếng Việt 100% tự nhiên, trầm ấm uy nghiêm cho Chủ tọa và dứt khoát cho Bên đối lập.
  * @param {string} text - Lời thoại cần phát
  * @param {object} options
  * @param {'judge'|'opponent'|'learner'} [options.role='judge']
@@ -271,67 +283,145 @@ export function getVietnameseVoice() {
  * @param {function} [options.onError]
  */
 export function speakCourtroomText(text, { role = 'judge', onStart, onEnd, onError } = {}) {
-  if (!isSpeechSynthesisSupported()) return () => {};
-
   stopCourtroomSpeech();
 
   const clean = cleanTextForSpeech(text);
   if (!clean) return () => {};
 
-  const utterance = new SpeechSynthesisUtterance(clean);
-  activeUtterance = utterance;
+  const abortController = new AbortController();
+  activeAbortController = abortController;
 
-  // Lấy giọng đọc tiếng Việt tối ưu nhất
-  const viVoice = getVietnameseVoice();
-  if (viVoice) {
-    utterance.voice = viVoice;
-  }
-  utterance.lang = 'vi-VN';
+  // 1. Ưu tiên gọi backend AI Voice Service để lấy giọng đọc tiếng Việt tự nhiên nhất
+  api.post('/v1/voice/tts', { text: clean, role }, {
+    responseType: 'blob',
+    signal: abortController.signal
+  })
+    .then((response) => {
+      if (abortController.signal.aborted) return;
+      const blob = response.data;
+      if (!blob || !(blob instanceof Blob)) {
+        throw new Error('Dữ liệu âm thanh từ máy chủ không hợp lệ.');
+      }
 
-  // Điều chỉnh cao độ và tốc độ theo vai
-  if (role === 'judge') {
-    // Chủ tọa: đĩnh đạc, trầm ổn, uy nghiêm
-    utterance.rate = 0.96;
-    utterance.pitch = 0.95;
-  } else if (role === 'opponent') {
-    // Bên đối lập: dứt khoát, sắc bén
-    utterance.rate = 1.02;
-    utterance.pitch = 1.05;
-  } else {
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
-  }
+      if (currentAudioUrl) {
+        URL.revokeObjectURL(currentAudioUrl);
+        currentAudioUrl = null;
+      }
 
-  utterance.onstart = () => {
-    onStart?.();
-  };
+      const audioUrl = URL.createObjectURL(blob);
+      currentAudioUrl = audioUrl;
+      const audio = new Audio(audioUrl);
+      activeAudio = audio;
 
-  utterance.onend = () => {
-    if (activeUtterance === utterance) activeUtterance = null;
-    onEnd?.();
-  };
+      audio.onplay = () => {
+        onStart?.();
+      };
 
-  utterance.onerror = (e) => {
-    if (activeUtterance === utterance) activeUtterance = null;
-    if (e.error !== 'interrupted' && e.error !== 'canceled') {
-      onError?.(e.error);
-    }
-    onEnd?.();
-  };
+      audio.onended = () => {
+        if (currentAudioUrl) {
+          URL.revokeObjectURL(currentAudioUrl);
+          currentAudioUrl = null;
+        }
+        if (activeAudio === audio) activeAudio = null;
+        onEnd?.();
+      };
 
-  try {
-    window.speechSynthesis.speak(utterance);
-  } catch (err) {
-    onError?.(err.message);
-  }
+      audio.onerror = (e) => {
+        if (currentAudioUrl) {
+          URL.revokeObjectURL(currentAudioUrl);
+          currentAudioUrl = null;
+        }
+        if (activeAudio === audio) activeAudio = null;
+        onError?.(e);
+        onEnd?.();
+      };
+
+      return audio.play();
+    })
+    .catch((err) => {
+      if (abortController.signal.aborted) return;
+
+      console.warn('Backend AI TTS fallback:', err.message || err);
+
+      // 2. Dự phòng: CHỈ dùng Web Speech API nếu máy khách THỰC SỰ có gói giọng tiếng Việt
+      const viVoice = getVietnameseVoice();
+      if (viVoice && isSpeechSynthesisSupported()) {
+        const utterance = new SpeechSynthesisUtterance(clean);
+        activeUtterance = utterance;
+        utterance.voice = viVoice;
+        utterance.lang = 'vi-VN';
+
+        // Điều chỉnh cao độ và tốc độ theo vai
+        if (role === 'judge') {
+          utterance.rate = 0.95;
+          utterance.pitch = 0.95;
+        } else if (role === 'opponent') {
+          utterance.rate = 1.0;
+          utterance.pitch = 1.05;
+        } else {
+          utterance.rate = 1.0;
+          utterance.pitch = 1.0;
+        }
+
+        utterance.onstart = () => {
+          onStart?.();
+        };
+
+        utterance.onend = () => {
+          if (activeUtterance === utterance) activeUtterance = null;
+          onEnd?.();
+        };
+
+        utterance.onerror = (e) => {
+          if (activeUtterance === utterance) activeUtterance = null;
+          if (e.error !== 'interrupted' && e.error !== 'canceled') {
+            onError?.(e.error);
+          }
+          onEnd?.();
+        };
+
+        try {
+          window.speechSynthesis.speak(utterance);
+        } catch (synthErr) {
+          onError?.(synthErr.message);
+          onEnd?.();
+        }
+      } else {
+        // Tuyệt đối KHÔNG fallback sang giọng tiếng Anh (Microsoft David) đọc bồi tiếng Việt!
+        onError?.('Dịch vụ giọng đọc AI đang tải lại kết nối. Vui lòng bấm thử lại sau giây lát.');
+        onEnd?.();
+      }
+    });
 
   return stopCourtroomSpeech;
 }
 
 /**
- * Dừng phát âm thanh hiện tại.
+ * Dừng phát âm thanh hiện tại (cả AI Audio Player và Web Speech API).
  */
 export function stopCourtroomSpeech() {
+  if (activeAbortController) {
+    try {
+      activeAbortController.abort();
+    } catch { /* Bỏ qua */ }
+    activeAbortController = null;
+  }
+
+  if (activeAudio) {
+    try {
+      activeAudio.pause();
+      activeAudio.currentTime = 0;
+    } catch { /* Bỏ qua */ }
+    activeAudio = null;
+  }
+
+  if (currentAudioUrl) {
+    try {
+      URL.revokeObjectURL(currentAudioUrl);
+    } catch { /* Bỏ qua */ }
+    currentAudioUrl = null;
+  }
+
   if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
     try {
       window.speechSynthesis.cancel();

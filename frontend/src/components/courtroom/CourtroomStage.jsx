@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ChevronLeft, ChevronRight, Volume2 } from 'lucide-react';
 import { dialogueText } from '../../../../shared/dialogueText.mjs';
 import { actorFor, courtroomRoles } from '../../services/courtroom';
-import { speakCourtroomText } from '../../services/voiceService';
+import { speakCourtroomText, stopCourtroomSpeech } from '../../services/voiceService';
 import './courtroom.css';
 
 function Character({ actor, role, active, preparing, invited }) {
@@ -19,9 +19,26 @@ function Character({ actor, role, active, preparing, invited }) {
 export default function CourtroomStage({ session, view, records, onHistory, onReadFull, onSelectRecord, navigationDisabled = false, preparationStalled = false, pendingSpeaker = null, speechControls }) {
   const roles = courtroomRoles(session);
   const [backgroundFailed, setBackgroundFailed] = useState(false);
+  const [speakingRecordId, setSpeakingRecordId] = useState(null);
   const record = view.record;
   const owner = record ? actorFor(record) : 'judge';
   const content = dialogueText(record?.display_content ?? record?.content, session?.case_id?.evidence_inventory) || 'Chưa hiển thị được phản hồi này. Hãy tải lại phiên.';
+  const isCurrentSpeaking = speakingRecordId === record?._id;
+
+  function handleToggleSpeech() {
+    if (isCurrentSpeaking) {
+      stopCourtroomSpeech();
+      setSpeakingRecordId(null);
+    } else {
+      setSpeakingRecordId(record?._id);
+      speakCourtroomText(content, {
+        role: owner,
+        onStart: () => setSpeakingRecordId(record?._id),
+        onEnd: () => setSpeakingRecordId((cur) => (cur === record?._id ? null : cur)),
+        onError: () => setSpeakingRecordId((cur) => (cur === record?._id ? null : cur)),
+      });
+    }
+  }
   const index = records.findIndex((r) => r._id === record?._id);
   const canNavigate = !navigationDisabled && !view.pending && !view.streaming && index >= 0 && Boolean(onSelectRecord);
   const latest = !view.pending && index === records.length - 1;
@@ -87,9 +104,23 @@ export default function CourtroomStage({ session, view, records, onHistory, onRe
           </nav>
           {speechControls}
           <div className="speech-tools" aria-label="Công cụ đọc lời thoại">
-            <button type="button" onClick={() => speakCourtroomText(content, { role: owner })} aria-label="Nghe đọc lời thoại" title="Nghe phát biểu bằng giọng nói">
-              <Volume2 size={15} style={{ display: 'inline-block', verticalAlign: '-2px', marginRight: '4px' }} />
-              Nghe đọc
+            <button
+              type="button"
+              onClick={handleToggleSpeech}
+              aria-label={isCurrentSpeaking ? 'Dừng đọc lời thoại' : 'Nghe đọc lời thoại'}
+              title={isCurrentSpeaking ? 'Bấm để dừng đọc' : 'Nghe phát biểu bằng giọng nói tiếng Việt tự nhiên'}
+              className={`speech-voice-btn ${isCurrentSpeaking ? 'is-speaking' : ''}`}
+            >
+              <Volume2
+                size={15}
+                style={{
+                  display: 'inline-block',
+                  verticalAlign: '-2px',
+                  marginRight: '4px',
+                  color: isCurrentSpeaking ? '#38bdf8' : undefined,
+                }}
+              />
+              {isCurrentSpeaking ? 'Đang đọc…' : 'Nghe đọc'}
             </button>
             <button type="button" onClick={() => onReadFull(record)} aria-label="Phóng to lời thoại">Phóng to{record.citations?.length ? ' và xem căn cứ' : ''}</button>
             {!view.pending && <button type="button" onClick={onHistory}>Biên bản phiên</button>}

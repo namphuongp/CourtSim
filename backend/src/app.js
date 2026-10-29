@@ -11,6 +11,7 @@ import sessionRoutes from './routes/SessionRoutes.js';
 import legalSourceRoutes from './routes/LegalSourceRoutes.js';
 import checkoutRoutes from './routes/CheckoutRoutes.js';
 import surveyRoutes from './routes/SurveyRoutes.js';
+import voiceRoutes from './routes/VoiceRoutes.js';
 
 export function createApp(authDependencies, paymentDependencies = {}) {
   const app = express();
@@ -39,6 +40,7 @@ export function createApp(authDependencies, paymentDependencies = {}) {
   app.use('/api/v1/admin/feedback', adminFeedbackRoutes);
   app.use('/api/v1/admin', adminRoutes);
   app.use('/api/v1/sessions', sessionRoutes);
+  app.use('/api/v1/voice', voiceRoutes);
 
   app.use(notFoundHandler);
   app.use(errorHandler);
