@@ -1,17 +1,19 @@
 // Dịch vụ nhúng (embedding) — hỗ trợ Ollama local, OpenAI API hoặc fastembed.
 // Không lưu nội dung người dùng; chỉ gửi từ khóa pháp luật hoặc nội dung điều khoản công khai.
 
-const EMBEDDING_PROVIDER = process.env.EMBEDDING_PROVIDER?.trim() || 'openai';
-const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL?.trim() || 'text-embedding-3-small';
-const EMBEDDING_BASE_URL = (process.env.EMBEDDING_BASE_URL?.trim() || '').replace(/\/$/, '');
-const EMBEDDING_API_KEY = process.env.EMBEDDING_API_KEY?.trim() || process.env.OPENAI_API_KEY?.trim() || '';
-const EMBEDDING_DIMENSIONS = Number(process.env.EMBEDDING_DIMENSIONS ?? '0') || 0;
+import { env } from '../config/env.js';
+
+const getProvider = () => process.env.EMBEDDING_PROVIDER?.trim() || env.EMBEDDING_PROVIDER || 'openai';
+const getModel = () => process.env.EMBEDDING_MODEL?.trim() || env.EMBEDDING_MODEL || 'text-embedding-3-small';
+const getBaseUrl = () => (process.env.EMBEDDING_BASE_URL?.trim() || env.EMBEDDING_BASE_URL || '').replace(/\/$/, '');
+const getApiKey = () => process.env.EMBEDDING_API_KEY?.trim() || env.EMBEDDING_API_KEY || env.AI_API_KEY || '';
+const getDimensions = () => Number(process.env.EMBEDDING_DIMENSIONS ?? '0') || 0;
 const MAX_BATCH_SIZE = 64;
 
 // Prefix hướng dẫn cho e5 models — cải thiện chất lượng embedding đáng kể.
 const E5_QUERY_PREFIX = 'query: ';
 const E5_PASSAGE_PREFIX = 'passage: ';
-const isE5Model = () => /\be5\b/i.test(EMBEDDING_MODEL);
+const isE5Model = () => /\be5\b/i.test(getModel());
 
 /**
  * Thêm prefix phù hợp cho e5 models.
@@ -29,11 +31,11 @@ function prepareText(type, text) {
  * @returns {Promise<number[][]>}
  */
 async function embedOllama(texts) {
-  const base = EMBEDDING_BASE_URL || 'http://127.0.0.1:11434';
+  const base = getBaseUrl() || 'http://127.0.0.1:11434';
   const response = await fetch(`${base}/api/embed`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: EMBEDDING_MODEL, input: texts }),
+    body: JSON.stringify({ model: getModel(), input: texts }),
     signal: AbortSignal.timeout(60_000),
   });
   if (!response.ok) throw new Error(`Ollama embedding failed: ${response.status}`);
@@ -47,17 +49,19 @@ async function embedOllama(texts) {
  * @returns {Promise<number[][]>}
  */
 async function embedOpenAI(texts) {
-  const base = EMBEDDING_BASE_URL || 'https://api.openai.com/v1';
+  const base = getBaseUrl() || 'https://api.openai.com/v1';
+  const apiKey = getApiKey();
+  const dimensions = getDimensions();
   const response = await fetch(`${base}/embeddings`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      ...(EMBEDDING_API_KEY ? { Authorization: `Bearer ${EMBEDDING_API_KEY}` } : {}),
+      ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
     },
     body: JSON.stringify({
-      model: EMBEDDING_MODEL,
+      model: getModel(),
       input: texts,
-      ...(EMBEDDING_DIMENSIONS ? { dimensions: EMBEDDING_DIMENSIONS } : {}),
+      ...(dimensions ? { dimensions } : {}),
     }),
     signal: AbortSignal.timeout(60_000),
   });
@@ -72,10 +76,11 @@ async function embedOpenAI(texts) {
  * @returns {Promise<number[][]>}
  */
 async function callProvider(texts) {
-  switch (EMBEDDING_PROVIDER) {
+  const provider = getProvider();
+  switch (provider) {
     case 'ollama': return embedOllama(texts);
     case 'openai': return embedOpenAI(texts);
-    default: throw new Error(`Embedding provider "${EMBEDDING_PROVIDER}" không được hỗ trợ. Dùng "openai" hoặc "ollama".`);
+    default: throw new Error(`Embedding provider "${provider}" không được hỗ trợ. Dùng "openai" hoặc "ollama".`);
   }
 }
 
@@ -125,11 +130,12 @@ export async function isEmbeddingAvailable() {
  * Trả về metadata cấu hình embedding hiện tại.
  */
 export function embeddingConfig() {
+  const provider = getProvider();
   return {
-    provider: EMBEDDING_PROVIDER,
-    model: EMBEDDING_MODEL,
-    baseUrl: EMBEDDING_BASE_URL || (EMBEDDING_PROVIDER === 'ollama' ? 'http://127.0.0.1:11434' : 'https://api.openai.com/v1'),
-    dimensions: EMBEDDING_DIMENSIONS || 'auto',
+    provider,
+    model: getModel(),
+    baseUrl: getBaseUrl() || (provider === 'ollama' ? 'http://127.0.0.1:11434' : 'https://api.openai.com/v1'),
+    dimensions: getDimensions() || 'auto',
     isE5: isE5Model(),
   };
 }
