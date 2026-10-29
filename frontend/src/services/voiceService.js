@@ -131,14 +131,8 @@ export function createSpeechRecognizer({
         return;
       }
 
-      if (event.error === 'network') {
-        // Lỗi mạng tạm thời của Google Speech: không tắt hoàn toàn, thông báo nhẹ để keep-alive tự kết nối lại
-        onError?.('Kết nối mạng nhận dạng giọng nói đang kết nối lại...');
+      if (event.error === 'network' || event.error === 'aborted') {
         return;
-      }
-
-      if (event.error !== 'aborted') {
-        onError?.(`Thông báo nhận dạng: ${event.error}`);
       }
     };
 
@@ -375,10 +369,8 @@ export function speakCourtroomText(text, { role = 'judge', onStart, onEnd, onErr
 
       return audio.play();
     })
-    .catch((err) => {
+    .catch(() => {
       if (abortController.signal.aborted) return;
-
-      console.warn('Backend AI TTS fallback:', err.message || err);
 
       // 2. Dự phòng: CHỈ dùng Web Speech API nếu máy khách THỰC SỰ có gói giọng tiếng Việt
       const viVoice = getVietnameseVoice();
@@ -409,23 +401,18 @@ export function speakCourtroomText(text, { role = 'judge', onStart, onEnd, onErr
           onEnd?.();
         };
 
-        utterance.onerror = (e) => {
+        utterance.onerror = () => {
           if (activeUtterance === utterance) activeUtterance = null;
-          if (e.error !== 'interrupted' && e.error !== 'canceled') {
-            onError?.(e.error);
-          }
           onEnd?.();
         };
 
         try {
           window.speechSynthesis.speak(utterance);
-        } catch (synthErr) {
-          onError?.(synthErr.message);
+        } catch {
           onEnd?.();
         }
       } else {
-        // Tuyệt đối KHÔNG fallback sang giọng tiếng Anh (Microsoft David) đọc bồi tiếng Việt!
-        onError?.('Dịch vụ giọng đọc AI đang tải lại kết nối. Vui lòng bấm thử lại sau giây lát.');
+        // Hoàn tất lượt đọc mà không bắn thông báo lỗi ra giao diện
         onEnd?.();
       }
     });

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Mic, MicOff, Volume2, VolumeX, Sparkles, AlertCircle } from 'lucide-react';
+import { Mic, MicOff, Volume2, VolumeX, Sparkles } from 'lucide-react';
 import { createSpeechRecognizer, isSpeechRecognitionSupported, isSpeechSynthesisSupported } from '../../services/voiceService';
 
 export default function VoiceDebateControls({
@@ -12,7 +12,6 @@ export default function VoiceDebateControls({
   const [supported, setSupported] = useState(true);
   const [isListening, setIsListening] = useState(false);
   const [interimText, setInterimText] = useState('');
-  const [voiceNotice, setVoiceNotice] = useState('');
   const recognizerRef = useRef(null);
 
   useEffect(() => {
@@ -28,12 +27,6 @@ export default function VoiceDebateControls({
     }
   }, [onAppendText]);
 
-  const handleError = useCallback((msg) => {
-    setVoiceNotice(msg);
-    const t = setTimeout(() => setVoiceNotice(''), 6000);
-    return () => clearTimeout(t);
-  }, []);
-
   const handleListeningChange = useCallback((listening) => {
     setIsListening(listening);
     if (!listening) {
@@ -46,7 +39,6 @@ export default function VoiceDebateControls({
 
     recognizerRef.current = createSpeechRecognizer({
       onTranscript: handleTranscript,
-      onError: handleError,
       onListeningChange: handleListeningChange,
       lang: 'vi-VN',
     });
@@ -54,11 +46,10 @@ export default function VoiceDebateControls({
     return () => {
       recognizerRef.current?.abort();
     };
-  }, [supported, handleTranscript, handleError, handleListeningChange]);
+  }, [supported, handleTranscript, handleListeningChange]);
 
   function toggleListening() {
     if (disabled) return;
-    setVoiceNotice('');
 
     if (isListening) {
       recognizerRef.current?.stop();
@@ -138,21 +129,13 @@ export default function VoiceDebateControls({
         )}
       </div>
 
-      {/* Thông báo chữ đang nói (Interim preview) */}
+      {/* Chữ đang nói hiển thị nhẹ nhàng khi đang thu âm */}
       {isListening && interimText && (
         <div className="voice-interim-preview" aria-live="polite">
           <Sparkles size={14} className="text-amber-500 shrink-0" />
-          <span className="preview-label">Đang nhận dạng:</span>
+          <span className="preview-label">Đang nhận:</span>
           <em className="preview-content">"{interimText}"</em>
         </div>
-      )}
-
-      {/* Thông báo lỗi hoặc hướng dẫn micro */}
-      {voiceNotice && (
-        <p className="voice-notice-alert" role="alert">
-          <AlertCircle size={15} className="shrink-0" />
-          <span>{voiceNotice}</span>
-        </p>
       )}
     </div>
   );
