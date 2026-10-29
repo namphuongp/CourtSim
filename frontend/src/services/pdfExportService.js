@@ -92,7 +92,7 @@ export function generateCourtroomDocumentHtml({
     *, *::before, *::after {
       box-sizing: border-box;
     }
-    body {
+    body, #courtsim-print-root, .document-page {
       margin: 0;
       padding: 0;
       background: #ffffff;
@@ -338,22 +338,24 @@ export function generateCourtroomDocumentHtml({
     }
     @media screen {
       body {
-        background: #f1f5f9;
-        padding: 24px 12px;
-      }
-      .document-page {
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
-        padding: 40px 48px;
-        border-radius: 4px;
-      }
-    }
-    @media print {
-      body {
-        background: transparent;
+        background: #ffffff;
+        padding: 0;
+        margin: 0;
       }
       .document-page {
         box-shadow: none;
-        padding: 0;
+        padding: 32px 36px;
+        background: #ffffff;
+      }
+    }
+    @media print {
+      body, #courtsim-print-root {
+        background: transparent !important;
+      }
+      .document-page {
+        box-shadow: none !important;
+        padding: 0 !important;
+        max-width: 100% !important;
       }
     }
   </style>
@@ -596,36 +598,55 @@ export function generateCourtroomDocumentHtml({
 
 /**
  * Mở cửa sổ in / xuất PDF chuẩn A4 chất lượng cao
- * Sử dụng iframe chuyên dụng để không làm ảnh hưởng giao diện ứng dụng
+ * Sử dụng cơ chế cô lập in #courtsim-print-root:
+ * Loại bỏ 100% giao diện website, thanh điều hướng, modal và chỉ in nội dung văn bản thuần túy.
  */
 export function exportDocumentToPdf(htmlContent, documentTitle = 'Tai_Lieu_Phien_Toa') {
   return new Promise((resolve) => {
-    // Tạo iframe ẩn để in tài liệu sạch
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'fixed';
-    iframe.style.right = '0';
-    iframe.style.bottom = '0';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = '0';
-    iframe.setAttribute('title', documentTitle);
+    const originalTitle = document.title;
+    if (documentTitle) {
+      document.title = documentTitle;
+    }
 
-    document.body.appendChild(iframe);
+    // 1. Chuẩn bị vùng in chuyên dụng #courtsim-print-root
+    let printRoot = document.getElementById('courtsim-print-root');
+    if (!printRoot) {
+      printRoot = document.createElement('div');
+      printRoot.id = 'courtsim-print-root';
+      document.body.appendChild(printRoot);
+    }
 
-    const doc = iframe.contentWindow.document;
-    doc.open();
-    doc.write(htmlContent);
-    doc.close();
+    // 2. Trích xuất CSS và phần nội dung văn bản để đưa vào printRoot
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlContent, 'text/html');
+    const styles = doc.querySelectorAll('style');
+    let stylesHtml = '';
+    styles.forEach((s) => {
+      stylesHtml += s.outerHTML;
+    });
 
-    // Chờ tài liệu render xong hoàn toàn
+    const bodyContent = doc.body ? doc.body.innerHTML : htmlContent;
+    printRoot.innerHTML = `${stylesHtml}<div class="courtsim-print-page-wrapper">${bodyContent}</div>`;
+
+    const cleanup = () => {
+      document.title = originalTitle;
+      window.removeEventListener('afterprint', cleanup);
+      resolve(true);
+    };
+
+    window.addEventListener('afterprint', cleanup, { once: true });
+
+    // 3. Trì hoãn nhẹ 120ms để CSS áp dụng hoàn toàn trước khi mở hộp thoại in
     setTimeout(() => {
       try {
-        iframe.contentWindow.focus();
-        iframe.contentWindow.print();
-        resolve(true);
+        window.print();
+        // Fallback an toàn tự dọn dẹp sau 2.5s nếu trình duyệt không phát sự kiện afterprint
+        setTimeout(() => {
+          document.title = originalTitle;
+          resolve(true);
+        }, 2500);
       } catch (err) {
-        console.warn('Lỗi khi mở cửa sổ in PDF:', err);
-        // Fallback: Mở cửa sổ mới nếu iframe bị chặn
+        console.warn('Lỗi khi kích hoạt cửa sổ in mặc định, dùng fallback cửa sổ mới:', err);
         const printWindow = window.open('', '_blank');
         if (printWindow) {
           printWindow.document.write(htmlContent);
@@ -635,15 +656,9 @@ export function exportDocumentToPdf(htmlContent, documentTitle = 'Tai_Lieu_Phien
             printWindow.print();
           }, 300);
         }
-        resolve(false);
-      } finally {
-        setTimeout(() => {
-          if (iframe.parentNode) {
-            iframe.parentNode.removeChild(iframe);
-          }
-        }, 3000);
+        cleanup();
       }
-    }, 400);
+    }, 120);
   });
 }
 
