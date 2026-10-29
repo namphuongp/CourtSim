@@ -51,6 +51,9 @@ export function createSpeechRecognizer({
   let shouldBeListening = false;
   let restartTimeout = null;
   let pendingInterim = '';
+  let lastFinalResultIndex = -1;
+  let lastEmittedFinalText = '';
+  let lastEmittedFinalTime = 0;
 
   function setListening(val) {
     if (isListeningState !== val) {
@@ -59,12 +62,28 @@ export function createSpeechRecognizer({
     }
   }
 
-  function flushPendingInterim() {
-    if (pendingInterim.trim()) {
-      const textToFlush = pendingInterim.trim();
-      pendingInterim = '';
-      onTranscript?.({ text: textToFlush, isFinal: true });
+  function emitFinal(text) {
+    const clean = text?.trim();
+    if (!clean) return;
+    const now = Date.now();
+    // Chặn duplicate: Nếu cùng 1 câu được phát liên tiếp trong 2.5 giây thì bỏ qua
+    if (
+      clean.toLowerCase() === lastEmittedFinalText.toLowerCase() &&
+      now - lastEmittedFinalTime < 2500
+    ) {
+      return;
     }
+    lastEmittedFinalText = clean;
+    lastEmittedFinalTime = now;
+    pendingInterim = '';
+    onTranscript?.({ text: clean, isFinal: true });
+  }
+
+  function flushPendingInterim() {
+    if (!pendingInterim.trim()) return;
+    const textToFlush = pendingInterim.trim();
+    pendingInterim = '';
+    emitFinal(textToFlush);
   }
 
   function initRecognizer() {
@@ -77,6 +96,7 @@ export function createSpeechRecognizer({
       } catch { /* Bỏ qua lỗi dọn dẹp */ }
     }
 
+    lastFinalResultIndex = -1;
     recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
@@ -91,19 +111,22 @@ export function createSpeechRecognizer({
       let interimTranscript = '';
       let finalTranscript = '';
 
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
+      // Chỉ xử lý các kết quả mới chưa từng được chốt isFinal để tránh lặp lại kết quả trước
+      for (let i = 0; i < event.results.length; ++i) {
         const item = event.results[i];
         const transcriptText = item[0]?.transcript ?? '';
         if (item.isFinal) {
-          finalTranscript += transcriptText;
+          if (i > lastFinalResultIndex) {
+            finalTranscript += (finalTranscript ? ' ' : '') + transcriptText;
+            lastFinalResultIndex = i;
+          }
         } else {
-          interimTranscript += transcriptText;
+          interimTranscript += (interimTranscript ? ' ' : '') + transcriptText;
         }
       }
 
       if (finalTranscript.trim()) {
-        pendingInterim = '';
-        onTranscript?.({ text: finalTranscript.trim(), isFinal: true });
+        emitFinal(finalTranscript);
       }
       if (interimTranscript.trim()) {
         pendingInterim = interimTranscript.trim();
@@ -137,29 +160,29 @@ export function createSpeechRecognizer({
     };
 
     recognition.onend = () => {
-      // Đảm bảo không mất từ cuối cùng nếu chưa kịp chuyển sang isFinal
-      flushPendingInterim();
+      // Nếu người dùng đã chủ động bấm dừng thu âm, chỉ flush interim nếu còn sót lại và chưa được phát
+      if (!shouldBeListening) {
+        flushPendingInterim();
+        setListening(false);
+        return;
+      }
 
       // Cơ chế Keep-Alive vĩnh viễn: Nếu người dùng chưa bấm dừng, tự động khởi động lại ngay
-      if (shouldBeListening) {
-        clearTimeout(restartTimeout);
-        restartTimeout = setTimeout(() => {
-          if (shouldBeListening) {
-            initRecognizer();
-            try {
-              recognition.start();
-            } catch {
-              restartTimeout = setTimeout(() => {
-                if (shouldBeListening) {
-                  try { recognition.start(); } catch { /* Bỏ qua */ }
-                }
-              }, 200);
-            }
+      clearTimeout(restartTimeout);
+      restartTimeout = setTimeout(() => {
+        if (shouldBeListening) {
+          initRecognizer();
+          try {
+            recognition.start();
+          } catch {
+            restartTimeout = setTimeout(() => {
+              if (shouldBeListening) {
+                try { recognition.start(); } catch { /* Bỏ qua */ }
+              }
+            }, 200);
           }
-        }, 100);
-      } else {
-        setListening(false);
-      }
+        }
+      }, 100);
     };
   }
 
@@ -168,6 +191,7 @@ export function createSpeechRecognizer({
     start() {
       shouldBeListening = true;
       pendingInterim = '';
+      lastFinalResultIndex = -1;
       clearTimeout(restartTimeout);
       initRecognizer();
       try {
@@ -186,7 +210,9 @@ export function createSpeechRecognizer({
     stop() {
       shouldBeListening = false;
       clearTimeout(restartTimeout);
-      flushPendingInterim();
+      // LƯU Ý QUAN TRỌNG: KHÔNG gọi flushPendingInterim() ở đây!
+      // Khi gọi recognition.stop(), trình duyệt sẽ xử lý nốt phần audio đệm và tự động phát onresult(isFinal=true).
+      // Nếu flush ở đây sẽ khiến câu bị bắn 2 lần (lần 1 từ flush, lần 2 từ onresult).
       if (recognition) {
         try {
           recognition.stop();
@@ -197,7 +223,7 @@ export function createSpeechRecognizer({
     abort() {
       shouldBeListening = false;
       clearTimeout(restartTimeout);
-      flushPendingInterim();
+      pendingInterim = '';
       if (recognition) {
         try {
           recognition.abort();

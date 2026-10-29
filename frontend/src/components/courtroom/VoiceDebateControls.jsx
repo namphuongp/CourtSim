@@ -18,10 +18,23 @@ export default function VoiceDebateControls({
     setSupported(isSpeechRecognitionSupported());
   }, []);
 
+  const lastEmittedRef = useRef({ text: '', time: 0 });
+
   const handleTranscript = useCallback(({ text, isFinal }) => {
     if (isFinal) {
       setInterimText('');
-      onAppendText?.(text);
+      const clean = text?.trim();
+      if (!clean) return;
+      const now = Date.now();
+      // Ngăn chặn trùng lặp nếu cùng 1 đoạn văn bản được bắn nhiều lần liên tiếp
+      if (
+        clean.toLowerCase() === lastEmittedRef.current.text.toLowerCase() &&
+        now - lastEmittedRef.current.time < 2000
+      ) {
+        return;
+      }
+      lastEmittedRef.current = { text: clean, time: now };
+      onAppendText?.(clean);
     } else {
       setInterimText(text);
     }

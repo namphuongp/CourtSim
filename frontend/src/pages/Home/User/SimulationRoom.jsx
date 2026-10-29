@@ -118,11 +118,32 @@ function Room({ sessionId }) {
     requestAnimationFrame(() => { argumentRef.current?.focus(); argumentRef.current?.setSelectionRange(start + insertion.length, start + insertion.length); });
   }
 
+  const lastVoiceTranscriptRef = useRef({ text: '', time: 0 });
+
   function appendVoiceTranscript(spokenText) {
     if (!spokenText?.trim()) return;
+    const cleanSpoken = spokenText.trim();
+    const now = Date.now();
+
+    // 1. Chặn duplicate theo thời gian nếu cùng chuỗi được gọi liên tiếp trong 3 giây
+    if (
+      cleanSpoken.toLowerCase() === lastVoiceTranscriptRef.current.text.toLowerCase() &&
+      now - lastVoiceTranscriptRef.current.time < 3000
+    ) {
+      return;
+    }
+
     setDraft((current) => {
       const prev = current.content || '';
-      let textToInsert = spokenText.trim();
+      let textToInsert = cleanSpoken;
+
+      // 2. Chặn duplicate ngữ nghĩa: nếu câu này đã nằm sẵn ở cuối nội dung thì bỏ qua
+      const trimmedPrev = prev.trim().toLowerCase();
+      const trimmedNew = textToInsert.toLowerCase();
+      if (trimmedPrev.endsWith(trimmedNew) || trimmedPrev === trimmedNew) {
+        return current;
+      }
+
       // Tự động viết hoa chữ cái đầu nếu bắt đầu câu mới
       const needsCapital = prev.length === 0 || /[.!?\n]\s*$/u.test(prev);
       if (needsCapital && textToInsert.length > 0) {
@@ -130,6 +151,7 @@ function Room({ sessionId }) {
       }
       const spacer = prev.length === 0 || /[\s\n]$/u.test(prev) ? '' : ' ';
       const updated = (prev + spacer + textToInsert).slice(0, 4000);
+      lastVoiceTranscriptRef.current = { text: cleanSpoken, time: now };
       return { content: updated, request_id: crypto.randomUUID() };
     });
     requestAnimationFrame(() => {
