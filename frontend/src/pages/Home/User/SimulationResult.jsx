@@ -2,11 +2,12 @@ import ScoringSummary from '../../../components/ScoringSummary';
 import LearnerFeedback from '../../../components/feedback/LearnerFeedback';
 import { LegalCitations, LegalResearchResult } from '../../../components/LegalBasis';
 import { useEffect, useState } from 'react';
-import { Home } from 'lucide-react';
+import { Home, FileDown } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import api, { getApiError } from '../../../services/api';
 import './simulationResult.css';
 import UpgradeNotice from '../../../components/membership/UpgradeNotice';
+import PdfExportModal from '../../../components/courtroom/PdfExportModal';
 
 const labels = { legal_knowledge: 'Kiến thức pháp lý', reasoning: 'Lập luận', evidence_use: 'Sử dụng chứng cứ', courtroom_skill: 'Kỹ năng tranh tụng' };
 
@@ -22,6 +23,7 @@ function SessionResult({ sessionId }) {
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [reload, setReload] = useState(0);
+  const [pdfExportOpen, setPdfExportOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -51,7 +53,23 @@ function SessionResult({ sessionId }) {
   if (!result) return <main className="result-page result-state" role="status"><section className="result-card">Đang tải kết quả...</section></main>;
   return (
     <main className="result-page"><div className="result-container space-y-6">
-      <header className="result-hero flex flex-wrap items-center justify-between gap-4"><div><p>Kết quả phiên mô phỏng</p><h1 id="result-heading" tabIndex={-1}>Kết quả luyện tập</h1></div><button onClick={() => navigate('/dashboard')}><Home size={17} /> Tổng quan</button></header>
+      <header className="result-hero flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <p>Kết quả phiên mô phỏng</p>
+          <h1 id="result-heading" tabIndex={-1}>Kết quả luyện tập</h1>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <button 
+            type="button" 
+            onClick={() => setPdfExportOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl font-semibold shadow-md shadow-blue-500/20 text-sm transition-all cursor-pointer"
+          >
+            <FileDown size={17} />
+            <span>Xuất kết quả / Biên bản PDF</span>
+          </button>
+          <button onClick={() => navigate('/dashboard')}><Home size={17} /> Tổng quan</button>
+        </div>
+      </header>
       <ScoringSummary result={result} sessionId={sessionId} />
       {result.features?.detailedScoring === false ? <><section className="result-card"><h2>Nhận xét tổng quan</h2><p>{result.feedback}</p><h3>Hướng cải thiện</h3><p>{result.improvement_suggestions}</p></section><UpgradeNotice /></> : <details className="result-details"><summary>Nhận xét lưu cùng kết quả và nguồn pháp luật</summary>
       {result.assessed_max < 100 && <p className="my-3 text-sm">Nhận xét này không xác nhận năng lực ở các tiêu chí chưa chấm.</p>}
@@ -60,6 +78,14 @@ function SessionResult({ sessionId }) {
       <section className="result-card result-law"><h2>Căn cứ pháp luật đã sử dụng</h2>{!result.citations?.length && <p>Chưa có căn cứ pháp luật được xác minh trong kết quả này.</p>}<LegalCitations citations={result.citations} /><LegalResearchResult research={result.legal_research} /></section>
       </details>}
       <p className="result-disclaimer">Kết quả chỉ phục vụ học tập, không phải tư vấn hoặc kết luận pháp lý.</p>
-    </div></main>
+    </div>
+    <PdfExportModal
+      open={pdfExportOpen}
+      onClose={() => setPdfExportOpen(false)}
+      sessionId={sessionId}
+      result={result}
+      initialType="result"
+    />
+    </main>
   );
 }

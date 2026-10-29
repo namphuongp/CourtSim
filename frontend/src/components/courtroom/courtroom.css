@@ -131,6 +131,7 @@
 .courtroom-controls button,.courtroom-controls a { font-weight:600; border-width:1.5px; min-height:38px; transition:background-color 120ms ease; }
 .courtroom-controls .tool-case { color:#1d4ed8; border-color:#93b4f0; background:#eff6ff; }
 .courtroom-controls .tool-law { color:#6d28d9; border-color:#bca0eb; background:#f5f0ff; }
+.courtroom-controls .tool-export { color:#0369a1; border-color:#7dd3fc; background:#f0f9ff; }
 .courtroom-controls .end-session { color:#a12344; border-color:#e4a0b2; background:#fff1f4; }
 .courtroom-controls button:hover:not(:disabled),.courtroom-controls button[aria-expanded=true] { box-shadow:inset 0 0 0 1px currentColor; filter:brightness(.97); }
 .courtroom-controls button:disabled { opacity:.55; cursor:not-allowed; }

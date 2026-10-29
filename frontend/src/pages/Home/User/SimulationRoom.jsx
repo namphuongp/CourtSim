@@ -18,6 +18,7 @@ import { draftKey, readDraft, saveDraft } from '../../../services/auth';
 import UpgradeNotice from '../../../components/membership/UpgradeNotice';
 import VoiceDebateControls from '../../../components/courtroom/VoiceDebateControls';
 import { speakCourtroomText, stopCourtroomSpeech } from '../../../services/voiceService';
+import PdfExportModal from '../../../components/courtroom/PdfExportModal';
 
 export default function SimulationRoom() {
   const { sessionId } = useParams();
@@ -46,6 +47,7 @@ function Room({ sessionId }) {
   const [waitExpired, setWaitExpired] = useState(false);
   const [state, setState] = useState({ loading: true, sending: false, ending: false, error: '' });
   const [ttsEnabled, setTtsEnabled] = useState(false);
+  const [pdfModalOpen, setPdfModalOpen] = useState(false);
   const lastSpokenRecordIdRef = useRef(null);
   useEffect(() => { saveDraft(storageKey, draft); }, [storageKey, draft]);
   useEffect(() => {
@@ -376,7 +378,7 @@ function Room({ sessionId }) {
       onConfirm={complete} 
       onPollStatus={pollStatusManually}
     />
-    <header className="courtroom-header"><div><Link className="courtroom-back" to="/dashboard/sessions">← Danh sách phiên</Link><h1>{session?.case_id?.title ?? 'Phiên mô phỏng'}</h1><p className="courtroom-meta"><span>{roleLabel(session?.user_court_role, session?.case_id?.category, session?.case_id)}</span><span>· {session?.case_id?.practice_context ? 'Mốc tham chiếu sơ thẩm' : 'Ngày sự kiện'}: {session?.case_event_date ?? 'Chưa xác định'}</span><span>· {userTurns}/{session?.max_turns ?? 20} lượt</span></p></div><nav className="courtroom-controls" aria-label="Công cụ phiên tòa"><button className="tool-guide" aria-expanded={panel === 'guide'} onClick={() => setPanel(panel === 'guide' ? null : 'guide')}>Hướng dẫn</button><button className="tool-case" aria-expanded={panel === 'case' || panel === 'history'} onClick={() => setPanel(panel === 'case' || panel === 'history' ? null : 'case')}>Hồ sơ phiên tòa</button><button className="tool-law" aria-expanded={panel === 'assistant'} onClick={() => setPanel(panel === 'assistant' ? null : 'assistant')}>Trợ lý luật</button>{completed ? <Link to={'/simulation/' + sessionId + '/result'}>Xem kết quả</Link> : <button className="end-session" disabled={disabled || !userTurns} title={!userTurns ? 'Cần gửi ít nhất 1 lượt tranh luận trước khi kết thúc' : undefined} onClick={() => setConfirmEnd(true)}>{state.ending ? 'Đang chấm điểm...' : 'Kết thúc và chấm điểm'}</button>}</nav></header>
+    <header className="courtroom-header"><div><Link className="courtroom-back" to="/dashboard/sessions">← Danh sách phiên</Link><h1>{session?.case_id?.title ?? 'Phiên mô phỏng'}</h1><p className="courtroom-meta"><span>{roleLabel(session?.user_court_role, session?.case_id?.category, session?.case_id)}</span><span>· {session?.case_id?.practice_context ? 'Mốc tham chiếu sơ thẩm' : 'Ngày sự kiện'}: {session?.case_event_date ?? 'Chưa xác định'}</span><span>· {userTurns}/{session?.max_turns ?? 20} lượt</span></p></div><nav className="courtroom-controls" aria-label="Công cụ phiên tòa"><button className="tool-guide" aria-expanded={panel === 'guide'} onClick={() => setPanel(panel === 'guide' ? null : 'guide')}>Hướng dẫn</button><button className="tool-case" aria-expanded={panel === 'case' || panel === 'history'} onClick={() => setPanel(panel === 'case' || panel === 'history' ? null : 'case')}>Hồ sơ phiên tòa</button><button className="tool-law" aria-expanded={panel === 'assistant'} onClick={() => setPanel(panel === 'assistant' ? null : 'assistant')}>Trợ lý luật</button><button type="button" className="tool-export" onClick={() => setPdfModalOpen(true)} title="Xuất biên bản phiên tòa dạng PDF">Xuất biên bản PDF</button>{completed ? <Link to={'/simulation/' + sessionId + '/result'}>Xem kết quả</Link> : <button className="end-session" disabled={disabled || !userTurns} title={!userTurns ? 'Cần gửi ít nhất 1 lượt tranh luận trước khi kết thúc' : undefined} onClick={() => setConfirmEnd(true)}>{state.ending ? 'Đang chấm điểm...' : 'Kết thúc và chấm điểm'}</button>}</nav></header>
     {insertError && !panel && <p role="alert" className="courtroom-notice">{insertError}</p>}
     {state.error && <div role="alert" className="courtroom-notice">{state.error}<button disabled={state.sending || state.ending} onClick={() => setReload((n) => n + 1)}>Tải lại dữ liệu</button></div>}
     {session && !session.case_event_date && !completed && <form onSubmit={saveEventDate} className="courtroom-notice"><p>Bổ sung ngày trong hồ sơ hoặc một ngày giả định cho bài tập để tiếp tục.</p><label>Ngày tra cứu <input required type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} className="m-2 rounded border p-2" /></label><button disabled={state.sending || !eventDate}>Lưu ngày</button></form>}
@@ -394,5 +396,13 @@ function Room({ sessionId }) {
       <div className="composer-fields"><textarea ref={argumentRef} onDrop={dropEvidence} onDragOver={(event) => { if (event.dataTransfer.types.includes(EVIDENCE_MIME)) { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; } }} id="argument" disabled={!ready} maxLength={4000} value={draft.content} onChange={(e) => setDraft({ content: e.target.value, request_id: crypto.randomUUID() })} placeholder="Trình bày luận điểm, liên hệ chứng cứ và trả lời vấn đề chủ tọa đặt ra… Hoặc bấm nút Micro ở trên để tranh tụng bằng giọng nói." /><button className="composer-send" disabled={!ready || draft.content.trim().length < 1}>Gửi lập luận <span aria-hidden="true">↗</span></button></div>
       <div className="composer-foot"><span>{draft.content.length}/4000</span></div>{userTurns >= (session?.max_turns ?? 20) && <p>Đã đủ số lượt. Chọn Kết thúc và chấm điểm để xem kết quả.</p>}
     </form>}
+    <PdfExportModal
+      open={pdfModalOpen}
+      onClose={() => setPdfModalOpen(false)}
+      sessionId={sessionId}
+      session={session}
+      records={records}
+      initialType="transcript"
+    />
   </main>;
 }
