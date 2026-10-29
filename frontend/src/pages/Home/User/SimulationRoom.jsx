@@ -16,6 +16,8 @@ import { postDialogue } from '../../../services/dialogueStream';
 import { roleLabel } from '../../../services/simulation';
 import { draftKey, readDraft, saveDraft } from '../../../services/auth';
 import UpgradeNotice from '../../../components/membership/UpgradeNotice';
+import VoiceDebateControls from '../../../components/courtroom/VoiceDebateControls';
+import { speakCourtroomText, stopCourtroomSpeech } from '../../../services/voiceService';
 
 export default function SimulationRoom() {
   const { sessionId } = useParams();
@@ -43,6 +45,8 @@ function Room({ sessionId }) {
   const [slow, setSlow] = useState(false);
   const [waitExpired, setWaitExpired] = useState(false);
   const [state, setState] = useState({ loading: true, sending: false, ending: false, error: '' });
+  const [ttsEnabled, setTtsEnabled] = useState(false);
+  const lastSpokenRecordIdRef = useRef(null);
   useEffect(() => { saveDraft(storageKey, draft); }, [storageKey, draft]);
   useEffect(() => {
     let active = true;
@@ -111,6 +115,43 @@ function Room({ sessionId }) {
     setPanel(null);
     requestAnimationFrame(() => { argumentRef.current?.focus(); argumentRef.current?.setSelectionRange(start + insertion.length, start + insertion.length); });
   }
+
+  function appendVoiceTranscript(spokenText) {
+    if (!spokenText?.trim()) return;
+    setDraft((current) => {
+      const prev = current.content || '';
+      const spacer = prev.length === 0 || /[\s\n]$/u.test(prev) ? '' : ' ';
+      const updated = (prev + spacer + spokenText).slice(0, 4000);
+      return { content: updated, request_id: crypto.randomUUID() };
+    });
+    requestAnimationFrame(() => {
+      if (argumentRef.current) {
+        argumentRef.current.focus();
+        argumentRef.current.scrollTop = argumentRef.current.scrollHeight;
+      }
+    });
+  }
+
+  // Tự động đọc lời thoại Hội đồng xét xử & Bên đối lập khi bật chế độ TTS
+  useEffect(() => {
+    if (!ttsEnabled) {
+      stopCourtroomSpeech();
+      return;
+    }
+    const record = view?.record;
+    if (!record || view.streaming || record.sender_type === 'user') return;
+    if (record._id && record._id !== lastSpokenRecordIdRef.current) {
+      lastSpokenRecordIdRef.current = record._id;
+      speakCourtroomText(record.content, { role: view.actor });
+    }
+  }, [ttsEnabled, view?.record?._id, view?.record?.content, view?.streaming, view?.actor]);
+
+  // Dọn dẹp âm thanh khi rời phòng
+  useEffect(() => {
+    return () => {
+      stopCourtroomSpeech();
+    };
+  }, []);
 
   function dropEvidence(event) {
     const id = event.dataTransfer.getData(EVIDENCE_MIME);
@@ -343,7 +384,14 @@ function Room({ sessionId }) {
     </div>
     {completed ? <p className="courtroom-notice">Phiên đã kết thúc. Đây là biên bản chỉ đọc.</p> : <form onSubmit={send} className="courtroom-composer">
       <div className="composer-heading"><label htmlFor="argument">Lập luận của bạn</label>{!conversation && !ready && <span role="status" className="turn-indicator is-busy">{status}</span>}</div>
-      <div className="composer-fields"><textarea ref={argumentRef} onDrop={dropEvidence} onDragOver={(event) => { if (event.dataTransfer.types.includes(EVIDENCE_MIME)) { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; } }} id="argument" disabled={!ready} maxLength={4000} value={draft.content} onChange={(e) => setDraft({ content: e.target.value, request_id: crypto.randomUUID() })} placeholder="Trình bày luận điểm, liên hệ chứng cứ và trả lời vấn đề chủ tọa đặt ra…" /><button className="composer-send" disabled={!ready || draft.content.trim().length < 1}>Gửi lập luận <span aria-hidden="true">↗</span></button></div>
+      <VoiceDebateControls
+        disabled={!ready}
+        onAppendText={appendVoiceTranscript}
+        textareaRef={argumentRef}
+        ttsEnabled={ttsEnabled}
+        onToggleTts={() => setTtsEnabled((v) => !v)}
+      />
+      <div className="composer-fields"><textarea ref={argumentRef} onDrop={dropEvidence} onDragOver={(event) => { if (event.dataTransfer.types.includes(EVIDENCE_MIME)) { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; } }} id="argument" disabled={!ready} maxLength={4000} value={draft.content} onChange={(e) => setDraft({ content: e.target.value, request_id: crypto.randomUUID() })} placeholder="Trình bày luận điểm, liên hệ chứng cứ và trả lời vấn đề chủ tọa đặt ra… Hoặc bấm nút Micro ở trên để tranh tụng bằng giọng nói." /><button className="composer-send" disabled={!ready || draft.content.trim().length < 1}>Gửi lập luận <span aria-hidden="true">↗</span></button></div>
       <div className="composer-foot"><span>{draft.content.length}/4000</span></div>{userTurns >= (session?.max_turns ?? 20) && <p>Đã đủ số lượt. Chọn Kết thúc và chấm điểm để xem kết quả.</p>}
     </form>}
   </main>;

@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Volume2 } from 'lucide-react';
 import { dialogueText } from '../../../../shared/dialogueText.mjs';
 import { actorFor, courtroomRoles } from '../../services/courtroom';
+import { speakCourtroomText } from '../../services/voiceService';
 import './courtroom.css';
 
 function Character({ actor, role, active, preparing, invited }) {
@@ -50,6 +51,10 @@ export default function CourtroomStage({ session, view, records, onHistory, onRe
           </nav>
           {speechControls}
           <div className="speech-tools" aria-label="Công cụ đọc lời thoại">
+            <button type="button" onClick={() => speakCourtroomText(content, { role: owner })} aria-label="Nghe đọc lời thoại" title="Nghe phát biểu bằng giọng nói">
+              <Volume2 size={15} style={{ display: 'inline-block', verticalAlign: '-2px', marginRight: '4px' }} />
+              Nghe đọc
+            </button>
             <button type="button" onClick={() => onReadFull(record)} aria-label="Phóng to lời thoại">Phóng to{record.citations?.length ? ' và xem căn cứ' : ''}</button>
             {!view.pending && <button type="button" onClick={onHistory}>Biên bản phiên</button>}
           </div>
