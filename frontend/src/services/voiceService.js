@@ -49,11 +49,20 @@ export function createSpeechRecognizer({
   let isListeningState = false;
   let shouldBeListening = false;
   let restartTimeout = null;
+  let pendingInterim = '';
 
   function setListening(val) {
     if (isListeningState !== val) {
       isListeningState = val;
       onListeningChange?.(val);
+    }
+  }
+
+  function flushPendingInterim() {
+    if (pendingInterim.trim()) {
+      const textToFlush = pendingInterim.trim();
+      pendingInterim = '';
+      onTranscript?.({ text: textToFlush, isFinal: true });
     }
   }
 
@@ -92,14 +101,17 @@ export function createSpeechRecognizer({
       }
 
       if (finalTranscript.trim()) {
+        pendingInterim = '';
         onTranscript?.({ text: finalTranscript.trim(), isFinal: true });
-      } else if (interimTranscript.trim()) {
+      }
+      if (interimTranscript.trim()) {
+        pendingInterim = interimTranscript.trim();
         onTranscript?.({ text: interimTranscript.trim(), isFinal: false });
       }
     };
 
     recognition.onerror = (event) => {
-      // no-speech xảy ra khi người dùng im lặng trong vài giây: KHÔNG coi là lỗi nghiêm trọng, tiếp tục nghe
+      // no-speech xảy ra khi người dùng im lặng trong vài giây: KHÔNG coi là lỗi nghiêm trọng, Chrome sẽ fire onend và keep-alive sẽ tự restart
       if (event.error === 'no-speech') {
         return;
       }
@@ -107,39 +119,49 @@ export function createSpeechRecognizer({
       if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
         shouldBeListening = false;
         setListening(false);
-        onError?.('Chưa cấp quyền truy cập Micro. Vui lòng bấm vào biểu tượng Micro/Ổ khoá trên thanh địa chỉ trình duyệt để cấp quyền.');
+        onError?.('Chưa cấp quyền truy cập Micro. Vui lòng bấm vào biểu tượng Micro/Ổ khoá trên thanh địa chỉ trình duyệt (bên trái URL) để cấp quyền.');
         return;
       }
 
       if (event.error === 'audio-capture') {
         shouldBeListening = false;
         setListening(false);
-        onError?.('Không tìm thấy thiết bị thu âm Micro hoặc thiết bị đang bận.');
+        onError?.('Không tìm thấy thiết bị thu âm Micro hoặc micro đang bị ứng dụng khác chiếm giữ.');
         return;
       }
 
-      // Các lỗi khác (network, aborted...) thì ghi nhận nhẹ
+      if (event.error === 'network') {
+        // Lỗi mạng tạm thời của Google Speech: không tắt hoàn toàn, thông báo nhẹ để keep-alive tự kết nối lại
+        onError?.('Kết nối mạng nhận dạng giọng nói đang kết nối lại...');
+        return;
+      }
+
       if (event.error !== 'aborted') {
-        onError?.(`Lỗi giọng nói: ${event.error}`);
+        onError?.(`Thông báo nhận dạng: ${event.error}`);
       }
     };
 
     recognition.onend = () => {
-      // Cơ chế Keep-Alive: Nếu người dùng chưa bấm dừng (shouldBeListening = true),
-      // tự động khởi động lại ngay sau 120ms để nhận dạng liên tục không bị gián đoạn!
+      // Đảm bảo không mất từ cuối cùng nếu chưa kịp chuyển sang isFinal
+      flushPendingInterim();
+
+      // Cơ chế Keep-Alive vĩnh viễn: Nếu người dùng chưa bấm dừng, tự động khởi động lại ngay
       if (shouldBeListening) {
         clearTimeout(restartTimeout);
         restartTimeout = setTimeout(() => {
           if (shouldBeListening) {
+            initRecognizer();
             try {
               recognition.start();
             } catch {
-              // Nếu gọi start bị lỗi, thử tái tạo recognition mới
-              initRecognizer();
-              try { recognition.start(); } catch { /* Bỏ qua */ }
+              restartTimeout = setTimeout(() => {
+                if (shouldBeListening) {
+                  try { recognition.start(); } catch { /* Bỏ qua */ }
+                }
+              }, 200);
             }
           }
-        }, 120);
+        }, 100);
       } else {
         setListening(false);
       }
@@ -150,12 +172,12 @@ export function createSpeechRecognizer({
     supported: true,
     start() {
       shouldBeListening = true;
+      pendingInterim = '';
       clearTimeout(restartTimeout);
+      initRecognizer();
       try {
-        if (!recognition) initRecognizer();
         recognition.start();
-      } catch (err) {
-        // Có thể recognition đang chạy, thử khởi tạo lại
+      } catch {
         initRecognizer();
         try {
           recognition.start();
@@ -169,6 +191,7 @@ export function createSpeechRecognizer({
     stop() {
       shouldBeListening = false;
       clearTimeout(restartTimeout);
+      flushPendingInterim();
       if (recognition) {
         try {
           recognition.stop();
@@ -179,6 +202,7 @@ export function createSpeechRecognizer({
     abort() {
       shouldBeListening = false;
       clearTimeout(restartTimeout);
+      flushPendingInterim();
       if (recognition) {
         try {
           recognition.abort();

@@ -122,8 +122,14 @@ function Room({ sessionId }) {
     if (!spokenText?.trim()) return;
     setDraft((current) => {
       const prev = current.content || '';
+      let textToInsert = spokenText.trim();
+      // Tự động viết hoa chữ cái đầu nếu bắt đầu câu mới
+      const needsCapital = prev.length === 0 || /[.!?\n]\s*$/u.test(prev);
+      if (needsCapital && textToInsert.length > 0) {
+        textToInsert = textToInsert.charAt(0).toLocaleUpperCase('vi') + textToInsert.slice(1);
+      }
       const spacer = prev.length === 0 || /[\s\n]$/u.test(prev) ? '' : ' ';
-      const updated = (prev + spacer + spokenText).slice(0, 4000);
+      const updated = (prev + spacer + textToInsert).slice(0, 4000);
       return { content: updated, request_id: crypto.randomUUID() };
     });
     requestAnimationFrame(() => {
