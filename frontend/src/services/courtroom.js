@@ -1,4 +1,4 @@
-import { roleLabel } from './simulation';
+import { roleLabel } from './simulation.js';
 
 export const actorFor = (record) => record?.sender_type === 'user' ? 'learner' : record?.sender_type === 'ai_prosecutor' ? 'opponent' : 'judge';
 export function courtroomRoles(session) {

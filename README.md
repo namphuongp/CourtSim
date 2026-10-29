@@ -51,7 +51,7 @@ Tất cả gói vẫn chịu hạn mức AI và tối đa 20 lượt trình bày
 
 Lượt đã mua được dùng trước, sau đó mới dùng lượt miễn phí còn lại. Gói trả phí được cập nhật khi thanh toán được server xác nhận, mua lượt lẻ không hạ Lite/Pro. Giá trị `plus` cũ được đọc như Lite, giữ nguyên dữ liệu và lượt đã mua. Các phiên có quyền trả phí đã ghi nhận tiếp tục có trợ lý và điểm chi tiết, kể cả khi tài khoản hết lượt mới. Freemium chỉ nhận dữ liệu chấm điểm tổng quan từ API, điểm chi tiết vẫn được lưu trong DB. Cấp quyền mở phiên dùng khóa và bản ghi trừ lượt để retry không bị trừ lần nữa; phiên đang cấp quyền chưa xuất hiện trong danh sách luyện tập.
 
-Backend .env.example liệt kê biến cấu hình. Chỉ đặt khóa ở backend. OPENAI_API_KEY dùng endpoint OpenAI chính thức; GEMINI_API_KEY có ưu tiên nếu cùng tồn tại. Endpoint tùy chỉnh cần AI_BASE_URL và khóa riêng AI_API_KEY. Các vai dùng AI_JUDGE_MODEL, AI_OPPONENT_MODEL, AI_EVALUATOR_MODEL; không phải chạy seed để đổi model.
+Backend .env.example liệt kê biến cấu hình. Chỉ đặt khóa ở backend. OPENAI_API_KEY dùng endpoint OpenAI chính thức cho cả hội thoại và embedding (RAG). Endpoint tùy chỉnh cần AI_BASE_URL và khóa riêng AI_API_KEY. Các vai dùng AI_JUDGE_MODEL, AI_OPPONENT_MODEL, AI_EVALUATOR_MODEL; không phải chạy seed để đổi model.
 
 Email cần EMAIL_API_KEY/EMAIL_FROM của Resend và domain gửi đã xác minh. Google cần client ID/secret/redirect URI. Bỏ qua OTP chỉ dùng development, không có hiệu lực production. Hạn mức AI tính cả retry, lưu Mongo dùng chung; xem cấu hình trong hướng dẫn vận hành.
 

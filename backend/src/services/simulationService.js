@@ -1,7 +1,8 @@
 import { EVIDENCE_ASSUMPTION_POLICY } from '../../../shared/casePresentation.mjs';
 import { RESPONSE_STYLE, TECHNICAL_TEXT } from '../../../shared/userCopy.mjs';
 import { caseKnowledge } from './caseKnowledge.js';
-import { dialogueContext, resolveDialogueFocus, needsLegalResearch, validateDialogueQuantities } from './dialogueContext.js';
+import { dialogueContext, resolveDialogueFocus, needsLegalResearch, validateDialogueQuantities, extractDossierSentences } from './dialogueContext.js';
+import { retrieveDossierSemanticScores } from './caseDossierRetrieval.js';
 import { readDialoguePreview } from './dialoguePreview.js';
 import { SOURCE_POLICY, DEBATE_POLICY, roleTask, turnTask, dialogueProblem, guidedContinuation } from './debatePolicy.js';
 import { dialogueText } from '../../../shared/dialogueText.mjs';
@@ -245,9 +246,9 @@ function makeTurnPrompt(roleInstructions, context) {
   const schema = { role: context.state.speaking_role, purpose: 'một mục đích được phép', issue: context.state.current_issue.id,
     next_speaker: context.state.invited_next, focus: { learner: 'L1', dossier: [] }, citation_ids: [],
     ...(needsAnswer ? { answer: { question_id: question.id, status: 'supported hoặc not_determined', evidence_ids: [], direct_answer: 'câu trả lời trực tiếp' } } : {}),
-    content: 'lời thoại tự nhiên' };
+    content: 'lời thoại đối đáp tự nhiên tại tòa' };
   return [DEBATE_POLICY, RESPONSE_STYLE, roleInstructions,
-    `Chỉ trả JSON theo cấu trúc này, metadata trước content: ${JSON.stringify(schema)}. Giữ đúng role, issue, next_speaker. focus.learner chọn luận điểm thật trong learner. focus.dossier chọn 1–3 mã D từ dossier khi dùng tình tiết hồ sơ/làm rõ chứng cứ, được rỗng khi chỉ xét suy luận của người học, giới hạn tra cứu, mời hoặc hỏi rõ quan điểm/thủ tục. citation_ids chỉ lấy trong retrievedLaw. Không đưa mã vào content.`,
+    `Chỉ trả JSON theo cấu trúc này, metadata trước content: ${JSON.stringify(schema)}. Giữ đúng role, issue, next_speaker. focus.learner chọn luận điểm thật trong learner. focus.dossier chọn 1–3 mã D từ dossier khi dùng tình tiết hồ sơ/làm rõ chứng cứ, được rỗng khi chỉ xét suy luận của người học, giới hạn tra cứu, mời hoặc hỏi rõ quan điểm/thủ tục. citation_ids chỉ lấy mã trong retrievedLaw: khi trong content có trích dẫn hoặc nhắc đến Điều luật cụ thể (ví dụ Điều 166 Bộ luật Dân sự), BẮT BUỘC phải đưa đúng citationId tương ứng vào mảng citation_ids; tuyệt đối không nhắc số điều luật nếu điều đó không có trong retrievedLaw. content phải là lời phát biểu đối đáp tự nhiên, khúc chiết, mang khẩu khí con người tranh tụng tại phiên tòa thực tế, tuyệt đối không đưa mã hoặc nhãn nội bộ vào content.`,
     needsAnswer ? 'answer là bắt buộc. evidence_ids chép chính xác id trong hearing.available_evidence (không tự tạo mã và không dùng mã D). focus.dossier dùng mã D tương ứng với evidence_id đó. content phải bắt đầu nguyên văn bằng direct_answer. supported chỉ dùng bản provided có đoạn trong focus.dossier và gọi đúng tên tài liệu. mentioned_only được giả định có bản gốc, nhưng chỉ trả lời về phần nội dung đã nêu, không tự điền nội dung còn thiếu. Không có tài liệu đủ thì dùng not_determined, evidence_ids rỗng, nói rõ chưa xác định được từ dữ liệu cung cấp, không giả định kết quả sẽ có trong tương lai.' : '',
     '<UNTRUSTED_CASE_AND_LAW_DATA_JSON>', serializeUntrustedData(context), '</UNTRUSTED_CASE_AND_LAW_DATA_JSON>',
   ].join('\n');
@@ -260,7 +261,7 @@ export async function generateDebateTurn({ session, courtCase, records, speakers
   if (roleMismatch(session, latestContent)) {
     const side = participantSides(session).player === 'defendant' ? 'bị đơn' : 'nguyên đơn';
     return [{ sender_type: 'ai_judge', sender_name: 'Chủ tọa', role: 'judge', purpose: 'clarify_claim', next_speaker: 'learner',
-      content: `Trong phiên luyện tập, bạn đang bảo vệ phía ${side}. Đề nghị bạn trình bày lại lập luận theo vai này.`,
+      content: `Tại phiên tòa, Luật sư đang bảo vệ phía ${side}. Đề nghị Luật sư trình bày lại lập luận theo đúng tư cách tố tụng này.`,
       generation_mode: 'role_correction', citations: [], evidence_ids: [],
       fact_analysis: { established_facts: [], learner_claims: [latestContent], inferences: [], missing_facts: [] },
       generation_metrics: { total_ms: performance.now() - started, attempts: [], outcome: 'role_correction' } }];
@@ -280,11 +281,24 @@ export async function generateDebateTurn({ session, courtCase, records, speakers
     const result = await (dependencies.research ?? researchLegalBasis)({ eventDate: session.case_event_date, learnerTimeline: session.learner_timeline, courtCase, records, usageContext: { userId: session.user_id, sessionId: session._id } });
     legalMs = performance.now() - at; return result;
   };
-  const needsLaw = needsLegalResearch(records);
-  const [settings, legalContext] = await Promise.all([
+  const needsLaw = needsLegalResearch(records, courtCase);
+  const latestUser = records.findLast(r => r.sender_type === 'user');
+  const dossierRetriever = dependencies.retrieveDossier ?? retrieveDossierSemanticScores;
+  const isMocked = Boolean(dependencies.complete);
+  const [settings, legalContext, dossierScores] = await Promise.all([
     Promise.all(speakers.map(role => persona(role === 'judge' ? 'judge' : 'prosecutor'))),
     needsLaw ? research() : Promise.resolve({ citations: [], candidates: [], issues: [], warnings: [], legal_assessment_available: false }),
+    latestUser?.content && !isMocked
+      ? dossierRetriever({
+          courtCase,
+          sentences: extractDossierSentences(courtCase),
+          queryText: latestUser.content,
+        })
+      : Promise.resolve(null),
   ]);
+  if (dossierScores) {
+    legalContext.dossierSemanticScores = dossierScores;
+  }
   const preparationMs = performance.now() - started;
   const generated = [];
   for (const [index, role] of speakers.entries()) {
@@ -298,7 +312,7 @@ export async function generateDebateTurn({ session, courtCase, records, speakers
     context.state.speaking_role = role;
     context.state.invited_next = next;
     const phase = session.conversation?.phase ?? 'debate';
-    const direction = `Giai đoạn: ${phase}. Người được mời tiếp duy nhất: ${next === 'opponent' ? 'bên đối lập' : next === 'judge' ? 'Chủ tọa' : 'người học (xưng bạn)'}. Không mời bên khác.`;
+    const direction = `Giai đoạn: ${phase}. Người được mời tiếp duy nhất: ${next === 'opponent' ? 'bên đối lập' : next === 'judge' ? 'Chủ tọa' : 'Luật sư (gọi là Luật sư, tuyệt đối không xưng bạn)'}. Không mời bên khác.`;
     // Persona chỉ chọn model/nhiệt độ; nhiệm vụ vai dùng một bản chuẩn có kiểm thử.
     const systemPrompt = makeTurnPrompt([roleContext(session, courtCase), practiceInstructions(courtCase), roleTask(role, phase), direction, turnTask(role, context)].join('\n'), context);
     const metrics = { preparation_ms: preparationMs, legal_ms: legalMs, legal_lookup: needsLaw, context_ms: performance.now() - roleStarted, input_chars: systemPrompt.length, attempts: [] };
@@ -310,7 +324,7 @@ export async function generateDebateTurn({ session, courtCase, records, speakers
       dependencies.onProgress?.({ role, content: '' });
       let raw;
       try { raw = await complete({ usageContext: { userId: session.user_id, sessionId: session._id, role }, model: settings[index].model_id, temperature: settings[index].temperature,
-        json: true, maxAttempts: 1, maxCompletionTokens: role === 'judge' ? 900 : 1500,
+        json: true, maxAttempts: 3, maxCompletionTokens: role === 'judge' ? 2500 : 3500,
         ...(/^gpt-5\.6-(?:terra|luna)$/u.test(settings[index].model_id) ? { reasoningEffort: 'none' } : {}),
         onMetrics: value => Object.assign(measurement, value),
         ...(dependencies.onProgress ? { onDelta: raw => {
@@ -351,7 +365,6 @@ export async function generateDebateTurn({ session, courtCase, records, speakers
       measurement.rejection_code ??= 'DIALOGUE_REPAIR';
       measurement.rejection_reason = problem;
       dependencies.diagnostic?.({ role, ...measurement });
-      console.warn('Debate quality check:', { role, attempt: attempt + 1, code: measurement.rejection_code, reason: problem });
       repair = '\nBản trả lời trước chưa đạt: ' + problem + '\nViết lại JSON, không thêm tình tiết hay luật ngoài hồ sơ.';
     }
     metrics.total_ms = performance.now() - roleStarted + preparationMs;
@@ -402,7 +415,7 @@ export async function evaluateSession({ session, courtCase, records }, dependenc
     temperature: evaluator.temperature,
     json: true,
     timeoutMs: 90_000,
-    maxAttempts: 1,
+    maxAttempts: 3,
     systemPrompt: [EVIDENCE_ASSUMPTION_POLICY,
       commonContext(session, courtCase, records, legalContext, true),
       'Đánh giá lập luận pháp lý, chất lượng suy luận, cách dùng chứng cứ và kỹ năng tranh tụng. Phân biệt dữ kiện đã có, suy luận và thông tin còn thiếu.',
@@ -470,11 +483,6 @@ export async function evaluateSession({ session, courtCase, records }, dependenc
     } catch (error) {
       // Chỉ sửa một lần, không nới điều kiện hoặc tự tạo điểm khi model sai nguồn.
       measurement.rejection_code = error.code;
-      if (error.code === 'AI_INVALID_EVALUATION') {
-        // Chỉ ghi loại lỗi và mã tiêu chí, không ghi phản hồi AI hoặc lời người học.
-        console.warn('Evaluation validation failed:', { code: error.code, attempt: attempt + 1,
-          check: error.details?.check, criterion: error.details?.criterion });
-      }
       if (attempt === 1 || !['AI_UNGROUNDED_FACT', 'AI_INVALID_CITATIONS', 'AI_UNVERIFIED_CITATION', 'AI_INVALID_STRUCTURED_RESPONSE', 'AI_INVALID_EVALUATION'].includes(error.code)) throw error;
       // Cho model thấy bản bị từ chối để sửa đúng lỗi, không bắt tạo lại từ một thông báo chung.
       evaluationMessages.push({ role: 'assistant', content: raw }, { role: 'user', content:

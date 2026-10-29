@@ -13,11 +13,13 @@ const courtCase = {
 const session = {case_event_date:'2025-01-01',user_court_role:'defense_lawyer',difficulty:'beginner'};
 const user = {_id:randomUUID(),sender_type:'user',sender_name:'Người học giả định',content:'Tôi bảo vệ bên vay. Hợp đồng và sao kê thể hiện việc cho vay, nhưng chưa chứng minh đã trả tiền. Tôi đề nghị đối chiếu biên nhận và lời khai, không khẳng định khoản vay đã được hoàn trả khi chưa có chứng cứ.'};
 
-if (!['https://generativelanguage.googleapis.com', 'https://api.openai.com'].includes(new URL(env.AI_BASE_URL).origin)) {
-  throw new Error('Bài kiểm thử này chỉ dùng endpoint Gemini hoặc OpenAI chính thức.');
+import { connectDatabase, disconnectDatabase } from '../config/database.js';
+
+if (new URL(env.AI_BASE_URL).origin !== 'https://api.openai.com') {
+  throw new Error('Bài kiểm thử này chỉ dùng endpoint OpenAI chính thức.');
 }
 try {
-  await mongoose.connect(env.MONGO_URI,{serverSelectionTimeoutMS:5000});
+  await connectDatabase();
   // Chỉ đọc persona và văn bản luật công khai do người dùng cung cấp, không ghi dữ liệu học tập.
   const turns = await generateDebateTurn({session,courtCase,records:[user]});
   console.log(JSON.stringify({debate:'passed',roles:turns.map(t=>t.sender_name),citationCount:turns.reduce((n,t)=>n+t.citations.length,0)}));
@@ -26,4 +28,4 @@ try {
 } catch(error) {
   console.error(JSON.stringify({liveAI:'failed',code:error.code ?? error.name,message:error.name==='AppError'?error.message:'Kiểm thử chưa hoàn thành.'}));
   process.exitCode=1;
-} finally { await mongoose.disconnect(); }
+} finally { await disconnectDatabase(); }

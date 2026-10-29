@@ -5,6 +5,8 @@ import { legalAuthorities } from '../data/legalAuthorities.js';
 import { LegalDocument, LegalProvision } from '../models/index.js';
 import { getLegalSearchTerms, normalizeLegalSearchText } from './legalTextSearch.js';
 import { createProvisionUnits, parseLegalArticles } from './legalTextParser.js';
+import { embed } from './embeddingService.js';
+import { search as searchVectorStore, isQdrantAvailable } from './vectorStore.js';
 
 const MAX_PROVISIONS = 8;
 const MAX_CONTEXT_CHARACTERS = 8_000;
@@ -30,18 +32,28 @@ export function rankProvisions(provisions, courtCase, records = []) {
   const titleTerms = getLegalSearchTerms(normalizeLegalSearchText(courtCase.title ?? '').replace(/^(tranh chap|vu an)\s+/, ''));
   const recentTerms = getLegalSearchTerms(records.filter((r) => r.sender_type === 'user').slice(-2).map((r) => r.content).join(' '));
   const terms = [...new Set([...titleTerms, ...recentTerms, ...getLegalSearchTerms(courtCase.summary ?? '')])];
-  const frequencies = new Map(terms.map((term) => [term, provisions.filter((p) => p.search_tokens.includes(term)).length]));
+  const frequencies = new Map(terms.map((term) => [term, provisions.filter((p) => (p.search_tokens ?? []).includes(term)).length]));
   return provisions.map((provision) => {
-    const tokens = new Set(provision.search_tokens);
-    const heading = normalizeLegalSearchText(provision.text.split('\n')[0]);
-    let score = 0;
+    const tokens = new Set(provision.search_tokens ?? []);
+    const heading = normalizeLegalSearchText((provision.text ?? '').split('\n')[0]);
+    let keywordScore = 0;
     for (const term of terms) {
       if (!tokens.has(term)) continue;
       // Từ hiếm và tiêu đề có trọng số cao hơn, tránh chọn điều dài chỉ vì nhiều từ chung.
-      const idf = Math.log(1 + provisions.length / (1 + frequencies.get(term)));
-      score += idf * (titleTerms.includes(term) ? 4 : recentTerms.includes(term) ? 2 : 1) * (heading.includes(term) ? 3 : 1);
+      const idf = Math.log(1 + provisions.length / (1 + (frequencies.get(term) ?? 0)));
+      keywordScore += idf * (titleTerms.includes(term) ? 4 : recentTerms.includes(term) ? 2 : 1) * (heading.includes(term) ? 3 : 1);
     }
-    return { provision, score: score / (1 + 0.25 * Math.log(1 + provision.text.length / 1000)) };
+    const normalizedKeywordScore = keywordScore / (1 + 0.25 * Math.log(1 + (provision.text?.length ?? 0) / 1000));
+    // Hybrid scoring: kết hợp semantic vector score (nếu có) với keyword score.
+    const score = provision.vector_score != null
+      ? (Number(provision.vector_score) * 10) + normalizedKeywordScore
+      : normalizedKeywordScore;
+    return {
+      provision,
+      score,
+      vectorScore: provision.vector_score ?? null,
+      keywordScore: normalizedKeywordScore,
+    };
   }).sort((a, b) => b.score - a.score);
 }
 
@@ -111,16 +123,54 @@ export async function retrieveRelevantProvisions({ eventDate, courtCase, records
     courtCase?.summary,
     recentContext,
   ].filter(Boolean).join('\n'));
-  if (!terms.length) return { citations: [], warnings };
-  const provisions = await LegalProvision.find({
-    document_id: { $in: documents.map((document) => document._id) },
-    citation_eligible: true,
-    paragraph: null,
-    point: null,
-    effective_from: { $lte: eventDate },
-    $or: [{ effective_to: null }, { effective_to: { $gte: eventDate } }],
-    search_tokens: { $in: terms },
-  }).lean();
+  const queryText = [courtCase?.title, courtCase?.category, courtCase?.summary, recentContext].filter(Boolean).join(' ');
+  let provisions = [];
+  const vectorScores = new Map();
+  let vectorUsed = false;
+
+  if (queryText && await isQdrantAvailable()) {
+    try {
+      const vector = await embed(queryText, 'query');
+      const hits = await searchVectorStore('legal_provisions_legacy', {
+        vector,
+        limit: 50,
+        scoreThreshold: 0.25,
+      });
+      if (hits.length > 0) {
+        const pointIds = hits.map((h) => String(h.id));
+        for (const h of hits) {
+          vectorScores.set(String(h.id), h.score);
+        }
+        provisions = await LegalProvision.find({
+          _id: { $in: pointIds },
+          document_id: { $in: documents.map((document) => document._id) },
+          citation_eligible: true,
+          paragraph: null,
+          point: null,
+          effective_from: { $lte: eventDate },
+          $or: [{ effective_to: null }, { effective_to: { $gte: eventDate } }],
+        }).lean();
+        for (const p of provisions) {
+          p.vector_score = vectorScores.get(String(p._id));
+        }
+        vectorUsed = provisions.length > 0;
+      }
+    } catch {
+      // Fallback an toàn về keyword
+    }
+  }
+
+  if (!vectorUsed) {
+    provisions = await LegalProvision.find({
+      document_id: { $in: documents.map((document) => document._id) },
+      citation_eligible: true,
+      paragraph: null,
+      point: null,
+      effective_from: { $lte: eventDate },
+      $or: [{ effective_to: null }, { effective_to: { $gte: eventDate } }],
+      search_tokens: { $in: terms },
+    }).lean();
+  }
 
   const ranked = rankProvisions(provisions, courtCase, records)
     .map(({ provision, score }) => {

@@ -1,4 +1,5 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+dotenv.config({ override: true });
 import { createApp } from './app.js';
 import { connectDatabase, disconnectDatabase } from './config/database.js';
 import { env } from './config/env.js';
@@ -40,6 +41,6 @@ for (const signal of ['SIGINT', 'SIGTERM']) {
 }
 
 start().catch((error) => {
-  console.error('Không thể khởi động CourtSim API:', { name: error.name });
+  console.error('Không thể khởi động CourtSim API:', error.message || error);
   process.exit(1);
 });

@@ -8,10 +8,29 @@ import { hearingState } from './hearingState.js';
 const sentences = text => (text ?? '').split(/(?<=[.!?])\s+|\n+/u).map(s => s.trim()).filter(Boolean);
 const words = text => new Set((text.toLocaleLowerCase('vi').match(/[\p{L}\p{N}]{3,}/gu) ?? []));
 
-export function needsLegalResearch(records) {
+export function needsLegalResearch(records, courtCase) {
   const last = records.findLast(r => r.sender_type === 'user');
-  return Boolean(last?.legal_reference_ids?.length || last?.citations?.length
-    || /\b\d+\/\d{4}\/|(?:bộ luật|pháp luật|luật |nghị định|thông tư|hiệu lực|quy định|điều\s+\d+|khoản\s+\d+)/iu.test(last?.content ?? ''));
+  const mentionsLaw = Boolean(last?.legal_reference_ids?.length || last?.citations?.length
+    || /\b\d+\/\d{4}\/|(?:bộ luật|pháp luật|luật |nghị định|thông tư|hiệu lực|quy định|điều\s+\d+|khoản\s+\d+|căn cứ|pháp lý|văn bản)/iu.test(last?.content ?? ''));
+  if (mentionsLaw) return true;
+  // Tự động nạp căn cứ pháp lý khi phiên đã bước vào tranh luận (từ lượt 1 trở đi) và vụ án có mốc thời gian/danh mục luật
+  const userTurns = records.filter(r => r.sender_type === 'user').length;
+  if (userTurns >= 1 && (courtCase?.timeline?.length || courtCase?.category)) {
+    return true;
+  }
+  return false;
+}
+
+export function extractDossierSentences(courtCase) {
+  const knowledge = caseKnowledge(courtCase);
+  const sources = [
+    ...knowledge.recorded_events.map(f => f.quote),
+    ...knowledge.party_statements.map(f => f.quote),
+    ...knowledge.unproven.map(f => f.quote),
+    ...knowledge.unclassified_context,
+    ...evidenceInventory(courtCase).flatMap(e => [e.summary, ...(e.availability === 'provided' ? [e.content] : [])]).filter(Boolean),
+  ];
+  return [...new Set(sources.flatMap(sentences))];
 }
 
 export function dialogueContext(session, courtCase, records, legalContext) {
@@ -33,13 +52,20 @@ export function dialogueContext(session, courtCase, records, legalContext) {
   const seen = new Set();
   const ranked = sources.flatMap(source => sentences(source.text).map(text => ({ ...source, text })))
     .filter(source => { const key = `${source.evidence_id ?? ''}:${source.text}`; if (seen.has(key)) return false; seen.add(key); return true; })
-    .map((source, index) => ({ ...source, index, relevance: [...words(source.text)].filter(w => terms.has(w)).length }))
+    .map((source, index) => {
+      const keywordScore = [...words(source.text)].filter(w => terms.has(w)).length;
+      const semanticScore = legalContext?.dossierSemanticScores?.get(source.text);
+      const relevance = semanticScore != null
+        ? (Number(semanticScore) * 10) + keywordScore
+        : keywordScore;
+      return { ...source, index, relevance, semanticScore: semanticScore ?? null, keywordScore };
+    })
     .sort((a, b) => b.relevance - a.relevance || a.index - b.index);
   let size = 0;
   const dossier = ranked.filter(source => {
     if (size + source.text.length > 12000) return false;
     size += source.text.length; return true;
-  }).slice(0, 28).map(({ relevance, index, ...source }, i) => ({ id: `D${i + 1}`, ...source }));
+  }).slice(0, 28).map(({ relevance, index, semanticScore, keywordScore, ...source }, i) => ({ id: `D${i + 1}`, ...source }));
   const learnerSentences = sentences(latest?.content);
   const positions = learnerSentences.filter(text => !/^(?:Phiên kiểm thử|Nội dung người học mô phỏng)/iu.test(text));
   const learner = (positions.length ? positions : learnerSentences).map((text, i) => ({ id: `L${i + 1}`, text }));

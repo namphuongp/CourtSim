@@ -120,3 +120,41 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   outline: 3px solid rgb(37 99 235 / 0.26);
   outline-offset: 2px;
 }
+
+/* ========================================================
+   CÔ LẬP IN ẤN VĂN BẢN (PRINT ISOLATION)
+   Khi xuất PDF hoặc in, CHỈ in nội dung văn bản thuần túy
+   trong #courtsim-print-root, LOẠI BỎ 100% giao diện website,
+   thanh công cụ, modal, header, nút bấm.
+   ======================================================== */
+#courtsim-print-root {
+  display: none;
+}
+
+@media print {
+  /* Ẩn toàn bộ giao diện website và các modal xung quanh */
+  body > *:not(#courtsim-print-root) {
+    display: none !important;
+  }
+
+  /* Hiển thị duy nhất khu vực tài liệu cần in */
+  #courtsim-print-root {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+}

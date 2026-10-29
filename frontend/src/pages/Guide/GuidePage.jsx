@@ -95,7 +95,7 @@ export default function GuidePage() {
           <details><summary>Tôi có thể chọn những vai nào?</summary><p>Bạn chọn vai luật sư bảo vệ nguyên đơn hoặc bị đơn, tương ứng với phía được nêu trong hồ sơ. AI đảm nhiệm Chủ tọa và bên đối lập.</p></details>
           <details><summary>Tải lại trang có làm mất phiên không?</summary><p>Các lượt đã gửi được lưu trong phiên của tài khoản. Bạn có thể mở lại phiên chưa kết thúc từ trang luyện tập. Bản nháp được giữ trong cùng thẻ trình duyệt nếu trình duyệt cho phép lưu trữ.</p></details>
           <details><summary>Tại sao một số tiêu chí chưa được chấm?</summary><p>Phiên có thể thiếu nguồn luật đủ điều kiện hoặc chưa có cơ hội thể hiện kỹ năng tương ứng. Phần chưa đánh giá không được xem là điểm 0.</p></details>
-          <details><summary>Có thể tải hồ sơ riêng, dùng giọng nói hoặc xuất PDF không?</summary><p>Các chức năng này chưa có trong giao diện hiện tại. Bạn luyện tập bằng văn bản trên các hồ sơ được quản trị viên cung cấp.</p></details>
+          <details><summary>Có thể dùng giọng nói hoặc xuất kết quả / biên bản PDF không?</summary><p>Có. Hệ thống hỗ trợ tranh tụng bằng giọng nói (Speech-to-Text) và nghe lời thoại Hội đồng xét xử trực tiếp. Trong và sau phiên tòa, bạn có thể bấm nút "Xuất biên bản PDF" hoặc "Xuất kết quả PDF" để in và lưu trữ tài liệu chuẩn thể thức pháp lý A4.</p></details>
           <details><summary>Quyền lợi được cập nhật khi nào sau thanh toán?</summary><p>Quyền lợi chỉ được cấp sau khi máy chủ xác nhận giao dịch. Nếu đã chuyển tiền, mở lại đơn và kiểm tra trạng thái trước khi thực hiện thêm giao dịch.</p></details>
         </section></div>
         <section id="support" className="guide-card">

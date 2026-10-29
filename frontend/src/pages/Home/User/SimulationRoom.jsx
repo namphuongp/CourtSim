@@ -17,6 +17,9 @@ import { postDialogue } from '../../../services/dialogueStream';
 import { roleLabel } from '../../../services/simulation';
 import { draftKey, readDraft, saveDraft } from '../../../services/auth';
 import UpgradeNotice from '../../../components/membership/UpgradeNotice';
+import VoiceDebateControls from '../../../components/courtroom/VoiceDebateControls';
+import { speakCourtroomText, stopCourtroomSpeech } from '../../../services/voiceService';
+import PdfExportModal from '../../../components/courtroom/PdfExportModal';
 import FeedbackModal from '../../../components/feedback/FeedbackModal';
 import { BookOpen, FileText, Gavel, HelpCircle, ListChecks, Maximize2, Scale } from 'lucide-react';
 import { LoadingState } from '../../../components/WorkspaceStates';
@@ -50,6 +53,10 @@ function Room({ sessionId }) {
   const [slow, setSlow] = useState(false);
   const [waitExpired, setWaitExpired] = useState(false);
   const [state, setState] = useState({ loading: true, sending: false, ending: false, error: '' });
+  const [cooldown, setCooldown] = useState(false);
+  const [ttsEnabled, setTtsEnabled] = useState(false);
+  const [pdfModalOpen, setPdfModalOpen] = useState(false);
+  const lastSpokenRecordIdRef = useRef(null);
   useEffect(() => { saveDraft(storageKey, draft); }, [storageKey, draft]);
   useEffect(() => {
     let active = true;
@@ -119,6 +126,57 @@ function Room({ sessionId }) {
     requestAnimationFrame(() => { argumentRef.current?.focus(); argumentRef.current?.setSelectionRange(start + insertion.length, start + insertion.length); });
   }
 
+  const lastVoiceTranscriptRef = useRef({ text: '', time: 0 });
+
+  function appendVoiceTranscript(spokenText) {
+    if (!spokenText?.trim()) return;
+    const cleanSpoken = spokenText.trim();
+    const now = Date.now();
+
+    // 1. Chặn duplicate theo thời gian nếu cùng chuỗi được gọi liên tiếp trong 3 giây
+    if (
+      cleanSpoken.toLowerCase() === lastVoiceTranscriptRef.current.text.toLowerCase() &&
+      now - lastVoiceTranscriptRef.current.time < 3000
+    ) {
+      return;
+    }
+
+    setDraft((current) => {
+      const prev = current.content || '';
+      let textToInsert = cleanSpoken;
+
+      // 2. Chặn duplicate ngữ nghĩa: nếu câu này đã nằm sẵn ở cuối nội dung thì bỏ qua
+      const trimmedPrev = prev.trim().toLowerCase();
+      const trimmedNew = textToInsert.toLowerCase();
+      if (trimmedPrev.endsWith(trimmedNew) || trimmedPrev === trimmedNew) {
+        return current;
+      }
+
+      // Tự động viết hoa chữ cái đầu nếu bắt đầu câu mới
+      const needsCapital = prev.length === 0 || /[.!?\n]\s*$/u.test(prev);
+      if (needsCapital && textToInsert.length > 0) {
+        textToInsert = textToInsert.charAt(0).toLocaleUpperCase('vi') + textToInsert.slice(1);
+      }
+      const spacer = prev.length === 0 || /[\s\n]$/u.test(prev) ? '' : ' ';
+      const updated = (prev + spacer + textToInsert).slice(0, 4000);
+      lastVoiceTranscriptRef.current = { text: cleanSpoken, time: now };
+      return { content: updated, request_id: crypto.randomUUID() };
+    });
+    requestAnimationFrame(() => {
+      if (argumentRef.current) {
+        argumentRef.current.focus();
+        argumentRef.current.scrollTop = argumentRef.current.scrollHeight;
+      }
+    });
+  }
+
+  // Dọn dẹp âm thanh khi rời phòng
+  useEffect(() => {
+    return () => {
+      stopCourtroomSpeech();
+    };
+  }, []);
+
   function dropEvidence(event) {
     const id = event.dataTransfer.getData(EVIDENCE_MIME);
     if (!id) return;
@@ -142,7 +200,7 @@ function Room({ sessionId }) {
 
   async function send(event) {
     event.preventDefault();
-    if (busy.current || disabled || (conversation && conversation.status !== 'learner') || draft.content.trim().length < 1) return;
+    if (busy.current || disabled || cooldown || (conversation && conversation.status !== 'learner') || draft.content.trim().length < 3) return;
     busy.current = true;
     setSubmittedContent(draft.content);
     setState((s) => ({ ...s, sending: true, error: '' }));
@@ -169,6 +227,9 @@ function Room({ sessionId }) {
       setSubmittedContent('');
       setStreamedSpeech(null);
       setState((s) => ({ ...s, sending: false }));
+      // Kích hoạt cooldown 2.5s để chống click dồn / spam token
+      setCooldown(true);
+      setTimeout(() => setCooldown(false), 2500);
     }
   }
 
@@ -190,19 +251,92 @@ function Room({ sessionId }) {
     } finally { busy.current = false; setStreamedSpeech(null); setState(s => ({ ...s, sending: false })); }
   }
 
-  async function complete() {
-    if (busy.current || disabled || !userTurns) return;
+  async function pollStatusManually() {
+    try {
+      const { data } = await api.get(`/v1/sessions/${sessionId}`);
+      setSession(data.data);
+      if (data.data.status === 'completed' || data.data.evaluation) {
+        saveDraft(completionKey, null);
+        saveDraft(storageKey, null);
+        navigate(`/simulation/${sessionId}/result`);
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }
+
+  async function complete(options = {}) {
+    if (busy.current || disabled) return;
+
+    // Nếu người dùng chọn gửi lời tranh tụng dở dang làm phần kết luận trước khi chấm điểm
+    if (options?.sendDraft && draft.content.trim()) {
+      busy.current = true;
+      setState((s) => ({ ...s, ending: true, error: '' }));
+      try {
+        const command = {
+          ...draft,
+          ...(conversation ? { action: 'submit', revision: conversation.revision } : {}),
+          expected_turn_count: userTurns,
+          evidence_ids: evidenceIds(draft.content, session.case_id?.evidence_inventory),
+          legal_reference_ids: draft.content.includes('[PL:') ? [...new Set([...draft.content.matchAll(/\[PL:([^\]\s]+)\]/gu)].map((match) => match[1]))] : undefined
+        };
+        const { data } = conversation ? await postDialogue(sessionId, command, setStreamedSpeech) : await api.post(`/v1/sessions/${sessionId}/messages`, command);
+        if (conversation) {
+          setSession(data.data.session);
+          setRecords(data.data.records);
+        } else {
+          setRecords((current) => [...new Map([...current, ...data.data].map((r) => [r._id, r])).values()]);
+        }
+        setDraft({ content: '', request_id: crypto.randomUUID() });
+        saveDraft(storageKey, null);
+      } catch (submitErr) {
+        busy.current = false;
+        setState((s) => ({ ...s, ending: false, error: getApiError(submitErr, 'Chưa gửi được lời tranh luận cuối cùng. Bạn có thể kiểm tra lại nội dung.') }));
+        return;
+      }
+      busy.current = false;
+    }
+
+    if (userTurns < 1 && !options?.sendDraft) return;
+
     busy.current = true;
     saveDraft(completionKey, { requested: true });
     setState((s) => ({ ...s, ending: true, error: '' }));
+
+    // Tự động kiểm tra trạng thái phiên nếu request mất nhiều thời gian hoặc có gián đoạn mạng
+    async function checkCompletionStatus(attempts = 6, intervalMs = 2500) {
+      for (let i = 0; i < attempts; i++) {
+        await new Promise((r) => setTimeout(r, intervalMs));
+        try {
+          const { data } = await api.get(`/v1/sessions/${sessionId}`);
+          if (data.data?.status === 'completed' || data.data?.evaluation) {
+            saveDraft(completionKey, null);
+            saveDraft(storageKey, null);
+            navigate(`/simulation/${sessionId}/result`);
+            return true;
+          }
+        } catch {
+          // tiếp tục thử lại
+        }
+      }
+      return false;
+    }
+
     try {
       await api.post(`/v1/sessions/${sessionId}/complete`);
       saveDraft(completionKey, null);
       saveDraft(storageKey, null);
       navigate(`/simulation/${sessionId}/result`);
     } catch (error) {
+      const isBusyOrSlow = error.response?.status === 409 || error.response?.status === 504 || error.code === 'ECONNABORTED' || !error.response;
+      if (isBusyOrSlow) {
+        const completed = await checkCompletionStatus(6, 2500);
+        if (completed) return;
+      }
+
       setConfirmEnd(false);
-      // Thoát trạng thái chấm ngay khi POST lỗi, không đợi thêm lần đọc trạng thái.
       setState((s) => ({ ...s, ending: false, error: getApiError(error, 'Chưa thể chấm điểm. Vui lòng thử lại.') }));
       if (error.response?.status >= 500 && /^AI_/u.test(error.response.data?.error?.code ?? '')) {
         saveDraft(completionKey, null);
@@ -232,6 +366,19 @@ function Room({ sessionId }) {
   }
   const view = streamedSpeech?.content && state.sending ? { record: { _id: 'streaming', content: streamedSpeech.content, sender_type: streamedSpeech.role === 'judge' ? 'ai_judge' : 'ai_prosecutor' }, actor: streamedSpeech.role, streaming: true }
     : courtroomView({ records, selectedId: selectedId ?? conversation?.current_record_id, sending: state.sending && Boolean(submittedContent) && !session?.processing, pendingContent: submittedContent, processing: session?.processing, ending: state.ending });
+  // Tự động đọc lời thoại Hội đồng xét xử & Bên đối lập khi bật chế độ TTS
+  useEffect(() => {
+    if (!ttsEnabled) {
+      stopCourtroomSpeech();
+      return;
+    }
+    const record = view?.record;
+    if (!record || view.streaming || record.sender_type === 'user') return;
+    if (record._id && record._id !== lastSpokenRecordIdRef.current) {
+      lastSpokenRecordIdRef.current = record._id;
+      speakCourtroomText(record.content, { role: view.actor });
+    }
+  }, [ttsEnabled, view?.record, view?.streaming, view?.actor]);
   const panelTitles = { notebook: 'Sổ tay phiên', guide: 'Hướng dẫn phiên tòa', case: 'Hồ sơ phiên tòa', assistant: 'Trợ lý luật', history: 'Hồ sơ phiên tòa', speech: 'Lời trình bày đầy đủ' };
   const ready = !disabled && (!conversation || conversation.status === 'learner') && userTurns < (session?.max_turns ?? 20);
   const reviewing = Boolean(selectedId && selectedId !== (conversation?.current_record_id ?? records.at(-1)?._id));
@@ -260,7 +407,7 @@ function Room({ sessionId }) {
     </StudyPanel>
     <ConfirmEndDialog open={confirmEnd} pending={state.ending} hasDraft={Boolean(draft.content.trim())} onCancel={() => setConfirmEnd(false)} onConfirm={complete} />
     {expandedComposer && <FeedbackModal title="Trình bày ý kiến của bạn" onClose={() => setExpandedComposer(false)}><div className="argument-editor"><div><label htmlFor="argument-expanded">Nội dung lập luận</label><textarea id="argument-expanded" disabled={!ready} maxLength={4000} value={draft.content} onChange={event => setDraft({ content: event.target.value, request_id: crypto.randomUUID() })}/><small>{draft.content.length}/4000 ký tự · Bản nháp được lưu trên trình duyệt</small></div><aside><h3>{draftMode ?? 'Gợi ý trình bày'}</h3>{draftMode && <p>{draftMode === 'Phản bác' ? 'Chọn một ý kiến cụ thể của bên đối lập, chỉ ra điểm chưa thuyết phục và đối chiếu chứng cứ hoặc căn cứ pháp luật.' : draftMode === 'Đặt câu hỏi' ? 'Nêu câu hỏi ngắn, rõ và gắn với một tình tiết cần làm sáng tỏ trong hồ sơ.' : 'Tóm lược luận điểm chính, chứng cứ hỗ trợ và đề nghị của phía bạn.'}</p>}<ol><li>Nêu vấn đề cần giải quyết.</li><li>Liên hệ tình tiết và chứng cứ.</li><li>Giải thích căn cứ pháp luật.</li><li>Trả lời ý kiến của bên đối lập.</li><li>Kết luận về đề nghị của bạn.</li></ol><p>Nội dung chỉ được gửi khi bạn bấm Gửi lập luận trong phiên.</p></aside></div><div className="argument-editor-actions"><button type="button" onClick={() => { setExpandedComposer(false); requestAnimationFrame(() => argumentRef.current?.focus()); }}>Quay lại ô lập luận →</button></div></FeedbackModal>}
-    <header className="courtroom-header"><div><Link className="courtroom-back" to="/dashboard/sessions">← Danh sách phiên</Link><h1>{session?.case_id?.title ?? 'Phiên mô phỏng'}</h1><p className="courtroom-meta"><span>{roleLabel(session?.user_court_role, session?.case_id?.category, session?.case_id)}</span><span>· {session?.case_id?.practice_context ? 'Mốc tham chiếu sơ thẩm' : 'Ngày sự kiện'}: {session?.case_event_date ?? 'Chưa xác định'}</span><span>· {userTurns}/{session?.max_turns ?? 20} lượt</span></p></div><nav className="courtroom-controls" aria-label="Công cụ phiên tòa"><button className="tool-guide" aria-expanded={panel === 'guide'} onClick={() => setPanel(panel === 'guide' ? null : 'guide')}>Hướng dẫn</button><button className="tool-case" aria-expanded={panel === 'case' || panel === 'history'} onClick={() => setPanel(panel === 'case' || panel === 'history' ? null : 'case')}>Hồ sơ phiên tòa</button><button className="tool-law" aria-expanded={panel === 'assistant'} onClick={() => setPanel(panel === 'assistant' ? null : 'assistant')}>Trợ lý luật</button><button className="tool-notebook" aria-expanded={panel === 'notebook'} onClick={() => setPanel(panel === 'notebook' ? null : 'notebook')}>Sổ tay</button>{completed ? <Link to={'/simulation/' + sessionId + '/result'}>Xem kết quả</Link> : <button className="end-session" disabled={disabled || !userTurns} onClick={() => setConfirmEnd(true)}>{state.ending ? 'Đang chấm điểm...' : 'Kết thúc và chấm điểm'}</button>}</nav></header>
+    <header className="courtroom-header"><div><Link className="courtroom-back" to="/dashboard/sessions">← Danh sách phiên</Link><h1>{session?.case_id?.title ?? 'Phiên mô phỏng'}</h1><p className="courtroom-meta"><span>{roleLabel(session?.user_court_role, session?.case_id?.category, session?.case_id)}</span><span>· {session?.case_id?.practice_context ? 'Mốc tham chiếu sơ thẩm' : 'Ngày sự kiện'}: {session?.case_event_date ?? 'Chưa xác định'}</span><span>· {userTurns}/{session?.max_turns ?? 20} lượt</span></p></div><nav className="courtroom-controls" aria-label="Công cụ phiên tòa"><button className="tool-guide" aria-expanded={panel === 'guide'} onClick={() => setPanel(panel === 'guide' ? null : 'guide')}>Hướng dẫn</button><button className="tool-case" aria-expanded={panel === 'case' || panel === 'history'} onClick={() => setPanel(panel === 'case' || panel === 'history' ? null : 'case')}>Hồ sơ phiên tòa</button><button className="tool-law" aria-expanded={panel === 'assistant'} onClick={() => setPanel(panel === 'assistant' ? null : 'assistant')}>Trợ lý luật</button><button className="tool-notebook" aria-expanded={panel === 'notebook'} onClick={() => setPanel(panel === 'notebook' ? null : 'notebook')}>Sổ tay</button><button type="button" className="tool-export" onClick={() => setPdfModalOpen(true)} title="Xuất biên bản phiên tòa dạng PDF">Xuất biên bản PDF</button>{completed ? <Link to={'/simulation/' + sessionId + '/result'}>Xem kết quả</Link> : <button className="end-session" disabled={disabled || !userTurns} onClick={() => setConfirmEnd(true)}>{state.ending ? 'Đang chấm điểm...' : 'Kết thúc và chấm điểm'}</button>}</nav></header>
     {insertError && !panel && <p role="alert" className="courtroom-notice">{insertError}</p>}
     {state.error && <div role="alert" className="courtroom-notice">{state.error}<button disabled={state.sending || state.ending} onClick={() => setReload((n) => n + 1)}>Tải lại dữ liệu</button></div>}
     {session && !session.case_event_date && !completed && <form onSubmit={saveEventDate} className="courtroom-notice"><p>Bổ sung ngày trong hồ sơ hoặc một ngày giả định cho bài tập để tiếp tục.</p><label>Ngày tra cứu <input required type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} className="m-2 rounded border p-2" /></label><button disabled={state.sending || !eventDate}>Lưu ngày</button></form>}
@@ -274,8 +421,23 @@ function Room({ sessionId }) {
     </nav>
     {completed ? <p className="courtroom-notice">Phiên đã kết thúc. Đây là biên bản chỉ đọc.</p> : <form onSubmit={send} className="courtroom-composer">
       <div className="composer-heading"><label htmlFor="argument">Lập luận của bạn</label><span role="status" className="composer-turn-status">{status}</span><button type="button" className="expand-argument" disabled={!ready} onClick={() => { setDraftMode(null); setExpandedComposer(true); }}><Maximize2 size={13}/> Mở rộng trình bày</button></div>
-      <div className="composer-fields"><textarea ref={argumentRef} onDrop={dropEvidence} onDragOver={(event) => { if (event.dataTransfer.types.includes(EVIDENCE_MIME)) { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; } }} id="argument" disabled={!ready} maxLength={4000} value={draft.content} onChange={(e) => setDraft({ content: e.target.value, request_id: crypto.randomUUID() })} placeholder="Trình bày luận điểm, liên hệ chứng cứ và trả lời vấn đề chủ tọa đặt ra…" /><button className="composer-send" disabled={!ready || draft.content.trim().length < 1}>Gửi lập luận <span aria-hidden="true">↗</span></button></div>
+      <VoiceDebateControls
+        disabled={!ready}
+        onAppendText={appendVoiceTranscript}
+        textareaRef={argumentRef}
+        ttsEnabled={ttsEnabled}
+        onToggleTts={() => setTtsEnabled((v) => !v)}
+      />
+      <div className="composer-fields"><textarea ref={argumentRef} onDrop={dropEvidence} onDragOver={(event) => { if (event.dataTransfer.types.includes(EVIDENCE_MIME)) { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; } }} id="argument" disabled={!ready} maxLength={4000} value={draft.content} onChange={(e) => setDraft({ content: e.target.value, request_id: crypto.randomUUID() })} placeholder="Trình bày luận điểm, liên hệ chứng cứ và trả lời vấn đề chủ tọa đặt ra… Hoặc bấm nút Micro ở trên để tranh tụng bằng giọng nói." /><button className="composer-send" disabled={!ready || state.sending || cooldown || draft.content.trim().length < 3} title={cooldown ? 'Vui lòng chờ ít giây trước khi gửi tiếp' : undefined}>{state.sending ? 'Đang gửi…' : cooldown ? 'Chờ giây lát…' : <>Gửi lập luận <span aria-hidden="true">↗</span></>}</button></div>
       <div className="composer-foot"><span>{draft.content.length}/4000</span></div>{userTurns >= (session?.max_turns ?? 20) && <p>Đã đủ số lượt. Chọn Kết thúc và chấm điểm để xem kết quả.</p>}
     </form>}
+    <PdfExportModal
+      open={pdfModalOpen}
+      onClose={() => setPdfModalOpen(false)}
+      sessionId={sessionId}
+      session={session}
+      records={records}
+      initialType="transcript"
+    />
   </main>;
 }

@@ -2,11 +2,12 @@ import ScoringSummary from '../../../components/ScoringSummary';
 import LearnerFeedback from '../../../components/feedback/LearnerFeedback';
 import { LegalCitations, LegalResearchResult } from '../../../components/LegalBasis';
 import { useEffect, useState } from 'react';
-import { Home } from 'lucide-react';
+import { Home, FileDown } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import api, { getApiError } from '../../../services/api';
 import './simulationResult.css';
 import UpgradeNotice from '../../../components/membership/UpgradeNotice';
+import PdfExportModal from '../../../components/courtroom/PdfExportModal';
 import UserHeader from '../../../components/UserHeader';
 import { LoadingState } from '../../../components/WorkspaceStates';
 
@@ -24,6 +25,7 @@ function SessionResult({ sessionId }) {
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [reload, setReload] = useState(0);
+  const [pdfExportOpen, setPdfExportOpen] = useState(false);
   const [detailView, setDetailView] = useState(false);
   const [activeGroup, setActiveGroup] = useState('all');
 
@@ -54,7 +56,28 @@ function SessionResult({ sessionId }) {
   if (!result) return <main className="result-page result-state"><LoadingState>Đang tải kết quả...</LoadingState></main>;
   return (
     <main className="result-page"><div className="result-container space-y-6">
-      <header className="result-hero flex flex-wrap items-center justify-between gap-4"><div><p>Kết quả phiên mô phỏng</p><h1 id="result-heading" tabIndex={-1}>{detailView ? 'Điểm & nhận xét chi tiết' : 'Kết quả luyện tập'}</h1></div><div className="result-hero-actions">{result.criteria?.length > 0 && result.features?.detailedScoring !== false && <button className="result-view-switch" onClick={() => { setDetailView(value => !value); setActiveGroup('all'); }}>{detailView ? 'Xem tổng quan phiên' : 'Điểm & nhận xét chi tiết'}</button>}<button onClick={() => navigate('/dashboard')}><Home size={17} /> Tổng quan</button></div></header>
+      <header className="result-hero flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <p>Kết quả phiên mô phỏng</p>
+          <h1 id="result-heading" tabIndex={-1}>{detailView ? 'Điểm & nhận xét chi tiết' : 'Kết quả luyện tập'}</h1>
+        </div>
+        <div className="flex flex-wrap items-center gap-3 result-hero-actions">
+          {result.criteria?.length > 0 && result.features?.detailedScoring !== false && (
+            <button className="result-view-switch" onClick={() => { setDetailView(value => !value); setActiveGroup('all'); }}>
+              {detailView ? 'Xem tổng quan phiên' : 'Điểm & nhận xét chi tiết'}
+            </button>
+          )}
+          <button 
+            type="button" 
+            onClick={() => setPdfExportOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl font-semibold shadow-md shadow-blue-500/20 text-sm transition-all cursor-pointer"
+          >
+            <FileDown size={17} />
+            <span>Xuất kết quả / Biên bản PDF</span>
+          </button>
+          <button onClick={() => navigate('/dashboard')}><Home size={17} /> Tổng quan</button>
+        </div>
+      </header>
       {detailView && <nav className="result-group-tabs" aria-label="Lọc nhóm kỹ năng"><button aria-pressed={activeGroup === 'all'} onClick={() => setActiveGroup('all')}>Tất cả tiêu chí</button>{result.criteria.map(group => <button key={group.id} aria-pressed={activeGroup === group.id} onClick={() => setActiveGroup(group.id)}>{group.label}</button>)}</nav>}
       <ScoringSummary key={detailView ? 'detail' : 'overview'} detailsOnly={detailView} activeGroup={activeGroup} result={result} sessionId={sessionId} />
       {result.features?.detailedScoring === false ? <UpgradeNotice /> : <details className="result-details"><summary>Nhận xét lưu cùng kết quả và nguồn pháp luật</summary>
@@ -64,6 +87,14 @@ function SessionResult({ sessionId }) {
       <section className="result-card result-law"><h2>Căn cứ pháp luật đã sử dụng</h2>{!result.citations?.length && <p>Chưa có căn cứ pháp luật được xác minh trong kết quả này.</p>}<LegalCitations citations={result.citations} /><LegalResearchResult research={result.legal_research} /></section>
       </details>}
       <p className="result-disclaimer">Kết quả chỉ phục vụ học tập, không phải tư vấn hoặc kết luận pháp lý.</p>
-    </div></main>
+    </div>
+    <PdfExportModal
+      open={pdfExportOpen}
+      onClose={() => setPdfExportOpen(false)}
+      sessionId={sessionId}
+      result={result}
+      initialType="result"
+    />
+  </main>
   );
 }
