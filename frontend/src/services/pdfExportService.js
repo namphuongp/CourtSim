@@ -513,6 +513,12 @@ export function generateCourtroomDocumentHtml({
       </ul>
     </div>
     ` : ''}
+    ` : type === 'result' ? `
+    <!-- PHẦN II: THÔNG BÁO TIẾN TRÌNH KHI CHƯA CHẤM ĐIỂM -->
+    <div class="section-title">II. KẾT QUẢ ĐÁNH GIÁ NĂNG LỰC TRANH TỤNG</div>
+    <div style="padding: 24px; border: 1px dashed #94a3b8; border-radius: 6px; text-align: center; color: #475569; font-style: italic; margin-top: 14px; background: #f8fafc;">
+      Phiên tòa đang trong tiến trình tranh luận (chưa kết thúc và chấm điểm). Bảng điểm đánh giá năng lực và nhận xét Rubric sẽ được tự động ghi nhận tại đây sau khi hoàn tất phiên.
+    </div>
     ` : ''}
 
     ${isTranscriptIncluded ? `
@@ -548,6 +554,12 @@ export function generateCourtroomDocumentHtml({
         </div>
         `;
       }).join('')}
+    </div>
+    ` : type === 'transcript' ? `
+    <!-- PHẦN II: THÔNG BÁO CHƯA CÓ LƯỢT PHÁT BIỂU -->
+    <div class="section-title">II. DIỄN BIẾN TRANH TỤNG TẠI PHIÊN TÒA</div>
+    <div style="padding: 24px; border: 1px dashed #94a3b8; border-radius: 6px; text-align: center; color: #475569; font-style: italic; margin-top: 14px; background: #f8fafc;">
+      Chưa có lượt phát biểu nào được ghi nhận trong phiên tòa này.
     </div>
     ` : ''}
 
