@@ -149,7 +149,11 @@ export default function AdminCases() {
         setDetail({});
       }
       setDeleteTarget(null);
-      resource.reload();
+      if (resource?.data?.data?.length <= 1 && page > 1) {
+        setPage(p => p - 1);
+      } else {
+        resource.reload();
+      }
     } catch (failure) {
       setError(getApiError(failure, 'Chưa thể xóa vụ án. Vui lòng thử lại.'));
     } finally {

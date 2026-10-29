@@ -198,6 +198,8 @@ export function createSpeechRecognizer({
 export function cleanTextForSpeech(raw) {
   if (!raw) return '';
   return raw
+    .replace(/\[([^\]]+)\]\([^)]+\)/gu, '$1') // Giữ lại text của link markdown
+    .replace(/<[^>]+>/gu, '') // Lược bỏ thẻ HTML
     .replace(/\[(?:CC|PL):[^\]]+\]/gu, '')
     .replace(/\[(?:Chứng cứ|Điều luật):[^\]]+\]/gu, '')
     .replace(/https?:\/\/[^\s]+/gu, '')
@@ -207,6 +209,33 @@ export function cleanTextForSpeech(raw) {
 }
 
 let activeUtterance = null;
+let cachedVoices = [];
+
+function updateVoices() {
+  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    try {
+      cachedVoices = window.speechSynthesis.getVoices() || [];
+    } catch { /* Bỏ qua */ }
+  }
+}
+
+if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+  updateVoices();
+  if (typeof window.speechSynthesis.addEventListener === 'function') {
+    window.speechSynthesis.addEventListener('voiceschanged', updateVoices);
+  } else {
+    window.speechSynthesis.onvoiceschanged = updateVoices;
+  }
+}
+
+export function getVietnameseVoice() {
+  if (!cachedVoices.length) updateVoices();
+  return (
+    cachedVoices.find(v => v.lang === 'vi-VN' || v.lang?.toLowerCase().startsWith('vi')) ||
+    cachedVoices.find(v => /vietnam|vietnamese|tiếng việt/i.test(v.name)) ||
+    null
+  );
+}
 
 /**
  * Phát âm thanh lời thoại tòa án (Text-to-Speech)
@@ -228,11 +257,8 @@ export function speakCourtroomText(text, { role = 'judge', onStart, onEnd, onErr
   const utterance = new SpeechSynthesisUtterance(clean);
   activeUtterance = utterance;
 
-  // Lấy danh sách giọng đọc tiếng Việt trên máy
-  const voices = window.speechSynthesis.getVoices();
-  const viVoice = voices.find(v => v.lang === 'vi-VN' || v.lang.startsWith('vi'))
-    || voices.find(v => /vietnam|vietnamese|tiếng việt/i.test(v.name));
-
+  // Lấy giọng đọc tiếng Việt tối ưu nhất
+  const viVoice = getVietnameseVoice();
   if (viVoice) {
     utterance.voice = viVoice;
   }

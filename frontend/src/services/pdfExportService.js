@@ -1,6 +1,6 @@
-import { roleLabel } from './simulation';
+import { roleLabel } from './simulation.js';
 import { dialogueText } from '../../../shared/dialogueText.mjs';
-import { actorFor, courtroomRoles } from './courtroom';
+import { actorFor, courtroomRoles } from './courtroom.js';
 
 /**
  * Định dạng ngày theo chuẩn văn bản hành chính Việt Nam (ngày DD tháng MM năm YYYY)
@@ -24,6 +24,16 @@ export function getGradeLabel(score) {
   if (num >= 70) return { label: 'Khá', color: '#1d4ed8', bg: '#eff6ff' };
   if (num >= 50) return { label: 'Đạt', color: '#b45309', bg: '#fef3c7' };
   return { label: 'Cần rèn luyện thêm', color: '#b91c1c', bg: '#fee2e2' };
+}
+
+export function escapeHtml(str) {
+  if (typeof str !== 'string') return String(str ?? '');
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 const RUBRIC_LABELS = {
@@ -278,6 +288,7 @@ export function generateCourtroomDocumentHtml({
       margin: 0;
       line-height: 1.35;
       text-align: justify;
+      white-space: pre-wrap;
     }
     .transcript-entry .dialogue-citations {
       margin-top: 4px;
@@ -368,7 +379,7 @@ export function generateCourtroomDocumentHtml({
     <!-- Tiêu đề văn bản -->
     <div class="doc-title-block">
       <h1 class="doc-title">${documentTitle}</h1>
-      <p class="doc-subtitle">Vụ án: ${caseTitle}</p>
+      <p class="doc-subtitle">Vụ án: ${escapeHtml(caseTitle)}</p>
     </div>
 
     <!-- PHẦN I: THÔNG TIN PHIÊN TÒA -->
@@ -377,22 +388,22 @@ export function generateCourtroomDocumentHtml({
       <tr>
         <td class="label">Tên vụ án</td>
         <td class="colon">:</td>
-        <td class="value"><strong>${caseTitle}</strong></td>
+        <td class="value"><strong>${escapeHtml(caseTitle)}</strong></td>
       </tr>
       <tr>
         <td class="label">Lĩnh vực pháp luật</td>
         <td class="colon">:</td>
-        <td class="value">${caseCategory}</td>
+        <td class="value">${escapeHtml(caseCategory)}</td>
       </tr>
       <tr>
         <td class="label">Học viên tham gia</td>
         <td class="colon">:</td>
-        <td class="value"><strong>${learnerName}</strong></td>
+        <td class="value"><strong>${escapeHtml(learnerName)}</strong></td>
       </tr>
       <tr>
         <td class="label">Tư cách tố tụng</td>
         <td class="colon">:</td>
-        <td class="value"><strong>${userRole}</strong></td>
+        <td class="value"><strong>${escapeHtml(userRole)}</strong></td>
       </tr>
       <tr>
         <td class="label">Chủ tọa phiên tòa</td>
@@ -528,7 +539,7 @@ export function generateCourtroomDocumentHtml({
           <div class="speaker-tag ${speakerClass}">
             [LƯỢT ${turnNumber}] · ${speakerRoleName.toUpperCase()}
           </div>
-          <p class="dialogue-body">${content}</p>
+          <p class="dialogue-body">${escapeHtml(content)}</p>
           ${record.citations?.length ? `
           <div class="dialogue-citations">
             Căn cứ pháp luật: ${record.citations.map(c => `${c.title || c.law_number} (Điều ${c.article || ''})`).join('; ')}
