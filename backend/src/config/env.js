@@ -19,7 +19,8 @@ if (process.env.NODE_ENV === 'production') {
   if (process.env.GOOGLE_REDIRECT_URI && !process.env.GOOGLE_REDIRECT_URI.startsWith('https://')) throw new Error('Google redirect production phải dùng HTTPS.');
 }
 
-const openAiApiKey = process.env.OPENAI_API_KEY?.trim() ?? '';
+const rawOpenAiKey = process.env.OPENAI_API_KEY?.trim() ?? '';
+const openAiApiKey = rawOpenAiKey === 'YOUR_KEY' ? '' : rawOpenAiKey;
 const defaultAiBaseUrl = openAiApiKey ? 'https://api.openai.com/v1' : 'http://127.0.0.1:11434/v1';
 const aiBaseUrl = (process.env.AI_BASE_URL?.trim() || defaultAiBaseUrl).replace(/\/$/, '');
 const aiOrigin = new URL(aiBaseUrl).origin;
