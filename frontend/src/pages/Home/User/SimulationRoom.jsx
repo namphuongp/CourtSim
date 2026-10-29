@@ -140,20 +140,6 @@ function Room({ sessionId }) {
     });
   }
 
-  // Tự động đọc lời thoại Hội đồng xét xử & Bên đối lập khi bật chế độ TTS
-  useEffect(() => {
-    if (!ttsEnabled) {
-      stopCourtroomSpeech();
-      return;
-    }
-    const record = view?.record;
-    if (!record || view.streaming || record.sender_type === 'user') return;
-    if (record._id && record._id !== lastSpokenRecordIdRef.current) {
-      lastSpokenRecordIdRef.current = record._id;
-      speakCourtroomText(record.content, { role: view.actor });
-    }
-  }, [ttsEnabled, view?.record?._id, view?.record?.content, view?.streaming, view?.actor]);
-
   // Dọn dẹp âm thanh khi rời phòng
   useEffect(() => {
     return () => {
@@ -347,6 +333,20 @@ function Room({ sessionId }) {
   }
   const view = streamedSpeech?.content && state.sending ? { record: { _id: 'streaming', content: streamedSpeech.content, sender_type: streamedSpeech.role === 'judge' ? 'ai_judge' : 'ai_prosecutor' }, actor: streamedSpeech.role, streaming: true }
     : courtroomView({ records, selectedId: selectedId ?? conversation?.current_record_id, sending: state.sending && Boolean(submittedContent) && !session?.processing, pendingContent: submittedContent, processing: session?.processing, ending: state.ending });
+
+  // Tự động đọc lời thoại Hội đồng xét xử & Bên đối lập khi bật chế độ TTS
+  useEffect(() => {
+    if (!ttsEnabled) {
+      stopCourtroomSpeech();
+      return;
+    }
+    const record = view?.record;
+    if (!record || view.streaming || record.sender_type === 'user') return;
+    if (record._id && record._id !== lastSpokenRecordIdRef.current) {
+      lastSpokenRecordIdRef.current = record._id;
+      speakCourtroomText(record.content, { role: view.actor });
+    }
+  }, [ttsEnabled, view?.record?._id, view?.record?.content, view?.streaming, view?.actor]);
   const panelTitles = { guide: 'Hướng dẫn phiên tòa', case: 'Hồ sơ phiên tòa', assistant: 'Trợ lý luật', history: 'Hồ sơ phiên tòa', speech: 'Lời trình bày đầy đủ' };
   const ready = !disabled && (!conversation || conversation.status === 'learner') && userTurns < (session?.max_turns ?? 20);
   const reviewing = Boolean(selectedId && selectedId !== (conversation?.current_record_id ?? records.at(-1)?._id));
