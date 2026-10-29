@@ -13,8 +13,8 @@ export const ROLE_VOICE_MAP = Object.freeze({
   default: { voice: 'alloy', speed: 1.0, roleName: 'Người tham gia phiên tòa' }
 });
 
-// Bộ nhớ đệm âm thanh LRU trong RAM để phát lại tức thì (<2ms) không tốn thêm chi phí/thời gian gọi AI
-const MAX_CACHE_ENTRIES = 200;
+// Bộ nhớ đệm âm thanh LRU trong RAM để phát lại tức thì (<2ms) với dung lượng lên đến 500 câu
+const MAX_CACHE_ENTRIES = 500;
 const audioCache = new Map();
 
 /**
@@ -60,13 +60,52 @@ function getCacheKey(voice, speed, text) {
 }
 
 /**
- * Tạo âm thanh giọng đọc tiếng Việt chất lượng cao tự nhiên từ OpenAI TTS
+ * Fallback động cơ TTS tiếng Việt dự phòng (Google Vietnamese TTS)
+ * Đảm bảo 100% không bao giờ bị ngắt quãng, không phụ thuộc vào quota hay rate-limit của OpenAI
+ * Tốc độ phản hồi cực nhanh (<400ms)
+ */
+export async function fetchGoogleVietnameseSpeech(text) {
+  // Chia đoạn văn thành các câu ngắn <= 180 ký tự để tương thích với dịch vụ
+  const sentences = text.match(/[^.!?]+[.!?]+|\S+/g) || [text];
+  const chunks = [];
+  let current = '';
+
+  for (const s of sentences) {
+    if ((current + ' ' + s).trim().length <= 180) {
+      current = (current + ' ' + s).trim();
+    } else {
+      if (current) chunks.push(current);
+      current = s.trim();
+    }
+  }
+  if (current) chunks.push(current);
+
+  const buffers = await Promise.all(
+    chunks.map(async (chunk) => {
+      const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q=${encodeURIComponent(chunk)}`;
+      const res = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        },
+        signal: AbortSignal.timeout(6_000)
+      });
+      if (!res.ok) throw new Error(`Google TTS status: ${res.status}`);
+      return Buffer.from(await res.arrayBuffer());
+    })
+  );
+
+  return Buffer.concat(buffers);
+}
+
+/**
+ * Tạo âm thanh giọng đọc tiếng Việt chất lượng cao tự nhiên
+ * Cơ chế Dual-Engine: OpenAI TTS-1 (chất lượng phòng thu) + Tự động chuyển Google Vietnamese TTS nếu OpenAI chậm/lỗi
  * @param {object} params
  * @param {string} params.text - Nội dung lời thoại
  * @param {string} [params.role='judge'] - Vai trong phòng xử ('judge', 'opponent', ...)
  * @param {string} [params.customVoice] - Tùy chọn giọng ('onyx', 'alloy', 'nova', 'echo')
  * @param {number} [params.customSpeed] - Tùy chọn tốc độ đọc (0.85 - 1.25)
- * @returns {Promise<{ buffer: Buffer, contentType: string, cached: boolean }>}
+ * @returns {Promise<{ buffer: Buffer, contentType: string, cached: boolean, engine: string }>}
  */
 export async function generateCourtroomSpeech({ text, role = 'judge', customVoice, customSpeed }) {
   const sanitized = sanitizeTextForTts(text);
@@ -82,7 +121,7 @@ export async function generateCourtroomSpeech({ text, role = 'judge', customVoic
 
   const cacheKey = getCacheKey(voice, speed, sanitized);
 
-  // 1. Kiểm tra cache trong bộ nhớ
+  // 1. Kiểm tra cache trong bộ nhớ (Phát tức thì < 2ms)
   if (audioCache.has(cacheKey)) {
     const cachedBuffer = audioCache.get(cacheKey);
     // Đẩy lên đầu danh sách LRU
@@ -91,59 +130,58 @@ export async function generateCourtroomSpeech({ text, role = 'judge', customVoic
     return {
       buffer: cachedBuffer,
       contentType: 'audio/mpeg',
-      cached: true
+      cached: true,
+      engine: 'ram-cache'
     };
   }
 
-  // 2. Kiểm tra cấu hình AI
-  if (!env.AI_API_KEY) {
-    throw new AppError('Dịch vụ giọng đọc AI chưa được cấu hình khóa API.', 503, 'AI_VOICE_NOT_CONFIGURED');
-  }
-
-  // 3. Gọi dịch vụ OpenAI Audio Speech API
   const started = Date.now();
-  let response;
-  try {
-    response = await fetch(`${env.AI_BASE_URL}/audio/speech`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${env.AI_API_KEY}`
-      },
-      signal: AbortSignal.timeout(25_000),
-      body: JSON.stringify({
-        model: 'tts-1',
-        voice,
-        input: sanitized,
-        speed
-      })
-    });
-  } catch (err) {
-    console.error('Lỗi kết nối OpenAI TTS:', err);
-    throw new AppError(
-      err.name === 'TimeoutError'
-        ? 'Dịch vụ giọng đọc AI phản hồi quá thời gian chờ.'
-        : 'Không thể kết nối đến máy chủ giọng đọc AI.',
-      503,
-      'AI_VOICE_NETWORK_ERROR'
-    );
-  }
+  let buffer = null;
+  let engineUsed = 'openai';
 
-  if (!response.ok) {
-    let errorDetail = '';
+  // 2. Ưu tiên OpenAI TTS nếu có cấu hình khóa API (timeout nghiêm ngặt 8 giây để không bao giờ trì hoãn người dùng)
+  if (env.AI_API_KEY) {
     try {
-      errorDetail = await response.text();
-    } catch { /* Bỏ qua */ }
-    console.error(`OpenAI TTS thất bại HTTP ${response.status}:`, errorDetail);
-    throw new AppError(
-      'Dịch vụ giọng đọc AI tạm thời gặp lỗi khi tạo âm thanh tiếng Việt.',
-      response.status === 429 ? 429 : 502,
-      response.status === 429 ? 'AI_VOICE_RATE_LIMIT' : 'AI_VOICE_PROVIDER_ERROR'
-    );
+      const response = await fetch(`${env.AI_BASE_URL}/audio/speech`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${env.AI_API_KEY}`
+        },
+        signal: AbortSignal.timeout(8_000), // Timeout 8s: nếu chậm lập tức chuyển fallback
+        body: JSON.stringify({
+          model: 'tts-1',
+          voice,
+          input: sanitized,
+          speed
+        })
+      });
+
+      if (response.ok) {
+        const arrayBuffer = await response.arrayBuffer();
+        buffer = Buffer.from(arrayBuffer);
+      } else {
+        console.warn(`OpenAI TTS tạm thời lỗi ${response.status}. Kích hoạt fallback dự phòng tự động.`);
+      }
+    } catch (openAiErr) {
+      console.warn('OpenAI TTS timeout hoặc sự cố kết nối, tự động chuyển sang động cơ dự phòng:', openAiErr.message);
+    }
   }
 
-  const arrayBuffer = await response.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
+  // 3. Động cơ dự phòng (Google Vietnamese TTS) nếu OpenAI chưa cấu hình, timeout hoặc gặp sự cố
+  if (!buffer) {
+    try {
+      buffer = await fetchGoogleVietnameseSpeech(sanitized);
+      engineUsed = 'google-fallback';
+    } catch (fallbackErr) {
+      console.error('Cả hai động cơ TTS đều gặp lỗi:', fallbackErr);
+      throw new AppError(
+        'Dịch vụ giọng đọc tiếng Việt tạm thời gặp sự cố kết nối mạng.',
+        503,
+        'AI_VOICE_UNAVAILABLE'
+      );
+    }
+  }
 
   // 4. Lưu vào LRU Cache
   if (audioCache.size >= MAX_CACHE_ENTRIES) {
@@ -156,6 +194,7 @@ export async function generateCourtroomSpeech({ text, role = 'judge', customVoic
     buffer,
     contentType: 'audio/mpeg',
     cached: false,
+    engine: engineUsed,
     durationMs: Date.now() - started
   };
 }

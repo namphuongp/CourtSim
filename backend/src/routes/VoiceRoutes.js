@@ -20,7 +20,7 @@ router.post('/tts', asyncHandler(async (request, response) => {
     throw new AppError('Vui lòng cung cấp nội dung văn bản để đọc.', 400, 'INVALID_SPEECH_TEXT');
   }
 
-  const { buffer, contentType, cached } = await generateCourtroomSpeech({
+  const { buffer, contentType, cached, engine } = await generateCourtroomSpeech({
     text,
     role,
     customVoice: voice,
@@ -31,7 +31,8 @@ router.post('/tts', asyncHandler(async (request, response) => {
     'Content-Type': contentType || 'audio/mpeg',
     'Content-Length': buffer.length,
     'Cache-Control': 'public, max-age=86400',
-    'X-TTS-Cached': cached ? '1' : '0'
+    'X-TTS-Cached': cached ? '1' : '0',
+    'X-TTS-Engine': engine || 'openai'
   });
 
   response.end(buffer);

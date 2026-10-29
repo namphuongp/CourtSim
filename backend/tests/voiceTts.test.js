@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { sanitizeTextForTts, ROLE_VOICE_MAP, generateCourtroomSpeech, clearSpeechCache } from '../src/services/aiVoiceService.js';
+import { sanitizeTextForTts, ROLE_VOICE_MAP, generateCourtroomSpeech, fetchGoogleVietnameseSpeech, clearSpeechCache } from '../src/services/aiVoiceService.js';
 
 test('aiVoiceService: sanitizeTextForTts làm sạch văn bản tố tụng chuẩn xác', () => {
   const dirty = 'Kính thưa [Chủ tọa](https://court.vn) và Hội đồng xét xử [CC: EV-01] [PL: LAW-02]. <p>Chúng tôi đề nghị bác đơn!</p> **Căn cứ** Điều 100.';
@@ -35,4 +35,11 @@ test('aiVoiceService: LRU cache hoạt động tức thì cho câu lặp lại',
   const res2 = await generateCourtroomSpeech({ text: sampleText, role: 'judge' });
   assert.equal(res2.cached, true, 'Lần 2 phải lấy từ cache');
   assert.equal(res2.buffer.length, res1.buffer.length, 'Kích thước buffer đồng nhất');
+});
+
+test('aiVoiceService: fetchGoogleVietnameseSpeech fallback tạo âm thanh tiếng Việt thành công', async () => {
+  const fallbackText = 'Phiên tòa tiếp tục phần tranh tụng giữa nguyên đơn và bị đơn.';
+  const buffer = await fetchGoogleVietnameseSpeech(fallbackText);
+  assert.ok(buffer instanceof Buffer, 'Fallback trả về Buffer âm thanh');
+  assert.ok(buffer.length > 5000, 'Buffer âm thanh có dữ liệu hợp lệ');
 });

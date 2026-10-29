@@ -238,6 +238,7 @@ let activeUtterance = null;
 let activeAbortController = null;
 let currentAudioUrl = null;
 let cachedVoices = [];
+const clientAudioCache = new Map();
 
 function updateVoices() {
   if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
@@ -275,6 +276,7 @@ export function isSpeakingCourtroom() {
 /**
  * Phát âm thanh lời thoại tòa án (Text-to-Speech)
  * Ưu tiên gọi backend AI TTS (OpenAI TTS) chuẩn tiếng Việt 100% tự nhiên, trầm ấm uy nghiêm cho Chủ tọa và dứt khoát cho Bên đối lập.
+ * Tích hợp bộ nhớ đệm Blob tại trình duyệt để phát tức thì 0ms cho các câu lặp lại.
  * @param {string} text - Lời thoại cần phát
  * @param {object} options
  * @param {'judge'|'opponent'|'learner'} [options.role='judge']
@@ -288,13 +290,41 @@ export function speakCourtroomText(text, { role = 'judge', onStart, onEnd, onErr
   const clean = cleanTextForSpeech(text);
   if (!clean) return () => {};
 
+  const cacheKey = `${role}:${clean}`;
+
+  // Phát tức thì 0ms nếu đã có trong cache trình duyệt
+  if (clientAudioCache.has(cacheKey)) {
+    const cachedBlob = clientAudioCache.get(cacheKey);
+    const audioUrl = URL.createObjectURL(cachedBlob);
+    currentAudioUrl = audioUrl;
+    const audio = new Audio(audioUrl);
+    activeAudio = audio;
+
+    audio.onplay = () => onStart?.();
+    audio.onended = () => {
+      URL.revokeObjectURL(audioUrl);
+      if (activeAudio === audio) activeAudio = null;
+      onEnd?.();
+    };
+    audio.onerror = (e) => {
+      URL.revokeObjectURL(audioUrl);
+      if (activeAudio === audio) activeAudio = null;
+      onError?.(e);
+      onEnd?.();
+    };
+
+    audio.play().catch(console.warn);
+    return stopCourtroomSpeech;
+  }
+
   const abortController = new AbortController();
   activeAbortController = abortController;
 
   // 1. Ưu tiên gọi backend AI Voice Service để lấy giọng đọc tiếng Việt tự nhiên nhất
   api.post('/v1/voice/tts', { text: clean, role }, {
     responseType: 'blob',
-    signal: abortController.signal
+    signal: abortController.signal,
+    timeout: 10_000
   })
     .then((response) => {
       if (abortController.signal.aborted) return;
@@ -302,6 +332,13 @@ export function speakCourtroomText(text, { role = 'judge', onStart, onEnd, onErr
       if (!blob || !(blob instanceof Blob)) {
         throw new Error('Dữ liệu âm thanh từ máy chủ không hợp lệ.');
       }
+
+      // Lưu cache trình duyệt (tối đa 100 câu)
+      if (clientAudioCache.size >= 100) {
+        const oldest = clientAudioCache.keys().next().value;
+        if (oldest) clientAudioCache.delete(oldest);
+      }
+      clientAudioCache.set(cacheKey, blob);
 
       if (currentAudioUrl) {
         URL.revokeObjectURL(currentAudioUrl);
