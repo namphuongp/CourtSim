@@ -43,10 +43,17 @@ export const env = Object.freeze({
   AI_API_KEY: process.env.AI_API_KEY?.trim()
     || (aiOrigin === 'https://api.openai.com' ? openAiApiKey : ''),
   AI_TIMEOUT_MS: aiTimeout,
-  CLIENT_ORIGINS: (process.env.CLIENT_ORIGIN ?? 'http://localhost:5173')
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean),
+  CLIENT_ORIGINS: [
+    ...new Set([
+      ...(process.env.CLIENT_ORIGIN ?? 'http://localhost:5173')
+        .split(',')
+        .map((origin) => origin.trim())
+        .filter(Boolean),
+      ...((process.env.NODE_ENV ?? 'development') === 'development'
+        ? ['http://localhost:5173', 'http://127.0.0.1:5173']
+        : []),
+    ]),
+  ],
   QDRANT_URL: (process.env.QDRANT_URL?.trim() || 'http://localhost:6333').replace(/\/$/, ''),
   QDRANT_API_KEY: process.env.QDRANT_API_KEY?.trim() || '',
   EMBEDDING_PROVIDER: process.env.EMBEDDING_PROVIDER?.trim() || 'openai',
