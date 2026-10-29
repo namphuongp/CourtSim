@@ -17,7 +17,6 @@ test('AI tracking: mọi lần gọi và retry, token/cache/cost, thiếu usage,
   t.after(async () => { await new Promise(r => server.close(r)); if (mongoose.connection.name === db && /^courtsim_test_[a-f0-9]{32}$/.test(db)) await mongoose.connection.dropDatabase(); await mongoose.disconnect(); });
   process.env.JWT_SECRET = 'ai-tracking-test-secret-not-for-production';
   process.env.AI_USER_CALLS_PER_15_MIN = '4';
-  process.env.GEMINI_API_KEY = '';
   process.env.AI_BASE_URL = `http://127.0.0.1:${server.address().port}`;
   process.env.AI_MODEL_PRICING_JSON = JSON.stringify({ 'openai-compatible:test': { inputPerMillion: 2, cachedInputPerMillion: 1, outputPerMillion: 4, version: 'test-only' } });
   await mongoose.connect(process.env.COURTSIM_TEST_MONGO_URI, { dbName: db });

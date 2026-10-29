@@ -11,7 +11,7 @@ Lệnh cài đặt/chạy/test ở [README](../README.md); biến đầy đủ �
 | Backend/proxy | `HOST=127.0.0.1`, `PORT=5000`; `TRUST_PROXY` chỉ IP/subnet proxy tin cậy |
 | Email | `EMAIL_API_KEY`, `EMAIL_FROM`; xác minh domain gửi với Resend |
 | Google | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI=https://<domain>/api/auth/google/callback`; đăng ký URI chính xác trong OAuth client |
-| AI | `OPENAI_API_KEY` hoặc `GEMINI_API_KEY`; nếu cùng có thì Gemini được ưu tiên. Endpoint tùy chỉnh cần `AI_BASE_URL` và khóa riêng `AI_API_KEY` |
+| AI | `OPENAI_API_KEY` (hội thoại + embedding RAG `text-embedding-3-small`). Endpoint tùy chỉnh cần `AI_BASE_URL` và khóa riêng `AI_API_KEY` |
 | Vai AI | `AI_JUDGE_MODEL`, `AI_OPPONENT_MODEL`, `AI_EVALUATOR_MODEL`; đổi env rồi restart, không cần seed |
 | Chi phí | Hạn mặc định 80 cuộc gọi/người/15 phút, 200/người/ngày, 2.000 toàn hệ thống/ngày; chỉnh các biến `AI_*_CALLS_*`. Tính cả retry, không phải hạn ngân sách tiền tuyệt đối |
 | Luật | `LEGAL_ONLINE_LOOKUP=false` ngừng tải mới; bản lưu còn hạn vẫn dùng được. `LEGAL_WEB_REFERENCE_SCORING=false` tắt đường chấm tham khảo web. |

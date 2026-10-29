@@ -1,11 +1,10 @@
 // Dịch vụ nhúng (embedding) — hỗ trợ Ollama local, OpenAI API hoặc fastembed.
 // Không lưu nội dung người dùng; chỉ gửi từ khóa pháp luật hoặc nội dung điều khoản công khai.
 
-const geminiKey = process.env.GEMINI_API_KEY?.trim() || '';
-const EMBEDDING_PROVIDER = process.env.EMBEDDING_PROVIDER?.trim() || (geminiKey ? 'gemini' : 'openai');
-const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL?.trim() || (geminiKey ? 'gemini-embedding-001' : 'text-embedding-3-small');
-const EMBEDDING_BASE_URL = (process.env.EMBEDDING_BASE_URL?.trim() || (geminiKey ? 'https://generativelanguage.googleapis.com/v1beta/openai' : '')).replace(/\/$/, '');
-const EMBEDDING_API_KEY = process.env.EMBEDDING_API_KEY?.trim() || (geminiKey || process.env.OPENAI_API_KEY?.trim() || '');
+const EMBEDDING_PROVIDER = process.env.EMBEDDING_PROVIDER?.trim() || 'openai';
+const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL?.trim() || 'text-embedding-3-small';
+const EMBEDDING_BASE_URL = (process.env.EMBEDDING_BASE_URL?.trim() || '').replace(/\/$/, '');
+const EMBEDDING_API_KEY = process.env.EMBEDDING_API_KEY?.trim() || process.env.OPENAI_API_KEY?.trim() || '';
 const EMBEDDING_DIMENSIONS = Number(process.env.EMBEDDING_DIMENSIONS ?? '0') || 0;
 const MAX_BATCH_SIZE = 64;
 
@@ -75,9 +74,8 @@ async function embedOpenAI(texts) {
 async function callProvider(texts) {
   switch (EMBEDDING_PROVIDER) {
     case 'ollama': return embedOllama(texts);
-    case 'gemini':
     case 'openai': return embedOpenAI(texts);
-    default: throw new Error(`Embedding provider "${EMBEDDING_PROVIDER}" không được hỗ trợ. Dùng "gemini", "ollama" hoặc "openai".`);
+    default: throw new Error(`Embedding provider "${EMBEDDING_PROVIDER}" không được hỗ trợ. Dùng "openai" hoặc "ollama".`);
   }
 }
 

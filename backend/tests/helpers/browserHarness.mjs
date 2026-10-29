@@ -59,7 +59,7 @@ export async function startBrowserHarness({ courtCase, webReference = false, loc
   Object.assign(process.env, { NODE_ENV: 'test', AUTH_EMAIL_VERIFICATION_DISABLED: 'false', JWT_SECRET: 'browser-integration-only-secret-at-least-32',
     SURVEY_WEBHOOK_SECRET: 'browser-survey-fixture-only-secret-at-least-32', SURVEY_TOKEN_ENTRY: 'entry.123456',
     VITE_FEEDBACK_FORM_URL: 'https://docs.google.com/forms/d/e/courtsim-fixture/viewform',
-    CLIENT_ORIGIN: 'http://127.0.0.1:4175', AI_BASE_URL: `http://127.0.0.1:${ai.address().port}`, GEMINI_API_KEY: '', AI_API_KEY: '', LEGAL_ONLINE_LOOKUP: 'false', LEGAL_WEB_REFERENCE_SCORING: String(webReference) });
+    CLIENT_ORIGIN: 'http://127.0.0.1:4175', AI_BASE_URL: `http://127.0.0.1:${ai.address().port}`, AI_API_KEY: '', LEGAL_ONLINE_LOOKUP: 'false', LEGAL_WEB_REFERENCE_SCORING: String(webReference) });
   const { createApp } = await import('../../src/app.js');
   const { Case, User, SimulationSession, AiPersonal } = await import('../../src/models/index.js');
   const { default: VbplSnapshot } = await import('../../src/models/VbplSnapshot.js');

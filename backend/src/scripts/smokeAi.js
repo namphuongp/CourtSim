@@ -15,8 +15,8 @@ const user = {_id:randomUUID(),sender_type:'user',sender_name:'Người học gi
 
 import { connectDatabase, disconnectDatabase } from '../config/database.js';
 
-if (!['https://generativelanguage.googleapis.com', 'https://api.openai.com'].includes(new URL(env.AI_BASE_URL).origin)) {
-  throw new Error('Bài kiểm thử này chỉ dùng endpoint Gemini hoặc OpenAI chính thức.');
+if (new URL(env.AI_BASE_URL).origin !== 'https://api.openai.com') {
+  throw new Error('Bài kiểm thử này chỉ dùng endpoint OpenAI chính thức.');
 }
 try {
   await connectDatabase();

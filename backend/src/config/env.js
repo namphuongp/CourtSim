@@ -19,11 +19,8 @@ if (process.env.NODE_ENV === 'production') {
   if (process.env.GOOGLE_REDIRECT_URI && !process.env.GOOGLE_REDIRECT_URI.startsWith('https://')) throw new Error('Google redirect production phải dùng HTTPS.');
 }
 
-const geminiApiKey = process.env.GEMINI_API_KEY?.trim() ?? '';
 const openAiApiKey = process.env.OPENAI_API_KEY?.trim() ?? '';
-const defaultAiBaseUrl = geminiApiKey
-  ? 'https://generativelanguage.googleapis.com/v1beta/openai'
-  : openAiApiKey ? 'https://api.openai.com/v1' : 'http://127.0.0.1:11434/v1';
+const defaultAiBaseUrl = openAiApiKey ? 'https://api.openai.com/v1' : 'http://127.0.0.1:11434/v1';
 const aiBaseUrl = (process.env.AI_BASE_URL?.trim() || defaultAiBaseUrl).replace(/\/$/, '');
 const aiOrigin = new URL(aiBaseUrl).origin;
 const aiTimeout = Number(process.env.AI_TIMEOUT_MS ?? '60000');
@@ -39,11 +36,12 @@ export const env = Object.freeze({
   PORT: parsePort(process.env.PORT),
   MONGO_URI: process.env.MONGO_URI ?? DEFAULT_MONGO_URI,
   JWT_SECRET: jwtSecret,
-  AI_PROVIDER: aiOrigin === 'https://generativelanguage.googleapis.com' ? 'gemini' : 'openai-compatible',
+  // Giữ nhãn cũ để khóa bảng giá AI_MODEL_PRICING_JSON và thống kê sử dụng không bị tách.
+  AI_PROVIDER: 'openai-compatible',
   AI_BASE_URL: aiBaseUrl,
   // Không chuyển khóa OpenAI sang endpoint tùy chỉnh nếu chưa cấu hình khóa riêng cho endpoint đó.
   AI_API_KEY: process.env.AI_API_KEY?.trim()
-    || (aiOrigin === 'https://generativelanguage.googleapis.com' ? geminiApiKey : aiOrigin === 'https://api.openai.com' ? openAiApiKey : ''),
+    || (aiOrigin === 'https://api.openai.com' ? openAiApiKey : ''),
   AI_TIMEOUT_MS: aiTimeout,
   CLIENT_ORIGINS: (process.env.CLIENT_ORIGIN ?? 'http://localhost:5173')
     .split(',')
