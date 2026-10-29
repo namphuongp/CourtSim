@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+dotenv.config({ override: true });
+
 const DEFAULT_MONGO_URI = 'mongodb://127.0.0.1:27017/courtsim';
 
 function parsePort(value) {
