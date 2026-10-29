@@ -43,6 +43,18 @@ export default function CourtroomStage({ session, view, records, onHistory, onRe
       {record && <article id={`record-${record._id}`} className={`court-speech speech-${owner}`} aria-label={`Lời ${roles[owner].name.toLocaleLowerCase('vi')}`}>
         <div className="speech-heading"><strong>{roles[owner].name}</strong><span>{view.streaming ? 'Đang nhận lời thoại…' : view.pending ? 'Đang gửi lập luận' : latest ? 'Lời gần nhất' : 'Đang xem lại'}</span></div>
         <p key={record._id} className="speech-content" tabIndex={0} role="region" aria-label="Nội dung lời thoại">{content}</p>
+        {Boolean(record.citations?.length) && (
+          <div className="speech-citations-chip" aria-label="Căn cứ pháp lý trích dẫn">
+            <span className="chip-badge">⚖️ Căn cứ:</span>
+            <span className="chip-items">
+              {record.citations.map((c, i) => (
+                <span key={c.id || i} className="chip-item" title={c.context_text || c.text || ''}>
+                  {c.title || c.law_number}{c.article ? ` (Điều ${c.article})` : ''}
+                </span>
+              ))}
+            </span>
+          </div>
+        )}
         <div className="speech-footer">
           <nav className="speech-navigation" aria-label="Duyệt lời thoại">
             <button type="button" aria-label="Lời thoại trước" title="Lời thoại trước" disabled={!canNavigate || index === 0} onClick={() => onSelectRecord(records[index - 1]._id)}><ChevronLeft size={20} aria-hidden="true" /></button>

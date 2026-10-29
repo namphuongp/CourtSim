@@ -8,10 +8,17 @@ import { hearingState } from './hearingState.js';
 const sentences = text => (text ?? '').split(/(?<=[.!?])\s+|\n+/u).map(s => s.trim()).filter(Boolean);
 const words = text => new Set((text.toLocaleLowerCase('vi').match(/[\p{L}\p{N}]{3,}/gu) ?? []));
 
-export function needsLegalResearch(records) {
+export function needsLegalResearch(records, courtCase) {
   const last = records.findLast(r => r.sender_type === 'user');
-  return Boolean(last?.legal_reference_ids?.length || last?.citations?.length
-    || /\b\d+\/\d{4}\/|(?:bộ luật|pháp luật|luật |nghị định|thông tư|hiệu lực|quy định|điều\s+\d+|khoản\s+\d+)/iu.test(last?.content ?? ''));
+  const mentionsLaw = Boolean(last?.legal_reference_ids?.length || last?.citations?.length
+    || /\b\d+\/\d{4}\/|(?:bộ luật|pháp luật|luật |nghị định|thông tư|hiệu lực|quy định|điều\s+\d+|khoản\s+\d+|căn cứ|pháp lý|văn bản)/iu.test(last?.content ?? ''));
+  if (mentionsLaw) return true;
+  // Tự động nạp căn cứ pháp lý khi phiên đã bước vào tranh luận (từ lượt 1 trở đi) và vụ án có mốc thời gian/danh mục luật
+  const userTurns = records.filter(r => r.sender_type === 'user').length;
+  if (userTurns >= 1 && (courtCase?.timeline?.length || courtCase?.category)) {
+    return true;
+  }
+  return false;
 }
 
 export function extractDossierSentences(courtCase) {

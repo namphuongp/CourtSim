@@ -49,7 +49,15 @@ export function turnTask(role, context) {
     if (state.last_question_with_reply) tasks.push('Đã có lời đáp cho câu hỏi trước: chỉ hỏi phần còn thiếu, nếu đủ thì chuyển ý, không yêu cầu người học trả lời lại.');
     if (latest.length > 1600) tasks.push('Lời trình bày dài: chỉ thu hẹp vào một điểm gắn yêu cầu đang xét, không suy ra dài đồng nghĩa lan man.');
   } else tasks.push('Chọn một mắt xích cụ thể trong luận điểm mới nhất: thông tin nào hỗ trợ kết luận nào, còn thiếu liên hệ gì. Phản hồi giới hạn mà người học thực sự nhận, không bác kết luận họ không nêu. Yêu cầu của một bên trong hồ sơ không tự trở thành điều người học vừa khẳng định, không nói “luật sư đối phương viện dẫn” nếu họ chưa viện dẫn. Nếu hai bên cùng nhận thiếu dữ kiện, gọi tên điểm chưa thể kết luận và giải thích giới hạn đó ảnh hưởng thế nào tới quan điểm của phía mình; không chỉ nói chưa có ý kiến.');
-  if (!context.retrievedLaw.length && /(?:điều\s+\d+|luật|quy định)/iu.test(latest)) tasks.push('Chưa có nguồn luật xác minh: trao đổi về việc cần đối chiếu tên văn bản, phiên bản và nội dung, không lặp số điều người học nêu, kể cả trong câu hỏi hoặc lời phủ định. Không đòi nguồn hồ sơ cho nhận xét thuần túy về giới hạn tra cứu.');
+  if (context.retrievedLaw?.length > 0) {
+    if (role === 'opponent') {
+      tasks.push('Trong retrievedLaw đã có các căn cứ pháp luật đã được xác minh hiệu lực. Khi phản biện hoặc chỉ ra điểm thiếu sót trong lập trường của người học, thỉnh thoảng (khoảng 1 trong 2–3 lượt đối đáp quan trọng) hãy viện dẫn tự nhiên một điều luật phù hợp trong retrievedLaw (gọi rõ số Điều, tên Luật và phân tích ngắn gọn xem quy định đó đòi hỏi điều kiện gì mà phía người học chưa chứng minh được). BẮT BUỘC: Khi viện dẫn Điều luật nào, phải đưa đúng citationId tương ứng trong retrievedLaw vào mảng citation_ids.');
+    } else if (role === 'judge') {
+      tasks.push('Trong retrievedLaw đã có căn cứ pháp luật: khi yêu cầu khởi kiện hoặc quan điểm của các bên chưa rõ cơ sở pháp lý, Chủ tọa có thể nhắc ngắn gọn quy định pháp luật liên quan và yêu cầu bên có nghĩa vụ làm rõ việc đáp ứng điều luật đó, đồng thời đưa citationId tương ứng vào citation_ids.');
+    }
+  } else if (/(?:điều\s+\d+|luật|quy định)/iu.test(latest)) {
+    tasks.push('Chưa có nguồn luật xác minh: trao đổi về việc cần đối chiếu tên văn bản, phiên bản và nội dung, không lặp số điều người học nêu, kể cả trong câu hỏi hoặc lời phủ định. Không đòi nguồn hồ sơ cho nhận xét thuần túy về giới hạn tra cứu.');
+  }
   if (state.repeated_learner_points?.length) tasks.push('Có câu lặp lại từ lượt đã gửi: không đáp lại y hệt, hỏi thông tin mới hoặc xác định điểm bất đồng còn lại.');
   if (/(?:chưa|không)\s+(?:có|được cung cấp|đủ|xem|kiểm tra|xác minh)|thiếu\s+(?:chứng cứ|tài liệu|bản gốc)/iu.test(latest)) tasks.push('Người học nêu giới hạn thông tin: giữ nguyên giới hạn đó, không biến thành đã chứng minh hoặc tài liệu vô giá trị. Nếu họ đã nói không có, không đòi cung cấp ngay chính thông tin đó, hỏi nguồn cần đối chiếu hoặc phạm vi kết luận còn giữ được.');
   return tasks.join('\n');
