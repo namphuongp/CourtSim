@@ -205,7 +205,7 @@ export async function retrieveRelevantProvisions({ eventDate, courtCase, records
   return { citations: selected, warnings };
 }
 
-function getCitationReferences(content) {
+export function getCitationReferences(content) {
   const references = [];
   const citationPattern = /(?:(?:điểm\s+([a-zđ])\s*,?\s*)?(?:khoản\s+(\d+)\s*,?\s*)?Điều\s+(\d+[a-z]?))(?:\s*[,;:]?\s*(?:khoản\s+(\d+))?(?:\s*[,;:]?\s*điểm\s+([a-zđ]))?)?/giu;
   for (const match of content.matchAll(citationPattern)) {
@@ -230,7 +230,16 @@ function citationCoversReference(citation, reference) {
     (!reference.paragraph || unit.paragraph === reference.paragraph) && (!reference.point || unit.point === reference.point)));
 }
 
-export function validateCitationIds({ content, citationIds, availableCitations }) {
+// Điều luật người học đã viện dẫn kèm nguồn được xác thực trong phiên: các bên được nhắc lại khi đối đáp.
+function acknowledgedCoversReference(acknowledged, reference) {
+  if (acknowledged.article !== reference.article) return false;
+  if (reference.lawNumber && acknowledged.lawNumber && acknowledged.lawNumber.toLowerCase() !== reference.lawNumber.toLowerCase()) return false;
+  if (acknowledged.paragraph && reference.paragraph && acknowledged.paragraph !== reference.paragraph) return false;
+  if (acknowledged.point && reference.point && acknowledged.point !== reference.point) return false;
+  return true;
+}
+
+export function validateCitationIds({ content, citationIds, availableCitations, acknowledgedReferences = [] }) {
   if (!Array.isArray(citationIds) || citationIds.some((id) => typeof id !== 'string')) {
     return { valid: false, citations: [], reason: 'Danh sách mã trích dẫn không hợp lệ.' };
   }
@@ -242,12 +251,14 @@ export function validateCitationIds({ content, citationIds, availableCitations }
 
   const citations = [...new Set(citationIds)].map((id) => citationsById.get(id));
   const references = getCitationReferences(content);
-  if (references.some((reference) => !citations.some((citation) => citationCoversReference(citation, reference)))) {
+  if (references.some((reference) => !citations.some((citation) => citationCoversReference(citation, reference))
+      && !acknowledgedReferences.some((acknowledged) => acknowledgedCoversReference(acknowledged, reference)))) {
     return { valid: false, citations: [], reason: 'AI có nhắc điều/khoản/điểm không được dẫn bởi nguồn đã truy xuất.' };
   }
 
   const mentionedLawNumbers = new Set(content.match(/\b\d{1,4}\/\d{4}\/QH\d+\b/giu) ?? []);
-  if ([...mentionedLawNumbers].some((lawNumber) => !citations.some((citation) => citation.law_number.toLowerCase() === lawNumber.toLowerCase()))) {
+  if ([...mentionedLawNumbers].some((lawNumber) => !citations.some((citation) => citation.law_number.toLowerCase() === lawNumber.toLowerCase())
+      && !acknowledgedReferences.some((acknowledged) => acknowledged.lawNumber?.toLowerCase() === lawNumber.toLowerCase()))) {
     return { valid: false, citations: [], reason: 'AI nhắc số hiệu văn bản không có trong nguồn đã truy xuất.' };
   }
 

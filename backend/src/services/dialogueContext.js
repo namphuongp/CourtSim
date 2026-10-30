@@ -100,7 +100,7 @@ export function dialogueContext(session, courtCase, records, legalContext) {
     proof_scope: e.proof_scope, verification_status: e.verification_status,
     evidence_state: e.evidence_state, referenced: e.referenced,
   })), presented_evidence: hearing.presented_evidence.map(e => e.id) };
-  return {
+  const context = {
     schema_version: 2,
     title: courtCase.title, category: courtCase.category, userRole: session.user_court_role,
     practice_context: courtCase.practice_context,
@@ -124,44 +124,89 @@ export function dialogueContext(session, courtCase, records, legalContext) {
       text: c.context_text ?? c.text, source_url: c.source_url, checked_at: c.checked_at, version: c.version,
       applicationStatus: c.application_status, applicationDate: c.application_date, applicationReason: c.application_reason })),
   };
+  // Toàn văn hồ sơ dùng để đối chiếu số liệu, không đưa vào prompt (non-enumerable nên JSON.stringify bỏ qua).
+  Object.defineProperty(context, 'groundingText', { enumerable: false, value: caseGroundingText(courtCase) });
+  return context;
+}
+
+function caseGroundingText(courtCase) {
+  return [courtCase.summary, courtCase.full_document,
+    ...(courtCase.parties ?? []).flatMap(p => [p.name, ...(Array.isArray(p.claims) ? p.claims : [p.claims])]),
+    ...(courtCase.timeline ?? []).map(t => (typeof t === 'string' ? t : `${t.date ?? ''} ${t.event ?? t.label ?? t.description ?? ''}`)),
+    ...extractDossierSentences(courtCase)].filter(v => typeof v === 'string' && v).join('\n');
+}
+
+// Chuẩn hóa số liệu tiếng Việt: "1,6 tỷ" = "1.600.000.000 đồng", "229,7 m2" = "229,7 m²".
+const QUANTITY_PATTERN = /(?<![\p{L}\p{N}])\d+(?:[.,]\d+)*\s*(?:m²|m2|km²|ha|triệu đồng|tỷ đồng|triệu|tỷ|đồng|%)(?!\p{L})/giu;
+function parseVietnameseNumber(raw) {
+  const text = raw.trim();
+  if (text.includes('.') && text.includes(',')) return Number(text.replaceAll('.', '').replace(',', '.'));
+  if (text.includes('.')) return /^\d{1,3}(?:\.\d{3})+$/u.test(text) ? Number(text.replaceAll('.', '')) : Number(text);
+  if (text.includes(',')) return /^\d{1,3}(?:,\d{3}){2,}$/u.test(text) ? Number(text.replaceAll(',', '')) : Number(text.replace(',', '.'));
+  return Number(text);
+}
+export function extractQuantities(text) {
+  return ((text ?? '').match(QUANTITY_PATTERN) ?? []).map(value => {
+    const lower = value.toLocaleLowerCase('vi');
+    const [, number, unitRaw] = lower.match(/^([\d.,]+)\s*(.+)$/u) ?? [];
+    const unit = unitRaw.replace(/\s+/gu, ' ').trim();
+    const amount = parseVietnameseNumber(number);
+    const [scale, canonicalUnit] = unit.startsWith('tỷ') ? [1e9, 'đồng'] : unit.startsWith('triệu') ? [1e6, 'đồng']
+      : unit === 'm2' ? [1, 'm²'] : [1, unit];
+    if (!Number.isFinite(amount)) return lower.replace(/\s+/gu, '');
+    return `${Math.round(amount * scale * 1000) / 1000}${canonicalUnit}`;
+  });
 }
 
 export function resolveDialogueFocus(response, context) {
   const focus = response.focus;
+  const normalizations = [];
   // Phục hồi hình dạng nhỏ tại chỗ: mọi mã vẫn phải có thật, không tự thêm căn cứ.
-  const learnerIds = Array.isArray(focus?.learner) ? focus.learner : [focus?.learner];
+  let learnerIds = Array.isArray(focus?.learner) ? focus.learner : [focus?.learner];
+  if (Array.isArray(focus?.learner)) normalizations.push('focus_learner_array');
+  if (!Array.isArray(focus?.learner) && (focus?.learner == null || focus.learner === '') && context.learner.length) {
+    learnerIds = [context.learner[0].id];
+    normalizations.push('focus_learner_default');
+  }
+  learnerIds = learnerIds.map(id => (typeof id === 'string' ? id.trim().toUpperCase() : id));
   const learners = learnerIds.map(id => context.learner.find(s => s.id === id));
   const learner = learners[0];
+  // Mã hồ sơ không tồn tại bị loại bỏ thay vì hủy cả lượt; nội dung lời thoại vẫn được kiểm số liệu và nguồn riêng.
+  const rawDossier = Array.isArray(focus?.dossier) ? focus.dossier : typeof focus?.dossier === 'string' ? [focus.dossier] : null;
+  const dossierIds = rawDossier ? [...new Set(rawDossier.map(id => (typeof id === 'string' ? id.trim().toUpperCase() : id)))]
+    .filter(id => context.dossier.some(s => s.id === id)).slice(0, 3) : null;
+  if (rawDossier && dossierIds.length !== rawDossier.length) normalizations.push('focus_dossier_filtered');
   // Phản biện mắt xích suy luận/nguồn luật có thể chỉ dựa vào lời vừa nói, không ép gán hồ sơ không liên quan.
   const requiresDossier = response.purpose === 'clarify_evidence';
   if (!learnerIds.length || learnerIds.length > 3 || learners.some(s => !s) || new Set(learnerIds).size !== learnerIds.length
-    || !Array.isArray(focus?.dossier) || (requiresDossier && context.dossier.length && !focus.dossier.length) || focus.dossier.length > 3
-    || focus.dossier.some(id => !context.dossier.some(s => s.id === id))) {
+    || !dossierIds || (requiresDossier && context.dossier.length && !dossierIds.length)) {
     throw new AppError('Lời thoại chưa đối chiếu đúng nguồn trong hồ sơ.', 502, 'AI_UNGROUNDED_FACT');
   }
-  const dossier = context.dossier.find(s => s.id === focus.dossier[0]);
+  const dossier = context.dossier.find(s => s.id === dossierIds[0]);
   // Metadata lấy từ nguồn gốc, tránh buộc model chép lại văn bản dài rồi sai dấu/chữ.
   return {
-    normalizations: Array.isArray(focus?.learner) ? ['focus_learner_array'] : [],
+    normalizations,
     dialogue_focus: { learner_quote: learner.text, dossier_quote: dossier?.text ?? '',
       next_question: response.content.match(/[^.!?\n]*\?/gu)?.at(-1)?.trim() ?? '' },
     fact_analysis: { established_facts: [], learner_claims: learners.map(s => s.text), inferences: [], missing_facts: [] },
-    source_anchors: focus.dossier.map(id => context.dossier.find(s => s.id === id)),
+    source_anchors: dossierIds.map(id => context.dossier.find(s => s.id === id)),
   };
 }
 
-export function validateDialogueQuantities(content, context) {
+export function ungroundedQuantitySentences(content, context) {
   // Chặn số đo/số tiền mới; phép kiểm này không thay thế thẩm định ý nghĩa lời thoại.
-  const quantities = text => (text.match(/(?<![\p{L}\p{N}])\d+(?:[.,]\d+)*\s*(?:m²|m2|km²|ha|triệu đồng|tỷ đồng|đồng|%)(?!\p{L})/giu) ?? [])
-    .map(value => value.toLocaleLowerCase('vi').replace(/\s+/gu, '').replaceAll('m2', 'm²'));
-  const sources = new Set(quantities(context.dossier.map(s => s.text).join('\n')));
-  const claims = new Set(quantities(context.learner.map(s => s.text).join('\n')));
-  const law = new Set(quantities(context.retrievedLaw.map(s => s.text).join('\n')));
-  for (const sentence of sentences(content)) {
+  const sources = new Set(extractQuantities([...context.dossier.map(s => s.text), context.groundingText ?? ''].join('\n')));
+  const claims = new Set(extractQuantities(context.learner.map(s => s.text).join('\n')));
+  const law = new Set(extractQuantities((context.retrievedLaw ?? []).map(s => s.text).join('\n')));
+  return sentences(content).filter(sentence => {
     const attributed = LEARNER_ATTRIBUTION_REGEX.test(sentence);
     const legal = /(?:quy định|điều luật|pháp luật)/iu.test(sentence);
-    if (quantities(sentence).some(value => !sources.has(value) && !(attributed && claims.has(value)) && !(legal && law.has(value)))) {
-      throw new AppError('Lời thoại có số đo/số tiền chưa có trong hồ sơ hoặc chưa giữ đúng nguồn lời trình bày.', 502, 'AI_UNGROUNDED_FACT');
-    }
+    return extractQuantities(sentence).some(value => !sources.has(value) && !(attributed && claims.has(value)) && !(legal && law.has(value)));
+  });
+}
+
+export function validateDialogueQuantities(content, context) {
+  if (ungroundedQuantitySentences(content, context).length) {
+    throw new AppError('Lời thoại có số đo/số tiền chưa có trong hồ sơ hoặc chưa giữ đúng nguồn lời trình bày.', 502, 'AI_UNGROUNDED_FACT');
   }
 }
