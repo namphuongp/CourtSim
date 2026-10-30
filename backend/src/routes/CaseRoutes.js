@@ -3,6 +3,7 @@ import { Router } from 'express';
 import Case from '../models/Case.js';
 import SimulationSession from '../models/SimulationSession.js';
 import { authenticate, requireAdmin } from '../middlewares/auth.js';
+import { consumeAuthLimit } from '../middlewares/rateLimit.js';
 import { AppError } from '../utils/AppError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { validateTimeline } from '../services/legalTimeline.js';
@@ -10,6 +11,7 @@ import { learnerCase } from '../services/learnerPresentation.js';
 import { validateCaseDetails } from '../services/caseEvidence.js';
 import { validateCaseFacts } from '../services/caseKnowledge.js';
 import { validatePracticeContext } from '../services/casePractice.js';
+import { extractAndStructureUserCase } from '../services/userCaseUploadService.js';
 
 const router = Router();
 
@@ -28,6 +30,43 @@ router.get('/', asyncHandler(async (request, response) => {
     Case.countDocuments(filter),
   ]);
   response.json({ data: items.map(learnerCase), pagination: { page, limit, total } });
+}));
+
+router.post('/upload-parse', authenticate, asyncHandler(async (request, response) => {
+  await consumeAuthLimit(`case-upload:${request.auth.userId}`, 20, 15 * 60000, 'Bạn đã tải lên quá nhiều bản án trong thời gian ngắn. Vui lòng thử lại sau ít phút.');
+  const {
+    raw_text: rawText,
+    file_name: fileName,
+    file_base64: fileBase64,
+    title: titleHint,
+    category: categoryHint,
+    reference_date: referenceDateHint,
+    save = true,
+  } = request.body ?? {};
+
+  const structured = await extractAndStructureUserCase({
+    rawText,
+    fileName,
+    fileBase64,
+    titleHint,
+    categoryHint,
+    referenceDateHint,
+    userId: request.auth.userId,
+  });
+
+  if (save === false) {
+    return response.status(200).json({
+      data: learnerCase(structured),
+      parsed: structured,
+      extracted_text: structured.full_document,
+    });
+  }
+
+  const created = await Case.create(structured);
+  response.status(201).json({
+    data: learnerCase(created.toObject()),
+    extracted_text: structured.full_document,
+  });
 }));
 
 router.get('/:caseId', asyncHandler(async (request, response) => {

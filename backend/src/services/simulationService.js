@@ -1,7 +1,7 @@
 import { EVIDENCE_ASSUMPTION_POLICY } from '../../../shared/casePresentation.mjs';
 import { RESPONSE_STYLE, TECHNICAL_TEXT } from '../../../shared/userCopy.mjs';
 import { caseKnowledge } from './caseKnowledge.js';
-import { dialogueContext, resolveDialogueFocus, needsLegalResearch, validateDialogueQuantities, extractDossierSentences } from './dialogueContext.js';
+import { dialogueContext, resolveDialogueFocus, needsLegalResearch, validateDialogueQuantities, extractDossierSentences, ungroundedQuantitySentences } from './dialogueContext.js';
 import { retrieveDossierSemanticScores } from './caseDossierRetrieval.js';
 import { readDialoguePreview } from './dialoguePreview.js';
 import { SOURCE_POLICY, DEBATE_POLICY, roleTask, turnTask, dialogueProblem, guidedContinuation } from './debatePolicy.js';
@@ -16,7 +16,7 @@ import { AiPersonal } from '../models/index.js';
 import { hasReadableLawSource } from '../../../shared/legalSourcePolicy.mjs';
 import { AppError } from '../utils/AppError.js';
 import { createChatCompletion } from './aiClient.js';
-import { validateCitationIds } from './legalRetrievalService.js';
+import { validateCitationIds, getCitationReferences } from './legalRetrievalService.js';
 import { classifyDialogueInput, controlTurn } from './dialogueInput.js';
 import { chooseSpeakingPlan } from './conversationPolicy.js';
 import { practiceInstructions } from './casePractice.js';
@@ -185,7 +185,7 @@ function readCitationIds(value, roleName) {
   return value.citation_ids;
 }
 
-function verifyCitations({ content, citationIds, legalCitations, roleName }) {
+function verifyCitations({ content, citationIds, legalCitations, roleName, acknowledgedReferences = [] }) {
   const urls = content.match(/https?:\/\/[^\s<>"“”]+/giu) ?? [];
   if (urls.some(url => !legalCitations.some(c => hasReadableLawSource(c) && c.source_url === url.replace(/[),.;!?]+$/u, '')))) {
     throw new AppError('Lời thoại chứa liên kết chưa đối chiếu với nguồn được phép.', 502, 'AI_UNVERIFIED_CITATION');
@@ -194,11 +194,18 @@ function verifyCitations({ content, citationIds, legalCitations, roleName }) {
     content,
     citationIds,
     availableCitations: legalCitations,
+    acknowledgedReferences,
   });
   if (!result.valid) {
     throw new AppError(`Không chấp nhận trích dẫn của AI ${roleName}: ${result.reason}`, 502, 'AI_UNVERIFIED_CITATION');
   }
   return result.citations;
+}
+
+// Điều luật người học đã viện dẫn kèm nguồn xác thực trong phiên, các bên được phép nhắc lại khi đối đáp.
+export function learnerAcknowledgedReferences(records = []) {
+  return records.filter(r => r.sender_type === 'user').flatMap(r => (r.citations ?? []).filter(hasReadableLawSource)
+    .flatMap(c => getCitationReferences(`${c.locator ?? ''}`).map(ref => ({ ...ref, lawNumber: c.law_number ?? ref.lawNumber }))));
 }
 
 export function readGeneratedTurn(raw, roleName, legalCitations, courtCase, records, compactContext) {
@@ -236,8 +243,35 @@ export function readGeneratedTurn(raw, roleName, legalCitations, courtCase, reco
       citationIds,
       legalCitations,
       roleName,
+      acknowledgedReferences: learnerAcknowledgedReferences(records),
     }),
   };
+}
+
+// Sau khi hết lượt thử, bỏ riêng những câu có số liệu hoặc điều luật chưa đối chiếu được,
+// phần lời thoại còn lại vẫn phải qua đủ các bước kiểm định như bình thường.
+const splitSentences = text => (text ?? '').split(/(?<=[.!?])\s+|\n+/u).map(s => s.trim()).filter(Boolean);
+export function salvageGeneratedTurn(raw, roleName, legalCitations, courtCase, records, compactContext, phase, invitedNext) {
+  let response;
+  try { response = parseStructuredResponse(raw, roleName); } catch { return null; }
+  if (!response || typeof response.content !== 'string' || !compactContext) return null;
+  const validIds = Array.isArray(response.citation_ids)
+    ? response.citation_ids.filter(id => typeof id === 'string' && legalCitations.some(c => String(c.id) === id)) : [];
+  const acknowledgedReferences = learnerAcknowledgedReferences(records);
+  const badQuantities = new Set(ungroundedQuantitySentences(response.content, compactContext));
+  const kept = splitSentences(response.content).filter(sentence => {
+    if (badQuantities.has(sentence) || /https?:\/\//iu.test(sentence)) return false;
+    return validateCitationIds({ content: sentence, citationIds: validIds, availableCitations: legalCitations, acknowledgedReferences }).valid;
+  });
+  const content = kept.join(' ').trim();
+  if (!kept.length || content === response.content.trim() || content.split(/\s+/u).length < 12) return null;
+  const repaired = { ...response, content, citation_ids: validIds, fact_analysis: undefined };
+  if (repaired.answer?.direct_answer && !content.startsWith(repaired.answer.direct_answer)) return null;
+  try {
+    const turn = readGeneratedTurn(JSON.stringify(repaired), roleName, legalCitations, courtCase, records, compactContext);
+    if (dialogueProblem(turn, roleName, records, courtCase, phase, invitedNext)) return null;
+    return { ...turn, normalizations: [...(turn.normalizations ?? []), 'removed_unverified_sentences'] };
+  } catch { return null; }
 }
 
 function makeTurnPrompt(roleInstructions, context) {
@@ -317,6 +351,7 @@ export async function generateDebateTurn({ session, courtCase, records, speakers
     const systemPrompt = makeTurnPrompt([roleContext(session, courtCase), practiceInstructions(courtCase), roleTask(role, phase), direction, turnTask(role, context)].join('\n'), context);
     const metrics = { preparation_ms: preparationMs, legal_ms: legalMs, legal_lookup: needsLaw, context_ms: performance.now() - roleStarted, input_chars: systemPrompt.length, attempts: [] };
     let repair = '', accepted;
+    const rawAttempts = [];
     for (let attempt = 0; attempt < 2; attempt++) {
       const measurement = { attempt: attempt + 1 };
       metrics.attempts.push(measurement);
@@ -347,6 +382,7 @@ export async function generateDebateTurn({ session, courtCase, records, speakers
         dependencies.diagnostic?.({ role, ...measurement });
         throw error; // Lỗi mạng giữ lượt để thử lại, không thay bằng lời mẫu rồi báo thành công.
       }
+      rawAttempts.push(raw);
       const validationAt = performance.now();
       let problem;
       try {
@@ -366,6 +402,13 @@ export async function generateDebateTurn({ session, courtCase, records, speakers
       measurement.rejection_reason = problem;
       dependencies.diagnostic?.({ role, ...measurement });
       repair = '\nBản trả lời trước chưa đạt: ' + problem + '\nViết lại JSON, không thêm tình tiết hay luật ngoài hồ sơ.';
+    }
+    if (!accepted) {
+      // Ưu tiên bản sau cùng (đã nhận hướng dẫn sửa), giữ lời thoại hợp lệ thay vì làm kẹt phiên.
+      for (const raw of [...rawAttempts].reverse()) {
+        accepted = salvageGeneratedTurn(raw, role, legalContext.citations, courtCase, history, context, phase, next);
+        if (accepted) { metrics.salvaged = true; break; }
+      }
     }
     metrics.total_ms = performance.now() - roleStarted + preparationMs;
     metrics.outcome = accepted ? 'model' : 'guided_continuation';

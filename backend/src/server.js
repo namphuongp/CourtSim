@@ -5,6 +5,7 @@ import { connectDatabase, disconnectDatabase } from './config/database.js';
 import { env } from './config/env.js';
 import { startPaymentPolling } from './services/paymentPolling.js';
 import { gatewayConfig, paymentProvider } from './services/sepayGateway.js';
+import { ensureSampleCasesSeeded } from './data/sampleCasesCatalog.js';
 
 const app = createApp();
 let server;
@@ -13,6 +14,11 @@ let stopPaymentPolling;
 async function start() {
   // Chỉ nhận request sau khi MongoDB sẵn sàng.
   await connectDatabase();
+  try {
+    await ensureSampleCasesSeeded();
+  } catch (seedErr) {
+    console.warn('Không thể tự động bổ sung danh mục 5 vụ án mẫu:', seedErr.message);
+  }
   try {
     if (paymentProvider() === 'sepay_gateway') {
       const config = gatewayConfig();

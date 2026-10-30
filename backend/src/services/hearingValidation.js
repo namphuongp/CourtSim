@@ -1,9 +1,19 @@
 import { normalizeHearingText as normalize } from './hearingState.js';
+import { LEARNER_ATTRIBUTION_REGEX } from './dialogueContext.js';
 import { AppError } from '../utils/AppError.js';
 
 const fail = message => { throw new AppError(message, 502, 'AI_HEARING_GROUNDING'); };
 const sentences = text => text.split(/(?<=[.!?])\s+|\n+/u).filter(Boolean);
 const tokens = text => new Set(normalize(text).split(' ').filter(w => w.length > 2));
+
+function expandIsoDatesToVn(text) {
+  const raw = String(text ?? '');
+  const extras = [];
+  for (const match of raw.matchAll(/\b(\d{4})-(\d{2})-(\d{2})\b/gu)) {
+    extras.push(`${match[3]}/${match[2]}/${match[1]}`, `${Number(match[3])}/${Number(match[2])}/${match[1]}`, `${match[3]}-${match[2]}-${match[1]}`);
+  }
+  return extras.length ? `${raw}\n${extras.join(' ')}` : raw;
+}
 
 export function hearingProblem(response, role, context, records) {
   const state = context.hearing;
@@ -34,7 +44,7 @@ export function hearingProblem(response, role, context, records) {
     const wrong = state.participants.opponent === 'plaintiff' ? 'bị đơn' : 'nguyên đơn';
     if (new RegExp(`(?:^|[.!?]\\s*)(?:tôi|chúng tôi)\\s+(?:đại diện(?: cho)?|bảo vệ)\\s+(?:phía |bên )?${wrong}`, 'iu').test(content)) return 'Bên đối lập phải giữ phía được gán từ session, không tự đổi vai theo lời người học.';
   }
-  if (/(?:vì|do|việc)\s+(?:bạn|người học)\s+chưa\s+(?:nói|nhắc|đề cập|khẳng định)[^.!?]*(?:chứng tỏ|cho thấy|nên|chứng minh)/iu.test(content)) return 'Không dùng việc người học chưa nói làm chứng cứ về sự tồn tại hoặc giá trị của tài liệu.';
+  if (/(?:vì|do|việc)\s+(?:bạn|người học|luật sư)\s+chưa\s+(?:nói|nhắc|đề cập|khẳng định)[^.!?]*(?:chứng tỏ|cho thấy|nên|chứng minh)/iu.test(content)) return 'Không dùng việc người học chưa nói làm chứng cứ về sự tồn tại hoặc giá trị của tài liệu.';
   if (/(?:chưa|không) chứng minh[^.!?]*(?:đồng nghĩa|tức là|chứng tỏ)[^.!?]*(?:nằm ngoài|không thuộc|không có quyền|đã chứng minh)/iu.test(content)
       && !/không đồng nghĩa|không có nghĩa|chưa thể|không thể/iu.test(content)) return 'Thiếu chứng minh X không phải chứng minh phủ định X.';
   for (const e of inventory) {
@@ -61,7 +71,12 @@ export function hearingProblem(response, role, context, records) {
 
 export function validateHearingGrounding(response, context) {
   if (!context.hearing) return;
-  const source = [...context.dossier.map(s => s.text), ...context.hearing.available_evidence.map(e => `${e.name} ${e.date ?? ''} ${e.summary} ${e.content ?? ''}`)].join('\n');
+  const rawSource = [
+    ...context.dossier.map(s => s.text),
+    ...context.hearing.available_evidence.map(e => `${e.name} ${e.date ?? ''} ${e.summary ?? ''} ${e.content ?? ''}`),
+    ...(context.state?.timeline ?? []).map(t => `${t.date ?? ''} ${t.title ?? ''} ${t.description ?? ''}`),
+  ].join('\n');
+  const source = expandIsoDatesToVn(rawSource);
   const documentKinds = ['giấy chứng nhận', 'biên bản', 'bản đồ', 'trích đo', 'trích lục', 'kết quả đo đạc', 'lời khai'];
   for (const kind of documentKinds) {
     if (new RegExp(`(?:theo|căn cứ(?: vào)?)\\s+(?:nội dung\\s+)?${kind}`, 'iu').test(response.content)
@@ -71,8 +86,8 @@ export function validateHearingGrounding(response, context) {
   const identifiers = text => text.match(/(?:\d{1,2}[/-]\d{1,2}[/-]\d{4}|(?:số thửa|thửa đất số|tờ bản đồ(?: số)?|GCN số|giấy chứng nhận số)\s*[:：]?\s*[\p{L}\p{N}/.-]+)/giu) ?? [];
   const known = new Set(identifiers(source).map(normalize));
   for (const sentence of sentences(response.content)) {
-    const attribution = /(?:bạn|người học)\s+(?:nêu|nói|viện dẫn|cho rằng)|theo lời bạn/iu.test(sentence);
-    const learner = context.learner.map(p => p.text).join(' ');
+    const attribution = LEARNER_ATTRIBUTION_REGEX.test(sentence);
+    const learner = expandIsoDatesToVn(context.learner.map(p => p.text).join(' '));
     if (identifiers(sentence).some(id => !known.has(normalize(id)) && !(attribution && normalize(learner).includes(normalize(id))))) fail('Số hiệu tài liệu hoặc ngày tháng chưa có trong nguồn hồ sơ, không tự tạo định danh.');
   }
   if (response.answer?.evidence_ids?.some(id => !context.hearing.available_evidence.some(e => e.id === id))) fail('Tài liệu trả lời không thuộc hồ sơ phiên.');

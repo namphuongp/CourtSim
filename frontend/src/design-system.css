@@ -214,3 +214,314 @@ body .admin-shell td { font-size:12px; }
 body .admin-shell .admin-badge { border-radius:999px; font-size:10px; }
 @media(max-width:850px) { body .admin-shell .admin-header { padding-left:16px; height:auto; min-height:65px; }.admin-shell .admin-header .courtsim-brand { position:static!important; color:#18376d!important; }.admin-shell .admin-header .courtsim-brand span { color:#2e78ff!important; }body .admin-shell .admin-content { margin-left:0; padding:18px; }body .account-page .account-layout { grid-template-columns:1fr; }body .account-page .account-layout>nav { position:static; flex-direction:row; flex-wrap:wrap; }.setup-preparation { grid-template-columns:1fr; } }
 @media(max-width:600px) { body .user-shell .practice-dashboard>header,body .account-page .account-hero,body .checkout-shell .checkout-hero,body .result-page .result-hero { padding:22px; }body .user-shell .practice-dashboard>header h1,body .account-page .account-hero h1 { font-size:25px; }.setup-summary>div { grid-template-columns:85px minmax(0,1fr); }.setup-step-tabs { gap:6px; }.setup-step-tabs button { padding:5px 9px; } }
+
+
+/* ========================================================
+   BÚT LỤC CHỨNG CỨ TRỰC QUAN & BẢNG GHI CHÚ CÁ NHÂN (DOSSIER VISUAL SHEET & NOTE)
+   ======================================================== */
+.evidence-and-note-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+  align-items: start;
+  min-width: 0;
+}
+
+.evidence-note-quick-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #b4cdfa;
+  background: #eff6ff;
+  color: #1d4ed8 !important;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.evidence-note-quick-btn:hover {
+  background: #dbeafe;
+  border-color: #60a5fa;
+}
+
+.evidence-visual-sheet {
+  position: relative;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  margin: 12px 0;
+  border-radius: 8px;
+  border: 1px solid #cdb892;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(196, 164, 114, 0.14), transparent 55%),
+    radial-gradient(circle at 85% 80%, rgba(180, 145, 95, 0.16), transparent 50%),
+    linear-gradient(135deg, #f7efd9 0%, #efe2c4 52%, #ead8b3 100%);
+  color: #2b2114 !important;
+  box-shadow: inset 0 0 24px rgba(138, 104, 56, 0.12), 0 4px 12px rgba(43, 33, 20, 0.08);
+  overflow: hidden;
+  min-width: 0;
+}
+
+.evidence-sheet-holes {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 0;
+  border-right: 1px dashed rgba(120, 92, 54, 0.35);
+  background: rgba(128, 96, 52, 0.06);
+  user-select: none;
+}
+
+.sheet-hole {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid #bda67e;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.22);
+  margin-bottom: 42px;
+}
+
+.sheet-serial {
+  margin-top: auto;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-family: "Courier New", Courier, monospace;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #5c4930;
+}
+
+.evidence-sheet-body {
+  padding: 14px 16px;
+  font-family: "Courier New", "Liberation Mono", Georgia, serif;
+  color: #231b10 !important;
+  min-width: 0;
+}
+
+.evidence-sheet-header {
+  border-bottom: 1.5px solid #4a3b28;
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+}
+
+.evidence-sheet-title {
+  text-align: center;
+  font-size: 13.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #1c140a !important;
+  margin: 0 0 8px;
+  line-height: 1.35;
+}
+
+.evidence-sheet-meta {
+  display: grid;
+  gap: 2px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: #2f2416 !important;
+}
+
+.evidence-sheet-content {
+  font-size: 12px;
+  line-height: 1.68;
+  color: #1f170d !important;
+}
+
+.evidence-sheet-label {
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: #2b2114 !important;
+}
+
+.evidence-sheet-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  text-align: justify;
+  color: #1f170d !important;
+}
+
+.evidence-sheet-footer {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px dotted rgba(74, 59, 40, 0.45);
+  font-size: 11px;
+  line-height: 1.5;
+  align-items: start;
+}
+
+.evidence-sheet-receiver,
+.evidence-sheet-signer {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  color: #2b2114 !important;
+}
+
+.evidence-dotted-line {
+  color: #6b563b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.evidence-cursive-sig {
+  font-family: "Segoe Script", "Brush Script MT", "Lucida Handwriting", cursive, serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e3a8a;
+}
+
+.evidence-red-stamp {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 6px;
+  padding: 4px 10px;
+  width: fit-content;
+  max-width: 100%;
+  border: 2px double #b91c1c;
+  border-radius: 4px;
+  background: rgba(220, 38, 38, 0.06);
+  color: #b91c1c !important;
+  font-family: "Be Vietnam Pro", system-ui, sans-serif;
+  transform: rotate(-6deg);
+  box-shadow: 0 0 0 1px rgba(185, 28, 28, 0.25);
+  user-select: none;
+}
+
+.evidence-red-stamp .stamp-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(185, 28, 28, 0.55);
+  padding-bottom: 2px;
+  color: #b91c1c !important;
+}
+
+.evidence-red-stamp .stamp-code {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding-top: 2px;
+  color: #991b1b !important;
+}
+
+.dossier-personal-note {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1.5px solid #bfdbfe;
+  background: linear-gradient(180deg, #f8fbff 0%, #eff6ff 100%);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.06);
+  min-width: 0;
+}
+
+.dossier-note-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.dossier-note-header > svg {
+  flex-shrink: 0;
+  padding: 6px;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #ffffff !important;
+}
+
+.dossier-note-header h4 {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #1e3a8a !important;
+  margin: 0;
+}
+
+.dossier-note-header small {
+  display: block;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #475569;
+}
+
+.dossier-personal-note textarea {
+  width: 100%;
+  min-height: 120px;
+  resize: vertical;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #93c5fd;
+  background: #ffffff;
+  color: #1e293b !important;
+  font-size: 12.5px;
+  line-height: 1.65;
+}
+
+.dossier-note-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dossier-note-footer small {
+  font-size: 10.5px;
+  color: #64748b;
+}
+
+.dossier-note-insert-btn {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 0;
+  background: #2563eb;
+  color: #ffffff !important;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.dossier-note-insert-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.speech-controls .dialogue-complete-btn {
+  background: #15803d;
+  border-color: #15803d;
+  color: #ffffff !important;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 650;
+  min-height: 36px;
+  padding: 6px 12px;
+}
+.speech-controls .dialogue-complete-btn:hover:not(:disabled) {
+  background: #166534;
+}
+
+@media (max-width: 600px) {
+  .evidence-sheet-footer {
+    grid-template-columns: 1fr;
+  }
+  .evidence-visual-sheet {
+    grid-template-columns: 20px minmax(0, 1fr);
+  }
+  .evidence-sheet-body {
+    padding: 10px 12px;
+  }
+}

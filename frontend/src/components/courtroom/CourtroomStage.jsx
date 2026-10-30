@@ -1,10 +1,18 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight, Scale, Volume2 } from 'lucide-react';
 import { dialogueText } from '../../../../shared/dialogueText.mjs';
 import { actorFor, courtroomRoles } from '../../services/courtroom';
 import FeedbackModal from '../feedback/FeedbackModal';
-import { speakCourtroomText, stopCourtroomSpeech } from '../../services/voiceService';
+import { getSpeakingRecordId, speakCourtroomText, stopCourtroomSpeech, subscribeCourtroomSpeech, unlockCourtroomAudio } from '../../services/voiceService';
 import './courtroom.css';
+
+const PHASE_LABELS = {
+  opening: 'Giai đoạn I: Khai mạc & Thủ tục bắt đầu phiên tòa',
+  presentation: 'Giai đoạn I: Trình bày yêu cầu & Quan điểm mở đầu',
+  clarification: 'Giai đoạn II: Xét hỏi & Kiểm tra chứng cứ tại tòa',
+  debate: 'Giai đoạn III: Tranh luận & Đối đáp pháp lý',
+  summary: 'Giai đoạn IV: Tổng kết tranh tụng & HĐXX Nghị án',
+};
 
 function Character({ actor, role, active, preparing, invited, onInspect }) {
   const [failed, setFailed] = useState(false);
@@ -17,26 +25,34 @@ function Character({ actor, role, active, preparing, invited, onInspect }) {
   </div>;
 }
 
-export default function CourtroomStage({ session, view, records, onHistory, onReadFull, onSelectRecord, navigationDisabled = false, preparationStalled = false, pendingSpeaker = null, speechControls }) {
+export default function CourtroomStage({ session, view, records, onHistory, onReadFull, onSelectRecord, navigationDisabled = false, preparationStalled = false, pendingSpeaker = null, speechControls, onEnableTts }) {
   const roles = courtroomRoles(session);
   const [backgroundFailed, setBackgroundFailed] = useState(false);
-  const [speakingRecordId, setSpeakingRecordId] = useState(null);
+  const [speakingRecordId, setSpeakingRecordId] = useState(() => getSpeakingRecordId());
   const [inspectedActor, setInspectedActor] = useState(null);
+
+  useEffect(() => {
+    return subscribeCourtroomSpeech((id) => setSpeakingRecordId(id));
+  }, []);
+
   const inspectedRole = inspectedActor ? roles[inspectedActor] : null;
   const inspectedSide = (inspectedActor === 'learner' ? session?.user_court_role === 'defense_lawyer' : session?.user_court_role !== 'defense_lawyer') ? 'defendant' : 'plaintiff';
   const record = view.record;
   const owner = record ? actorFor(record) : 'judge';
   const content = dialogueText(record?.display_content ?? record?.content, session?.case_id?.evidence_inventory) || 'Chưa hiển thị được phản hồi này. Hãy tải lại phiên.';
-  const isCurrentSpeaking = speakingRecordId === record?._id;
+  const isCurrentSpeaking = Boolean(record?._id && speakingRecordId === record?._id);
 
   function handleToggleSpeech() {
     if (isCurrentSpeaking) {
       stopCourtroomSpeech();
       setSpeakingRecordId(null);
     } else {
+      unlockCourtroomAudio();
+      onEnableTts?.( record?._id );
       setSpeakingRecordId(record?._id);
       speakCourtroomText(content, {
         role: owner,
+        recordId: record?._id,
         onStart: () => setSpeakingRecordId(record?._id),
         onEnd: () => setSpeakingRecordId((cur) => (cur === record?._id ? null : cur)),
         onError: () => setSpeakingRecordId((cur) => (cur === record?._id ? null : cur)),
@@ -50,8 +66,18 @@ export default function CourtroomStage({ session, view, records, onHistory, onRe
   // Lời cũ vẫn được giữ để đọc, nhưng quyền phát biểu đã chuyển sang người học.
   const invited = session?.status !== 'completed' && session?.conversation?.status === 'learner' && !view.pending && record?._id === session.conversation.current_record_id;
   const activeActor = view.streaming ? view.actor : invited || preparing ? null : view.actor;
+  const currentPhase = session?.conversation?.phase ?? (records.length <= 1 ? 'opening' : 'debate');
+  const phaseLabel = session?.status === 'completed' ? 'Phiên tòa đã khép lại — Hoàn tất nghị án' : (PHASE_LABELS[currentPhase] ?? 'Phiên luyện tập');
+  const currentIssueLabel = session?.status !== 'completed' && currentPhase !== 'summary'
+    ? session?.conversation?.hearing_state?.current_issue?.label
+    : null;
   return <section className="court-stage-section" aria-label="Phòng xử án">
-    <div className="court-stage-toolbar"><span>PHÒNG XỬ ÁN <span className="stage-divider">/</span> Phiên luyện tập</span></div>
+    <div className="court-stage-toolbar">
+      <span>
+        PHÒNG XỬ ÁN <span className="stage-divider">/</span> {phaseLabel}
+        {currentIssueLabel ? <> <span className="stage-divider">·</span> Trọng tâm: {currentIssueLabel}</> : null}
+      </span>
+    </div>
     <div className="court-viewport"><div className="court-scene">
       <img className="court-background" src="/courtsim-courtroom-background-v2.png" alt="" aria-hidden="true" onError={() => setBackgroundFailed(true)} />
       {backgroundFailed && <p className="background-error">Chưa tải được nền phòng xử án. Bạn vẫn có thể tiếp tục phiên.</p>}

@@ -23,11 +23,57 @@ export function practiceText(value = '') {
     .replace('các số liệu phiên âm bất nhất', 'các số liệu chưa thống nhất');
 }
 
+function buildDefaultDevelopments(courtCase) {
+  const parties = courtCase?.parties ?? [];
+  const plaintiff = parties.find(p => p.side === 'plaintiff');
+  const defendant = parties.find(p => p.side === 'defendant');
+  const evidence = courtCase?.evidence_inventory ?? [];
+  const absences = courtCase?.evidence_absences ?? [];
+
+  const steps = [];
+  if (courtCase?.summary) {
+    steps.push({
+      title: 'Bối cảnh khởi phát vụ việc',
+      text: courtCase.summary.replace(/;/g, ','),
+    });
+  }
+  if (plaintiff || defendant) {
+    const pClaims = plaintiff?.claims?.length ? `${plaintiff.name}: ${plaintiff.claims.join(' ')}` : '';
+    const dClaims = defendant?.claims?.length ? `${defendant.name}: ${defendant.claims.join(' ')}` : '';
+    const combined = [pClaims, dClaims].filter(Boolean).join(' — ').replace(/;/g, ',');
+    if (combined) {
+      steps.push({
+        title: 'Yêu cầu khởi kiện và quan điểm phản bác của các bên',
+        text: combined,
+      });
+    }
+  }
+  if (evidence.length) {
+    const evNames = evidence.slice(0, 4).map(e => `${e.name} (${e.provided_by || 'Trong hồ sơ'})`).join(', ').replace(/;/g, ',');
+    const absenceNote = absences.length ? ` Đồng thời hồ sơ ghi nhận điểm khuyết cần lưu ý: ${absences.map(a => a.title).join(', ').replace(/;/g, ',')}.` : '';
+    steps.push({
+      title: 'Hệ thống tài liệu, chứng cứ trọng tâm trong hồ sơ',
+      text: `Hồ sơ hiện có ${evidence.length} bút lục chứng cứ gồm: ${evNames}.${absenceNote}`,
+    });
+  }
+  if (courtCase?.legal_scope_note) {
+    steps.push({
+      title: 'Trọng tâm pháp lý và định hướng tranh tụng tại phiên tòa',
+      text: courtCase.legal_scope_note.replace(/;/g, ','),
+    });
+  }
+  return steps;
+}
+
 export function caseIntroduction(courtCase) {
   // Nhận đúng hồ sơ để các vụ án khác không nhận nhầm diễn biến.
   if (courtCase?.practice_context?.source_label !== 'Bản chép lời Case1.docx'
     && courtCase?.title !== 'Phúc thẩm tranh chấp đất giữa ông Kiên và ông Xây — từ bản ghi phiên tòa') {
-    return { title: courtCase?.title, summary: courtCase?.summary, developments: [] };
+    return {
+      title: courtCase?.title,
+      summary: courtCase?.summary,
+      developments: buildDefaultDevelopments(courtCase),
+    };
   }
   return {
     title: 'Phúc thẩm tranh chấp đất giữa ông Kiên và ông Xây',
