@@ -22,6 +22,7 @@ import { dialogueContext, validateDialogueQuantities } from '../src/services/dia
 import { validateHearingGrounding } from '../src/services/hearingValidation.js';
 import { controlTurn } from '../src/services/dialogueInput.js';
 import { sanitizeTextForTts, fetchGoogleVietnameseSpeech } from '../src/services/aiVoiceService.js';
+import { extractAndStructureUserCase } from '../src/services/userCaseUploadService.js';
 import { caseIntroduction } from '../../shared/casePresentation.mjs';
 import { learnerText } from '../../shared/learnerText.mjs';
 
@@ -169,7 +170,6 @@ test('Chống máy móc cho Chủ tọa & Luật sư AI: chấp nhận xưng hô
     { citations: [] }
   );
 
-  // 1. Khi AI dùng xưng hô chuẩn mực ("Luật sư vừa nêu", "Phía nguyên đơn cho rằng", "Vị luật sư đồng nghiệp trình bày") để dẫn lại con số của người học -> Không bị báo lỗi AI_UNGROUNDED_FACT
   assert.doesNotThrow(() =>
     validateDialogueQuantities('Theo lời Luật sư vừa nêu, mức yêu cầu 80 triệu đồng chưa có hóa đơn chứng từ chứng minh thiệt hại thực tế.', ctx)
   );
@@ -180,7 +180,6 @@ test('Chống máy móc cho Chủ tọa & Luật sư AI: chấp nhận xưng hô
     validateDialogueQuantities('Vị luật sư đồng nghiệp viện dẫn con số 80 triệu đồng song hồ sơ hiện tại chỉ ghi nhận yêu cầu 45.000.000 đồng.', ctx)
   );
 
-  // 2. Khi AI đọc ngày tháng theo chuẩn Việt Nam DD/MM/YYYY từ mốc YYYY-MM-DD trong hồ sơ -> Không bị báo lỗi AI_HEARING_GROUNDING
   assert.doesNotThrow(() =>
     validateHearingGrounding(
       { content: 'Đối chiếu văn bản lập ngày 15/09/2026 và sự việc ngày 14/09/2026, tài liệu này chỉ ghi nhận lời trình bày một phía của chị Mai.' },
@@ -188,7 +187,6 @@ test('Chống máy móc cho Chủ tọa & Luật sư AI: chấp nhận xưng hô
     )
   );
 
-  // 3. Luật sư AI phản biện tự nhiên (130 từ, có câu hỏi tu từ + câu hỏi chất vấn) -> Không bị dialogueProblem từ chối oan
   const naturalOpponentContent = [
     'Kính thưa Hội đồng xét xử, phía chúng tôi không đồng ý với suy diễn của vị luật sư đồng nghiệp.',
     'Thứ nhất, Bản tường trình lập ngày 15/09/2026 chỉ là lời trình bày đơn phương từ phía nguyên đơn sau khi rời cơ sở lưu trú, hoàn toàn chưa có biên bản kết luận vi phạm của cơ quan có thẩm quyền.',
@@ -209,7 +207,6 @@ test('Chống máy móc cho Chủ tọa & Luật sư AI: chấp nhận xưng hô
   );
   assert.equal(oppProblem, null);
 
-  // 4. Lời nối điều hành dự phòng (guidedContinuation) của Chủ tọa gắn trực tiếp với tranh điểm hiện tại và không chứa dấu chấm phẩy
   const fallbackTurn = guidedContinuation('judge', caseAnPhucMai, records, 'opponent', 'debate', ctx);
   assert.equal(fallbackTurn.purpose, 'transition');
   assert.equal(fallbackTurn.next_speaker, 'opponent');
@@ -220,7 +217,6 @@ test('Chống máy móc cho Chủ tọa & Luật sư AI: chấp nhận xưng hô
   assert.equal(closeTurn.purpose, 'close');
   assert.doesNotMatch(closeTurn.content, /;/);
 
-  // 5. Role task của Chủ tọa và Luật sư AI phân hóa rõ theo từng giai đoạn tố tụng
   assert.match(roleTask('judge', 'presentation'), /Mở đầu và Trình bày yêu cầu/);
   assert.match(roleTask('judge', 'clarification'), /Xét hỏi công khai và Kiểm tra chứng cứ/);
   assert.match(roleTask('judge', 'debate'), /Tranh luận và Đối đáp pháp lý/);
@@ -228,8 +224,82 @@ test('Chống máy móc cho Chủ tọa & Luật sư AI: chấp nhận xưng hô
   assert.match(roleTask('opponent', 'clarification'), /phạm vi chứng minh/);
   assert.match(roleTask('opponent', 'debate'), /nhịp điệu phản biện/);
 
-  // 6. Control turn khi người học chỉ nói ngắn ("Tôi không đồng ý") phản hồi chuẩn mực như Chủ tọa thật
   const briefControl = controlTurn('brief_position');
   assert.match(briefControl.content, /nêu rõ lý do pháp lý và tài liệu, chứng cứ/);
   assert.doesNotMatch(briefControl.content, /;/);
+});
+
+test('AI phát hiện nội dung & chuẩn hóa bản án do người dùng tự tải lên đúng chuẩn CSDL CourtSim', async () => {
+  const userJudgmentText = [
+    'BẢN ÁN DÂN SỰ SƠ THẨM SỐ 18/2026/DS-ST NGÀY 10/06/2026',
+    'Về việc: Tranh chấp hợp đồng thuê mặt bằng kinh doanh và bồi thường thiệt hại.',
+    'Nguyên đơn là bà Lê Hoàng Yến khởi kiện yêu cầu Công ty TNHH Thương mại Minh Phát hoàn trả 120.000.000 đồng tiền đặt cọc thuê mặt bằng; đồng thời bồi thường 30.000.000 đồng chi phí cải tạo.',
+    'Bị đơn là Công ty TNHH Thương mại Minh Phát không đồng ý trả lại tiền cọc và cho rằng bà Yến tự ý chấm dứt hợp đồng trước thời hạn.',
+    'Ngày 05/01/2026, hai bên ký Hợp đồng thuê mặt bằng số 05/HĐMB-2026 tại Quận 3, thời hạn thuê 24 tháng, tiền đặt cọc 120.000.000 đồng đã chuyển khoản qua ngân hàng.',
+    'Ngày 18/03/2026, hệ thống cấp thoát nước tại mặt bằng bị sự cố ngập úng nghiêm trọng, bà Yến lập biên bản hiện trạng có xác nhận của Tổ trưởng dân phố.',
+    'Ngày 02/04/2026, do mặt bằng vẫn không thể kinh doanh, bà Lê Hoàng Yến gửi thông báo chấm dứt hợp đồng.',
+  ].join('\n');
+
+  // 1. Kiểm thử với AI trả về bản nháp (có cả trích đoạn lệch hoặc phân loại recorded_event chứa từ "cho rằng" cần tự động sửa)
+  const structuredWithAi = await extractAndStructureUserCase(
+    { rawText: userJudgmentText },
+    {
+      complete: async () =>
+        JSON.stringify({
+          title: 'Vụ án tranh chấp hợp đồng thuê mặt bằng giữa bà Lê Hoàng Yến và Công ty Minh Phát',
+          category: 'dân sự',
+          reference_date: '2026-04-02',
+          summary: 'Tranh chấp tiền đặt cọc 120.000.000 đồng và chi phí sửa chữa mặt bằng do sự cố ngập úng.',
+          parties: [
+            { side: 'plaintiff', name: 'Bà Lê Hoàng Yến', claims: ['Yêu cầu hoàn trả 120.000.000 đồng tiền đặt cọc'] },
+            { side: 'defendant', name: 'Công ty TNHH Thương mại Minh Phát', claims: ['Từ chối hoàn trả tiền cọc do chấm dứt trước hạn'] },
+          ],
+          timeline: [
+            {
+              kind: 'transaction',
+              date: '2026-01-05',
+              description: 'Ký hợp đồng thuê mặt bằng số 05/HĐMB-2026',
+              source_quote: 'Hai bên ký Hợp đồng thuê mặt bằng số 05/HĐMB-2026 ngày 05/01/2026.',
+            },
+          ],
+          case_facts: [
+            {
+              kind: 'recorded_event',
+              quote: 'Công ty TNHH Thương mại Minh Phát cho rằng bà Yến tự ý chấm dứt hợp đồng trước thời hạn.',
+            },
+          ],
+          evidence_inventory: [
+            {
+              name: 'Hợp đồng thuê mặt bằng số 05/HĐMB-2026',
+              date: '2026-01-05',
+              provided_by: 'Bà Lê Hoàng Yến',
+              summary: 'Ghi nhận thỏa thuận thuê 24 tháng và tiền đặt cọc 120.000.000 đồng.',
+            },
+          ],
+        }),
+    }
+  );
+
+  validateTimeline(structuredWithAi.timeline);
+  validateCaseDetails(structuredWithAi);
+  validateCaseFacts(structuredWithAi);
+  const caseDocAi = new Case(structuredWithAi);
+  await caseDocAi.validate();
+  assert.equal(structuredWithAi.case_facts[0].kind, 'party_statement', 'Câu có từ "cho rằng" phải tự động chuyển thành party_statement');
+  assert.ok(structuredWithAi.full_document.includes(structuredWithAi.timeline[0].source_quote));
+  assert.doesNotMatch(structuredWithAi.summary, /;/);
+
+  // 2. Kiểm thử chế độ NLP dự phòng khi AI không phản hồi
+  const structuredFallback = await extractAndStructureUserCase(
+    { rawText: userJudgmentText },
+    { complete: async () => { throw new Error('AI offline'); } }
+  );
+  validateTimeline(structuredFallback.timeline);
+  validateCaseDetails(structuredFallback);
+  validateCaseFacts(structuredFallback);
+  const caseDocFallback = new Case(structuredFallback);
+  await caseDocFallback.validate();
+  assert.equal(structuredFallback.category, 'dân sự');
+  assert.ok(structuredFallback.evidence_inventory.length >= 2);
+  assert.equal(caseIntroduction(structuredFallback).developments.length, 4);
 });

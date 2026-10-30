@@ -43,10 +43,6 @@ export function validateCaseDetails(body) {
   const evidence = body.evidence_inventory ?? [];
   if (!Array.isArray(parties) || parties.length > 20 || !Array.isArray(evidence) || evidence.length > 50) throw new AppError('Danh sách các bên hoặc chứng cứ quá dài.');
   const text = (value, max) => typeof value === 'string' && value.length <= max;
-  for (const party of parties) {
-    if (!party || !['plaintiff', 'defendant', 'other'].includes(party.side) || !text(party.name, 200) || !party.name.trim()
-      || !Array.isArray(party.claims) || party.claims.length > 15 || party.claims.some((claim) => !text(claim, 2000))) throw new AppError('Thông tin các bên hoặc yêu cầu không hợp lệ.');
-  }
   for (const item of evidence) {
     if (!item || !text(item.name, 200) || !item.name.trim() || !['provided', 'mentioned_only'].includes(item.availability)
       || ['summary', 'source_quote', 'provided_by', 'source_locator', 'proof_scope'].some((key) => item[key] !== undefined && !text(item[key], 2000))
@@ -56,9 +52,13 @@ export function validateCaseDetails(body) {
       || (item.availability === 'provided' && !item.content?.trim())
       || (item.date && !isValidDateOnly(item.date))) throw new AppError('Chứng cứ cần tên, trạng thái và nội dung thực sự được cung cấp, ngày không rõ có thể để trống.');
   }
+  for (const party of parties) {
+    if (!party || !['plaintiff', 'defendant', 'other'].includes(party.side) || !text(party.name, 200) || !party.name.trim()
+      || !Array.isArray(party.claims) || party.claims.length > 15 || party.claims.some((claim) => !text(claim, 2000))) throw new AppError('Thông tin các bên hoặc yêu cầu không hợp lệ.');
+  }
   return {
     evidence_absences: absences.map(({ title, source_quote }) => ({ title, source_quote })),
     parties: parties.map(({ side, name, claims }) => ({ side, name, claims })),
-    evidence_inventory: evidence.map(({ name, availability, summary, source_quote, provided_by, date, content, source_kind, source_locator, proof_scope, verification_status }) => ({ name, availability, summary, source_quote, provided_by, date, content, source_kind, source_locator, proof_scope, verification_status })),
+    evidence_inventory: evidence.map(({ id, name, availability, summary, source_quote, provided_by, date, content, source_kind, source_locator, proof_scope, verification_status }) => ({ ...(id ? { id } : {}), name, availability, summary, source_quote, provided_by, date, content, source_kind, source_locator, proof_scope, verification_status })),
   };
 }

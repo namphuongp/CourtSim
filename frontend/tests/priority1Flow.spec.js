@@ -20,10 +20,11 @@ const anPhucClientCase = {
   evidence_inventory: evidenceInventory(caseAnPhucMai),
 };
 
-test('Ưu tiên 1: 5 bản án mẫu, bút lục trực quan Nguyễn Ngọc Mai (02-BV/2026), đồng bộ Note cá nhân, đọc to đa câu và kết thúc phiên tòa tự nhiên bằng chat', async ({ page }) => {
+test('Ưu tiên 1: 5 bản án mẫu, tự tải lên bản án riêng (AI bóc tách), bút lục trực quan Nguyễn Ngọc Mai (02-BV/2026), đồng bộ Note cá nhân, đọc to đa câu và kết thúc phiên tòa tự nhiên bằng chat', async ({ page }) => {
   const sessionId = '507f1f77bcf86cd799439088';
   const opening = openingStatement(anPhucClientCase, 'plaintiff_lawyer');
   const ttsPayloads = [];
+  const uploadedPayloads = [];
   const fakeMp3Bytes = Buffer.from('SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQxAADBz4A', 'base64');
 
   let session = {
@@ -69,6 +70,11 @@ test('Ưu tiên 1: 5 bản án mẫu, bút lục trực quan Nguyễn Ngọc Mai
     }
     if (path.endsWith('/auth/membership')) {
       return route.fulfill({ json: { data: membership } });
+    }
+    if (path.endsWith('/cases/upload-parse') && method === 'POST') {
+      const body = request.postDataJSON();
+      uploadedPayloads.push(body);
+      return route.fulfill({ status: 201, json: { data: anPhucClientCase } });
     }
     if (path.endsWith('/cases')) {
       return route.fulfill({
@@ -168,17 +174,20 @@ test('Ưu tiên 1: 5 bản án mẫu, bút lục trực quan Nguyễn Ngọc Mai
     return route.fulfill({ json: { data: anPhucClientCase } });
   });
 
-  // 1. Kiểm tra danh mục 5 bản án mẫu ở trang Thiết lập phiên tòa
+  // 1. Kiểm tra danh mục 5 bản án mẫu & luồng tự tải lên bản án riêng (AI bóc tách chuẩn CSDL)
   await page.goto('/dashboard/setup');
   await expect(page.locator('.setup-option')).toHaveCount(5);
   await expect(page.getByRole('button', { name: /Vụ án Nguyễn Ngọc Mai/i })).toBeVisible();
   await expect(page.getByRole('button', { name: /Công ty Sao Khuê/i })).toBeVisible();
   await expect(page.getByRole('button', { name: /Phạm Thu Hà và ông Võ Thành Nam/i })).toBeVisible();
 
-  await page.getByRole('button', { name: /Vụ án Nguyễn Ngọc Mai/i }).click();
-  await page.getByRole('button', { name: 'Tiếp: Hồ sơ', exact: true }).click();
+  await page.getByRole('button', { name: /Tải lên bản án riêng/i }).click();
+  await page.getByRole('button', { name: /Điền mẫu bản án thử nghiệm/i }).click();
+  await expect(page.locator('#custom-case-raw-text')).toHaveValue(/BẢN ÁN DÂN SỰ SƠ THẨM/);
+  await page.getByRole('button', { name: /AI Phân tích & Nạp vào Hồ sơ/i }).click();
+  expect(uploadedPayloads.length).toBe(1);
 
-  // 2. Kiểm tra Tóm tắt diễn biến tiền tố tụng & Bút lục trực quan 02-BV/2026 + Bảng Note cá nhân
+  // 2. Sau khi nạp bản án, hệ thống tự động chuyển sang Bước 2 (Hồ sơ vụ án)
   await expect(page.getByRole('heading', { name: 'Tóm tắt diễn biến' })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Tóm tắt diễn biến' })).toContainText('Nguyễn Ngọc Mai');
 
