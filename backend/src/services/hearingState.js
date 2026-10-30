@@ -30,17 +30,34 @@ function referencedIds(record, inventory) {
 
 function issueCatalog(courtCase) {
   const source = `${courtCase.title ?? ''} ${courtCase.summary ?? ''} ${courtCase.full_document ?? ''} ${(courtCase.evidence_inventory ?? []).map(e => `${e.name} ${e.summary ?? ''}`).join(' ')}`;
-  const templates = [
+  const landTemplates = [
     ['overlap', 'Phạm vi giấy chứng nhận và phần đất tranh chấp', /giấy chứng nhận|\bgcn\b|trùng khớp|đối chiếu|ranh giới/iu],
     ['burden', 'Phạm vi yêu cầu và trách nhiệm chứng minh của mỗi bên', /nghĩa vụ chứng minh|trách nhiệm chứng minh|gánh nặng|phạm vi yêu cầu/iu],
     ['origin', 'Nguồn gốc hình thành và sử dụng đất', /nguồn gốc|khai hoang|thừa kế|chuyển nhượng|tặng cho/iu],
     ['possession', 'Quá trình quản lý và sử dụng đất', /quản lý|sử dụng đất|canh tác|chiếm hữu/iu],
     ['timeline', 'Diễn biến và thời điểm phát sinh tranh chấp', /thời điểm|diễn biến|phát sinh|hòa giải/iu],
   ];
-  const land = /đất|địa chính/iu.test(source);
-  const topics = land ? templates.filter(([key, , pattern]) => key === 'burden' || pattern.test(source)) : [];
-  return topics.length ? topics.map(([id, label, pattern]) => ({ id: `issue:${id}`, label, pattern }))
-    : [{ id: `issue:${stableId(courtCase.title ?? 'case')}`, label: 'Yêu cầu của các bên và căn cứ chứng minh', pattern: /./u }];
+  const land = /đất|địa chính/iu.test(source) && !/đặt cọc|phạt cọc/iu.test(courtCase.title ?? '');
+  if (land) {
+    const topics = landTemplates.filter(([key, , pattern]) => key === 'burden' || pattern.test(source));
+    return topics.length ? topics.map(([id, label, pattern]) => ({ id: `issue:${id}`, label, pattern }))
+      : [{ id: `issue:${stableId(courtCase.title ?? 'case')}`, label: 'Yêu cầu của các bên và căn cứ chứng minh', pattern: /./u }];
+  }
+
+  // Mở rộng nhận diện tranh điểm cho các vụ án Hình sự, Lao động, Hợp đồng có đầy đủ danh mục chứng cứ
+  if ((courtCase.evidence_inventory ?? []).length >= 2) {
+    const generalTemplates = [
+      ['conduct_facts', 'Hành vi thực tế, diễn biến sự việc và tính xác thực của lời khai', /tường trình|lời khai|hành vi|sự việc|tuyển dụng|cơ sở lưu trú|chấm dứt|vi phạm/iu],
+      ['evidence_validity', 'Giá trị pháp lý và phạm vi chứng minh của các tài liệu, chứng cứ trong hồ sơ', /bản tường trình|biên bản|hợp đồng|tin nhắn|xác minh|chứng cứ|tài liệu/iu],
+      ['legal_liability', 'Căn cứ pháp lý, lỗi và trách nhiệm bồi thường hoặc xử lý theo quy định pháp luật', /bồi thường|trách nhiệm|nghĩa vụ chứng minh|phạt cọc|thiệt hại|quyền lợi/iu],
+    ];
+    const matched = generalTemplates.filter(([, , pattern]) => pattern.test(source));
+    if (matched.length >= 2) {
+      return matched.map(([id, label, pattern]) => ({ id: `issue:${id}`, label, pattern }));
+    }
+  }
+
+  return [{ id: `issue:${stableId(courtCase.title ?? 'case')}`, label: 'Yêu cầu của các bên và căn cứ chứng minh', pattern: /./u }];
 }
 
 export function hearingState(session, courtCase, records) {

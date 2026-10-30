@@ -18,7 +18,7 @@ import { roleLabel } from '../../../services/simulation';
 import { draftKey, readDraft, saveDraft } from '../../../services/auth';
 import UpgradeNotice from '../../../components/membership/UpgradeNotice';
 import VoiceDebateControls from '../../../components/courtroom/VoiceDebateControls';
-import { speakCourtroomText, stopCourtroomSpeech } from '../../../services/voiceService';
+import { speakCourtroomText, stopCourtroomSpeech, unlockCourtroomAudio } from '../../../services/voiceService';
 import PdfExportModal from '../../../components/courtroom/PdfExportModal';
 import FeedbackModal from '../../../components/feedback/FeedbackModal';
 import { BookOpen, FileText, Gavel, HelpCircle, ListChecks, Maximize2, Scale } from 'lucide-react';
@@ -57,6 +57,7 @@ function Room({ sessionId }) {
   const [ttsEnabled, setTtsEnabled] = useState(false);
   const [pdfModalOpen, setPdfModalOpen] = useState(false);
   const lastSpokenRecordIdRef = useRef(null);
+  const prevTtsEnabledRef = useRef(false);
   useEffect(() => { saveDraft(storageKey, draft); }, [storageKey, draft]);
   useEffect(() => {
     let active = true;
@@ -201,6 +202,7 @@ function Room({ sessionId }) {
   async function send(event) {
     event.preventDefault();
     if (busy.current || disabled || cooldown || (conversation && conversation.status !== 'learner') || draft.content.trim().length < 3) return;
+    unlockCourtroomAudio();
     busy.current = true;
     setSubmittedContent(draft.content);
     setState((s) => ({ ...s, sending: true, error: '' }));
@@ -235,6 +237,7 @@ function Room({ sessionId }) {
 
   async function continueDialogue(action) {
     if (busy.current || disabled) return;
+    unlockCourtroomAudio();
     busy.current = true;
     setSelectedId(null);
     setState(s => ({ ...s, sending: true, error: '' }));
@@ -368,27 +371,31 @@ function Room({ sessionId }) {
     : courtroomView({ records, selectedId: selectedId ?? conversation?.current_record_id, sending: state.sending && Boolean(submittedContent) && !session?.processing, pendingContent: submittedContent, processing: session?.processing, ending: state.ending });
   // Tự động đọc lời thoại Hội đồng xét xử & Bên đối lập khi bật chế độ TTS
   useEffect(() => {
+    const wasEnabled = prevTtsEnabledRef.current;
+    prevTtsEnabledRef.current = ttsEnabled;
     if (!ttsEnabled) {
-      stopCourtroomSpeech();
+      if (wasEnabled) stopCourtroomSpeech();
       return;
     }
     const record = view?.record;
     if (!record || view.streaming || record.sender_type === 'user') return;
     if (record._id && record._id !== lastSpokenRecordIdRef.current) {
       lastSpokenRecordIdRef.current = record._id;
-      speakCourtroomText(record.content, { role: view.actor });
+      speakCourtroomText(record.content, { role: view.actor, recordId: record._id });
     }
   }, [ttsEnabled, view?.record, view?.streaming, view?.actor]);
   const panelTitles = { notebook: 'Sổ tay phiên', guide: 'Hướng dẫn phiên tòa', case: 'Hồ sơ phiên tòa', assistant: 'Trợ lý luật', history: 'Hồ sơ phiên tòa', speech: 'Lời trình bày đầy đủ' };
   const ready = !disabled && (!conversation || conversation.status === 'learner') && userTurns < (session?.max_turns ?? 20);
   const reviewing = Boolean(selectedId && selectedId !== (conversation?.current_record_id ?? records.at(-1)?._id));
   const nextSpeaker = conversation?.next_speaker === 'judge' ? 'Chủ tọa' : conversation?.next_speaker === 'opponent' ? 'Bên đối lập' : 'Bạn';
-  const status = state.ending ? 'Đang chấm điểm' : state.sending ? (conversation ? 'Đang chuẩn bị lượt tiếp theo' : submittedContent ? 'Đang chờ phản hồi' : 'Đang lưu ngày') : session?.processing ? (readDraft(completionKey)?.requested ? 'Đang chấm điểm' : 'Đang xử lý lượt trước') : completed ? 'Phiên đã kết thúc' : userTurns >= (session?.max_turns ?? 20) ? 'Đã đủ số lượt' : ready ? 'Đến lượt bạn' : conversation?.status === 'awaiting_continue' ? 'Đọc lời thoại rồi bấm Tiếp tục' : conversation?.status === 'failed' ? 'Có thể thử lại lời thoại' : 'Kiểm tra thông tin phiên';
+  const isReadyToClose = Boolean(conversation && (conversation.ready_to_close || conversation.phase === 'summary' || conversation.last_purpose === 'close') && userTurns >= 1);
+  const status = state.ending ? 'Đang chấm điểm' : state.sending ? (conversation ? 'Đang chuẩn bị lượt tiếp theo' : submittedContent ? 'Đang chờ phản hồi' : 'Đang lưu ngày') : session?.processing ? (readDraft(completionKey)?.requested ? 'Đang chấm điểm' : 'Đang xử lý lượt trước') : completed ? 'Phiên đã kết thúc' : userTurns >= (session?.max_turns ?? 20) ? 'Đã đủ số lượt' : isReadyToClose && ready ? 'Giai đoạn tổng kết · Có thể kết thúc phiên' : ready ? 'Đến lượt bạn' : conversation?.status === 'awaiting_continue' ? 'Đọc lời thoại rồi bấm Tiếp tục' : conversation?.status === 'failed' ? 'Có thể thử lại lời thoại' : 'Kiểm tra thông tin phiên';
   const speechControls = reviewing ? <div className="speech-controls"><button type="button" className="dialogue-next" onClick={returnToCurrent}>Trở về lượt hiện tại</button></div> : conversation && !completed ? <div className="speech-controls">
       {preparing && <p role="status" aria-live="polite">{streamedSpeech?.content ? 'Đang nhận lời thoại. Bạn có thể đọc phần đã hiện.' : conversation.next_speaker === 'judge' ? 'Chủ tọa đang chuẩn bị câu hỏi…' : conversation.next_speaker === 'opponent' ? 'Bên đối lập đang chuẩn bị lời đáp…' : 'Đang gửi lập luận…'}</p>}
       {slow && preparing && <p role="status">{waitExpired ? 'Chưa xác nhận được kết quả. Kiểm tra kết nối và tiến trình trước khi thử lại để tránh gửi trùng.' : 'Phản hồi đang lâu hơn thường lệ.'} <button type="button" onClick={() => setReload(n => n + 1)}>Kiểm tra tiến trình</button></p>}
       {conversation.status === 'awaiting_continue' && <button type="button" className="dialogue-next" disabled={disabled} onClick={() => continueDialogue('advance')}>{nextSpeaker === 'Bạn' ? 'Trình bày ý kiến' : `Tiếp tục: ${nextSpeaker}`} <span aria-hidden="true">→</span></button>}
       {conversation.status === 'failed' && <button type="button" className="dialogue-next" disabled={disabled} onClick={() => continueDialogue('resume')}>Thử lại lời thoại</button>}
+      {isReadyToClose && !preparing && <button type="button" className="dialogue-complete-btn" disabled={disabled} onClick={() => setConfirmEnd(true)}>Nghị án & Chấm điểm kết quả ⚖️</button>}
     </div> : null;
   if (state.loading) return <main className="courtroom-page"><LoadingState>Đang tải phiên tòa...</LoadingState></main>;
   return <main className="courtroom-page">
@@ -398,20 +405,20 @@ function Room({ sessionId }) {
       {(panel === 'case' || panel === 'history') && <>
         <DossierTabs value={panel} onChange={setPanel} />
         <div id="dossier-content" role="tabpanel" aria-labelledby={'dossier-tab-' + panel} tabIndex={0}>
-          {panel === 'case' ? <CaseDossier key={dossierTab} initialTab={dossierTab} tabbed courtCase={session?.case_id} role={session?.user_court_role} onInsert={(item) => insertIntoArgument(evidenceText(item))} insertionDisabled={!ready} /> : <Transcript session={session} records={records} selected={view.record?._id} onSelect={selectRecord} />}
+          {panel === 'case' ? <CaseDossier key={dossierTab} initialTab={dossierTab} tabbed sessionId={sessionId} courtCase={session?.case_id} role={session?.user_court_role} onInsert={(item) => insertIntoArgument(typeof item === 'string' ? item : evidenceText(item))} insertionDisabled={!ready} /> : <Transcript session={session} records={records} selected={view.record?._id} onSelect={selectRecord} />}
         </div>
       </>}
-      {panel === 'notebook' && <SessionNotebook key={sessionId} sessionId={sessionId} onInsert={insertIntoArgument} insertionDisabled={!ready}/>}
+      {panel === 'notebook' && <SessionNotebook key={sessionId} sessionId={sessionId} caseId={session?.case_id?._id} onInsert={insertIntoArgument} insertionDisabled={!ready}/>}
       {panel === 'assistant' && (session?.features?.legalAssistant ? <LegalAssistant sessionId={sessionId} open onInsert={insertIntoArgument} insertionDisabled={!ready} /> : <UpgradeNotice />)}
       {panel === 'speech' && <Transcript session={session} records={records} selected={view.record?._id} fullRecord={panel === 'speech' ? fullRecord : null} onSelect={selectRecord} />}
     </StudyPanel>
-    <ConfirmEndDialog open={confirmEnd} pending={state.ending} hasDraft={Boolean(draft.content.trim())} onCancel={() => setConfirmEnd(false)} onConfirm={complete} />
+    <ConfirmEndDialog open={confirmEnd} pending={state.ending} hasDraft={Boolean(draft.content.trim())} userTurns={userTurns} onCancel={() => setConfirmEnd(false)} onConfirm={complete} />
     {expandedComposer && <FeedbackModal title="Trình bày ý kiến của bạn" onClose={() => setExpandedComposer(false)}><div className="argument-editor"><div><label htmlFor="argument-expanded">Nội dung lập luận</label><textarea id="argument-expanded" disabled={!ready} maxLength={4000} value={draft.content} onChange={event => setDraft({ content: event.target.value, request_id: crypto.randomUUID() })}/><small>{draft.content.length}/4000 ký tự · Bản nháp được lưu trên trình duyệt</small></div><aside><h3>{draftMode ?? 'Gợi ý trình bày'}</h3>{draftMode && <p>{draftMode === 'Phản bác' ? 'Chọn một ý kiến cụ thể của bên đối lập, chỉ ra điểm chưa thuyết phục và đối chiếu chứng cứ hoặc căn cứ pháp luật.' : draftMode === 'Đặt câu hỏi' ? 'Nêu câu hỏi ngắn, rõ và gắn với một tình tiết cần làm sáng tỏ trong hồ sơ.' : 'Tóm lược luận điểm chính, chứng cứ hỗ trợ và đề nghị của phía bạn.'}</p>}<ol><li>Nêu vấn đề cần giải quyết.</li><li>Liên hệ tình tiết và chứng cứ.</li><li>Giải thích căn cứ pháp luật.</li><li>Trả lời ý kiến của bên đối lập.</li><li>Kết luận về đề nghị của bạn.</li></ol><p>Nội dung chỉ được gửi khi bạn bấm Gửi lập luận trong phiên.</p></aside></div><div className="argument-editor-actions"><button type="button" onClick={() => { setExpandedComposer(false); requestAnimationFrame(() => argumentRef.current?.focus()); }}>Quay lại ô lập luận →</button></div></FeedbackModal>}
     <header className="courtroom-header"><div><Link className="courtroom-back" to="/dashboard/sessions">← Danh sách phiên</Link><h1>{session?.case_id?.title ?? 'Phiên mô phỏng'}</h1><p className="courtroom-meta"><span>{roleLabel(session?.user_court_role, session?.case_id?.category, session?.case_id)}</span><span>· {session?.case_id?.practice_context ? 'Mốc tham chiếu sơ thẩm' : 'Ngày sự kiện'}: {session?.case_event_date ?? 'Chưa xác định'}</span><span>· {userTurns}/{session?.max_turns ?? 20} lượt</span></p></div><nav className="courtroom-controls" aria-label="Công cụ phiên tòa"><button className="tool-guide" aria-expanded={panel === 'guide'} onClick={() => setPanel(panel === 'guide' ? null : 'guide')}>Hướng dẫn</button><button className="tool-case" aria-expanded={panel === 'case' || panel === 'history'} onClick={() => setPanel(panel === 'case' || panel === 'history' ? null : 'case')}>Hồ sơ phiên tòa</button><button className="tool-law" aria-expanded={panel === 'assistant'} onClick={() => setPanel(panel === 'assistant' ? null : 'assistant')}>Trợ lý luật</button><button className="tool-notebook" aria-expanded={panel === 'notebook'} onClick={() => setPanel(panel === 'notebook' ? null : 'notebook')}>Sổ tay</button><button type="button" className="tool-export" onClick={() => setPdfModalOpen(true)} title="Xuất biên bản phiên tòa dạng PDF">Xuất biên bản PDF</button>{completed ? <Link to={'/simulation/' + sessionId + '/result'}>Xem kết quả</Link> : <button className="end-session" disabled={disabled || !userTurns} onClick={() => setConfirmEnd(true)}>{state.ending ? 'Đang chấm điểm...' : 'Kết thúc và chấm điểm'}</button>}</nav></header>
     {insertError && !panel && <p role="alert" className="courtroom-notice">{insertError}</p>}
     {state.error && <div role="alert" className="courtroom-notice">{state.error}<button disabled={state.sending || state.ending} onClick={() => setReload((n) => n + 1)}>Tải lại dữ liệu</button></div>}
     {session && !session.case_event_date && !completed && <form onSubmit={saveEventDate} className="courtroom-notice"><p>Bổ sung ngày trong hồ sơ hoặc một ngày giả định cho bài tập để tiếp tục.</p><label>Ngày tra cứu <input required type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} className="m-2 rounded border p-2" /></label><button disabled={state.sending || !eventDate}>Lưu ngày</button></form>}
-    <div className="courtroom-workspace"><CourtroomStage speechControls={speechControls} session={session} preparationStalled={waitExpired} pendingSpeaker={state.sending && !submittedContent && ['judge', 'opponent'].includes(conversation?.next_speaker) ? conversation.next_speaker : null} view={view} records={records} onSelectRecord={selectRecord} navigationDisabled={state.sending || state.ending || session?.processing} onHistory={() => setPanel('history')} onReadFull={(record) => { setFullRecord(record); setPanel('speech'); }} />
+    <div className="courtroom-workspace"><CourtroomStage speechControls={speechControls} session={session} preparationStalled={waitExpired} pendingSpeaker={state.sending && !submittedContent && ['judge', 'opponent'].includes(conversation?.next_speaker) ? conversation.next_speaker : null} view={view} records={records} onSelectRecord={selectRecord} navigationDisabled={state.sending || state.ending || session?.processing} onHistory={() => setPanel('history')} onReadFull={(record) => { setFullRecord(record); setPanel('speech'); }} onEnableTts={(recordId) => { lastSpokenRecordIdRef.current = recordId; setTtsEnabled(true); }} />
     </div>
     <nav className="court-action-deck" aria-label="Thẻ công cụ tranh tụng">
       <button type="button" onClick={() => setPanel('assistant')} title="Mở trợ lý tra cứu pháp luật"><Scale/><strong>Dẫn điều luật</strong><small>Tra cứu căn cứ</small></button>
@@ -426,7 +433,14 @@ function Room({ sessionId }) {
         onAppendText={appendVoiceTranscript}
         textareaRef={argumentRef}
         ttsEnabled={ttsEnabled}
-        onToggleTts={() => setTtsEnabled((v) => !v)}
+        onToggleTts={() => {
+          unlockCourtroomAudio();
+          setTtsEnabled((v) => {
+            const next = !v;
+            if (next) lastSpokenRecordIdRef.current = null;
+            return next;
+          });
+        }}
       />
       <div className="composer-fields"><textarea ref={argumentRef} onDrop={dropEvidence} onDragOver={(event) => { if (event.dataTransfer.types.includes(EVIDENCE_MIME)) { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; } }} id="argument" disabled={!ready} maxLength={4000} value={draft.content} onChange={(e) => setDraft({ content: e.target.value, request_id: crypto.randomUUID() })} placeholder="Trình bày luận điểm, liên hệ chứng cứ và trả lời vấn đề chủ tọa đặt ra… Hoặc bấm nút Micro ở trên để tranh tụng bằng giọng nói." /><button className="composer-send" disabled={!ready || state.sending || cooldown || draft.content.trim().length < 3} title={cooldown ? 'Vui lòng chờ ít giây trước khi gửi tiếp' : undefined}>{state.sending ? 'Đang gửi…' : cooldown ? 'Chờ giây lát…' : <>Gửi lập luận <span aria-hidden="true">↗</span></>}</button></div>
       <div className="composer-foot"><span>{draft.content.length}/4000</span></div>{userTurns >= (session?.max_turns ?? 20) && <p>Đã đủ số lượt. Chọn Kết thúc và chấm điểm để xem kết quả.</p>}

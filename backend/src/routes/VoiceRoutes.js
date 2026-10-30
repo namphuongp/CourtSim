@@ -22,9 +22,9 @@ router.post('/tts', asyncHandler(async (request, response) => {
     throw new AppError('Vui lòng cung cấp nội dung văn bản để đọc.', 400, 'INVALID_SPEECH_TEXT');
   }
 
-  // 1. Chặn văn bản quá dài: Lời thoại phòng xử mỗi lượt tối đa 800 ký tự (chống cố tình đốt ký tự OpenAI TTS)
-  if (text.length > 800) {
-    throw new AppError('Đoạn văn bản quá dài (tối đa 800 ký tự cho mỗi lượt đọc âm thanh).', 400, 'SPEECH_TEXT_TOO_LONG');
+  // 1. Chặn văn bản quá dài: Lời thoại phòng xử mỗi lượt tối đa 4.000 ký tự (chống cố tình đốt ký tự OpenAI TTS)
+  if (text.length > 4000) {
+    throw new AppError('Đoạn văn bản quá dài (tối đa 4.000 ký tự cho mỗi lượt đọc âm thanh).', 400, 'SPEECH_TEXT_TOO_LONG');
   }
 
   // 2. Chống spam gọi TTS liên tục theo user và theo IP

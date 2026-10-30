@@ -23,7 +23,18 @@ export function practiceInstructions(courtCase) {
 }
 
 export function openingStatement(courtCase, role) {
-  const context = courtCase.practice_context;
-  if (!context) return null;
-  return `Hội đồng xét xử thông báo: Luật sư ${caseRoleLabel(role, courtCase)}. Mời Luật sư nêu nội dung kháng cáo của phía mình bảo vệ và làm rõ một vấn đề trọng tâm.`;
+  const context = courtCase?.practice_context;
+  if (context) {
+    return `Thay mặt Hội đồng xét xử phúc thẩm, Chủ tọa tuyên bố mở phiên tòa xét xử phúc thẩm vụ án “${courtCase.title}”. Tại phiên tòa hôm nay, Luật sư tham gia với tư cách ${caseRoleLabel(role, courtCase)}. Sau phần công bố tóm tắt nội dung bản án sơ thẩm và phạm vi kháng cáo, Hội đồng xét xử chuyển sang phần nghe trình bày và tranh tụng. Mời Luật sư nêu rõ nội dung kháng cáo của phía mình bảo vệ, chỉ dẫn chứng cứ trong hồ sơ và làm rõ vấn đề trọng tâm cần Hội đồng xét xử xem xét.`;
+  }
+  const isCriminal = /hình sự/iu.test(courtCase?.category ?? '');
+  const sideLabel = isCriminal
+    ? (role === 'defense_lawyer' ? 'Bị cáo' : 'Người bị hại')
+    : (role === 'defense_lawyer' ? 'Bị đơn' : 'Nguyên đơn');
+  const plaintiffParty = (courtCase?.parties ?? []).find(p => p.side === 'plaintiff');
+  const defendantParty = (courtCase?.parties ?? []).find(p => p.side === 'defendant');
+  const partiesIntro = plaintiffParty && defendantParty
+    ? ` giữa bên khởi kiện/bị hại là ${plaintiffParty.name} và phía bị đơn/bị cáo là ${defendantParty.name}`
+    : '';
+  return `Thay mặt Hội đồng xét xử, Chủ tọa tuyên bố khai mạc phiên tòa xét xử sơ thẩm công khai vụ án “${courtCase?.title ?? 'Vụ án thực hành'}”${partiesIntro}. Căn cứ thủ tục tố tụng tại phiên tòa, sau khi hoàn tất phần kiểm tra sự có mặt và phổ biến quyền, nghĩa vụ của những người tham gia tố tụng, Hội đồng xét xử chuyển sang phần Tranh tụng tại phiên tòa gồm các bước: Trình bày yêu cầu mở đầu, Xét hỏi làm rõ chứng cứ, Tranh luận đối đáp pháp lý và Tổng kết nghị án. Tại phiên tòa hôm nay, Luật sư tham gia bảo vệ quyền và lợi ích hợp pháp cho phía ${sideLabel}. Mời Luật sư trình bày quan điểm mở đầu, xác định rõ yêu cầu cần bảo vệ và viện dẫn các tài liệu, chứng cứ có trong hồ sơ vụ án.`;
 }

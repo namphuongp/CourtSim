@@ -21,7 +21,7 @@ const audioCache = new Map();
  * Làm sạch và chuẩn hóa văn bản trước khi đưa vào Text-To-Speech
  * Loại bỏ thẻ HTML, markdown, mã trích dẫn [CC:], [PL:], URL
  */
-export function sanitizeTextForTts(rawText, maxLength = 1500) {
+export function sanitizeTextForTts(rawText, maxLength = 3500) {
   if (typeof rawText !== 'string') return '';
   let cleaned = rawText
     .replace(/\[([^\]]+)\]\([^)]+\)/gu, '$1') // Giữ lại chữ của markdown link
@@ -59,40 +59,101 @@ function getCacheKey(voice, speed, text) {
   return crypto.createHash('sha256').update(`${voice}:${speed}:${text}`).digest('hex');
 }
 
+function splitIntoSpeechChunks(text, maxChunkLength = 175) {
+  const rawParts = text.match(/[^.!?;,\n]+[.!?;,\n]*|\S+/gu) || [text];
+  const chunks = [];
+  let current = '';
+
+  for (const part of rawParts) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+    if (trimmed.length > maxChunkLength) {
+      if (current) {
+        chunks.push(current);
+        current = '';
+      }
+      const words = trimmed.split(/\s+/u);
+      let sub = '';
+      for (const word of words) {
+        if ((sub + ' ' + word).trim().length <= maxChunkLength) {
+          sub = (sub + ' ' + word).trim();
+        } else {
+          if (sub) chunks.push(sub);
+          sub = word;
+        }
+      }
+      if (sub) current = sub;
+    } else if ((current + ' ' + trimmed).trim().length <= maxChunkLength) {
+      current = (current + ' ' + trimmed).trim();
+    } else {
+      if (current) chunks.push(current);
+      current = trimmed;
+    }
+  }
+  if (current) chunks.push(current);
+  return chunks.length ? chunks : [text.slice(0, maxChunkLength)];
+}
+
+function stripMp3MetadataFrames(buffer, isFirstChunk = false) {
+  if (!Buffer.isBuffer(buffer) || buffer.length < 10) return buffer;
+  let offset = 0;
+  // 1. Bỏ ID3v2 tag ở đầu nếu có
+  if (buffer[0] === 0x49 && buffer[1] === 0x44 && buffer[2] === 0x33) {
+    const size =
+      ((buffer[6] & 0x7f) << 21) |
+      ((buffer[7] & 0x7f) << 14) |
+      ((buffer[8] & 0x7f) << 7) |
+      (buffer[9] & 0x7f);
+    if (10 + size < buffer.length) offset = 10 + size;
+  }
+  let sliced = offset > 0 ? buffer.subarray(offset) : buffer;
+  // 2. Nếu có frame Xing/Info ở đầu chứa tổng độ dài của riêng 1 câu (khiến trình duyệt dừng sau câu 1), bỏ frame metadata đó
+  const firstFrameWindow = sliced.subarray(0, Math.min(sliced.length, 512));
+  const xingIdx = firstFrameWindow.indexOf('Xing');
+  const infoIdx = firstFrameWindow.indexOf('Info');
+  const markerIdx = xingIdx !== -1 ? xingIdx : infoIdx;
+  if (markerIdx !== -1) {
+    // Tìm frame sync MPEG tiếp theo (0xFF và 0xE0..0xFF) sau marker
+    for (let i = markerIdx + 4; i < sliced.length - 1; i++) {
+      if (sliced[i] === 0xff && (sliced[i + 1] & 0xe0) === 0xe0) {
+        sliced = sliced.subarray(i);
+        break;
+      }
+    }
+  }
+  // 3. Bỏ ID3v1 tag (128 bytes cuối bắt đầu bằng 'TAG') ở các đoạn chưa phải đoạn cuối
+  if (!isFirstChunk && sliced.length > 128) {
+    const tail = sliced.subarray(sliced.length - 128, sliced.length - 125).toString('ascii');
+    if (tail === 'TAG') {
+      sliced = sliced.subarray(0, sliced.length - 128);
+    }
+  }
+  return sliced;
+}
+
 /**
  * Fallback động cơ TTS tiếng Việt dự phòng (Google Vietnamese TTS)
  * Đảm bảo 100% không bao giờ bị ngắt quãng, không phụ thuộc vào quota hay rate-limit của OpenAI
  * Tốc độ phản hồi cực nhanh (<400ms)
  */
 export async function fetchGoogleVietnameseSpeech(text) {
-  // Chia đoạn văn thành các câu ngắn <= 180 ký tự để tương thích với dịch vụ
-  const sentences = text.match(/[^.!?]+[.!?]+|\S+/g) || [text];
-  const chunks = [];
-  let current = '';
+  // Chia đoạn văn thành các mệnh đề ngắn <= 175 ký tự để đọc liền mạch toàn bộ các câu
+  const chunks = splitIntoSpeechChunks(text, 175);
 
-  for (const s of sentences) {
-    if ((current + ' ' + s).trim().length <= 180) {
-      current = (current + ' ' + s).trim();
-    } else {
-      if (current) chunks.push(current);
-      current = s.trim();
-    }
+  const buffers = [];
+  for (let i = 0; i < chunks.length; i++) {
+    const chunk = chunks[i];
+    const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q=${encodeURIComponent(chunk)}`;
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      },
+      signal: AbortSignal.timeout(8_000)
+    });
+    if (!res.ok) throw new Error(`Google TTS status: ${res.status}`);
+    const rawBuf = Buffer.from(await res.arrayBuffer());
+    buffers.push(chunks.length === 1 ? rawBuf : stripMp3MetadataFrames(rawBuf, i === chunks.length - 1));
   }
-  if (current) chunks.push(current);
-
-  const buffers = await Promise.all(
-    chunks.map(async (chunk) => {
-      const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q=${encodeURIComponent(chunk)}`;
-      const res = await fetch(url, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        },
-        signal: AbortSignal.timeout(6_000)
-      });
-      if (!res.ok) throw new Error(`Google TTS status: ${res.status}`);
-      return Buffer.from(await res.arrayBuffer());
-    })
-  );
 
   return Buffer.concat(buffers);
 }

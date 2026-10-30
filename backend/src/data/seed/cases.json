@@ -1,1 +1,911 @@
-[{"_id":{"$oid":"6ab9e357841e796dc88815a8"},"title":"Tranh chấp quyền sử dụng đất — bản án 51/2024/DS-ST","__v":{"$numberInt":"0"},"category":"đất đai","created_at":{"$date":{"$numberLong":"1790567255546"}},"full_document":"Hồ sơ lược biên, ẩn danh A (nguyên đơn), B (bị đơn); không thay thế hồ sơ tố tụng gốc.\n\nA yêu cầu trả 229,7 m²; viện dẫn giấy chứng nhận cấp cho hộ gia đình năm 1996. B cho rằng đất có nguồn gốc từ gia đình mình và đã sử dụng lâu dài.\n\nTài liệu được bản án thuật lại: giấy chứng nhận, thông tin cơ quan đăng ký đất đai, lời khai nhân chứng và quá trình hòa giải. Một số nhân chứng có quan hệ với các bên; lời khai về nguồn gốc, sử dụng không thống nhất.\n\nMột phần mương 217 m² khác không thuộc yêu cầu đang xét. Bài tập không cung cấp bản gốc chứng cứ, sơ đồ đo đạc hay toàn bộ lời khai; không được tự bổ sung nội dung còn thiếu.","legal_scope_note":"Bài tập ưu tiên lập luận và đánh giá chứng cứ. Bản gốc Luật Đất đai 2013 đã được bổ sung; lịch sử sửa đổi và căn cứ cho từng mốc cần được xác minh trước khi chấm pháp luật. Không thay bằng Luật Đất đai 2024 hoặc chấm theo kết quả bản án gốc.","reference_date":"2024-03-29","reference_date_note":"Mốc tra cứu cố định theo ngày xét xử, không phải ngày phát sinh tranh chấp. Việc áp dụng luật còn phụ thuộc thời điểm từng sự kiện và quy định chuyển tiếp.","source_note":"Nguồn đăng lại: Thư Viện Pháp Luật; bản án sơ thẩm 51/2024/DS-ST, TAND thị xã Vĩnh Châu, Sóc Trăng. Chưa xác minh tình trạng kháng cáo hoặc hiệu lực; không giới thiệu là án lệ.","source_url":"https://thuvienphapluat.vn/banan/ban-an/ban-an-ve-tranh-chap-quyen-su-dung-dat-so-512024dsst-331384","summary":"Hai bên tranh chấp 229,7 m² đất mương và bờ mương. Luyện đối chiếu giấy chứng nhận với lời khai về quá trình sử dụng.","evidence_inventory":[{"summary":"Bản án đề cập giấy chứng nhận cấp cho hộ gia đình năm 1996; A viện dẫn để yêu cầu trả đất.","name":"Giấy chứng nhận","availability":"mentioned_only","source_quote":"Tài liệu được bản án thuật lại; không có bản gốc trong bài tập."},{"summary":"Thông tin cơ quan đăng ký đất đai được bản án đề cập.","name":"Thông tin cơ quan đăng ký đất đai","availability":"mentioned_only","source_quote":"Tài liệu được bản án thuật lại; không có bản gốc trong bài tập."},{"summary":"Lời khai về nguồn gốc, sử dụng đất không thống nhất; một số nhân chứng có quan hệ với các bên.","name":"Lời khai nhân chứng","availability":"mentioned_only","source_quote":"Tài liệu được bản án thuật lại; không có bản gốc trong bài tập."},{"summary":"Quá trình hòa giải được bản án đề cập.","name":"Hòa giải","availability":"mentioned_only","source_quote":"Tài liệu được bản án thuật lại; không có bản gốc trong bài tập."}],"timeline":[{"kind":"transaction","date":"1996-01-01","date_to":"1996-12-31","description":"Giấy chứng nhận được đề cập năm 1996; hồ sơ lược biên chưa chốt ngày.","source_quote":"giấy chứng nhận cấp cho hộ gia đình năm 1996","status":"reported"},{"kind":"filing","date":"2022-07-18","date_to":"2022-07-18","description":"Ngày đơn khởi kiện được bản án đề cập.","source_quote":"Theo đơn khởi kiện ngày 18 tháng 7 năm 2022","status":"reported"},{"kind":"hearing","date":"2024-03-29","date_to":"2024-03-29","description":"Ngày xét xử sơ thẩm được bản án đề cập.","source_quote":"BẢN ÁN 51/2024/DS-ST NGÀY 29/03/2024","status":"reported"}],"parties":[{"side":"plaintiff","name":"A (đã ẩn danh)","claims":["Yêu cầu trả 229,7 m² đất; viện dẫn giấy chứng nhận cấp cho hộ gia đình năm 1996."]},{"side":"defendant","name":"B (đã ẩn danh)","claims":["Cho rằng đất có nguồn gốc từ gia đình mình và đã sử dụng lâu dài."]}],"case_facts":[{"kind":"party_statement","quote":"A yêu cầu trả 229,7 m²; viện dẫn giấy chứng nhận cấp cho hộ gia đình năm 1996.","source_type":"judgment","party":"A"},{"kind":"party_statement","quote":"B cho rằng đất có nguồn gốc từ gia đình mình và đã sử dụng lâu dài.","source_type":"judgment","party":"B"},{"kind":"recorded_event","quote":"Hai bên tranh chấp 229,7 m² đất mương và bờ mương.","source_type":"judgment"},{"kind":"unproven","quote":"B cho rằng đất có nguồn gốc từ gia đình mình và đã sử dụng lâu dài.","source_type":"judgment"}]},{"_id":{"$oid":"6abb6863841e796dc8881dc3"},"title":"Phúc thẩm tranh chấp đất giữa ông Kiên và ông Xây — từ bản ghi phiên tòa","__v":{"$numberInt":"0"},"case_facts":[{"kind":"recorded_event","quote":"Bản ghi giới thiệu phiên phúc thẩm tại TAND TP Hà Nội đối với bản án dân sự sơ thẩm số 13 ngày 07/08/2018 của TAND huyện Thanh Trì.","source_type":"case_outline"},{"kind":"recorded_event","quote":"Bản ghi mô tả thửa 70, tờ bản đồ 04, diện tích 117 m² tại xóm Cộng Hòa, xã Hữu Hòa, huyện Thanh Trì, Hà Nội. Đây là thông tin trong bản chép, chưa đối chiếu hồ sơ địa chính gốc.","source_type":"case_outline"},{"kind":"party_statement","quote":"Ông Kiên cho rằng cha mẹ đã chia miệng đất cho hai con trai, mỗi người một nửa; ông chuyển chỗ ở nhưng không từ bỏ phần của mình và phủ nhận thỏa thuận nhận tiền, gạch.","source_type":"case_outline","party":"Nguyễn Hữu Kiên"},{"kind":"party_statement","quote":"Theo phần Chủ tọa thuật lại, ông Xây trình bày đã trả 200 đồng và 3.000 viên gạch khi ông Kiên ra ở riêng để sử dụng toàn bộ thửa đất; việc thanh toán không có giấy tờ.","source_type":"case_outline","party":"Nguyễn Hữu Xây, qua phần Chủ tọa đọc lại"},{"kind":"party_statement","quote":"Anh Nguyên nói việc thỏa thuận là do bố kể lại, không có người làm chứng việc đưa tiền; anh nhắc hai chị gánh gạch.","source_type":"case_outline","party":"Nguyễn Hữu Nguyên"},{"kind":"party_statement","quote":"Bà Huấn nói không trực tiếp biết việc giao tiền, gạch vì ở xa, chỉ nghe các bên; lời về việc đã chia đất không thống nhất giữa phần công bố và phần hỏi.","source_type":"case_outline","party":"Nguyễn Thị Huấn"},{"kind":"party_statement","quote":"Chị Nga nói nhìn thấy gánh gạch, nhưng chuyện chuyển tiền nghe ông Xây nói; chị nói không biết việc chia đất, và không thống nhất với lời khai trước được Chủ tọa nhắc lại.","source_type":"case_outline","party":"Lưu Thị Nga"},{"kind":"party_statement","quote":"Chị Tám nói lúc nhỏ không biết việc chia đất; lời không nghe tranh chấp không đồng nghĩa biết trực tiếp việc thỏa thuận.","source_type":"case_outline","party":"Lưu Thị Tám"},{"kind":"party_statement","quote":"Chị Dụ và chị Luân nhận mình trực tiếp gánh gạch; đây là lời trình bày đang bị phía ông Kiên phản bác, không phải biên nhận giao nhận.","source_type":"case_outline","party":"Nguyễn Thị Dụ và Nguyễn Thị Luân"},{"kind":"party_statement","quote":"Theo phần công bố, đại diện UBND huyện Thanh Trì cho rằng việc cấp giấy đúng trình tự; bài tập không có bản gốc hồ sơ cấp giấy để kiểm tra nhận định này.","source_type":"case_outline","party":"Đại diện UBND huyện Thanh Trì, qua phần công bố"}],"category":"đất đai","created_at":{"$date":{"$numberLong":"1790666851216"}},"evidence_inventory":[{"id":"EV-case1-kien","summary":"Chứng minh lập trường được nói trong bản ghi; không chứng minh việc tặng cho đã xảy ra hoặc có hiệu lực.","content":"Nội dung biên tập từ bản chép lời, không phải tài liệu gốc.\nÔng Kiên cho rằng được chia một nửa đất, thường nêu 58,5 m²; ông nói chỉ chia miệng, không có giấy tờ. Khi được hỏi kỹ, ông nói mẹ cho nhưng không xác định năm. Có chỗ người hỏi nêu 58,2 m²; chưa xác minh số chính xác.","provided_by":"Ông Kiên","name":"Lời ông Kiên về chia miệng và yêu cầu kháng cáo","availability":"provided","source_quote":"Nguồn: Case1.docx, đoạn 124–132, 258–260, 312–332, 619–620; diễn đạt lại có giữ chủ thể và giới hạn.","source_kind":"transcript_statement","source_locator":"Case1.docx, đoạn 124–132, 258–260, 312–332, 619–620","proof_scope":"Chứng minh lập trường được nói trong bản ghi; không chứng minh việc tặng cho đã xảy ra hoặc có hiệu lực.","verification_status":"conflicting"},{"id":"EV-case1-xay","summary":"Lời được thuật lại, đang tranh chấp; không phải lời ông Xây trực tiếp phát biểu tại phiên hoặc biên nhận.","content":"Nội dung biên tập từ bản chép lời, không phải tài liệu gốc.\nChủ tọa công bố lời ông Xây: khi ông Kiên ra ở riêng, ông Xây trả 200 đồng và 3.000 viên gạch để sử dụng toàn bộ thửa đất; việc thanh toán không có giấy tờ. Ông Kiên phủ nhận thỏa thuận này. Không có biên nhận trong tệp.","provided_by":"Chủ tọa thuật lại lời ông Xây","name":"Lời trình bày của ông Xây về 200 đồng và 3.000 viên gạch","availability":"provided","source_quote":"Nguồn: Case1.docx, đoạn 62–66; diễn đạt lại có giữ chủ thể và giới hạn.","source_kind":"transcript_statement","source_locator":"Case1.docx, đoạn 62–66","proof_scope":"Lời được thuật lại, đang tranh chấp; không phải lời ông Xây trực tiếp phát biểu tại phiên hoặc biên nhận.","verification_status":"unverified"},{"id":"EV-case1-nguyen","summary":"Lời kể gián tiếp về thỏa thuận; cần tách việc biết do kể lại khỏi việc tự chứng kiến.","content":"Nội dung biên tập từ bản chép lời, không phải tài liệu gốc.\nAnh Nguyên xác định chuyện thỏa thuận là do bố nói lại. Khi hỏi người chứng kiến tiền, anh nói không có; gạch thì nhắc hai chị gánh. Thời gian chỉ nhớ khoảng đầu những năm 1970. Không có giấy tờ giao nhận được cung cấp.","provided_by":"Nguyễn Hữu Nguyên","name":"Lời anh Nguyên về nguồn biết việc thỏa thuận","availability":"provided","source_quote":"Nguồn: Case1.docx, đoạn 217–222, 425–444; diễn đạt lại có giữ chủ thể và giới hạn.","source_kind":"transcript_statement","source_locator":"Case1.docx, đoạn 217–222, 425–444","proof_scope":"Lời kể gián tiếp về thỏa thuận; cần tách việc biết do kể lại khỏi việc tự chứng kiến.","verification_status":"unverified"},{"id":"EV-case1-huan","summary":"Nguồn nghe kể về giao nhận; có lời không thống nhất về chia đất, không chọn một lời làm sự thật.","content":"Nội dung biên tập từ bản chép lời, không phải tài liệu gốc.\nPhần công bố thuật lại lời bà Huấn rằng hai con trai được chia đất. Khi hỏi tại phiên, bà nói chưa phân chia cụ thể. Về tiền/gạch, bà nói ở xa, chỉ nghe đôi bên. Bà đề nghị chia cho năm người con.","provided_by":"Nguyễn Thị Huấn","name":"Lời bà Huấn và điểm không thống nhất về chia đất","availability":"provided","source_quote":"Nguồn: Case1.docx, đoạn 66–67, 459–479; diễn đạt lại có giữ chủ thể và giới hạn.","source_kind":"transcript_statement","source_locator":"Case1.docx, đoạn 66–67, 459–479","proof_scope":"Nguồn nghe kể về giao nhận; có lời không thống nhất về chia đất, không chọn một lời làm sự thật.","verification_status":"conflicting"},{"id":"EV-case1-nga","summary":"Lời tự nhận chứng kiến gánh gạch không tự chứng minh giao tiền hoặc nội dung chuyển quyền; độ tin cậy còn phải đối chiếu.","content":"Nội dung biên tập từ bản chép lời, không phải tài liệu gốc.\nChị Nga nói nhìn thấy hai người gánh gạch sang nhà ông Kiên. Về tiền, chị nói nghe ông Xây kể. Chị nói không biết việc chia đất; Chủ tọa nhắc lời trước không thống nhất. Phần công bố lời khai về mâu thuẫn cá nhân bị chị phủ nhận; ngày lời khai trong bản chép cũng bất nhất.","provided_by":"Lưu Thị Nga","name":"Lời chị Nga: thấy gánh gạch, nghe kể việc chuyển tiền","availability":"provided","source_quote":"Nguồn: Case1.docx, đoạn 289–292, 484–501, 685–698; diễn đạt lại có giữ chủ thể và giới hạn.","source_kind":"transcript_statement","source_locator":"Case1.docx, đoạn 289–292, 484–501, 685–698","proof_scope":"Lời tự nhận chứng kiến gánh gạch không tự chứng minh giao tiền hoặc nội dung chuyển quyền; độ tin cậy còn phải đối chiếu.","verification_status":"conflicting"},{"id":"EV-case1-du-luan","summary":"Lời tự nhận tham gia giao gạch; chưa phải chứng cứ gốc xác nhận việc đã giao đủ hoặc đổi đất.","content":"Nội dung biên tập từ bản chép lời, không phải tài liệu gốc.\nChị Dụ và chị Luân nhận mình gánh gạch; phía ông Kiên phủ nhận thỏa thuận. Tuổi, tên và mốc giao gạch có đoạn chép không rõ, không dùng để chốt năm hoặc xác nhận số lượng giao thực tế.","provided_by":"Nguyễn Thị Dụ và Nguyễn Thị Luân","name":"Lời chị Dụ và chị Luân về gánh gạch","availability":"provided","source_quote":"Nguồn: Case1.docx, đoạn 72–74, 533–544; diễn đạt lại có giữ chủ thể và giới hạn.","source_kind":"transcript_statement","source_locator":"Case1.docx, đoạn 72–74, 533–544","proof_scope":"Lời tự nhận tham gia giao gạch; chưa phải chứng cứ gốc xác nhận việc đã giao đủ hoặc đổi đất.","verification_status":"unverified"},{"id":"EV-case1-tam","summary":"Cho thấy giới hạn lời kể, không xác nhận việc chia đất hoặc giao nhận.","content":"Nội dung biên tập từ bản chép lời, không phải tài liệu gốc.\nChị Tám nói lúc nhỏ không biết việc chia đất, không rõ quá trình sử dụng sau khi ra ở riêng; đề nghị chia đều. Không nghe tranh chấp không đồng nghĩa trực tiếp chứng kiến một thỏa thuận.","provided_by":"Lưu Thị Tám","name":"Lời chị Tám về giới hạn hiểu biết","availability":"provided","source_quote":"Nguồn: Case1.docx, đoạn 71, 177, 514–524; diễn đạt lại có giữ chủ thể và giới hạn.","source_kind":"transcript_statement","source_locator":"Case1.docx, đoạn 71, 177, 514–524","proof_scope":"Cho thấy giới hạn lời kể, không xác nhận việc chia đất hoặc giao nhận.","verification_status":"unverified"},{"id":"EV-case1-certificate","summary":"Chỉ là nội dung được thuật lại; chưa xác minh năm, chủ thể hoặc tính hợp pháp việc cấp giấy.","content":"Nội dung biên tập từ bản chép lời, không phải tài liệu gốc.\nLời công bố nêu cấp giấy năm 1993, đổi năm 2003; anh Nguyên nói nhận năm 1994, có chỗ nêu đổi năm 2002, và trả lời thay đổi về cấp cá nhân hay hộ. Đại diện cơ quan cấp giấy cho rằng đúng trình tự theo phần được công bố. Không có bản gốc giấy chứng nhận hoặc hồ sơ cấp giấy.","provided_by":"Chủ tọa thuật lại; anh Nguyên","name":"Phần thuật lại việc cấp giấy và ý kiến cơ quan cấp giấy","availability":"provided","source_quote":"Nguồn: Case1.docx, đoạn 64, 76, 549–602; diễn đạt lại có giữ chủ thể và giới hạn.","source_kind":"transcript_readout","source_locator":"Case1.docx, đoạn 64, 76, 549–602","proof_scope":"Chỉ là nội dung được thuật lại; chưa xác minh năm, chủ thể hoặc tính hợp pháp việc cấp giấy.","verification_status":"conflicting"},{"id":"EV-case1-house","summary":"Chỉ xác định yêu cầu và điểm cần làm rõ, không chứng minh người xây, thiệt hại hoặc giá trị chính xác.","content":"Nội dung biên tập từ bản chép lời, không phải tài liệu gốc.\nÔng Kiên nói mình cùng mẹ xây nhà; anh Nguyên cho rằng bố anh xây. Mốc xây được kể khác nhau và câu trả lời về căn cứ bồi thường có đoạn bị mất. Ông Kiên và Chủ tọa nhiều lần nêu 28.195.000 đồng; phần đọc quyết định ghi 28.190.000 đồng. Chưa có tài liệu định giá gốc.","provided_by":"Ông Kiên; anh Nguyên; Chủ tọa","name":"Lời về căn nhà và số tiền bồi thường còn bất nhất","availability":"provided","source_quote":"Nguồn: Case1.docx, đoạn 77–79, 261–263, 344–374, 423, 449–451, 641–649; diễn đạt lại có giữ chủ thể và giới hạn.","source_kind":"transcript_statement","source_locator":"Case1.docx, đoạn 77–79, 261–263, 344–374, 423, 449–451, 641–649","proof_scope":"Chỉ xác định yêu cầu và điểm cần làm rõ, không chứng minh người xây, thiệt hại hoặc giá trị chính xác.","verification_status":"conflicting"},{"id":"EV-case1-first-instance","summary":"Mốc để xác định nội dung đang bị kháng cáo, không là đáp án đúng hoặc kết quả phúc thẩm.","content":"Nội dung biên tập từ bản chép lời, không phải tài liệu gốc.\nTheo phần đọc lại, sơ thẩm chấp nhận một phần yêu cầu đất; trong phần 58,5 m², ông Kiên được 30 m², ông Xây được tính công sức 28,5 m²; yêu cầu bồi thường bị bác. Chỗ đọc khoản bị bác ghi 28.190.000 đồng, khác 28.195.000 đồng ở phần yêu cầu. Không có bản án gốc, không có kết quả phúc thẩm.","provided_by":"Chủ tọa phiên tòa","name":"Phần Chủ tọa công bố nội dung sơ thẩm","availability":"provided","source_quote":"Nguồn: Case1.docx, đoạn 76–80; diễn đạt lại có giữ chủ thể và giới hạn.","source_kind":"transcript_readout","source_locator":"Case1.docx, đoạn 76–80","proof_scope":"Mốc để xác định nội dung đang bị kháng cáo, không là đáp án đúng hoặc kết quả phúc thẩm.","verification_status":"conflicting"},{"id":"EV-case1-mentioned-0","summary":"Được nhắc trong bản chép; không có bản gốc hoặc toàn văn trong Case1.docx.","provided_by":"Các bên hoặc Chủ tọa nhắc đến","name":"Giấy chứng nhận và hồ sơ cấp giấy","availability":"mentioned_only","source_kind":"document","source_locator":"Case1.docx, các phần công bố, hỏi và tranh luận","proof_scope":"Chưa có nội dung để trích như tài liệu gốc; dùng thẻ lời trình bày tương ứng nếu cần.","verification_status":"unverified"},{"id":"EV-case1-mentioned-1","summary":"Được nhắc trong bản chép; không có bản gốc hoặc toàn văn trong Case1.docx.","provided_by":"Các bên hoặc Chủ tọa nhắc đến","name":"Biên bản hòa giải","availability":"mentioned_only","source_kind":"document","source_locator":"Case1.docx, các phần công bố, hỏi và tranh luận","proof_scope":"Chưa có nội dung để trích như tài liệu gốc; dùng thẻ lời trình bày tương ứng nếu cần.","verification_status":"unverified"},{"id":"EV-case1-mentioned-2","summary":"Được nhắc trong bản chép; không có bản gốc hoặc toàn văn trong Case1.docx.","provided_by":"Các bên hoặc Chủ tọa nhắc đến","name":"Bản án sơ thẩm gốc","availability":"mentioned_only","source_kind":"document","source_locator":"Case1.docx, các phần công bố, hỏi và tranh luận","proof_scope":"Chưa có nội dung để trích như tài liệu gốc; dùng thẻ lời trình bày tương ứng nếu cần.","verification_status":"unverified"},{"id":"EV-case1-mentioned-3","summary":"Được nhắc trong bản chép; không có bản gốc hoặc toàn văn trong Case1.docx.","provided_by":"Các bên hoặc Chủ tọa nhắc đến","name":"Tài liệu định giá căn nhà","availability":"mentioned_only","source_kind":"document","source_locator":"Case1.docx, các phần công bố, hỏi và tranh luận","proof_scope":"Chưa có nội dung để trích như tài liệu gốc; dùng thẻ lời trình bày tương ứng nếu cần.","verification_status":"unverified"}],"full_document":"Bản ghi giới thiệu phiên phúc thẩm tại TAND TP Hà Nội đối với bản án dân sự sơ thẩm số 13 ngày 07/08/2018 của TAND huyện Thanh Trì.\n\nBản ghi mô tả thửa 70, tờ bản đồ 04, diện tích 117 m² tại xóm Cộng Hòa, xã Hữu Hòa, huyện Thanh Trì, Hà Nội. Đây là thông tin trong bản chép, chưa đối chiếu hồ sơ địa chính gốc.\n\nÔng Kiên cho rằng cha mẹ đã chia miệng đất cho hai con trai, mỗi người một nửa; ông chuyển chỗ ở nhưng không từ bỏ phần của mình và phủ nhận thỏa thuận nhận tiền, gạch.\n\nTheo phần Chủ tọa thuật lại, ông Xây trình bày đã trả 200 đồng và 3.000 viên gạch khi ông Kiên ra ở riêng để sử dụng toàn bộ thửa đất; việc thanh toán không có giấy tờ.\n\nAnh Nguyên nói việc thỏa thuận là do bố kể lại, không có người làm chứng việc đưa tiền; anh nhắc hai chị gánh gạch.\n\nBà Huấn nói không trực tiếp biết việc giao tiền, gạch vì ở xa, chỉ nghe các bên; lời về việc đã chia đất không thống nhất giữa phần công bố và phần hỏi.\n\nChị Nga nói nhìn thấy gánh gạch, nhưng chuyện chuyển tiền nghe ông Xây nói; chị nói không biết việc chia đất, và không thống nhất với lời khai trước được Chủ tọa nhắc lại.\n\nChị Tám nói lúc nhỏ không biết việc chia đất; lời không nghe tranh chấp không đồng nghĩa biết trực tiếp việc thỏa thuận.\n\nChị Dụ và chị Luân nhận mình trực tiếp gánh gạch; đây là lời trình bày đang bị phía ông Kiên phản bác, không phải biên nhận giao nhận.\n\nTheo phần công bố, đại diện UBND huyện Thanh Trì cho rằng việc cấp giấy đúng trình tự; bài tập không có bản gốc hồ sơ cấp giấy để kiểm tra nhận định này.\n\nTình huống mô phỏng dựa trên bản ghi phiên tòa trong Case1.docx; bản ghi kết thúc giữa tranh luận. Không có kết quả phúc thẩm.\n\nChưa xác định ngày xét xử và số bản án phúc thẩm. Ngày 07/08/2018 là ngày sơ thẩm được Chủ tọa nhắc lại, chỉ dùng làm mốc tham chiếu bài tập.\n\nPhần đất yêu cầu thường được nói là 58,5 m², nhưng có chỗ ghi 58,2 m². Khoản bồi thường thường là 28.195.000 đồng, nhưng phần đọc quyết định ghi 28.190.000 đồng. Chưa đối chiếu được âm thanh hoặc bản gốc.\n\nÔng Xây vắng mặt; anh Nguyễn Hữu Nguyên là đại diện theo ủy quyền và đồng thời có quyền lợi, nghĩa vụ liên quan. Người học và bên đối lập bảo vệ lập trường, không đóng vai ông Xây đang trực tiếp có mặt.\n\nChưa xác minh văn bản pháp luật và hiệu lực theo từng sự kiện. Phiên vẫn luyện hỏi đáp, xử lý nguồn và phản biện; không chấm đoán đúng phán quyết.\n\nDiễn biến được thuật lại: ông Kiên chuyển chỗ ở khoảng năm 1972; hai phía bất đồng về việc giữ quyền hay đã thỏa thuận. Có nhắc phá dỡ nhà năm 1978 và xây dựng lại năm 2010. Không coi lời một phía về ai xây nhà, có phản đối hay không là sự kiện đã xác minh.\n\nTheo lời ông Xây được Chủ tọa công bố, giấy chứng nhận được cấp năm 1993, cấp đổi năm 2003. Phần hỏi anh Nguyên có nói nhận giấy năm 1994 và có chỗ nói cấp đổi năm 2002; chưa xác minh được ngày, chủ thể được cấp hoặc nguyên nhân chênh diện tích.\n\nTheo Chủ tọa đọc lại sơ thẩm, yêu cầu về đất được chấp nhận một phần; trong phần 58,5 m², ông Kiên được chia 30 m², ông Xây được tính công sức tương đương 28,5 m². Yêu cầu bồi thường nhà bị bác. Đây chỉ là nội dung sơ thẩm được công bố trong bản ghi, không phải quyết định phúc thẩm hoặc bản án gốc đính kèm.\n\nNgày khởi kiện 19/09/2014 và các ngày kháng cáo tháng 8/2018 chỉ được thuật lại; chưa có đơn gốc. Không dùng chúng để suy ra thời hiệu hoặc thủ tục hợp pháp.\n\nPhần cuối người học có thể tiếp tục tranh luận bằng nguồn đã có; không có phán quyết bí mật để đoán. Những lời trình bày sau trong bản ghi là tài liệu tham khảo mở cho cả hai phía, không là kịch bản buộc phải lặp.\n\nVấn đề 1: Nội dung kháng cáo: phần đất được yêu cầu, giấy chứng nhận và bồi thường căn nhà.\n\nVấn đề 2: Chia miệng hay chỉ cho ở; ai nói mình trực tiếp biết và ai chỉ nghe kể?\n\nVấn đề 3: Có thỏa thuận 200 đồng và 3.000 viên gạch không; giao gạch có chứng minh nội dung thỏa thuận không?\n\nVấn đề 4: Giấy chứng nhận và quá trình sử dụng được nhắc đến chứng minh được gì khi chưa có bản gốc?\n\nVấn đề 5: Ai xây nhà, thời điểm phá dỡ, căn cứ xác định thiệt hại và các số liệu phiên âm bất nhất.","legal_scope_note":"Chưa xác minh văn bản pháp luật và hiệu lực theo từng sự kiện. Phiên vẫn luyện hỏi đáp, xử lý nguồn và phản biện; không chấm đoán đúng phán quyết.","parties":[{"side":"plaintiff","name":"Nguyễn Hữu Kiên","claims":["Bảo vệ yêu cầu kháng cáo về phần đất cho rằng được chia miệng; phủ nhận thỏa thuận tiền/gạch.","Yêu cầu liên quan giấy chứng nhận đứng tên ông Xây và bồi thường nhà; số liệu trong bản chép còn bất nhất."]},{"side":"defendant","name":"Nguyễn Hữu Xây (vắng mặt; anh Nguyên đại diện)","claims":["Theo phần được công bố, không đồng ý yêu cầu của ông Kiên và kháng cáo toàn bộ sơ thẩm.","Bảo vệ lập trường đã thỏa thuận tiền/gạch, quản lý sử dụng đất và viện dẫn việc cấp giấy; không có bản gốc giấy tờ trong bài tập."]},{"side":"other","name":"Bà Huấn, chị Nga, chị Tám; chị Dụ, chị Luân","claims":["Bà Huấn, chị Nga và chị Tám nêu yêu cầu chia cho năm người con; chị Dụ và chị Luân muốn để đất cho phía ông Xây. Đây là yêu cầu trong bản ghi, chưa xác lập quyền của ai."]}],"practice_context":{"hearing_level":"appeal","source_kind":"transcript","source_label":"Bản chép lời Case1.docx","hearing_date":null,"judgment_number":null,"legal_assessment":"unverified","overview":"Bắt đầu tại phần trình bày nội dung kháng cáo, sau khi đã công bố tóm tắt sơ thẩm. Luyện xác định vấn đề, đặt câu hỏi, đánh giá lời kể trực tiếp/gián tiếp và đối đáp.","role_labels":{"plaintiff_lawyer":"Bảo vệ phía ông Kiên (người kháng cáo)","defense_lawyer":"Đại diện bảo vệ lập trường phía ông Xây"},"issues":["Nội dung kháng cáo: phần đất được yêu cầu, giấy chứng nhận và bồi thường căn nhà.","Chia miệng hay chỉ cho ở; ai nói mình trực tiếp biết và ai chỉ nghe kể?","Có thỏa thuận 200 đồng và 3.000 viên gạch không; giao gạch có chứng minh nội dung thỏa thuận không?","Giấy chứng nhận và quá trình sử dụng được nhắc đến chứng minh được gì khi chưa có bản gốc?","Ai xây nhà, thời điểm phá dỡ, căn cứ xác định thiệt hại và các số liệu phiên âm bất nhất."],"limitations":["Tình huống mô phỏng dựa trên bản ghi phiên tòa trong Case1.docx; bản ghi kết thúc giữa tranh luận. Không có kết quả phúc thẩm.","Chưa xác định ngày xét xử và số bản án phúc thẩm. Ngày 07/08/2018 là ngày sơ thẩm được Chủ tọa nhắc lại, chỉ dùng làm mốc tham chiếu bài tập.","Phần đất yêu cầu thường được nói là 58,5 m², nhưng có chỗ ghi 58,2 m². Khoản bồi thường thường là 28.195.000 đồng, nhưng phần đọc quyết định ghi 28.190.000 đồng. Chưa đối chiếu được âm thanh hoặc bản gốc.","Ông Xây vắng mặt; anh Nguyễn Hữu Nguyên là đại diện theo ủy quyền và đồng thời có quyền lợi, nghĩa vụ liên quan. Người học và bên đối lập bảo vệ lập trường, không đóng vai ông Xây đang trực tiếp có mặt.","Chưa xác minh văn bản pháp luật và hiệu lực theo từng sự kiện. Phiên vẫn luyện hỏi đáp, xử lý nguồn và phản biện; không chấm đoán đúng phán quyết."],"absent_participants":["Nguyễn Hữu Xây"],"uncertain_values":["58,5 m² / 58,2 m²","28.195.000 đồng / 28.190.000 đồng","1993 cấp giấy / 1994 nhận giấy; 2003 / 2002 cấp đổi","200 đồng / chỗ phiên âm 200.000 đồng"]},"reference_date":"2018-08-07","reference_date_note":"Chưa xác định ngày xét xử và số bản án phúc thẩm. Ngày 07/08/2018 là ngày sơ thẩm được Chủ tọa nhắc lại, chỉ dùng làm mốc tham chiếu bài tập.","source_note":"Tình huống mô phỏng dựa trên bản ghi phiên tòa trong Case1.docx; bản ghi kết thúc giữa tranh luận. Không có kết quả phúc thẩm.","summary":"Tình huống mô phỏng dựa trên bản ghi phiên tòa phúc thẩm: tranh luận về chia miệng đất, thỏa thuận tiền/gạch và bồi thường nhà. Chọn bảo vệ phía ông Kiên hoặc phía ông Xây; kết thúc bằng đánh giá lập luận, không tuyên án.","timeline":[{"kind":"hearing","date":"2018-08-07","date_to":"2018-08-07","description":"Ngày sơ thẩm được nhắc trong bản ghi, không phải ngày phúc thẩm.","source_quote":"Bản ghi giới thiệu phiên phúc thẩm tại TAND TP Hà Nội đối với bản án dân sự sơ thẩm số 13 ngày 07/08/2018 của TAND huyện Thanh Trì.","status":"reported"}]}]
+[
+  {
+    "_id": {
+      "$oid": "6ab9e357841e796dc88815a8"
+    },
+    "title": "Tranh chấp quyền sử dụng đất — bài tập từ bản án 51/2024/DS-ST",
+    "category": "đất đai",
+    "parties": [
+      {
+        "side": "plaintiff",
+        "name": "A (đã ẩn danh)",
+        "claims": [
+          "Yêu cầu trả 229,7 m² đất; viện dẫn giấy chứng nhận cấp cho hộ gia đình năm 1996."
+        ]
+      },
+      {
+        "side": "defendant",
+        "name": "B (đã ẩn danh)",
+        "claims": [
+          "Cho rằng đất có nguồn gốc từ gia đình mình và đã sử dụng lâu dài."
+        ]
+      }
+    ],
+    "summary": "Hai bên tranh chấp 229,7 m² đất mương và bờ mương. Luyện đối chiếu giấy chứng nhận với lời khai về quá trình sử dụng.",
+    "full_document": "Hồ sơ lược biên, ẩn danh A (nguyên đơn), B (bị đơn); không thay thế hồ sơ tố tụng gốc.\n\nA yêu cầu trả 229,7 m²; viện dẫn giấy chứng nhận cấp cho hộ gia đình năm 1996. B cho rằng đất có nguồn gốc từ gia đình mình và đã sử dụng lâu dài.\n\nTài liệu được bản án thuật lại: giấy chứng nhận, thông tin cơ quan đăng ký đất đai, lời khai nhân chứng và quá trình hòa giải. Một số nhân chứng có quan hệ với các bên; lời khai về nguồn gốc, sử dụng không thống nhất.\n\nMột phần mương 217 m² khác không thuộc yêu cầu đang xét. Bài tập không cung cấp bản gốc chứng cứ, sơ đồ đo đạc hay toàn bộ lời khai; không được tự bổ sung nội dung còn thiếu.",
+    "source_url": "https://thuvienphapluat.vn/banan/ban-an/ban-an-ve-tranh-chap-quyen-su-dung-dat-so-512024dsst-331384",
+    "source_note": "Nguồn đăng lại: Thư Viện Pháp Luật; bản án sơ thẩm 51/2024/DS-ST, TAND thị xã Vĩnh Châu, Sóc Trăng. Chưa xác minh tình trạng kháng cáo hoặc hiệu lực; không giới thiệu là án lệ.",
+    "reference_date": "2024-03-29",
+    "case_facts": [
+      {
+        "kind": "party_statement",
+        "party": "A",
+        "source_type": "judgment",
+        "quote": "A yêu cầu trả 229,7 m²; viện dẫn giấy chứng nhận cấp cho hộ gia đình năm 1996."
+      },
+      {
+        "kind": "party_statement",
+        "party": "B",
+        "source_type": "judgment",
+        "quote": "B cho rằng đất có nguồn gốc từ gia đình mình và đã sử dụng lâu dài."
+      },
+      {
+        "kind": "recorded_event",
+        "source_type": "judgment",
+        "quote": "Hai bên tranh chấp 229,7 m² đất mương và bờ mương."
+      },
+      {
+        "kind": "unproven",
+        "source_type": "judgment",
+        "quote": "B cho rằng đất có nguồn gốc từ gia đình mình và đã sử dụng lâu dài."
+      }
+    ],
+    "reference_date_note": "Mốc tra cứu cố định theo ngày xét xử, không phải ngày phát sinh tranh chấp. Việc áp dụng luật còn phụ thuộc thời điểm từng sự kiện và quy định chuyển tiếp.",
+    "legal_scope_note": "Bài tập ưu tiên lập luận và đánh giá chứng cứ. Bản gốc Luật Đất đai 2013 đã được bổ sung; lịch sử sửa đổi và căn cứ cho từng mốc cần được xác minh trước khi chấm pháp luật. Không thay bằng Luật Đất đai 2024 hoặc chấm theo kết quả bản án gốc.",
+    "timeline": [
+      {
+        "kind": "transaction",
+        "date": "1996-01-01",
+        "date_to": "1996-12-31",
+        "status": "reported",
+        "description": "Giấy chứng nhận được đề cập năm 1996; hồ sơ lược biên chưa chốt ngày.",
+        "source_quote": "giấy chứng nhận cấp cho hộ gia đình năm 1996"
+      },
+      {
+        "kind": "filing",
+        "date": "2022-07-18",
+        "date_to": "2022-07-18",
+        "status": "reported",
+        "description": "Ngày đơn khởi kiện được bản án đề cập.",
+        "source_quote": "Theo đơn khởi kiện ngày 18 tháng 7 năm 2022"
+      },
+      {
+        "kind": "hearing",
+        "date": "2024-03-29",
+        "date_to": "2024-03-29",
+        "status": "reported",
+        "description": "Ngày xét xử sơ thẩm được bản án đề cập.",
+        "source_quote": "BẢN ÁN 51/2024/DS-ST NGÀY 29/03/2024"
+      }
+    ],
+    "evidence_inventory": [
+      {
+        "name": "Giấy chứng nhận",
+        "summary": "Bản án đề cập giấy chứng nhận cấp cho hộ gia đình năm 1996; A viện dẫn để yêu cầu trả đất.",
+        "availability": "mentioned_only",
+        "source_quote": "Tài liệu được bản án thuật lại; không có bản gốc trong bài tập."
+      },
+      {
+        "name": "Thông tin cơ quan đăng ký đất đai",
+        "summary": "Thông tin cơ quan đăng ký đất đai được bản án đề cập.",
+        "availability": "mentioned_only",
+        "source_quote": "Tài liệu được bản án thuật lại; không có bản gốc trong bài tập."
+      },
+      {
+        "name": "Lời khai nhân chứng",
+        "summary": "Lời khai về nguồn gốc, sử dụng đất không thống nhất; một số nhân chứng có quan hệ với các bên.",
+        "availability": "mentioned_only",
+        "source_quote": "Tài liệu được bản án thuật lại; không có bản gốc trong bài tập."
+      },
+      {
+        "name": "Hòa giải",
+        "summary": "Quá trình hòa giải được bản án đề cập.",
+        "availability": "mentioned_only",
+        "source_quote": "Tài liệu được bản án thuật lại; không có bản gốc trong bài tập."
+      }
+    ],
+    "created_at": {
+      "$date": "2026-04-18T12:00:00Z"
+    },
+    "__v": 0
+  },
+  {
+    "_id": {
+      "$oid": "6abb6863841e796dc8881dc3"
+    },
+    "title": "Phúc thẩm tranh chấp đất giữa ông Kiên và ông Xây — từ bản ghi phiên tòa",
+    "category": "đất đai",
+    "summary": "Tình huống mô phỏng dựa trên bản ghi phiên tòa phúc thẩm: tranh luận về chia miệng đất, thỏa thuận tiền/gạch và bồi thường nhà. Chọn bảo vệ phía ông Kiên hoặc phía ông Xây; kết thúc bằng đánh giá lập luận, không tuyên án.",
+    "source_note": "Tình huống mô phỏng dựa trên bản ghi phiên tòa trong Case1.docx; bản ghi kết thúc giữa tranh luận. Không có kết quả phúc thẩm.",
+    "reference_date": "2018-08-07",
+    "reference_date_note": "Chưa xác định ngày xét xử và số bản án phúc thẩm. Ngày 07/08/2018 là ngày sơ thẩm được Chủ tọa nhắc lại, chỉ dùng làm mốc tham chiếu bài tập.",
+    "legal_scope_note": "Chưa xác minh văn bản pháp luật và hiệu lực theo từng sự kiện. Phiên vẫn luyện hỏi đáp, xử lý nguồn và phản biện; không chấm đoán đúng phán quyết.",
+    "practice_context": {
+      "hearing_level": "appeal",
+      "source_kind": "transcript",
+      "source_label": "Bản chép lời Case1.docx",
+      "hearing_date": null,
+      "judgment_number": null,
+      "legal_assessment": "unverified",
+      "overview": "Bắt đầu tại phần trình bày nội dung kháng cáo, sau khi đã công bố tóm tắt sơ thẩm. Luyện xác định vấn đề, đặt câu hỏi, đánh giá lời kể trực tiếp/gián tiếp và đối đáp.",
+      "role_labels": {
+        "plaintiff_lawyer": "Bảo vệ phía ông Kiên (người kháng cáo)",
+        "defense_lawyer": "Đại diện bảo vệ lập trường phía ông Xây (mô phỏng)"
+      },
+      "issues": [
+        "Nội dung kháng cáo: phần đất được yêu cầu, giấy chứng nhận và bồi thường căn nhà.",
+        "Chia miệng hay chỉ cho ở; ai nói mình trực tiếp biết và ai chỉ nghe kể?",
+        "Có thỏa thuận 200 đồng và 3.000 viên gạch không; giao gạch có chứng minh nội dung thỏa thuận không?",
+        "Giấy chứng nhận và quá trình sử dụng được nhắc đến chứng minh được gì khi chưa có bản gốc?",
+        "Ai xây nhà, thời điểm phá dỡ, căn cứ xác định thiệt hại và các số liệu phiên âm bất nhất."
+      ],
+      "limitations": [
+        "Tình huống mô phỏng dựa trên bản ghi phiên tòa trong Case1.docx; bản ghi kết thúc giữa tranh luận. Không có kết quả phúc thẩm.",
+        "Chưa xác định ngày xét xử và số bản án phúc thẩm. Ngày 07/08/2018 là ngày sơ thẩm được Chủ tọa nhắc lại, chỉ dùng làm mốc tham chiếu bài tập.",
+        "Phần đất yêu cầu thường được nói là 58,5 m², nhưng có chỗ ghi 58,2 m². Khoản bồi thường thường là 28.195.000 đồng, nhưng phần đọc quyết định ghi 28.190.000 đồng. Chưa đối chiếu được âm thanh hoặc bản gốc.",
+        "Ông Xây vắng mặt; anh Nguyễn Hữu Nguyên là đại diện theo ủy quyền và đồng thời có quyền lợi, nghĩa vụ liên quan. Người học và bên đối lập bảo vệ lập trường, không đóng vai ông Xây đang trực tiếp có mặt.",
+        "Chưa xác minh văn bản pháp luật và hiệu lực theo từng sự kiện. Phiên vẫn luyện hỏi đáp, xử lý nguồn và phản biện; không chấm đoán đúng phán quyết."
+      ],
+      "absent_participants": [
+        "Nguyễn Hữu Xây"
+      ],
+      "uncertain_values": [
+        "58,5 m² / 58,2 m²",
+        "28.195.000 đồng / 28.190.000 đồng",
+        "1993 cấp giấy / 1994 nhận giấy; 2003 / 2002 cấp đổi",
+        "200 đồng / chỗ phiên âm 200.000 đồng"
+      ]
+    },
+    "parties": [
+      {
+        "side": "plaintiff",
+        "name": "Nguyễn Hữu Kiên",
+        "claims": [
+          "Bảo vệ yêu cầu kháng cáo về phần đất cho rằng được chia miệng; phủ nhận thỏa thuận tiền/gạch.",
+          "Yêu cầu liên quan giấy chứng nhận đứng tên ông Xây và bồi thường nhà; số liệu trong bản chép còn bất nhất."
+        ]
+      },
+      {
+        "side": "defendant",
+        "name": "Nguyễn Hữu Xây (vắng mặt; anh Nguyên đại diện)",
+        "claims": [
+          "Theo phần được công bố, không đồng ý yêu cầu của ông Kiên và kháng cáo toàn bộ sơ thẩm.",
+          "Bảo vệ lập trường đã thỏa thuận tiền/gạch, quản lý sử dụng đất và viện dẫn việc cấp giấy; không có bản gốc giấy tờ trong bài tập."
+        ]
+      },
+      {
+        "side": "other",
+        "name": "Bà Huấn, chị Nga, chị Tám; chị Dụ, chị Luân",
+        "claims": [
+          "Bà Huấn, chị Nga và chị Tám nêu yêu cầu chia cho năm người con; chị Dụ và chị Luân muốn để đất cho phía ông Xây. Đây là yêu cầu trong bản ghi, chưa xác lập quyền của ai."
+        ]
+      }
+    ],
+    "full_document": "Bản ghi giới thiệu phiên phúc thẩm tại TAND TP Hà Nội đối với bản án dân sự sơ thẩm số 13 ngày 07/08/2018 của TAND huyện Thanh Trì.\n\nBản ghi mô tả thửa 70, tờ bản đồ 04, diện tích 117 m² tại xóm Cộng Hòa, xã Hữu Hòa, huyện Thanh Trì, Hà Nội. Đây là thông tin trong bản chép, chưa đối chiếu hồ sơ địa chính gốc.\n\nÔng Kiên cho rằng cha mẹ đã chia miệng đất cho hai con trai, mỗi người một nửa; ông chuyển chỗ ở nhưng không từ bỏ phần của mình và phủ nhận thỏa thuận nhận tiền, gạch.\n\nTheo phần Chủ tọa thuật lại, ông Xây trình bày đã trả 200 đồng và 3.000 viên gạch khi ông Kiên ra ở riêng để sử dụng toàn bộ thửa đất; việc thanh toán không có giấy tờ.\n\nAnh Nguyên nói việc thỏa thuận là do bố kể lại, không có người làm chứng việc đưa tiền; anh nhắc hai chị gánh gạch.\n\nBà Huấn nói không trực tiếp biết việc giao tiền, gạch vì ở xa, chỉ nghe các bên; lời về việc đã chia đất không thống nhất giữa phần công bố và phần hỏi.\n\nChị Nga nói nhìn thấy gánh gạch, nhưng chuyện chuyển tiền nghe ông Xây nói; chị nói không biết việc chia đất, và không thống nhất với lời khai trước được Chủ tọa nhắc lại.\n\nChị Tám nói lúc nhỏ không biết việc chia đất; lời không nghe tranh chấp không đồng nghĩa biết trực tiếp việc thỏa thuận.\n\nChị Dụ và chị Luân nhận mình trực tiếp gánh gạch; đây là lời trình bày đang bị phía ông Kiên phản bác, không phải biên nhận giao nhận.\n\nTheo phần công bố, đại diện UBND huyện Thanh Trì cho rằng việc cấp giấy đúng trình tự; bài tập không có bản gốc hồ sơ cấp giấy để kiểm tra nhận định này.\n\nTình huống mô phỏng dựa trên bản ghi phiên tòa trong Case1.docx; bản ghi kết thúc giữa tranh luận. Không có kết quả phúc thẩm.\n\nChưa xác định ngày xét xử và số bản án phúc thẩm. Ngày 07/08/2018 là ngày sơ thẩm được Chủ tọa nhắc lại, chỉ dùng làm mốc tham chiếu bài tập.\n\nPhần đất yêu cầu thường được nói là 58,5 m², nhưng có chỗ ghi 58,2 m². Khoản bồi thường thường là 28.195.000 đồng, nhưng phần đọc quyết định ghi 28.190.000 đồng. Chưa đối chiếu được âm thanh hoặc bản gốc.\n\nÔng Xây vắng mặt; anh Nguyễn Hữu Nguyên là đại diện theo ủy quyền và đồng thời có quyền lợi, nghĩa vụ liên quan. Người học và bên đối lập bảo vệ lập trường, không đóng vai ông Xây đang trực tiếp có mặt.\n\nChưa xác minh văn bản pháp luật và hiệu lực theo từng sự kiện. Phiên vẫn luyện hỏi đáp, xử lý nguồn và phản biện; không chấm đoán đúng phán quyết.\n\nDiễn biến được thuật lại: ông Kiên chuyển chỗ ở khoảng năm 1972; hai phía bất đồng về việc giữ quyền hay đã thỏa thuận. Có nhắc phá dỡ nhà năm 1978 và xây dựng lại năm 2010. Không coi lời một phía về ai xây nhà, có phản đối hay không là sự kiện đã xác minh.\n\nTheo lời ông Xây được Chủ tọa công bố, giấy chứng nhận được cấp năm 1993, cấp đổi năm 2003. Phần hỏi anh Nguyên có nói nhận giấy năm 1994 và có chỗ nói cấp đổi năm 2002; chưa xác minh được ngày, chủ thể được cấp hoặc nguyên nhân chênh diện tích.\n\nTheo Chủ tọa đọc lại sơ thẩm, yêu cầu về đất được chấp nhận một phần; trong phần 58,5 m², ông Kiên được chia 30 m², ông Xây được tính công sức tương đương 28,5 m². Yêu cầu bồi thường nhà bị bác. Đây chỉ là nội dung sơ thẩm được công bố trong bản ghi, không phải quyết định phúc thẩm hoặc bản án gốc đính kèm.\n\nNgày khởi kiện 19/09/2014 và các ngày kháng cáo tháng 8/2018 chỉ được thuật lại; chưa có đơn gốc. Không dùng chúng để suy ra thời hiệu hoặc thủ tục hợp pháp.\n\nPhần cuối người học có thể tiếp tục tranh luận bằng nguồn đã có; không có phán quyết bí mật để đoán. Những lời trình bày sau trong bản ghi là tài liệu tham khảo mở cho cả hai phía, không là kịch bản buộc phải lặp.\n\nVấn đề 1: Nội dung kháng cáo: phần đất được yêu cầu, giấy chứng nhận và bồi thường căn nhà.\n\nVấn đề 2: Chia miệng hay chỉ cho ở; ai nói mình trực tiếp biết và ai chỉ nghe kể?\n\nVấn đề 3: Có thỏa thuận 200 đồng và 3.000 viên gạch không; giao gạch có chứng minh nội dung thỏa thuận không?\n\nVấn đề 4: Giấy chứng nhận và quá trình sử dụng được nhắc đến chứng minh được gì khi chưa có bản gốc?\n\nVấn đề 5: Ai xây nhà, thời điểm phá dỡ, căn cứ xác định thiệt hại và các số liệu phiên âm bất nhất.",
+    "case_facts": [
+      {
+        "kind": "recorded_event",
+        "quote": "Bản ghi giới thiệu phiên phúc thẩm tại TAND TP Hà Nội đối với bản án dân sự sơ thẩm số 13 ngày 07/08/2018 của TAND huyện Thanh Trì.",
+        "source_type": "case_outline"
+      },
+      {
+        "kind": "recorded_event",
+        "quote": "Bản ghi mô tả thửa 70, tờ bản đồ 04, diện tích 117 m² tại xóm Cộng Hòa, xã Hữu Hòa, huyện Thanh Trì, Hà Nội. Đây là thông tin trong bản chép, chưa đối chiếu hồ sơ địa chính gốc.",
+        "source_type": "case_outline"
+      },
+      {
+        "kind": "party_statement",
+        "party": "Nguyễn Hữu Kiên",
+        "quote": "Ông Kiên cho rằng cha mẹ đã chia miệng đất cho hai con trai, mỗi người một nửa; ông chuyển chỗ ở nhưng không từ bỏ phần của mình và phủ nhận thỏa thuận nhận tiền, gạch.",
+        "source_type": "case_outline"
+      },
+      {
+        "kind": "party_statement",
+        "party": "Nguyễn Hữu Xây, qua phần Chủ tọa đọc lại",
+        "quote": "Theo phần Chủ tọa thuật lại, ông Xây trình bày đã trả 200 đồng và 3.000 viên gạch khi ông Kiên ra ở riêng để sử dụng toàn bộ thửa đất; việc thanh toán không có giấy tờ.",
+        "source_type": "case_outline"
+      },
+      {
+        "kind": "party_statement",
+        "party": "Nguyễn Hữu Nguyên",
+        "quote": "Anh Nguyên nói việc thỏa thuận là do bố kể lại, không có người làm chứng việc đưa tiền; anh nhắc hai chị gánh gạch.",
+        "source_type": "case_outline"
+      },
+      {
+        "kind": "party_statement",
+        "party": "Nguyễn Thị Huấn",
+        "quote": "Bà Huấn nói không trực tiếp biết việc giao tiền, gạch vì ở xa, chỉ nghe các bên; lời về việc đã chia đất không thống nhất giữa phần công bố và phần hỏi.",
+        "source_type": "case_outline"
+      },
+      {
+        "kind": "party_statement",
+        "party": "Lưu Thị Nga",
+        "quote": "Chị Nga nói nhìn thấy gánh gạch, nhưng chuyện chuyển tiền nghe ông Xây nói; chị nói không biết việc chia đất, và không thống nhất với lời khai trước được Chủ tọa nhắc lại.",
+        "source_type": "case_outline"
+      },
+      {
+        "kind": "party_statement",
+        "party": "Lưu Thị Tám",
+        "quote": "Chị Tám nói lúc nhỏ không biết việc chia đất; lời không nghe tranh chấp không đồng nghĩa biết trực tiếp việc thỏa thuận.",
+        "source_type": "case_outline"
+      },
+      {
+        "kind": "party_statement",
+        "party": "Nguyễn Thị Dụ và Nguyễn Thị Luân",
+        "quote": "Chị Dụ và chị Luân nhận mình trực tiếp gánh gạch; đây là lời trình bày đang bị phía ông Kiên phản bác, không phải biên nhận giao nhận.",
+        "source_type": "case_outline"
+      },
+      {
+        "kind": "party_statement",
+        "party": "Đại diện UBND huyện Thanh Trì, qua phần công bố",
+        "quote": "Theo phần công bố, đại diện UBND huyện Thanh Trì cho rằng việc cấp giấy đúng trình tự; bài tập không có bản gốc hồ sơ cấp giấy để kiểm tra nhận định này.",
+        "source_type": "case_outline"
+      }
+    ],
+    "timeline": [
+      {
+        "kind": "hearing",
+        "date": "2018-08-07",
+        "date_to": "2018-08-07",
+        "status": "reported",
+        "description": "Ngày sơ thẩm được nhắc trong bản ghi, không phải ngày phúc thẩm.",
+        "source_quote": "Bản ghi giới thiệu phiên phúc thẩm tại TAND TP Hà Nội đối với bản án dân sự sơ thẩm số 13 ngày 07/08/2018 của TAND huyện Thanh Trì."
+      }
+    ],
+    "evidence_inventory": [
+      {
+        "id": "EV-case1-kien",
+        "name": "Lời ông Kiên về chia miệng và yêu cầu kháng cáo",
+        "availability": "provided",
+        "source_kind": "transcript_statement",
+        "verification_status": "conflicting",
+        "provided_by": "Ông Kiên",
+        "source_locator": "Case1.docx, đoạn 124–132, 258–260, 312–332, 619–620",
+        "proof_scope": "Chứng minh lập trường được nói trong bản ghi; không chứng minh việc tặng cho đã xảy ra hoặc có hiệu lực.",
+        "summary": "Chứng minh lập trường được nói trong bản ghi; không chứng minh việc tặng cho đã xảy ra hoặc có hiệu lực.",
+        "content": "Nội dung biên tập từ bản chép lời, không phải tài liệu gốc.\nÔng Kiên cho rằng được chia một nửa đất, thường nêu 58,5 m²; ông nói chỉ chia miệng, không có giấy tờ. Khi được hỏi kỹ, ông nói mẹ cho nhưng không xác định năm. Có chỗ người hỏi nêu 58,2 m²; chưa xác minh số chính xác.",
+        "source_quote": "Nguồn: Case1.docx, đoạn 124–132, 258–260, 312–332, 619–620; diễn đạt lại có giữ chủ thể và giới hạn."
+      },
+      {
+        "id": "EV-case1-xay",
+        "name": "Lời trình bày của ông Xây về 200 đồng và 3.000 viên gạch",
+        "availability": "provided",
+        "source_kind": "transcript_statement",
+        "verification_status": "unverified",
+        "provided_by": "Chủ tọa thuật lại lời ông Xây",
+        "source_locator": "Case1.docx, đoạn 62–66",
+        "proof_scope": "Lời được thuật lại, đang tranh chấp; không phải lời ông Xây trực tiếp phát biểu tại phiên hoặc biên nhận.",
+        "summary": "Lời được thuật lại, đang tranh chấp; không phải lời ông Xây trực tiếp phát biểu tại phiên hoặc biên nhận.",
+        "content": "Nội dung biên tập từ bản chép lời, không phải tài liệu gốc.\nChủ tọa công bố lời ông Xây: khi ông Kiên ra ở riêng, ông Xây trả 200 đồng và 3.000 viên gạch để sử dụng toàn bộ thửa đất; việc thanh toán không có giấy tờ. Ông Kiên phủ nhận thỏa thuận này. Không có biên nhận trong tệp.",
+        "source_quote": "Nguồn: Case1.docx, đoạn 62–66; diễn đạt lại có giữ chủ thể và giới hạn."
+      },
+      {
+        "id": "EV-case1-nguyen",
+        "name": "Lời anh Nguyên về nguồn biết việc thỏa thuận",
+        "availability": "provided",
+        "source_kind": "transcript_statement",
+        "verification_status": "unverified",
+        "provided_by": "Nguyễn Hữu Nguyên",
+        "source_locator": "Case1.docx, đoạn 217–222, 425–444",
+        "proof_scope": "Lời kể gián tiếp về thỏa thuận; cần tách việc biết do kể lại khỏi việc tự chứng kiến.",
+        "summary": "Lời kể gián tiếp về thỏa thuận; cần tách việc biết do kể lại khỏi việc tự chứng kiến.",
+        "content": "Nội dung biên tập từ bản chép lời, không phải tài liệu gốc.\nAnh Nguyên xác định chuyện thỏa thuận là do bố nói lại. Khi hỏi người chứng kiến tiền, anh nói không có; gạch thì nhắc hai chị gánh. Thời gian chỉ nhớ khoảng đầu những năm 1970. Không có giấy tờ giao nhận được cung cấp.",
+        "source_quote": "Nguồn: Case1.docx, đoạn 217–222, 425–444; diễn đạt lại có giữ chủ thể và giới hạn."
+      },
+      {
+        "id": "EV-case1-huan",
+        "name": "Lời bà Huấn và điểm không thống nhất về chia đất",
+        "availability": "provided",
+        "source_kind": "transcript_statement",
+        "verification_status": "conflicting",
+        "provided_by": "Nguyễn Thị Huấn",
+        "source_locator": "Case1.docx, đoạn 66–67, 459–479",
+        "proof_scope": "Nguồn nghe kể về giao nhận; có lời không thống nhất về chia đất, không chọn một lời làm sự thật.",
+        "summary": "Nguồn nghe kể về giao nhận; có lời không thống nhất về chia đất, không chọn một lời làm sự thật.",
+        "content": "Nội dung biên tập từ bản chép lời, không phải tài liệu gốc.\nPhần công bố thuật lại lời bà Huấn rằng hai con trai được chia đất. Khi hỏi tại phiên, bà nói chưa phân chia cụ thể. Về tiền/gạch, bà nói ở xa, chỉ nghe đôi bên. Bà đề nghị chia cho năm người con.",
+        "source_quote": "Nguồn: Case1.docx, đoạn 66–67, 459–479; diễn đạt lại có giữ chủ thể và giới hạn."
+      },
+      {
+        "id": "EV-case1-nga",
+        "name": "Lời chị Nga: thấy gánh gạch, nghe kể việc chuyển tiền",
+        "availability": "provided",
+        "source_kind": "transcript_statement",
+        "verification_status": "conflicting",
+        "provided_by": "Lưu Thị Nga",
+        "source_locator": "Case1.docx, đoạn 289–292, 484–501, 685–698",
+        "proof_scope": "Lời tự nhận chứng kiến gánh gạch không tự chứng minh giao tiền hoặc nội dung chuyển quyền; độ tin cậy còn phải đối chiếu.",
+        "summary": "Lời tự nhận chứng kiến gánh gạch không tự chứng minh giao tiền hoặc nội dung chuyển quyền; độ tin cậy còn phải đối chiếu.",
+        "content": "Nội dung biên tập từ bản chép lời, không phải tài liệu gốc.\nChị Nga nói nhìn thấy hai người gánh gạch sang nhà ông Kiên. Về tiền, chị nói nghe ông Xây kể. Chị nói không biết việc chia đất; Chủ tọa nhắc lời trước không thống nhất. Phần công bố lời khai về mâu thuẫn cá nhân bị chị phủ nhận; ngày lời khai trong bản chép cũng bất nhất.",
+        "source_quote": "Nguồn: Case1.docx, đoạn 289–292, 484–501, 685–698; diễn đạt lại có giữ chủ thể và giới hạn."
+      },
+      {
+        "id": "EV-case1-du-luan",
+        "name": "Lời chị Dụ và chị Luân về gánh gạch",
+        "availability": "provided",
+        "source_kind": "transcript_statement",
+        "verification_status": "unverified",
+        "provided_by": "Nguyễn Thị Dụ và Nguyễn Thị Luân",
+        "source_locator": "Case1.docx, đoạn 72–74, 533–544",
+        "proof_scope": "Lời tự nhận tham gia giao gạch; chưa phải chứng cứ gốc xác nhận việc đã giao đủ hoặc đổi đất.",
+        "summary": "Lời tự nhận tham gia giao gạch; chưa phải chứng cứ gốc xác nhận việc đã giao đủ hoặc đổi đất.",
+        "content": "Nội dung biên tập từ bản chép lời, không phải tài liệu gốc.\nChị Dụ và chị Luân nhận mình gánh gạch; phía ông Kiên phủ nhận thỏa thuận. Tuổi, tên và mốc giao gạch có đoạn chép không rõ, không dùng để chốt năm hoặc xác nhận số lượng giao thực tế.",
+        "source_quote": "Nguồn: Case1.docx, đoạn 72–74, 533–544; diễn đạt lại có giữ chủ thể và giới hạn."
+      },
+      {
+        "id": "EV-case1-tam",
+        "name": "Lời chị Tám về giới hạn hiểu biết",
+        "availability": "provided",
+        "source_kind": "transcript_statement",
+        "verification_status": "unverified",
+        "provided_by": "Lưu Thị Tám",
+        "source_locator": "Case1.docx, đoạn 71, 177, 514–524",
+        "proof_scope": "Cho thấy giới hạn lời kể, không xác nhận việc chia đất hoặc giao nhận.",
+        "summary": "Cho thấy giới hạn lời kể, không xác nhận việc chia đất hoặc giao nhận.",
+        "content": "Nội dung biên tập từ bản chép lời, không phải tài liệu gốc.\nChị Tám nói lúc nhỏ không biết việc chia đất, không rõ quá trình sử dụng sau khi ra ở riêng; đề nghị chia đều. Không nghe tranh chấp không đồng nghĩa trực tiếp chứng kiến một thỏa thuận.",
+        "source_quote": "Nguồn: Case1.docx, đoạn 71, 177, 514–524; diễn đạt lại có giữ chủ thể và giới hạn."
+      },
+      {
+        "id": "EV-case1-certificate",
+        "name": "Phần thuật lại việc cấp giấy và ý kiến cơ quan cấp giấy",
+        "availability": "provided",
+        "source_kind": "transcript_readout",
+        "verification_status": "conflicting",
+        "provided_by": "Chủ tọa thuật lại; anh Nguyên",
+        "source_locator": "Case1.docx, đoạn 64, 76, 549–602",
+        "proof_scope": "Chỉ là nội dung được thuật lại; chưa xác minh năm, chủ thể hoặc tính hợp pháp việc cấp giấy.",
+        "summary": "Chỉ là nội dung được thuật lại; chưa xác minh năm, chủ thể hoặc tính hợp pháp việc cấp giấy.",
+        "content": "Nội dung biên tập từ bản chép lời, không phải tài liệu gốc.\nLời công bố nêu cấp giấy năm 1993, đổi năm 2003; anh Nguyên nói nhận năm 1994, có chỗ nêu đổi năm 2002, và trả lời thay đổi về cấp cá nhân hay hộ. Đại diện cơ quan cấp giấy cho rằng đúng trình tự theo phần được công bố. Không có bản gốc giấy chứng nhận hoặc hồ sơ cấp giấy.",
+        "source_quote": "Nguồn: Case1.docx, đoạn 64, 76, 549–602; diễn đạt lại có giữ chủ thể và giới hạn."
+      },
+      {
+        "id": "EV-case1-house",
+        "name": "Lời về căn nhà và số tiền bồi thường còn bất nhất",
+        "availability": "provided",
+        "source_kind": "transcript_statement",
+        "verification_status": "conflicting",
+        "provided_by": "Ông Kiên; anh Nguyên; Chủ tọa",
+        "source_locator": "Case1.docx, đoạn 77–79, 261–263, 344–374, 423, 449–451, 641–649",
+        "proof_scope": "Chỉ xác định yêu cầu và điểm cần làm rõ, không chứng minh người xây, thiệt hại hoặc giá trị chính xác.",
+        "summary": "Chỉ xác định yêu cầu và điểm cần làm rõ, không chứng minh người xây, thiệt hại hoặc giá trị chính xác.",
+        "content": "Nội dung biên tập từ bản chép lời, không phải tài liệu gốc.\nÔng Kiên nói mình cùng mẹ xây nhà; anh Nguyên cho rằng bố anh xây. Mốc xây được kể khác nhau và câu trả lời về căn cứ bồi thường có đoạn bị mất. Ông Kiên và Chủ tọa nhiều lần nêu 28.195.000 đồng; phần đọc quyết định ghi 28.190.000 đồng. Chưa có tài liệu định giá gốc.",
+        "source_quote": "Nguồn: Case1.docx, đoạn 77–79, 261–263, 344–374, 423, 449–451, 641–649; diễn đạt lại có giữ chủ thể và giới hạn."
+      },
+      {
+        "id": "EV-case1-first-instance",
+        "name": "Phần Chủ tọa công bố nội dung sơ thẩm",
+        "availability": "provided",
+        "source_kind": "transcript_readout",
+        "verification_status": "conflicting",
+        "provided_by": "Chủ tọa phiên tòa",
+        "source_locator": "Case1.docx, đoạn 76–80",
+        "proof_scope": "Mốc để xác định nội dung đang bị kháng cáo, không là đáp án đúng hoặc kết quả phúc thẩm.",
+        "summary": "Mốc để xác định nội dung đang bị kháng cáo, không là đáp án đúng hoặc kết quả phúc thẩm.",
+        "content": "Nội dung biên tập từ bản chép lời, không phải tài liệu gốc.\nTheo phần đọc lại, sơ thẩm chấp nhận một phần yêu cầu đất; trong phần 58,5 m², ông Kiên được 30 m², ông Xây được tính công sức 28,5 m²; yêu cầu bồi thường bị bác. Chỗ đọc khoản bị bác ghi 28.190.000 đồng, khác 28.195.000 đồng ở phần yêu cầu. Không có bản án gốc, không có kết quả phúc thẩm.",
+        "source_quote": "Nguồn: Case1.docx, đoạn 76–80; diễn đạt lại có giữ chủ thể và giới hạn."
+      },
+      {
+        "id": "EV-case1-mentioned-0",
+        "name": "Giấy chứng nhận và hồ sơ cấp giấy",
+        "availability": "mentioned_only",
+        "source_kind": "document",
+        "verification_status": "unverified",
+        "summary": "Được nhắc trong bản chép; không có bản gốc hoặc toàn văn trong Case1.docx.",
+        "source_locator": "Case1.docx, các phần công bố, hỏi và tranh luận",
+        "provided_by": "Các bên hoặc Chủ tọa nhắc đến",
+        "proof_scope": "Chưa có nội dung để trích như tài liệu gốc; dùng thẻ lời trình bày tương ứng nếu cần."
+      },
+      {
+        "id": "EV-case1-mentioned-1",
+        "name": "Biên bản hòa giải",
+        "availability": "mentioned_only",
+        "source_kind": "document",
+        "verification_status": "unverified",
+        "summary": "Được nhắc trong bản chép; không có bản gốc hoặc toàn văn trong Case1.docx.",
+        "source_locator": "Case1.docx, các phần công bố, hỏi và tranh luận",
+        "provided_by": "Các bên hoặc Chủ tọa nhắc đến",
+        "proof_scope": "Chưa có nội dung để trích như tài liệu gốc; dùng thẻ lời trình bày tương ứng nếu cần."
+      },
+      {
+        "id": "EV-case1-mentioned-2",
+        "name": "Bản án sơ thẩm gốc",
+        "availability": "mentioned_only",
+        "source_kind": "document",
+        "verification_status": "unverified",
+        "summary": "Được nhắc trong bản chép; không có bản gốc hoặc toàn văn trong Case1.docx.",
+        "source_locator": "Case1.docx, các phần công bố, hỏi và tranh luận",
+        "provided_by": "Các bên hoặc Chủ tọa nhắc đến",
+        "proof_scope": "Chưa có nội dung để trích như tài liệu gốc; dùng thẻ lời trình bày tương ứng nếu cần."
+      },
+      {
+        "id": "EV-case1-mentioned-3",
+        "name": "Tài liệu định giá căn nhà",
+        "availability": "mentioned_only",
+        "source_kind": "document",
+        "verification_status": "unverified",
+        "summary": "Được nhắc trong bản chép; không có bản gốc hoặc toàn văn trong Case1.docx.",
+        "source_locator": "Case1.docx, các phần công bố, hỏi và tranh luận",
+        "provided_by": "Các bên hoặc Chủ tọa nhắc đến",
+        "proof_scope": "Chưa có nội dung để trích như tài liệu gốc; dùng thẻ lời trình bày tương ứng nếu cần."
+      }
+    ],
+    "created_at": {
+      "$date": "2026-04-18T12:01:00Z"
+    },
+    "__v": 0
+  },
+  {
+    "_id": {
+      "$oid": "6ac100000000000000000003"
+    },
+    "title": "Yêu cầu bảo vệ danh dự, nhân phẩm và bồi thường thiệt hại tại Cơ sở lưu trú An Phúc (Vụ án Nguyễn Ngọc Mai)",
+    "category": "Dân sự - Bảo vệ quyền nhân thân & Bồi thường thiệt hại ngoài hợp đồng",
+    "reference_date": "2026-09-15",
+    "reference_date_note": "Mốc ngày 15/09/2026 là thời điểm lập Bản tường trình số 02-BV/2026 tại Cơ quan điều tra ngay sau sự việc ngày 14/09/2026 tại Cơ sở lưu trú An Phúc.",
+    "legal_scope_note": "Đối chiếu quy định về quyền được bảo vệ danh dự, nhân phẩm, uy tín (Điều 34 Bộ luật Dân sự 2015), căn cứ phát sinh trách nhiệm bồi thường thiệt hại ngoài hợp đồng (Điều 584, Điều 585, Điều 592 Bộ luật Dân sự 2015) và nghĩa vụ chứng minh, đánh giá chứng cứ (Điều 91, Điều 93, Điều 95, Điều 108 Bộ luật Tố tụng dân sự 2015).",
+    "summary": "Ngày 12/09/2026, chị Nguyễn Ngọc Mai liên hệ ứng tuyển công việc nhân viên hỗ trợ sự kiện qua mạng xã hội. Ngày 14/09/2026, khi đến Cơ sở lưu trú An Phúc theo lịch hẹn, chị Mai gặp ông Trần Quốc Hưng và bà Lê Thảo Vy. Tại đây, bà Vy yêu cầu chị Mai đi cùng một vị khách vào phòng riêng trái với mô tả công việc ban đầu. Chị Mai từ chối và yêu cầu rời đi nhưng bị cản trở, gây tổn hại nghiêm trọng về tinh thần và danh dự.",
+    "full_document": "HỒ SƠ TÓM TẮT VỤ ÁN DÂN SỰ SƠ THẨM (KẾT HỢP TÀI LIỆU XÁC MINH TỪ CƠ QUAN ĐIỀU TRA)\n\n1. Bối cảnh và diễn biến sự việc trước khi khởi kiện:\nNgày 12/09/2026, chị Nguyễn Ngọc Mai nhìn thấy một bài đăng tuyển nhân viên hỗ trợ sự kiện ngắn hạn với mức thù lao theo ca. Theo thông tin liên hệ trên bài đăng, chị Mai đã nhắn tin trao đổi và được hẹn đến nhận việc vào chiều ngày 14/09/2026.\nNgày 14/09/2026, chị Nguyễn Ngọc Mai đến địa điểm được chỉ dẫn là Cơ sở lưu trú An Phúc. Tại sảnh tầng 2 của cơ sở này, chị Mai gặp một người đàn ông tự xưng là Trần Quốc Hưng và một người phụ nữ tự xưng là Lê Thảo Vy (quản lý điều phối). Sau khi thu giữ thẻ căn cước để \"đăng ký ca trực\", bà Vy yêu cầu chị Mai phải đi cùng một vị khách vào phòng riêng số 204 để phục vụ đồ uống và tiếp khách riêng.\nNgay lập tức, chị Mai cảm thấy bất an và không đồng ý với yêu cầu này. Chị Mai đã từ chối và bày tỏ mong muốn được rời khỏi nơi đó ngay lập tức. Tuy nhiên, ông Hưng và bà Vy đã khóa cửa thông tầng trong khoảng 40 phút, lớn tiếng đe dọa phạt tiền hủy ca và xúc phạm danh dự chị Mai trước mặt nhiều người tại sảnh trước khi trả lại giấy tờ cho chị Mai ra về.\nNgày 15/09/2026, chị Nguyễn Ngọc Mai đã trình báo sự việc và lập Bản tường trình (Mã hồ sơ 02-BV/2026, đóng dấu CƠ QUAN ĐIỀU TRA HS-XX-26) trước sự tiếp nhận của Cán bộ điều tra Trương Văn Báu.\nKhông có dữ liệu ghi hình camera hành lang tầng 2 ngày 14/09/2026 do đầu ghi tại Cơ sở lưu trú An Phúc báo lỗi ổ cứng.\n\n2. Yêu cầu khởi kiện của Nguyên đơn (chị Nguyễn Ngọc Mai):\nNgày 02/10/2026, chị Nguyễn Ngọc Mai nộp đơn khởi kiện tại Tòa án nhân dân có thẩm quyền, yêu cầu ông Trần Quốc Hưng và bà Lê Thảo Vy (đồng quản lý vận hành tại Cơ sở lưu trú An Phúc):\n- Chấm dứt hành vi đăng tin tuyển dụng sai sự thật và công khai xin lỗi chị Nguyễn Ngọc Mai vì hành vi cản trở trái phép, xúc phạm danh dự, nhân phẩm ngày 14/09/2026.\n- Liên đới bồi thường thiệt hại về chi phí điều trị tâm lý, thu nhập thực tế bị mất và tổn thất tinh thần tổng cộng là 45.000.000 đồng.\n\n3. Ý kiến phản bác của Bị đơn (ông Trần Quốc Hưng và bà Lê Thảo Vy):\nPhía bị đơn thừa nhận ngày 14/09/2026 chị Nguyễn Ngọc Mai có mặt tại Cơ sở lưu trú An Phúc theo lịch hẹn tuyển cộng tác viên sự kiện. Tuy nhiên, phía bị đơn cho rằng việc đề nghị chị Mai vào phòng 204 chỉ là mang nước tiếp khách hội thảo, hoàn toàn không có sự ép buộc hay giữ người trái ý muốn. Bị đơn phản đối mức bồi thường 45.000.000 đồng vì cho rằng chị Mai tự ý bỏ về giữa ca trực và chưa chứng minh được thiệt hại thực tế hợp lý.\n\n4. Trọng tâm cần làm rõ tại phiên tòa ngày 18/11/2026:\n- Giá trị chứng minh của Bản tường trình ngày 15/09/2026 của chị Nguyễn Ngọc Mai (02-BV/2026) khi đặt trong mối liên hệ với Biên bản xác minh hiện trường và lời khai của các bên.\n- Hành vi của ông Hưng và bà Vy ngày 14/09/2026 có cấu thành hành vi trái pháp luật xâm phạm danh dự, nhân phẩm và quyền tự do cá nhân theo Điều 34, Điều 584 Bộ luật Dân sự 2015 hay không.\n- Căn cứ xác định mức bồi thường thiệt hại thực tế và khoản bù đắp tổn thất tinh thần theo Điều 585, Điều 592 Bộ luật Dân sự 2015.",
+    "evidence_absences": [
+      {
+        "title": "Dữ liệu camera hành lang tầng 2 ngày 14/09/2026 tại Cơ sở lưu trú An Phúc",
+        "source_quote": "Không có dữ liệu ghi hình camera hành lang tầng 2 ngày 14/09/2026 do đầu ghi tại Cơ sở lưu trú An Phúc báo lỗi ổ cứng."
+      }
+    ],
+    "parties": [
+      {
+        "side": "plaintiff",
+        "name": "Nguyễn Ngọc Mai",
+        "claims": [
+          "Yêu cầu ông Trần Quốc Hưng và bà Lê Thảo Vy công khai xin lỗi vì hành vi lừa dối tuyển dụng, giữ người cản trở việc rời đi và xúc phạm danh dự, nhân phẩm ngày 14/09/2026 tại Cơ sở lưu trú An Phúc.",
+          "Yêu cầu liên đới bồi thường thiệt hại về chi phí khám điều trị rối loạn lo âu cấp tính, thu nhập bị mất và khoản tiền bù đắp tổn thất tinh thần tổng cộng 45.000.000 đồng."
+        ]
+      },
+      {
+        "side": "defendant",
+        "name": "Trần Quốc Hưng và Lê Thảo Vy (Cơ sở lưu trú An Phúc)",
+        "claims": [
+          "Không chấp nhận yêu cầu bồi thường 45.000.000 đồng vì cho rằng chỉ phân công nhân viên phục vụ phòng họp riêng số 204, không có hành vi cưỡng ép hoặc giam giữ trái pháp luật.",
+          "Đề nghị Tòa án bác các khoản chi phí không có hóa đơn tài chính hợp lệ và giảm trừ toàn bộ yêu cầu bù đắp tổn thất tinh thần."
+        ]
+      }
+    ],
+    "timeline": [
+      {
+        "kind": "transaction",
+        "date": "2026-09-12",
+        "date_to": "2026-09-12",
+        "description": "Chị Nguyễn Ngọc Mai đọc bài đăng tuyển nhân viên hỗ trợ sự kiện và nhắn tin nhận lịch hẹn làm việc.",
+        "source_quote": "Ngày 12/09/2026, chị Nguyễn Ngọc Mai nhìn thấy một bài đăng tuyển nhân viên hỗ trợ sự kiện ngắn hạn với mức thù lao theo ca.",
+        "status": "reported"
+      },
+      {
+        "kind": "conduct",
+        "date": "2026-09-14",
+        "date_to": "2026-09-14",
+        "description": "Chị Mai đến Cơ sở lưu trú An Phúc, gặp ông Hưng và bà Vy, bị yêu cầu đi cùng khách vào phòng riêng và phát sinh việc cản trở khi chị từ chối rời đi.",
+        "source_quote": "Ngày 14/09/2026, chị Nguyễn Ngọc Mai đến địa điểm được chỉ dẫn là Cơ sở lưu trú An Phúc.",
+        "status": "reported"
+      },
+      {
+        "kind": "dispute",
+        "date": "2026-09-15",
+        "date_to": "2026-09-15",
+        "description": "Chị Nguyễn Ngọc Mai lập Bản tường trình số 02-BV/2026 tại Cơ quan điều tra trước Cán bộ điều tra Trương Văn Báu.",
+        "source_quote": "Ngày 15/09/2026, chị Nguyễn Ngọc Mai đã trình báo sự việc và lập Bản tường trình (Mã hồ sơ 02-BV/2026, đóng dấu CƠ QUAN ĐIỀU TRA HS-XX-26) trước sự tiếp nhận của Cán bộ điều tra Trương Văn Báu.",
+        "status": "reported"
+      },
+      {
+        "kind": "filing",
+        "date": "2026-10-02",
+        "date_to": "2026-10-02",
+        "description": "Chị Nguyễn Ngọc Mai nộp đơn khởi kiện yêu cầu xin lỗi công khai và bồi thường thiệt hại 45.000.000 đồng.",
+        "source_quote": "Ngày 02/10/2026, chị Nguyễn Ngọc Mai nộp đơn khởi kiện tại Tòa án nhân dân có thẩm quyền",
+        "status": "reported"
+      },
+      {
+        "kind": "hearing",
+        "date": "2026-11-18",
+        "date_to": "2026-11-18",
+        "description": "Tòa án mở phiên tòa xét xử sơ thẩm vụ án.",
+        "source_quote": "Trọng tâm cần làm rõ tại phiên tòa ngày 18/11/2026",
+        "status": "reported"
+      }
+    ],
+    "case_facts": [
+      {
+        "kind": "recorded_event",
+        "quote": "Ngày 14/09/2026, chị Nguyễn Ngọc Mai đến địa điểm được chỉ dẫn là Cơ sở lưu trú An Phúc.",
+        "source_type": "case_outline"
+      },
+      {
+        "kind": "recorded_event",
+        "quote": "Ngày 15/09/2026, chị Nguyễn Ngọc Mai đã trình báo sự việc và lập Bản tường trình (Mã hồ sơ 02-BV/2026, đóng dấu CƠ QUAN ĐIỀU TRA HS-XX-26) trước sự tiếp nhận của Cán bộ điều tra Trương Văn Báu.",
+        "source_type": "case_outline"
+      },
+      {
+        "kind": "unproven",
+        "quote": "Không có dữ liệu ghi hình camera hành lang tầng 2 ngày 14/09/2026 do đầu ghi tại Cơ sở lưu trú An Phúc báo lỗi ổ cứng.",
+        "source_type": "case_outline"
+      },
+      {
+        "kind": "party_statement",
+        "party": "Bị đơn Trần Quốc Hưng và Lê Thảo Vy",
+        "quote": "Tuy nhiên, phía bị đơn cho rằng việc đề nghị chị Mai vào phòng 204 chỉ là mang nước tiếp khách hội thảo, hoàn toàn không có sự ép buộc hay giữ người trái ý muốn.",
+        "source_type": "case_outline"
+      }
+    ],
+    "evidence_inventory": [
+      {
+        "id": "EV-anphuc-tuongtrinh",
+        "name": "Bản tường trình của Nguyễn Ngọc Mai (Mã số 02-BV/2026)",
+        "availability": "provided",
+        "date": "2026-09-15",
+        "provided_by": "Nguyễn Ngọc Mai",
+        "source_kind": "document",
+        "source_locator": "Bút lục số 02-BV/2026 - Dấu đỏ CƠ QUAN ĐIỀU TRA HS-XX-26",
+        "proof_scope": "Ghi nhận lời trình bày trực tiếp của chị Nguyễn Ngọc Mai ngay sau sự việc ngày 14/09/2026 tại Cơ sở lưu trú An Phúc dưới sự tiếp nhận của Cán bộ điều tra Trương Văn Báu.",
+        "summary": "Bản tường trình lập ngày 15/09/2026 của Nguyễn Ngọc Mai về việc ứng tuyển hỗ trợ sự kiện ngày 12/09/2026, đến Cơ sở lưu trú An Phúc ngày 14/09/2026 gặp Hưng và Vy, bị Vy yêu cầu đi cùng khách vào phòng riêng và đã lập tức từ chối, yêu cầu rời khỏi đó.",
+        "source_quote": "Ngày 15/09/2026, chị Nguyễn Ngọc Mai đã trình báo sự việc và lập Bản tường trình (Mã hồ sơ 02-BV/2026, đóng dấu CƠ QUAN ĐIỀU TRA HS-XX-26) trước sự tiếp nhận của Cán bộ điều tra Trương Văn Báu.",
+        "content": "BẢN TƯỜNG TRÌNH CỦA NGUYỄN NGỌC MAI\nMã hồ sơ: 02-BV/2026\nThời điểm lập: 15/09/2026\nNgười trình bày: Nguyễn Ngọc Mai\n\nNội dung tường trình:\nNgày 12/09/2026, tôi có nhìn thấy một bài đăng tuyển nhân viên hỗ trợ sự kiện. Theo thông tin, tôi đã liên lạc và được hẹn.\nNgày 14/09/2026, tôi đến địa điểm được chỉ dẫn là Cơ sở lưu trú An Phúc. Tại đây, tôi gặp một người đàn ông, người này tự xưng là Hưng và Vy. Sau đó, Vy yêu cầu tôi phải đi cùng một vị khách vào phòng riêng. Ngay lập tức, tôi cảm thấy bất an và không đồng ý với yêu cầu này. Tôi đã từ chối và bày tỏ mong muốn được rời khỏi nơi đó ngay lập tức.\n\nChữ ký người trình bày: Nguyễn Ngọc Mai\nHọ và tên: NGUYỄN NGỌC MAI\nNgười tiếp nhận tường trình: Trương Văn Báu - Cán bộ điều tra\nXác nhận đóng dấu: CƠ QUAN ĐIỀU TRA ★ HS-XX-26"
+      },
+      {
+        "id": "EV-anphuc-vibang",
+        "name": "Vi bằng ghi nhận bài đăng tuyển dụng và tin nhắn hẹn ngày 12/09/2026",
+        "availability": "provided",
+        "date": "2026-09-12",
+        "provided_by": "Nguyễn Ngọc Mai",
+        "source_kind": "document",
+        "source_locator": "Bút lục số 05-VB/2026 - Văn phòng Thừa phát lại",
+        "proof_scope": "Chứng minh nội dung thông báo tuyển dụng ban đầu chỉ nêu công việc đón khách lễ tân hội thảo, hoàn toàn khác với yêu cầu vào phòng riêng số 204 tại Cơ sở lưu trú An Phúc.",
+        "summary": "Vi bằng ghi nhận nguyên trạng bài đăng tuyển dụng ngày 12/09/2026 và đoạn tin nhắn tài khoản Lê Thảo Vy hẹn chị Mai đến Cơ sở lưu trú An Phúc lúc 14 giờ 00 ngày 14/09/2026.",
+        "source_quote": "Ngày 12/09/2026, chị Nguyễn Ngọc Mai nhìn thấy một bài đăng tuyển nhân viên hỗ trợ sự kiện ngắn hạn với mức thù lao theo ca.",
+        "content": "VI BẰNG GHI NHẬN NỘI DUNG TIN NHẮN & BÀI ĐĂNG TUYỂN DỤNG\nThời điểm ghi nhận sự kiện: 12/09/2026\nNgười yêu cầu lập: Nguyễn Ngọc Mai\n\n1. Nội dung bài đăng ngày 12/09/2026: \"Cần tuyển 02 bạn nữ hỗ trợ lễ tân check-in sự kiện hội thảo doanh nghiệp ngày 14/09/2026 tại khu vực An Phúc. Công việc: phát tài liệu và hướng dẫn đại biểu tại sảnh chung. Thù lao: 600.000 đồng/ca.\"\n2. Tin nhắn xác nhận lúc 19h15 ngày 12/09/2026 từ tài khoản \"Vy Lê (Quản lý An Phúc)\": \"Em đến tầng 2 Cơ sở lưu trú An Phúc lúc 14h00 ngày 14/09/2026 gặp anh Hưng và chị Vy để nhận thẻ cộng tác viên nhé.\""
+      },
+      {
+        "id": "EV-anphuc-xacminh",
+        "name": "Biên bản xác minh hiện trường tại Cơ sở lưu trú An Phúc",
+        "availability": "provided",
+        "date": "2026-09-15",
+        "provided_by": "Cơ quan điều tra - Cán bộ Trương Văn Báu",
+        "source_kind": "document",
+        "source_locator": "Bút lục số 08-BBXM/2026 - CƠ QUAN ĐIỀU TRA HS-XX-26",
+        "proof_scope": "Xác nhận cấu trúc cửa khóa từ tầng 2, sổ ghi chép giữ giấy tờ tùy thân và lời khai của nhân viên bảo vệ về việc to tiếng chiều ngày 14/09/2026.",
+        "summary": "Biên bản xác minh ngày 15/09/2026 của Cán bộ điều tra Trương Văn Báu ghi nhận tại Cơ sở lưu trú An Phúc ngày 14/09/2026 không có hội thảo doanh nghiệp nào được tổ chức, phòng 204 là phòng nghỉ lưu trú theo giờ và cửa thông tầng 2 có chốt khóa điện từ bên trong.",
+        "source_quote": "Tuy nhiên, ông Hưng và bà Vy đã khóa cửa thông tầng trong khoảng 40 phút, lớn tiếng đe dọa phạt tiền hủy ca và xúc phạm danh dự chị Mai trước mặt nhiều người tại sảnh trước khi trả lại giấy tờ cho chị Mai ra về.",
+        "content": "BIÊN BẢN XÁC MINH HIỆN TRƯỜNG & SỔ LƯU TRÚ\nThời điểm lập: 15/09/2026\nCán bộ lập biên bản: Trương Văn Báu - Cán bộ điều tra (Mã hồ sơ HS-XX-26)\n\nKết quả kiểm tra thực tế tại Cơ sở lưu trú An Phúc:\n1. Kiểm tra sổ đăng ký hoạt động ngày 14/09/2026: Tại Cơ sở lưu trú An Phúc không có bất kỳ chương trình hội thảo doanh nghiệp nào đăng ký tổ chức. Phòng số 204 là phòng lưu trú khép kín do một khách nam thuê theo giờ lúc 13h50 ngày 14/09/2026.\n2. Kiểm tra hiện trường sảnh tầng 2: Lối xuống cầu thang bộ có lắp cửa kính khóa từ điều khiển tại quầy của ông Trần Quốc Hưng.\n3. Lời trình bày của nhân viên bảo vệ tầng 1 (ông Phạm Văn Tấn): Khoảng 14h30 đến 15h10 ngày 14/09/2026, ông Tấn nghe tiếng chị Nguyễn Ngọc Mai đập cửa yêu cầu mở khóa để ra về và tiếng bà Vy lớn tiếng mạt sát chị Mai về việc \"tự ý hủy kèo tiếp khách\"."
+      },
+      {
+        "id": "EV-anphuc-loikhai",
+        "name": "Biên bản ghi lời khai của Trần Quốc Hưng và Lê Thảo Vy, kèm Hồ sơ y tế và chứng từ thiệt hại",
+        "availability": "provided",
+        "date": "2026-09-18",
+        "provided_by": "Cơ quan điều tra & Bệnh viện Đa khoa Khu vực",
+        "source_kind": "document",
+        "source_locator": "Bút lục số 11-BBLK/2026 & Hóa đơn viện phí ngày 16/09/2026",
+        "proof_scope": "Đối chiếu lời thừa nhận một phần của bị đơn và chứng từ chi phí điều trị y tế thực tế của nguyên đơn.",
+        "verification_status": "conflicting",
+        "summary": "Ông Hưng và bà Vy thừa nhận có giữ căn cước công dân của chị Mai và yêu cầu chị vào phòng 204 nhưng phủ nhận việc ép buộc. Kèm theo là Giấy xác nhận khám điều trị rối loạn lo âu cấp tính và hóa đơn y tế 12.500.000 đồng của chị Mai.",
+        "source_quote": "Phía bị đơn thừa nhận ngày 14/09/2026 chị Nguyễn Ngọc Mai có mặt tại Cơ sở lưu trú An Phúc theo lịch hẹn tuyển cộng tác viên sự kiện.",
+        "content": "TRÍCH BIÊN BẢN GHI LỜI KHAI ĐỐI CHẤT & CHỨNG TỪ THIỆT HẠI\nThời điểm lập: 18/09/2026\n\n1. Lời khai của bà Lê Thảo Vy và ông Trần Quốc Hưng:\n- Thừa nhận ngày 14/09/2026 có tạm giữ thẻ Căn cước công dân của chị Nguyễn Ngọc Mai tại quầy tầng 2 và có yêu cầu chị Mai vào phòng riêng số 204 cùng khách lưu trú.\n- Thừa nhận có đóng cửa kính tầng 2 trong lúc \"nói chuyện giải quyết bất đồng\" khoảng 30-40 phút nhưng cho rằng mục đích là để yêu cầu chị Mai bồi hoàn chi phí điều phối ca trực.\n2. Chứng từ thiệt hại do chị Nguyễn Ngọc Mai cung cấp:\n- Hồ sơ bệnh án ngoại trú ngày 16/09/2026 tại Khoa Tâm thần kinh - Bệnh viện Đa khoa: Chẩn đoán \"Phản ứng sang chấn tâm lý và rối loạn lo âu cấp tính sau sự cố\", hóa đơn viện phí và thuốc điều trị có chứng từ hợp lệ là 12.500.000 đồng.\n- Khoản thu nhập thực tế bị mất trong 15 ngày nghỉ điều trị theo xác nhận nơi làm việc chính thức: 7.500.000 đồng.\n- Khoản yêu cầu bù đắp tổn thất tinh thần: 25.000.000 đồng (tổng cộng yêu cầu khởi kiện là 45.000.000 đồng)."
+      }
+    ],
+    "created_at": {
+      "$date": "2026-04-18T12:02:00Z"
+    },
+    "__v": 0
+  },
+  {
+    "_id": {
+      "$oid": "6ac100000000000000000004"
+    },
+    "title": "Tranh chấp đơn phương chấm dứt hợp đồng lao động và chi phí đào tạo giữa ông Đặng Minh Quân và Công ty Sao Khuê",
+    "category": "Lao động - Tranh chấp đơn phương chấm dứt HĐLĐ & Chi phí đào tạo",
+    "reference_date": "2024-04-20",
+    "reference_date_note": "Mốc ngày 20/04/2024 là ngày Công ty Cổ phần Phần mềm Sao Khuê ban hành Quyết định số 09/2024/QĐ-SK chấm dứt hợp đồng lao động với ông Đặng Minh Quân.",
+    "legal_scope_note": "Đối chiếu quy định về quyền đơn phương chấm dứt hợp đồng lao động của người sử dụng lao động (Điều 36 Bộ luật Lao động 2019), nghĩa vụ của người sử dụng lao động khi đơn phương chấm dứt hợp đồng lao động trái pháp luật (Điều 41 Bộ luật Lao động 2019), hợp đồng đào tạo nghề và hoàn trả chi phí đào tạo (Điều 62 Bộ luật Lao động 2019).",
+    "summary": "Ông Đặng Minh Quân làm việc tại Công ty Cổ phần Phần mềm Sao Khuê theo Hợp đồng lao động xác định thời hạn 36 tháng. Ngày 20/04/2024, Công ty ban hành Quyết định số 09/2024/QĐ-SK đơn phương chấm dứt hợp đồng lao động với lý do ông Quân không hoàn thành công việc và yêu cầu ông Quân hoàn trả 180.000.000 đồng chi phí khóa đào tạo chuyên gia AI. Ông Quân khởi kiện yêu cầu tuyên hủy quyết định sa thải trái luật, bồi thường tiền lương những ngày không được làm việc và bác yêu cầu hoàn trả chi phí đào tạo.",
+    "full_document": "HỒ SƠ TÓM TẮT VỤ ÁN TRANH CHẤP LAO ĐỘNG SƠ THẨM\n\n1. Quan hệ lao động và cam kết đào tạo:\nNgày 10/01/2023, ông Đặng Minh Quân và Công ty Cổ phần Phần mềm Sao Khuê ký Hợp đồng lao động số 18/2023/HĐLĐ-SK có thời hạn 36 tháng (từ 10/01/2023 đến 10/01/2026), chức danh Kỹ sư phát triển hệ thống AI, mức lương theo hợp đồng là 30.000.000 đồng/tháng.\nNgày 15/06/2023, hai bên ký Thỏa thuận đào tạo số 04/2023/TTĐT-SK, theo đó Công ty cử ông Quân tham gia khóa đào tạo kiến trúc mô hình ngôn ngữ lớn trong 03 tháng với chi phí ghi trong thỏa thuận là 180.000.000 đồng, kèm điều khoản ông Quân cam kết làm việc tối thiểu 24 tháng sau khi hoàn thành khóa học. Nếu ông Quân tự ý nghỉ việc hoặc bị chấm dứt hợp đồng do lỗi của người lao động trước thời hạn cam kết thì phải hoàn trả toàn bộ chi phí đào tạo.\n\n2. Diễn biến chấm dứt hợp đồng lao động:\nNgày 05/04/2024, Trưởng phòng Kỹ thuật lập Biên bản đánh giá kết quả công việc Quý I/2024, ghi nhận dự án tích hợp AI do nhóm ông Quân phụ trách chậm tiến độ 14 ngày.\nKhông có Quy chế đánh giá mức độ hoàn thành công việc được ban hành hợp pháp sau khi tham khảo ý kiến tổ chức đại diện người lao động tại cơ sở.\nNgày 20/04/2024, Giám đốc Công ty Cổ phần Phần mềm Sao Khuê ban hành Quyết định số 09/2024/QĐ-SK đơn phương chấm dứt hợp đồng lao động đối với ông Đặng Minh Quân kể từ ngày 25/04/2024 với lý do \"không hoàn thành nhiệm vụ theo Hợp đồng lao động\" và chỉ báo trước 05 ngày làm việc.\n\n3. Yêu cầu khởi kiện và yêu cầu phản tố:\nNgày 15/05/2024, ông Đặng Minh Quân khởi kiện tại Tòa án nhân dân yêu cầu:\n- Tuyên Quyết định số 09/2024/QĐ-SK ngày 20/04/2024 là đơn phương chấm dứt hợp đồng lao động trái pháp luật.\n- Buộc Công ty Sao Khuê thanh toán tiền lương trong những ngày không được làm việc, bồi thường thêm 02 tháng tiền lương theo hợp đồng và tiền vi phạm thời hạn báo trước tổng cộng là 195.000.000 đồng.\nPhía Công ty Cổ phần Phần mềm Sao Khuê có yêu cầu phản tố buộc ông Đặng Minh Quân hoàn trả 180.000.000 đồng chi phí đào tạo theo Thỏa thuận số 04/2023/TTĐT-SK.\n\n4. Trọng tâm tranh tụng tại phiên tòa ngày 20/08/2024:\n- Điều kiện hợp pháp để người sử dụng lao động đơn phương chấm dứt HĐLĐ vì lý do \"thường xuyên không hoàn thành công việc\" theo điểm a khoản 1 Điều 36 Bộ luật Lao động 2019 (cần có Quy chế đánh giá và từ 02 lần đánh giá hay không, thời hạn báo trước 30 ngày).\n- Khi người sử dụng lao động đơn phương chấm dứt HĐLĐ trái pháp luật thì người lao động có nghĩa vụ hoàn trả chi phí đào tạo theo Điều 62 Bộ luật Lao động 2019 hay không, và hóa đơn thực tế chứng minh chi phí đào tạo là bao nhiêu.",
+    "evidence_absences": [
+      {
+        "title": "Quy chế đánh giá mức độ hoàn thành công việc có tham khảo ý kiến tổ chức đại diện người lao động",
+        "source_quote": "Không có Quy chế đánh giá mức độ hoàn thành công việc được ban hành hợp pháp sau khi tham khảo ý kiến tổ chức đại diện người lao động tại cơ sở."
+      }
+    ],
+    "parties": [
+      {
+        "side": "plaintiff",
+        "name": "Ông Đặng Minh Quân (Người lao động)",
+        "claims": [
+          "Yêu cầu tuyên Quyết định chấm dứt hợp đồng lao động số 09/2024/QĐ-SK ngày 20/04/2024 của Công ty Sao Khuê là trái pháp luật do không có quy chế đánh giá hợp pháp, chỉ mới đánh giá 01 quý và vi phạm thời hạn báo trước 30 ngày.",
+          "Yêu cầu Công ty bồi thường tổng cộng 195.000.000 đồng và bác toàn bộ yêu cầu phản tố đòi 180.000.000 đồng chi phí đào tạo vì Công ty mới là bên tự ý chấm dứt hợp đồng trái luật."
+        ]
+      },
+      {
+        "side": "defendant",
+        "name": "Công ty Cổ phần Phần mềm Sao Khuê (Người sử dụng lao động)",
+        "claims": [
+          "Giữ nguyên Quyết định chấm dứt hợp đồng lao động số 09/2024/QĐ-SK vì ông Quân để dự án trọng điểm Quý I/2024 trễ hạn 14 ngày gây ảnh hưởng kế hoạch kinh doanh.",
+          "Yêu cầu phản tố buộc ông Đặng Minh Quân hoàn trả 180.000.000 đồng chi phí khóa đào tạo AI do chưa làm đủ 24 tháng cam kết theo Thỏa thuận số 04/2023/TTĐT-SK."
+        ]
+      }
+    ],
+    "timeline": [
+      {
+        "kind": "transaction",
+        "date": "2023-01-10",
+        "date_to": "2023-01-10",
+        "description": "Ông Đặng Minh Quân và Công ty Sao Khuê ký Hợp đồng lao động số 18/2023/HĐLĐ-SK thời hạn 36 tháng.",
+        "source_quote": "Ngày 10/01/2023, ông Đặng Minh Quân và Công ty Cổ phần Phần mềm Sao Khuê ký Hợp đồng lao động số 18/2023/HĐLĐ-SK có thời hạn 36 tháng",
+        "status": "reported"
+      },
+      {
+        "kind": "transaction",
+        "date": "2023-06-15",
+        "date_to": "2023-06-15",
+        "description": "Hai bên ký Thỏa thuận đào tạo số 04/2023/TTĐT-SK với cam kết làm việc 24 tháng sau đào tạo.",
+        "source_quote": "Ngày 15/06/2023, hai bên ký Thỏa thuận đào tạo số 04/2023/TTĐT-SK",
+        "status": "reported"
+      },
+      {
+        "kind": "conduct",
+        "date": "2024-04-05",
+        "date_to": "2024-04-05",
+        "description": "Trưởng phòng Kỹ thuật lập Biên bản đánh giá kết quả công việc Quý I/2024 ghi nhận dự án chậm 14 ngày.",
+        "source_quote": "Ngày 05/04/2024, Trưởng phòng Kỹ thuật lập Biên bản đánh giá kết quả công việc Quý I/2024, ghi nhận dự án tích hợp AI do nhóm ông Quân phụ trách chậm tiến độ 14 ngày.",
+        "status": "reported"
+      },
+      {
+        "kind": "dispute",
+        "date": "2024-04-20",
+        "date_to": "2024-04-20",
+        "description": "Công ty Sao Khuê ban hành Quyết định số 09/2024/QĐ-SK chấm dứt HĐLĐ với ông Quân kể từ ngày 25/04/2024.",
+        "source_quote": "Ngày 20/04/2024, Giám đốc Công ty Cổ phần Phần mềm Sao Khuê ban hành Quyết định số 09/2024/QĐ-SK đơn phương chấm dứt hợp đồng lao động đối với ông Đặng Minh Quân kể từ ngày 25/04/2024",
+        "status": "reported"
+      },
+      {
+        "kind": "filing",
+        "date": "2024-05-15",
+        "date_to": "2024-05-15",
+        "description": "Ông Đặng Minh Quân nộp đơn khởi kiện tại Tòa án nhân dân.",
+        "source_quote": "Ngày 15/05/2024, ông Đặng Minh Quân khởi kiện tại Tòa án nhân dân yêu cầu",
+        "status": "reported"
+      },
+      {
+        "kind": "hearing",
+        "date": "2024-08-20",
+        "date_to": "2024-08-20",
+        "description": "Tòa án mở phiên tòa xét xử sơ thẩm vụ án tranh chấp lao động.",
+        "source_quote": "Trọng tâm tranh tụng tại phiên tòa ngày 20/08/2024",
+        "status": "reported"
+      }
+    ],
+    "case_facts": [
+      {
+        "kind": "recorded_event",
+        "quote": "Ngày 10/01/2023, ông Đặng Minh Quân và Công ty Cổ phần Phần mềm Sao Khuê ký Hợp đồng lao động số 18/2023/HĐLĐ-SK có thời hạn 36 tháng (từ 10/01/2023 đến 10/01/2026), chức danh Kỹ sư phát triển hệ thống AI, mức lương theo hợp đồng là 30.000.000 đồng/tháng.",
+        "source_type": "case_outline"
+      },
+      {
+        "kind": "recorded_event",
+        "quote": "Ngày 20/04/2024, Giám đốc Công ty Cổ phần Phần mềm Sao Khuê ban hành Quyết định số 09/2024/QĐ-SK đơn phương chấm dứt hợp đồng lao động đối với ông Đặng Minh Quân kể từ ngày 25/04/2024 với lý do \"không hoàn thành nhiệm vụ theo Hợp đồng lao động\" và chỉ báo trước 05 ngày làm việc.",
+        "source_type": "case_outline"
+      },
+      {
+        "kind": "unproven",
+        "quote": "Không có Quy chế đánh giá mức độ hoàn thành công việc được ban hành hợp pháp sau khi tham khảo ý kiến tổ chức đại diện người lao động tại cơ sở.",
+        "source_type": "case_outline"
+      }
+    ],
+    "evidence_inventory": [
+      {
+        "id": "EV-saokhue-hdld",
+        "name": "Hợp đồng lao động số 18/2023/HĐLĐ-SK ngày 10/01/2023",
+        "availability": "provided",
+        "date": "2023-01-10",
+        "provided_by": "Ông Đặng Minh Quân",
+        "source_kind": "document",
+        "source_locator": "Bút lục số 01-LĐ/2024",
+        "proof_scope": "Xác định loại hợp đồng lao động xác định thời hạn 36 tháng, mức lương cơ bản 30.000.000 đồng/tháng và quyền, nghĩa vụ các bên.",
+        "summary": "Hợp đồng lao động xác định thời hạn 36 tháng giữa Công ty Sao Khuê và ông Đặng Minh Quân, mức lương 30.000.000 đồng/tháng.",
+        "source_quote": "Ngày 10/01/2023, ông Đặng Minh Quân và Công ty Cổ phần Phần mềm Sao Khuê ký Hợp đồng lao động số 18/2023/HĐLĐ-SK có thời hạn 36 tháng",
+        "content": "HỢP ĐỒNG LAO ĐỘNG SỐ 18/2023/HĐLĐ-SK\nNgày ký: 10/01/2023\nBên sử dụng lao động: Công ty Cổ phần Phần mềm Sao Khuê\nNgười lao động: Ông Đặng Minh Quân\nĐiều 1. Loại hợp đồng: Hợp đồng lao động xác định thời hạn 36 tháng (từ ngày 10/01/2023 đến hết ngày 10/01/2026).\nĐiều 2. Chức danh chuyên môn: Kỹ sư phát triển hệ thống Trí tuệ nhân tạo (AI Engineer).\nĐiều 3. Tiền lương: 30.000.000 đồng/tháng, trả vào ngày 05 hằng tháng.\nĐiều 5. Chấm dứt hợp đồng: Việc đơn phương chấm dứt hợp đồng lao động của mỗi bên phải tuân thủ đúng căn cứ và thời hạn báo trước ít nhất 30 ngày theo Điều 35, Điều 36 Bộ luật Lao động 2019."
+      },
+      {
+        "id": "EV-saokhue-daotao",
+        "name": "Thỏa thuận đào tạo số 04/2023/TTĐT-SK và Chứng từ thanh toán học phí",
+        "availability": "provided",
+        "date": "2023-06-15",
+        "provided_by": "Công ty Cổ phần Phần mềm Sao Khuê",
+        "source_kind": "document",
+        "source_locator": "Bút lục số 04-LĐ/2024",
+        "proof_scope": "Xác định điều kiện phát sinh nghĩa vụ hoàn trả chi phí đào tạo và đối chiếu số tiền thực chi có hóa đơn hợp lệ.",
+        "verification_status": "conflicting",
+        "summary": "Thỏa thuận đào tạo ghi mức chi phí dự kiến 180.000.000 đồng và chỉ buộc hoàn trả khi người lao động tự ý nghỉ việc hoặc bị sa thải đúng pháp luật, trong khi hóa đơn chuyển khoản học phí thực tế chỉ có 95.000.000 đồng.",
+        "source_quote": "Ngày 15/06/2023, hai bên ký Thỏa thuận đào tạo số 04/2023/TTĐT-SK, theo đó Công ty cử ông Quân tham gia khóa đào tạo kiến trúc mô hình ngôn ngữ lớn trong 03 tháng với chi phí ghi trong thỏa thuận là 180.000.000 đồng",
+        "content": "THỎA THUẬN ĐÀO TẠO SỐ 04/2023/TTĐT-SK & CHỨNG TỪ KẾ TOÁN\nNgày lập: 15/06/2023\n\n1. Nội dung Điều 3 Thỏa thuận số 04/2023/TTĐT-SK:\n\"Người lao động cam kết làm việc cho Công ty tối thiểu 24 tháng kể từ ngày kết thúc khóa đào tạo (15/09/2023). Trường hợp Người lao động đơn phương chấm dứt hợp đồng trái pháp luật hoặc bị Công ty xử lý kỷ luật sa thải, đơn phương chấm dứt hợp đồng hợp pháp do lỗi của Người lao động trước thời hạn 24 tháng thì phải hoàn trả chi phí đào tạo.\"\n2. Đối chiếu chứng từ kế toán kèm theo:\n- Tổng số tiền ghi khái toán trong văn bản thỏa thuận: 180.000.000 đồng.\n- Hóa đơn giá trị gia tăng và ủy nhiệm chi thực tế Công ty thanh toán cho Học viện Đào tạo Công nghệ: 95.000.000 đồng (khoản chênh lệch 85.000.000 đồng Công ty tự kê khai là chi phí quản lý nội bộ nhưng không có chứng từ)."
+      },
+      {
+        "id": "EV-saokhue-danhgia",
+        "name": "Biên bản đánh giá kết quả công việc Quý I/2024 ngày 05/04/2024",
+        "availability": "provided",
+        "date": "2024-04-05",
+        "provided_by": "Công ty Cổ phần Phần mềm Sao Khuê",
+        "source_kind": "document",
+        "source_locator": "Bút lục số 07-LĐ/2024",
+        "proof_scope": "Làm rõ việc đánh giá chỉ diễn ra 01 lần duy nhất và nguyên nhân chậm tiến độ có yếu tố khách quan từ phía hạ tầng máy chủ.",
+        "summary": "Biên bản ngày 05/04/2024 ghi nhận dự án chậm 14 ngày nhưng có ý kiến của ông Quân về việc Công ty bàn giao máy chủ GPU chậm 10 ngày và Công ty chưa ban hành Quy chế đánh giá mức độ hoàn thành công việc.",
+        "source_quote": "Ngày 05/04/2024, Trưởng phòng Kỹ thuật lập Biên bản đánh giá kết quả công việc Quý I/2024, ghi nhận dự án tích hợp AI do nhóm ông Quân phụ trách chậm tiến độ 14 ngày.",
+        "content": "BIÊN BẢN ĐÁNH GIÁ MỨC ĐỘ HOÀN THÀNH CÔNG VIỆC QUÝ I/2024\nThời điểm lập: 05/04/2024\nNgười lập: Trần Hải Đăng - Trưởng phòng Kỹ thuật\n\n1. Nhận xét của Trưởng phòng: Phân hệ tích hợp AI của nhóm ông Đặng Minh Quân bàn giao chậm 14 ngày so với kế hoạch nội bộ đầu quý. Xếp loại Quý I/2024: Chưa hoàn thành tiến độ. (Các quý năm 2023 ông Quân đều xếp loại Hoàn thành tốt).\n2. Ý kiến bảo lưu của ông Đặng Minh Quân ngay trong biên bản: \"Nguyên nhân chậm 14 ngày là do bộ phận Hạ tầng của Công ty cấp cụm máy chủ GPU trễ 10 ngày và thay đổi yêu cầu dữ liệu đầu vào. Ngoài ra Công ty chưa từng ban hành Quy chế đánh giá mức độ hoàn thành công việc theo Điều 36 Bộ luật Lao động 2019.\""
+      },
+      {
+        "id": "EV-saokhue-quyetdinh",
+        "name": "Quyết định chấm dứt hợp đồng lao động số 09/2024/QĐ-SK ngày 20/04/2024",
+        "availability": "provided",
+        "date": "2024-04-20",
+        "provided_by": "Công ty Cổ phần Phần mềm Sao Khuê",
+        "source_kind": "document",
+        "source_locator": "Bút lục số 09-LĐ/2024",
+        "proof_scope": "Chứng minh căn cứ chấm dứt HĐLĐ và thời gian báo trước thực tế chỉ có 05 ngày (từ 20/04/2024 đến 25/04/2024).",
+        "summary": "Quyết định số 09/2024/QĐ-SK ký ngày 20/04/2024 chấm dứt HĐLĐ với ông Quân từ ngày 25/04/2024 (báo trước 05 ngày) và yêu cầu khấu trừ lương, đòi hoàn trả 180.000.000 đồng chi phí đào tạo.",
+        "source_quote": "Ngày 20/04/2024, Giám đốc Công ty Cổ phần Phần mềm Sao Khuê ban hành Quyết định số 09/2024/QĐ-SK đơn phương chấm dứt hợp đồng lao động đối với ông Đặng Minh Quân kể từ ngày 25/04/2024",
+        "content": "QUYẾT ĐỊNH SỐ 09/2024/QĐ-SK\nVề việc đơn phương chấm dứt Hợp đồng lao động\nThời điểm ban hành: 20/04/2024\n\nGIÁM ĐỐC CÔNG TY CỔ PHẦN PHẦN MỀM SAO KHUÊ QUYẾT ĐỊNH:\nĐiều 1. Chấm dứt Hợp đồng lao động số 18/2023/HĐLĐ-SK đối với ông Đặng Minh Quân kể từ ngày 25/04/2024.\nLý do: Không hoàn thành nhiệm vụ được giao trong Quý I/2024 theo Biên bản ngày 05/04/2024.\nĐiều 2. Ông Đặng Minh Quân có trách nhiệm bàn giao công việc trước ngày 25/04/2024 và hoàn trả cho Công ty khoản chi phí đào tạo là 180.000.000 đồng theo Thỏa thuận số 04/2023/TTĐT-SK."
+      }
+    ],
+    "created_at": {
+      "$date": "2026-04-18T12:03:00Z"
+    },
+    "__v": 0
+  },
+  {
+    "_id": {
+      "$oid": "6ac100000000000000000005"
+    },
+    "title": "Tranh chấp hợp đồng đặt cọc chuyển nhượng quyền sử dụng đất và phạt cọc giữa bà Phạm Thu Hà và ông Võ Thành Nam",
+    "category": "Dân sự - Tranh chấp hợp đồng đặt cọc chuyển nhượng quyền sử dụng đất",
+    "reference_date": "2024-05-10",
+    "reference_date_note": "Mốc ngày 10/05/2024 là thời hạn cuối cùng hai bên thỏa thuận ra Văn phòng Công chứng ký hợp đồng chuyển nhượng quyền sử dụng đất và phát sinh tranh chấp phạt cọc.",
+    "legal_scope_note": "Đối chiếu quy định về điều kiện có hiệu lực của giao dịch dân sự (Điều 117 Bộ luật Dân sự 2015), giao dịch dân sự vô hiệu do nhầm lẫn hoặc lừa dối (Điều 126, Điều 127 Bộ luật Dân sự 2015), đặt cọc và xử lý tiền đặt cọc (Điều 328 Bộ luật Dân sự 2015) cùng nghĩa vụ cung cấp thông tin khi giao kết hợp đồng (Điều 387 Bộ luật Dân sự 2015).",
+    "summary": "Ngày 10/03/2024, bà Phạm Thu Hà (bên đặt cọc) và ông Võ Thành Nam (bên nhận đặt cọc) ký Hợp đồng đặt cọc số tiền 500.000.000 đồng để đảm bảo giao kết hợp đồng chuyển nhượng thửa đất số 412, tờ bản đồ số 18, diện tích 120 m² với giá chuyển nhượng 4.500.000.000 đồng. Trước ngày công chứng 10/05/2024, bà Hà xin trích lục quy hoạch và phát hiện 42 m² của thửa đất nằm trong quy hoạch lộ giới đường dự phóng và hành lang cây xanh. Bà Hà từ chối ký hợp đồng công chứng và khởi kiện đòi lại 500.000.000 đồng tiền cọc cùng 500.000.000 đồng phạt cọc.",
+    "full_document": "HỒ SƠ TÓM TẮT VỤ ÁN DÂN SỰ SƠ THẨM VỀ TRANH CHẤP HỢP ĐỒNG ĐẶT CỌC\n\n1. Giao kết hợp đồng đặt cọc và thanh toán tiền cọc:\nNgày 10/03/2024, bà Phạm Thu Hà và ông Võ Thành Nam ký Hợp đồng đặt cọc chuyển nhượng quyền sử dụng đất đối với thửa đất số 412, tờ bản đồ số 18, diện tích 120 m² (theo Giấy chứng nhận quyền sử dụng đất cấp ngày 18/07/2019 đứng tên ông Võ Thành Nam). Giá chuyển nhượng thỏa thuận là 4.500.000.000 đồng.\nCùng ngày 10/03/2024, bà Hà đã chuyển khoản đủ số tiền đặt cọc là 500.000.000 đồng vào tài khoản ngân hàng của ông Võ Thành Nam. Theo Điều 3 của Hợp đồng đặt cọc, hai bên cam kết chậm nhất đến ngày 10/05/2024 sẽ có mặt tại Văn phòng Công chứng Đông Sài Gòn để ký Hợp đồng chuyển nhượng quyền sử dụng đất. Điều 4 Hợp đồng đặt cọc quy định: \"Bên B (ông Nam) cam kết thửa đất không có tranh chấp, không bị kê biên và không nằm trong quy hoạch giải tỏa. Nếu Bên B vi phạm cam kết thì phải trả lại 500.000.000 đồng tiền cọc và chịu phạt cọc 500.000.000 đồng. Nếu Bên A (bà Hà) đổi ý không mua thì mất toàn bộ tiền đặt cọc.\"\n\n2. Phát sinh tranh chấp về thông tin quy hoạch:\nNgày 02/05/2024, Chi nhánh Văn phòng Đăng ký đất đai ban hành Văn bản số 318/CNVPĐKĐĐ trả lời thông tin quy hoạch đối với thửa đất số 412, xác nhận: Trong tổng diện tích 120 m² của thửa đất số 412 có 42 m² thuộc quy hoạch lộ giới đường mở rộng và hành lang an toàn cây xanh theo Quyết định phê duyệt quy hoạch phân khu tỷ lệ 1/2000 ban hành từ năm 2022, phần diện tích 78 m² còn lại thuộc quy hoạch đất ở hiện hữu.\nKhông có văn bản thỏa thuận sửa đổi hợp đồng đặt cọc về việc giảm giá chuyển nhượng sau khi có kết quả trả lời quy hoạch ngày 02/05/2024.\nNgày 10/05/2024, tại Văn phòng Công chứng Đông Sài Gòn, bà Phạm Thu Hà có mặt và lập Vi bằng ghi nhận việc bà từ chối ký hợp đồng chuyển nhượng do thửa đất vướng quy hoạch 42 m² trái với cam kết tại Điều 4 Hợp đồng đặt cọc. Ông Võ Thành Nam cũng có mặt tại Văn phòng Công chứng với đầy đủ bản chính Giấy chứng nhận quyền sử dụng đất và yêu cầu bà Hà ký hợp đồng vì cho rằng đất chỉ mới có quy hoạch phân khu 1/2000, chưa có quyết định thu hồi đất hàng năm nên vẫn được phép chuyển nhượng bình thường.\n\n3. Yêu cầu khởi kiện và ý kiến phản bác:\nNgày 28/05/2024, bà Phạm Thu Hà khởi kiện tại Tòa án nhân dân yêu cầu buộc ông Võ Thành Nam hoàn trả 500.000.000 đồng tiền đặt cọc và thanh toán 500.000.000 đồng tiền phạt cọc (tổng cộng 1.000.000.000 đồng).\nPhía ông Võ Thành Nam phản đối toàn bộ yêu cầu khởi kiện, khẳng định trước khi ký đặt cọc đã giao bản chụp Giấy chứng nhận quyền sử dụng đất cho bà Hà tự kiểm tra, thửa đất hoàn toàn đủ điều kiện công chứng chuyển nhượng theo Luật Đất đai nên việc bà Hà từ chối ký hợp đồng là lỗi của bên đặt cọc, ông Nam có quyền thuộc về mình 500.000.000 đồng tiền cọc.\n\n4. Trọng tâm tranh tụng tại phiên tòa ngày 12/09/2024:\n- Giải thích nội dung cam kết \"không nằm trong quy hoạch giải tỏa\" tại Điều 4 Hợp đồng đặt cọc ngày 10/03/2024 và nghĩa vụ cung cấp thông tin theo Điều 387 Bộ luật Dân sự 2015.\n- Xác định lỗi dẫn đến việc không giao kết được Hợp đồng chuyển nhượng quyền sử dụng đất ngày 10/05/2024 thuộc hoàn toàn về ông Nam, thuộc về bà Hà hay do lỗi hỗn hợp của cả hai bên (chỉ hoàn trả tiền cọc, không phạt cọc theo Điều 328 Bộ luật Dân sự 2015 và Án lệ/thực tiễn xét xử).",
+    "evidence_absences": [
+      {
+        "title": "Phụ lục hoặc văn bản thỏa thuận điều chỉnh giá chuyển nhượng sau khi biết thông tin quy hoạch",
+        "source_quote": "Không có văn bản thỏa thuận sửa đổi hợp đồng đặt cọc về việc giảm giá chuyển nhượng sau khi có kết quả trả lời quy hoạch ngày 02/05/2024."
+      }
+    ],
+    "parties": [
+      {
+        "side": "plaintiff",
+        "name": "Bà Phạm Thu Hà (Bên đặt cọc)",
+        "claims": [
+          "Yêu cầu buộc ông Võ Thành Nam hoàn trả 500.000.000 đồng tiền đặt cọc và trả 500.000.000 đồng tiền phạt cọc (tổng cộng 1.000.000.000 đồng) do vi phạm cam kết tại Điều 4 Hợp đồng đặt cọc ngày 10/03/2024 khi 42 m²/120 m² thửa đất nằm trong quy hoạch lộ giới và cây xanh.",
+          "Trường hợp Tòa án xác định lỗi hỗn hợp hoặc nhầm lẫn khách quan thì tối thiểu phải buộc ông Nam hoàn trả toàn bộ 500.000.000 đồng tiền đặt cọc đã nhận."
+        ]
+      },
+      {
+        "side": "defendant",
+        "name": "Ông Võ Thành Nam (Bên nhận đặt cọc)",
+        "claims": [
+          "Không chấp nhận yêu cầu trả lại cọc và phạt cọc vì thửa đất số 412 chưa có quyết định thu hồi đất của cơ quan nhà nước có thẩm quyền, hoàn toàn đủ điều kiện chuyển nhượng tại Văn phòng Công chứng ngày 10/05/2024.",
+          "Đề nghị Tòa án công nhận số tiền đặt cọc 500.000.000 đồng thuộc về ông Võ Thành Nam do bà Phạm Thu Hà tự ý từ chối giao kết hợp đồng công chứng."
+        ]
+      }
+    ],
+    "timeline": [
+      {
+        "kind": "transaction",
+        "date": "2024-03-10",
+        "date_to": "2024-03-10",
+        "description": "Bà Phạm Thu Hà và ông Võ Thành Nam ký Hợp đồng đặt cọc và chuyển khoản 500.000.000 đồng đối với thửa đất số 412 (120 m²).",
+        "source_quote": "Ngày 10/03/2024, bà Phạm Thu Hà và ông Võ Thành Nam ký Hợp đồng đặt cọc chuyển nhượng quyền sử dụng đất đối với thửa đất số 412, tờ bản đồ số 18, diện tích 120 m²",
+        "status": "reported"
+      },
+      {
+        "kind": "conduct",
+        "date": "2024-05-02",
+        "date_to": "2024-05-02",
+        "description": "Chi nhánh Văn phòng Đăng ký đất đai ban hành Văn bản số 318/CNVPĐKĐĐ xác nhận 42 m²/120 m² thửa đất thuộc quy hoạch lộ giới và cây xanh.",
+        "source_quote": "Ngày 02/05/2024, Chi nhánh Văn phòng Đăng ký đất đai ban hành Văn bản số 318/CNVPĐKĐĐ trả lời thông tin quy hoạch đối với thửa đất số 412",
+        "status": "reported"
+      },
+      {
+        "kind": "dispute",
+        "date": "2024-05-10",
+        "date_to": "2024-05-10",
+        "description": "Tại Văn phòng Công chứng Đông Sài Gòn, hai bên không ký được hợp đồng chuyển nhượng do bất đồng về phần diện tích 42 m² vướng quy hoạch.",
+        "source_quote": "Ngày 10/05/2024, tại Văn phòng Công chứng Đông Sài Gòn, bà Phạm Thu Hà có mặt và lập Vi bằng ghi nhận việc bà từ chối ký hợp đồng chuyển nhượng",
+        "status": "reported"
+      },
+      {
+        "kind": "filing",
+        "date": "2024-05-28",
+        "date_to": "2024-05-28",
+        "description": "Bà Phạm Thu Hà nộp đơn khởi kiện yêu cầu hoàn trả 500.000.000 đồng tiền cọc và 500.000.000 đồng phạt cọc.",
+        "source_quote": "Ngày 28/05/2024, bà Phạm Thu Hà khởi kiện tại Tòa án nhân dân yêu cầu buộc ông Võ Thành Nam hoàn trả 500.000.000 đồng tiền đặt cọc và thanh toán 500.000.000 đồng tiền phạt cọc",
+        "status": "reported"
+      },
+      {
+        "kind": "hearing",
+        "date": "2024-09-12",
+        "date_to": "2024-09-12",
+        "description": "Tòa án nhân dân mở phiên tòa xét xử sơ thẩm vụ án tranh chấp hợp đồng đặt cọc.",
+        "source_quote": "Trọng tâm tranh tụng tại phiên tòa ngày 12/09/2024",
+        "status": "reported"
+      }
+    ],
+    "case_facts": [
+      {
+        "kind": "recorded_event",
+        "quote": "Cùng ngày 10/03/2024, bà Hà đã chuyển khoản đủ số tiền đặt cọc là 500.000.000 đồng vào tài khoản ngân hàng của ông Võ Thành Nam.",
+        "source_type": "case_outline"
+      },
+      {
+        "kind": "recorded_event",
+        "quote": "Ngày 02/05/2024, Chi nhánh Văn phòng Đăng ký đất đai ban hành Văn bản số 318/CNVPĐKĐĐ trả lời thông tin quy hoạch đối với thửa đất số 412, xác nhận: Trong tổng diện tích 120 m² của thửa đất số 412 có 42 m² thuộc quy hoạch lộ giới đường mở rộng và hành lang an toàn cây xanh theo Quyết định phê duyệt quy hoạch phân khu tỷ lệ 1/2000 ban hành từ năm 2022, phần diện tích 78 m² còn lại thuộc quy hoạch đất ở hiện hữu.",
+        "source_type": "case_outline"
+      },
+      {
+        "kind": "unproven",
+        "quote": "Không có văn bản thỏa thuận sửa đổi hợp đồng đặt cọc về việc giảm giá chuyển nhượng sau khi có kết quả trả lời quy hoạch ngày 02/05/2024.",
+        "source_type": "case_outline"
+      }
+    ],
+    "evidence_inventory": [
+      {
+        "id": "EV-datcoc-hopdong",
+        "name": "Hợp đồng đặt cọc chuyển nhượng quyền sử dụng đất ngày 10/03/2024",
+        "availability": "provided",
+        "date": "2024-03-10",
+        "provided_by": "Bà Phạm Thu Hà",
+        "source_kind": "document",
+        "source_locator": "Bút lục số 01-DS/2024",
+        "proof_scope": "Xác định nội dung thỏa thuận đặt cọc 500.000.000 đồng và điều khoản cam kết về tình trạng quy hoạch tại Điều 4.",
+        "summary": "Hợp đồng đặt cọc ngày 10/03/2024 giữa bà Phạm Thu Hà và ông Võ Thành Nam đối với thửa đất 412 diện tích 120 m², giá 4.500.000.000 đồng, tiền cọc 500.000.000 đồng.",
+        "source_quote": "Ngày 10/03/2024, bà Phạm Thu Hà và ông Võ Thành Nam ký Hợp đồng đặt cọc chuyển nhượng quyền sử dụng đất đối với thửa đất số 412, tờ bản đồ số 18, diện tích 120 m²",
+        "content": "HỢP ĐỒNG ĐẶT CỌC CHUYỂN NHƯỢNG QUYỀN SỬ DỤNG ĐẤT\nThời điểm lập: 10/03/2024\nBên đặt cọc (Bên A): Bà Phạm Thu Hà\nBên nhận đặt cọc (Bên B): Ông Võ Thành Nam\n\nĐiều 1. Đối tượng hợp đồng: Thửa đất số 412, tờ bản đồ số 18, diện tích 120 m² đất ở đô thị theo Giấy chứng nhận QSDĐ cấp ngày 18/07/2019.\nĐiều 2. Giá chuyển nhượng và tiền đặt cọc: Giá chuyển nhượng là 4.500.000.000 đồng. Bên A đặt cọc trước cho Bên B số tiền 500.000.000 đồng ngay khi ký hợp đồng này.\nĐiều 3. Thời hạn công chứng: Chậm nhất ngày 10/05/2024 tại Văn phòng Công chứng Đông Sài Gòn.\nĐiều 4. Cam kết của các bên: Bên B cam kết thửa đất thuộc quyền sử dụng hợp pháp, không có tranh chấp, không bị kê biên và không nằm trong quy hoạch giải tỏa. Nếu Bên B vi phạm cam kết hoặc từ chối chuyển nhượng thì phải hoàn trả 500.000.000 đồng tiền cọc và chịu phạt cọc 500.000.000 đồng. Nếu Bên A không tiến hành mua đúng hạn thì mất toàn bộ tiền đặt cọc."
+      },
+      {
+        "id": "EV-datcoc-saoke",
+        "name": "Ủy nhiệm chi và Sao kê ngân hàng xác nhận chuyển khoản 500.000.000 đồng",
+        "availability": "provided",
+        "date": "2024-03-10",
+        "provided_by": "Bà Phạm Thu Hà",
+        "source_kind": "document",
+        "source_locator": "Bút lục số 03-DS/2024",
+        "proof_scope": "Chứng minh bà Phạm Thu Hà đã thực hiện đầy đủ nghĩa vụ giao 500.000.000 đồng tiền đặt cọc cho ông Võ Thành Nam ngày 10/03/2024.",
+        "summary": "Sao kê ngân hàng ngày 10/03/2024 xác nhận bà Phạm Thu Hà đã chuyển khoản thành công 500.000.000 đồng tiền đặt cọc mua thửa đất số 412 cho ông Võ Thành Nam.",
+        "source_quote": "Cùng ngày 10/03/2024, bà Hà đã chuyển khoản đủ số tiền đặt cọc là 500.000.000 đồng vào tài khoản ngân hàng của ông Võ Thành Nam.",
+        "content": "GIẤY BÁO NỢ / SAO KÊ GIAO DỊCH NGÂN HÀNG\nNgày giao dịch: 10/03/2024 - Mã giao dịch: FT2407098812\nNgười chuyển tiền: PHAM THU HA\nNgười thụ hưởng: VO THANH NAM\nSố tiền chuyển khoản: 500.000.000 VNĐ (Năm trăm triệu đồng chẵn)\nNội dung chuyển tiền: Pham Thu Ha dat coc chuyen nhuong thua dat so 412 to ban do 18 theo HD ngay 10/03/2024."
+      },
+      {
+        "id": "EV-datcoc-quyhoach",
+        "name": "Văn bản số 318/CNVPĐKĐĐ cung cấp thông tin quy hoạch ngày 02/05/2024",
+        "availability": "provided",
+        "date": "2024-05-02",
+        "provided_by": "Chi nhánh Văn phòng Đăng ký đất đai",
+        "source_kind": "document",
+        "source_locator": "Bút lục số 06-DS/2024",
+        "proof_scope": "Chứng minh 42 m²/120 m² thửa đất thuộc quy hoạch lộ giới đường mở rộng và hành lang cây xanh nhưng chưa có quyết định thu hồi đất.",
+        "summary": "Văn bản số 318/CNVPĐKĐĐ ngày 02/05/2024 xác nhận thửa đất 412 (120 m²) có 42 m² nằm trong quy hoạch lộ giới đường dự phóng và cây xanh từ năm 2022, còn lại 78 m² đất ở, hiện chưa có quyết định thu hồi đất.",
+        "source_quote": "Ngày 02/05/2024, Chi nhánh Văn phòng Đăng ký đất đai ban hành Văn bản số 318/CNVPĐKĐĐ trả lời thông tin quy hoạch đối với thửa đất số 412",
+        "content": "VĂN BẢN CUNG CẤP THÔNG TIN QUY HOẠCH SỬ DỤNG ĐẤT\nSố: 318/CNVPĐKĐĐ - Ngày: 02/05/2024\n\nPhúc đáp Phiếu yêu cầu cung cấp dữ liệu đất đai đối với thửa đất số 412, tờ bản đồ số 18 (diện tích 120 m²):\n1. Căn cứ Quyết định phê duyệt đồ án quy hoạch phân khu tỷ lệ 1/2000 năm 2022:\n- Phần diện tích 42,0 m² phía mặt tiền thửa đất thuộc quy hoạch lộ giới đường mở rộng và hành lang an toàn cây xanh cách ly.\n- Phần diện tích 78,0 m² còn lại thuộc quy hoạch nhóm đất ở hiện hữu cải tạo.\n2. Tình trạng pháp lý hiện tại: Tính đến ngày 02/05/2024, thửa đất số 412 chưa có Quyết định thu hồi đất và chưa nằm trong kế hoạch sử dụng đất thu hồi trong năm 2024, người sử dụng đất vẫn được thực hiện quyền chuyển nhượng nhưng không được cấp phép xây dựng mới kiên cố trên phần diện tích 42,0 m² thuộc quy hoạch lộ giới."
+      },
+      {
+        "id": "EV-datcoc-vibang",
+        "name": "Vi bằng và Biên bản làm việc tại Văn phòng Công chứng ngày 10/05/2024",
+        "availability": "provided",
+        "date": "2024-05-10",
+        "provided_by": "Ông Võ Thành Nam & Bà Phạm Thu Hà",
+        "source_kind": "document",
+        "source_locator": "Bút lục số 09-DS/2024",
+        "proof_scope": "Xác nhận cả hai bên đều có mặt đúng hẹn ngày 10/05/2024 và ghi nhận nguyên nhân không ký được hợp đồng công chứng.",
+        "summary": "Biên bản ngày 10/05/2024 ghi nhận cả bà Hà và ông Nam đều có mặt tại Văn phòng Công chứng Đông Sài Gòn, ông Nam thừa nhận khi ký cọc cả hai bên đều chưa đi trích lục quy hoạch 1/2000.",
+        "source_quote": "Ngày 10/05/2024, tại Văn phòng Công chứng Đông Sài Gòn, bà Phạm Thu Hà có mặt và lập Vi bằng ghi nhận việc bà từ chối ký hợp đồng chuyển nhượng",
+        "content": "VI BẰNG & BIÊN BẢN GHI NHẬN SỰ VIỆC TẠI VĂN PHÒNG CÔNG CHỨNG\nThời điểm lập: 09h30 ngày 10/05/2024\nĐịa điểm: Văn phòng Công chứng Đông Sài Gòn\n\n1. Ghi nhận sự có mặt: Bà Phạm Thu Hà và ông Võ Thành Nam đều có mặt đúng giờ hẹn theo Hợp đồng đặt cọc ngày 10/03/2024.\n2. Ý kiến của bà Phạm Thu Hà: Không đồng ý ký Hợp đồng chuyển nhượng với nguyên giá 4.500.000.000 đồng vì diện tích xây dựng thực tế bị mất 42 m² do vướng quy hoạch lộ giới theo Văn bản số 318/CNVPĐKĐĐ ngày 02/05/2024.\n3. Ý kiến của ông Võ Thành Nam: Trên Giấy chứng nhận quyền sử dụng đất cấp năm 2019 không ghi chú quy hoạch năm 2022 nên bản thân ông Nam lúc ký đặt cọc ngày 10/03/2024 cũng không biết có quy hoạch 1/2000 năm 2022, đồng thời trước khi đặt cọc ông đã gửi ảnh chụp sổ đỏ cho bà Hà tự kiểm tra."
+      }
+    ],
+    "created_at": {
+      "$date": "2026-04-18T12:04:00Z"
+    },
+    "__v": 0
+  }
+]
