@@ -44,7 +44,7 @@ test('nguồn chưa xác minh không chấm luật và không nâng lời khai t
   process.env.JWT_SECRET ||= 'case1-test-secret-at-least-32-characters';
   const { researchLegalBasis } = await import('../src/services/legalResearchService.js');
   const { validateFactAnchors } = await import('../src/services/simulationService.js');
-  const legal = await researchLegalBasis({ courtCase: c, eventDate: c.reference_date });
+  const legal = await researchLegalBasis({ courtCase: c, eventDate: c.reference_date, online: false });
   assert.equal(legal.legal_assessment_available, false);
   assert.deepEqual(legal.citations, []);
   assert.throws(() => validateFactAnchors({ established_facts: ['Anh Nguyên nói việc thỏa thuận là do bố kể lại'], learner_claims: [] }, c, []));

@@ -16,43 +16,44 @@ function formatDocumentDate(dateStr) {
   return dateStr;
 }
 
-function resolveStampMeta(item, courtCase) {
+function resolveStampMeta(item, courtCase, index = 0) {
+  const seq = String(index + 1).padStart(2, '0');
   const provider = String(item.provided_by || '').toLowerCase();
   const name = String(item.name || '').toLowerCase();
   const category = String(courtCase?.category || '').toLowerCase();
   if (item.stamp_authority || item.stamp_code) {
     return {
       authority: item.stamp_authority || 'CƠ QUAN ĐIỀU TRA',
-      code: item.stamp_code || `HS-${item.code || 'XX'}-26`,
+      code: item.stamp_code || `HS-${item.code || seq}-26`,
       receiverName: item.receiver_name || 'Trương Văn Báu',
       receiverTitle: item.receiver_title || 'Cán bộ điều tra',
-      serial: item.serial_code || '02-BV/2026',
+      serial: item.serial_code || `${seq}-BV/2026`,
     };
   }
   if (category.includes('hình sự') || name.includes('tường trình') || name.includes('lời khai') || provider.includes('điều tra') || provider.includes('công an')) {
     return {
       authority: 'CƠ QUAN ĐIỀU TRA',
-      code: `HS-${item.code || 'XX'}-26`,
+      code: `HS-${item.code || seq}-26`,
       receiverName: 'Trương Văn Báu',
       receiverTitle: 'Cán bộ điều tra',
-      serial: `02-BV/${(item.date || '2026').slice(0, 4)}`,
+      serial: `${seq}-BV/${(item.date || '2026').slice(0, 4)}`,
     };
   }
   if (provider.includes('ubnd') || provider.includes('ủy ban') || name.includes('địa chính') || name.includes('giấy chứng nhận') || name.includes('hòa giải')) {
     return {
       authority: 'UBND / ĐỊA CHÍNH',
-      code: `ĐC-${item.code || '01'}-HS`,
+      code: `ĐC-${item.code || seq}-HS`,
       receiverName: 'Nguyễn Hữu Thắng',
       receiverTitle: 'Cán bộ Tư pháp - Địa chính',
-      serial: `05-ĐC/${(item.date || '2024').slice(0, 4)}`,
+      serial: `${seq}-ĐC/${(item.date || '2024').slice(0, 4)}`,
     };
   }
   return {
     authority: 'TÒA ÁN NHÂN DÂN',
-    code: `BL-${item.code || '01'}-TT`,
+    code: `BL-${item.code || seq}-TT`,
     receiverName: 'Lê Minh Hoàng',
     receiverTitle: 'Thư ký Tòa án tiếp nhận',
-    serial: `01-BL/${(item.date || '2025').slice(0, 4)}`,
+    serial: `${seq}-BL/${(item.date || '2025').slice(0, 4)}`,
   };
 }
 
@@ -108,8 +109,8 @@ export default function CaseDossier({ courtCase, role, sessionId, onInsert, inse
     <section className="dossier-evidence rounded-2xl border border-slate-200 bg-white p-4 sm:p-5"><div className="flex items-center justify-between gap-3"><h3 className="font-bold">Chứng cứ ({c.evidence_inventory?.length ?? 0})</h3><button type="button" aria-expanded={evidenceExpanded} aria-controls={evidenceId} onClick={() => setEvidenceExpanded(value => !value)} className="shrink-0 rounded-lg border border-blue-300 px-3 py-1 font-medium text-blue-700 hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">{evidenceExpanded ? 'Thu gọn chứng cứ' : 'Mở rộng chứng cứ'}</button></div><div id={evidenceId} hidden={!evidenceExpanded}><p className="mt-3">{EVIDENCE_ASSUMPTION}</p>{!c.evidence_inventory?.length && <p>Hồ sơ chưa có danh sách chứng cứ.</p>}
       <div className="evidence-and-note-layout">
       <div className={tabbed ? 'evidence-workspace' : ''}>{tabbed && !!c.evidence_inventory?.length && <nav className="evidence-list" aria-label="Danh sách tài liệu">{c.evidence_inventory.map((item, index) => <button type="button" key={item.id} data-evidence-select={item.id} aria-pressed={activeEvidence === item.id} onClick={() => setEvidenceSelected(item.id)}><span>{String(index + 1).padStart(2, '0')}</span><div><strong>{learnerText(item.name)}</strong><small>{learnerText(item.provided_by, 'Chưa rõ bên cung cấp')}</small></div></button>)}</nav>}<div className="evidence-detail">
-      {c.evidence_inventory?.map((item) => {
-        const stamp = resolveStampMeta(item, c);
+      {c.evidence_inventory?.map((item, idx) => {
+        const stamp = resolveStampMeta(item, c, idx);
         const docBody = item.availability === 'provided' && item.content
           ? practiceText(item.content)
           : (item.summary === item.source_quote ? item.summary : learnerText(evidenceSummary(item.summary)));

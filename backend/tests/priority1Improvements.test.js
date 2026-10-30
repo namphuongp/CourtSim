@@ -22,9 +22,29 @@ import { dialogueContext, validateDialogueQuantities } from '../src/services/dia
 import { validateHearingGrounding } from '../src/services/hearingValidation.js';
 import { controlTurn } from '../src/services/dialogueInput.js';
 import { sanitizeTextForTts, fetchGoogleVietnameseSpeech } from '../src/services/aiVoiceService.js';
-import { extractAndStructureUserCase } from '../src/services/userCaseUploadService.js';
+import {
+  extractAndStructureUserCase,
+  extractTextFromUploadedDocument,
+  segmentVietnameseJudgment,
+} from '../src/services/userCaseUploadService.js';
 import { caseIntroduction } from '../../shared/casePresentation.mjs';
 import { learnerText } from '../../shared/learnerText.mjs';
+
+function buildMinimalDocxBuffer(text) {
+  const xml = `<?xml version="1.0" encoding="UTF-8"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>${text}</w:t></w:r></w:p></w:body></w:document>`;
+  const xmlBytes = Buffer.from(xml, 'utf8');
+  const fileNameBytes = Buffer.from('word/document.xml', 'utf8');
+  const header = Buffer.alloc(30);
+  header.writeUInt32LE(0x04034b50, 0); // PK\x03\x04
+  header.writeUInt16LE(20, 4);
+  header.writeUInt16LE(0, 6);
+  header.writeUInt16LE(0, 8); // compression = 0 (stored)
+  header.writeUInt32LE(xmlBytes.length, 18); // compressed size
+  header.writeUInt32LE(xmlBytes.length, 22); // uncompressed size
+  header.writeUInt16LE(fileNameBytes.length, 26);
+  header.writeUInt16LE(0, 28);
+  return Buffer.concat([header, fileNameBytes, xmlBytes]);
+}
 
 test('Danh mục 5 vụ án mẫu: hợp lệ schema, đầy đủ chứng cứ trực quan và khớp checksum seed', async () => {
   assert.equal(sampleCasesCatalog.length, 5);
@@ -229,20 +249,38 @@ test('Chống máy móc cho Chủ tọa & Luật sư AI: chấp nhận xưng hô
   assert.doesNotMatch(briefControl.content, /;/);
 });
 
-test('AI phát hiện nội dung & chuẩn hóa bản án do người dùng tự tải lên đúng chuẩn CSDL CourtSim', async () => {
-  const userJudgmentText = [
+test('AI phát hiện nội dung & chuẩn hóa bản án thực tế (kể cả tệp .docx/.html, quốc hiệu và lọc phần QUYẾT ĐỊNH) đúng chuẩn CSDL CourtSim', async () => {
+  const realVietnameseJudgment = [
+    'TÒA ÁN NHÂN DÂN QUẬN 3 - THÀNH PHỐ HỒ CHÍ MINH',
+    'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM',
+    'Độc lập - Tự do - Hạnh phúc',
     'BẢN ÁN DÂN SỰ SƠ THẨM SỐ 18/2026/DS-ST NGÀY 10/06/2026',
     'Về việc: Tranh chấp hợp đồng thuê mặt bằng kinh doanh và bồi thường thiệt hại.',
+    'NỘI DUNG VỤ ÁN:',
     'Nguyên đơn là bà Lê Hoàng Yến khởi kiện yêu cầu Công ty TNHH Thương mại Minh Phát hoàn trả 120.000.000 đồng tiền đặt cọc thuê mặt bằng; đồng thời bồi thường 30.000.000 đồng chi phí cải tạo.',
     'Bị đơn là Công ty TNHH Thương mại Minh Phát không đồng ý trả lại tiền cọc và cho rằng bà Yến tự ý chấm dứt hợp đồng trước thời hạn.',
     'Ngày 05/01/2026, hai bên ký Hợp đồng thuê mặt bằng số 05/HĐMB-2026 tại Quận 3, thời hạn thuê 24 tháng, tiền đặt cọc 120.000.000 đồng đã chuyển khoản qua ngân hàng.',
-    'Ngày 18/03/2026, hệ thống cấp thoát nước tại mặt bằng bị sự cố ngập úng nghiêm trọng, bà Yến lập biên bản hiện trạng có xác nhận của Tổ trưởng dân phố.',
-    'Ngày 02/04/2026, do mặt bằng vẫn không thể kinh doanh, bà Lê Hoàng Yến gửi thông báo chấm dứt hợp đồng.',
+    'Ngày 18/03/2026, hệ thống cấp thoát nước tại mặt bằng bị sự cố ngập úng nghiêm trọng, bà Yến lập Biên bản hiện trạng sự cố ngập úng có xác nhận của Tổ trưởng dân phố.',
+    'Ngày 02/04/2026, do mặt bằng vẫn không thể kinh doanh, bà Lê Hoàng Yến gửi Thông báo chấm dứt hợp đồng thuê mặt bằng.',
+    'QUYẾT ĐỊNH:',
+    'Chấp nhận một phần yêu cầu khởi kiện của nguyên đơn bà Lê Hoàng Yến, buộc Công ty Minh Phát trả lại 120.000.000 đồng.',
   ].join('\n');
+
+  // 0. Kiểm thử tách phần QUYẾT ĐỊNH và trích xuất tệp .docx / .html
+  const segmented = segmentVietnameseJudgment(realVietnameseJudgment);
+  assert.doesNotMatch(segmented.bodyWithoutVerdict, /Chấp nhận một phần yêu cầu khởi kiện/);
+  assert.match(segmented.verdictSection, /QUYẾT ĐỊNH:/);
+
+  const docxBuffer = buildMinimalDocxBuffer(realVietnameseJudgment);
+  const extractedDocxText = await extractTextFromUploadedDocument({
+    fileName: 'BanAn18_2026.docx',
+    fileBase64: `data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,${docxBuffer.toString('base64')}`,
+  });
+  assert.match(extractedDocxText, /Tranh chấp hợp đồng thuê mặt bằng kinh doanh/);
 
   // 1. Kiểm thử với AI trả về bản nháp (có cả trích đoạn lệch hoặc phân loại recorded_event chứa từ "cho rằng" cần tự động sửa)
   const structuredWithAi = await extractAndStructureUserCase(
-    { rawText: userJudgmentText },
+    { rawText: realVietnameseJudgment },
     {
       complete: async () =>
         JSON.stringify({
@@ -289,9 +327,12 @@ test('AI phát hiện nội dung & chuẩn hóa bản án do người dùng tự
   assert.ok(structuredWithAi.full_document.includes(structuredWithAi.timeline[0].source_quote));
   assert.doesNotMatch(structuredWithAi.summary, /;/);
 
-  // 2. Kiểm thử chế độ NLP dự phòng khi AI không phản hồi
+  // 2. Kiểm thử chế độ NLP dự phòng trực tiếp từ tệp .docx khi AI không phản hồi
   const structuredFallback = await extractAndStructureUserCase(
-    { rawText: userJudgmentText },
+    {
+      fileName: 'BanAn18_2026.docx',
+      fileBase64: docxBuffer.toString('base64'),
+    },
     { complete: async () => { throw new Error('AI offline'); } }
   );
   validateTimeline(structuredFallback.timeline);
@@ -300,6 +341,14 @@ test('AI phát hiện nội dung & chuẩn hóa bản án do người dùng tự
   const caseDocFallback = new Case(structuredFallback);
   await caseDocFallback.validate();
   assert.equal(structuredFallback.category, 'dân sự');
-  assert.ok(structuredFallback.evidence_inventory.length >= 2);
+  // Tên vụ án tự động bỏ qua quốc hiệu/tiêu ngữ và lấy đúng quan hệ tranh chấp + tên các bên
+  assert.match(structuredFallback.title, /Vụ án tranh chấp hợp đồng thuê mặt bằng kinh doanh/i);
+  assert.doesNotMatch(structuredFallback.title, /CỘNG HÒA XÃ HỘI/i);
+  // Không lộ phán quyết thắng thua trong phần tóm tắt
+  assert.doesNotMatch(structuredFallback.summary, /Chấp nhận một phần yêu cầu khởi kiện/);
+  // Tự động bóc tách được các bút lục chứng cứ thực tế được nhắc trong bản án (Hợp đồng, Biên bản, Thông báo)
+  assert.ok(structuredFallback.evidence_inventory.length >= 3);
+  assert.ok(structuredFallback.evidence_inventory.some((e) => /Hợp đồng thuê mặt bằng/i.test(e.name)));
+  assert.ok(structuredFallback.evidence_inventory.some((e) => /Biên bản hiện trạng/i.test(e.name)));
   assert.equal(caseIntroduction(structuredFallback).developments.length, 4);
 });

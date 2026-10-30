@@ -33,9 +33,11 @@ router.get('/', asyncHandler(async (request, response) => {
 }));
 
 router.post('/upload-parse', authenticate, asyncHandler(async (request, response) => {
-  await consumeAuthLimit(`case-upload:${request.auth.userId}`, 10, 15 * 60000, 'Bạn đã tải lên quá nhiều bản án trong thời gian ngắn. Vui lòng thử lại sau ít phút.');
+  await consumeAuthLimit(`case-upload:${request.auth.userId}`, 20, 15 * 60000, 'Bạn đã tải lên quá nhiều bản án trong thời gian ngắn. Vui lòng thử lại sau ít phút.');
   const {
     raw_text: rawText,
+    file_name: fileName,
+    file_base64: fileBase64,
     title: titleHint,
     category: categoryHint,
     reference_date: referenceDateHint,
@@ -44,6 +46,8 @@ router.post('/upload-parse', authenticate, asyncHandler(async (request, response
 
   const structured = await extractAndStructureUserCase({
     rawText,
+    fileName,
+    fileBase64,
     titleHint,
     categoryHint,
     referenceDateHint,
@@ -51,11 +55,18 @@ router.post('/upload-parse', authenticate, asyncHandler(async (request, response
   });
 
   if (save === false) {
-    return response.status(200).json({ data: learnerCase(structured), parsed: structured });
+    return response.status(200).json({
+      data: learnerCase(structured),
+      parsed: structured,
+      extracted_text: structured.full_document,
+    });
   }
 
   const created = await Case.create(structured);
-  response.status(201).json({ data: learnerCase(created.toObject()) });
+  response.status(201).json({
+    data: learnerCase(created.toObject()),
+    extracted_text: structured.full_document,
+  });
 }));
 
 router.get('/:caseId', asyncHandler(async (request, response) => {

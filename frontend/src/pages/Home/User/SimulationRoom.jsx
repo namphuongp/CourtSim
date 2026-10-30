@@ -463,7 +463,28 @@ function Room({ sessionId }) {
         }}
       />
       <div className="composer-fields"><textarea ref={argumentRef} onDrop={dropEvidence} onDragOver={(event) => { if (event.dataTransfer.types.includes(EVIDENCE_MIME)) { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; } }} id="argument" disabled={!ready} maxLength={4000} value={draft.content} onChange={(e) => setDraft({ content: e.target.value, request_id: crypto.randomUUID() })} placeholder={argumentPlaceholder} /><button className="composer-send" disabled={!ready || state.sending || cooldown || draft.content.trim().length < 3} title={cooldown ? 'Vui lòng chờ ít giây trước khi gửi tiếp' : undefined}>{state.sending ? 'Đang gửi…' : cooldown ? 'Chờ giây lát…' : <>Gửi lập luận <span aria-hidden="true">↗</span></>}</button></div>
-      <div className="composer-foot"><span>{draft.content.length}/4000</span></div>{userTurns >= (session?.max_turns ?? 20) && <p>Đã đủ số lượt. Chọn Kết thúc và chấm điểm để xem kết quả.</p>}
+      <div className="composer-foot flex flex-wrap items-center justify-between gap-2">
+        <span>{draft.content.length}/4000</span>
+        {ready && (
+          userTurns === 0 ? (
+            <button
+              type="button"
+              className="text-xs text-blue-300 underline hover:text-blue-200"
+              onClick={() => insertIntoArgument('Kính thưa Hội đồng xét xử, với tư cách Luật sư bảo vệ quyền và lợi ích hợp pháp cho thân chủ, tôi xin trình bày quan điểm mở đầu và chứng cứ cốt lõi như sau: ')}
+            >
+              ＋ Mẫu lời mở đầu chuẩn mực
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="text-xs text-amber-300 underline hover:text-amber-200"
+              onClick={() => insertIntoArgument('Kính thưa Hội đồng xét xử, tôi đã trình bày xong toàn bộ luận cứ bảo vệ cho thân chủ và không còn ý kiến tranh luận gì thêm, đề nghị Hội đồng xét xử vào nghị án.')}
+            >
+              ＋ Đề nghị kết thúc tranh luận (Nghị án)
+            </button>
+          )
+        )}
+      </div>{userTurns >= (session?.max_turns ?? 20) && <p>Đã đủ số lượt. Chọn Kết thúc và chấm điểm để xem kết quả.</p>}
     </form>}
     <PdfExportModal
       open={pdfModalOpen}

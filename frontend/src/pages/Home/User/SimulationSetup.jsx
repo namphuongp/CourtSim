@@ -1,7 +1,7 @@
 import { caseIntroduction } from '../../../../../shared/casePresentation.mjs';
 import CaseDossier from '../../../components/CaseDossier';
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, BookOpen, CircleHelp, CheckCircle2, Gavel, Upload, Sparkles, FileText } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookOpen, CircleHelp, CheckCircle2, Gavel, Upload, Sparkles, FileText, Eye } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import FeedbackModal from '../../../components/feedback/FeedbackModal';
 import api, { getApiError } from '../../../services/api';
@@ -22,9 +22,18 @@ const SAMPLE_UPLOAD_TEXT = [
   'Nguyên đơn là bà Lê Hoàng Yến khởi kiện yêu cầu Công ty TNHH Thương mại Minh Phát hoàn trả 120.000.000 đồng tiền đặt cọc thuê mặt bằng và bồi thường 30.000.000 đồng chi phí cải tạo mặt bằng.',
   'Bị đơn là Công ty TNHH Thương mại Minh Phát không đồng ý trả lại tiền cọc và cho rằng bà Yến tự ý chấm dứt hợp đồng trước thời hạn mà không báo trước đủ 30 ngày theo thỏa thuận.',
   'Ngày 05/01/2026, hai bên ký Hợp đồng thuê mặt bằng số 05/HĐMB-2026 tại Quận 3, thời hạn thuê 24 tháng, tiền đặt cọc 120.000.000 đồng đã chuyển khoản qua ngân hàng.',
-  'Ngày 18/03/2026, hệ thống cấp thoát nước tại mặt bằng bị sự cố ngập úng nghiêm trọng, bà Yến lập biên bản hiện trạng có xác nhận của Tổ trưởng dân phố và gửi thông báo đề nghị Công ty Minh Phát sửa chữa.',
-  'Ngày 02/04/2026, do mặt bằng vẫn không thể kinh doanh sau 15 ngày chờ đợi, bà Lê Hoàng Yến gửi thông báo chấm dứt hợp đồng và yêu cầu hoàn trả tiền đặt cọc nhưng Công ty Minh Phát từ chối.',
+  'Ngày 18/03/2026, hệ thống cấp thoát nước tại mặt bằng bị sự cố ngập úng nghiêm trọng, bà Yến lập Biên bản hiện trạng sự cố ngập úng có xác nhận của Tổ trưởng dân phố và gửi thông báo đề nghị Công ty Minh Phát sửa chữa.',
+  'Ngày 02/04/2026, do mặt bằng vẫn không thể kinh doanh sau 15 ngày chờ đợi, bà Lê Hoàng Yến gửi Thông báo chấm dứt hợp đồng thuê mặt bằng và yêu cầu hoàn trả tiền đặt cọc nhưng Công ty Minh Phát từ chối.',
 ].join('\n');
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(new Error('FILE_READ_FAILED'));
+    reader.readAsDataURL(file);
+  });
+}
 
 export default function SimulationSetup() {
   const navigate = useNavigate();
@@ -51,7 +60,8 @@ export default function SimulationSetup() {
   const [reload, setReload] = useState(0);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadForm, setUploadForm] = useState({ raw_text: '', title: '', category: '', reference_date: '' });
-  const [uploadState, setUploadState] = useState({ loading: false, error: '', success: '' });
+  const [uploadPreview, setUploadPreview] = useState(null);
+  const [uploadState, setUploadState] = useState({ loading: false, previewing: false, error: '', success: '' });
 
   useEffect(() => { saveDraft(storageKey, form); }, [storageKey, form]);
   useEffect(() => {
@@ -84,10 +94,51 @@ export default function SimulationSetup() {
   async function handleFileSelect(event) {
     const file = event.target.files?.[0];
     if (!file) return;
-    if (file.size > 500_000) {
-      setUploadState({ loading: false, error: 'Tệp văn bản quá lớn (tối đa 500KB). Vui lòng chọn tệp ngắn gọn hơn.', success: '' });
+    if (file.size > 5_000_000) {
+      setUploadState({ loading: false, previewing: false, error: 'Tệp tải lên quá lớn (tối đa 5MB). Vui lòng chọn tệp nhỏ hơn.', success: '' });
       return;
     }
+    const ext = file.name.toLowerCase().match(/\.([a-z0-9]+)$/u)?.[1] ?? '';
+    const isBinaryDoc = ['pdf', 'doc', 'docx', 'html', 'htm'].includes(ext);
+
+    if (isBinaryDoc) {
+      setUploadState({ loading: false, previewing: true, error: '', success: '' });
+      try {
+        const dataUrl = await readFileAsDataUrl(file);
+        const { data } = await api.post('/v1/cases/upload-parse', {
+          file_name: file.name,
+          file_base64: dataUrl,
+          title: uploadForm.title.trim() || undefined,
+          category: uploadForm.category.trim() || undefined,
+          reference_date: uploadForm.reference_date || undefined,
+          save: false,
+        });
+        const parsed = data.parsed || data.data;
+        const extractedText = data.extracted_text || parsed?.full_document || '';
+        setUploadForm((cur) => ({
+          raw_text: extractedText.slice(0, 45000),
+          title: cur.title || parsed?.title || '',
+          category: cur.category || parsed?.category || '',
+          reference_date: cur.reference_date || parsed?.reference_date || '',
+        }));
+        setUploadPreview(parsed);
+        setUploadState({
+          loading: false,
+          previewing: false,
+          error: '',
+          success: `Đã trích xuất văn bản và bóc tách cấu trúc từ tệp "${file.name}". Kiểm tra bản xem trước bên dưới rồi bấm Nạp vào Hồ sơ.`,
+        });
+      } catch (error) {
+        setUploadState({
+          loading: false,
+          previewing: false,
+          error: getApiError(error, 'Không thể trích xuất nội dung từ tệp đã chọn. Vui lòng dán trực tiếp văn bản bản án vào ô bên dưới.'),
+          success: '',
+        });
+      }
+      return;
+    }
+
     try {
       const content = await file.text();
       const cleanName = file.name.replace(/\.[^.]+$/u, '').replace(/[_-]+/gu, ' ').trim();
@@ -96,16 +147,47 @@ export default function SimulationSetup() {
         raw_text: content.slice(0, 45000),
         title: cur.title || cleanName.slice(0, 150),
       }));
-      setUploadState({ loading: false, error: '', success: `Đã đọc tệp "${file.name}". Bấm nút phân tích bên dưới để AI nạp vào CSDL.` });
+      setUploadPreview(null);
+      setUploadState({ loading: false, previewing: false, error: '', success: `Đã đọc tệp "${file.name}". Bấm Xem trước hoặc AI Phân tích & Nạp vào Hồ sơ.` });
     } catch {
-      setUploadState({ loading: false, error: 'Không thể đọc tệp đã chọn. Vui lòng dán trực tiếp nội dung bản án vào ô bên dưới.', success: '' });
+      setUploadState({ loading: false, previewing: false, error: 'Không thể đọc tệp đã chọn. Vui lòng dán trực tiếp nội dung bản án vào ô bên dưới.', success: '' });
+    }
+  }
+
+  async function handlePreviewCase() {
+    if (uploadState.loading || uploadState.previewing || uploadForm.raw_text.trim().length < 30) return;
+    setUploadState({ loading: false, previewing: true, error: '', success: '' });
+    try {
+      const { data } = await api.post('/v1/cases/upload-parse', {
+        raw_text: uploadForm.raw_text,
+        title: uploadForm.title.trim() || undefined,
+        category: uploadForm.category.trim() || undefined,
+        reference_date: uploadForm.reference_date || undefined,
+        save: false,
+      });
+      const parsed = data.parsed || data.data;
+      setUploadPreview(parsed);
+      setUploadForm((cur) => ({
+        ...cur,
+        title: cur.title || parsed?.title || '',
+        category: cur.category || parsed?.category || '',
+        reference_date: cur.reference_date || parsed?.reference_date || '',
+      }));
+      setUploadState({ loading: false, previewing: false, error: '', success: '' });
+    } catch (error) {
+      setUploadState({
+        loading: false,
+        previewing: false,
+        error: getApiError(error, 'Chưa thể xem trước cấu trúc bản án. Vui lòng kiểm tra lại nội dung.'),
+        success: '',
+      });
     }
   }
 
   async function handleUploadCase(event) {
     event.preventDefault();
-    if (uploadState.loading || !uploadForm.raw_text.trim()) return;
-    setUploadState({ loading: true, error: '', success: '' });
+    if (uploadState.loading || uploadState.previewing || !uploadForm.raw_text.trim()) return;
+    setUploadState({ loading: true, previewing: false, error: '', success: '' });
     try {
       const { data } = await api.post('/v1/cases/upload-parse', {
         raw_text: uploadForm.raw_text,
@@ -125,9 +207,11 @@ export default function SimulationSetup() {
       });
       setReviewedCase(created._id);
       setUploadOpen(false);
+      setUploadPreview(null);
       setUploadForm({ raw_text: '', title: '', category: '', reference_date: '' });
       setUploadState({
         loading: false,
+        previewing: false,
         error: '',
         success: `Đã phân tích và nạp hồ sơ "${created.title}" vào CSDL thành công.`,
       });
@@ -135,6 +219,7 @@ export default function SimulationSetup() {
     } catch (error) {
       setUploadState({
         loading: false,
+        previewing: false,
         error: getApiError(error, 'Chưa thể phân tích bản án tải lên. Vui lòng kiểm tra lại nội dung.'),
         success: '',
       });
@@ -196,25 +281,28 @@ export default function SimulationSetup() {
                   </h3>
                   <div className="flex flex-wrap items-center gap-2">
                     <label className="cursor-pointer inline-flex items-center gap-1.5 rounded border border-slate-600 bg-slate-800 px-2.5 py-1 text-xs text-slate-200 hover:bg-slate-700">
-                      <FileText size={13} /> Chọn tệp (.txt, .md, .json)
-                      <input type="file" accept=".txt,.md,.json,text/plain,application/json" onChange={handleFileSelect} className="hidden" />
+                      <FileText size={13} /> Chọn tệp (.pdf, .docx, .doc, .txt, .json)
+                      <input type="file" accept=".pdf,.docx,.doc,.html,.htm,.txt,.md,.json,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,application/json" onChange={handleFileSelect} className="hidden" />
                     </label>
                     <button
                       type="button"
                       className="rounded border border-amber-400/40 bg-amber-500/10 px-2.5 py-1 text-xs text-amber-200 hover:bg-amber-500/20"
-                      onClick={() => setUploadForm({
-                        raw_text: SAMPLE_UPLOAD_TEXT,
-                        title: 'Vụ án tranh chấp hợp đồng thuê mặt bằng giữa bà Lê Hoàng Yến và Công ty Minh Phát',
-                        category: 'dân sự',
-                        reference_date: '2026-04-02',
-                      })}
+                      onClick={() => {
+                        setUploadPreview(null);
+                        setUploadForm({
+                          raw_text: SAMPLE_UPLOAD_TEXT,
+                          title: 'Vụ án tranh chấp hợp đồng thuê mặt bằng giữa bà Lê Hoàng Yến và Công ty Minh Phát',
+                          category: 'dân sự',
+                          reference_date: '2026-04-02',
+                        });
+                      }}
                     >
                       Điền mẫu bản án thử nghiệm
                     </button>
                   </div>
                 </div>
                 <p className="text-xs text-slate-300">
-                  Dán toàn văn hoặc tóm tắt bản án, cáo trạng, hồ sơ vụ việc. AI sẽ tự động nhận diện Nguyên đơn/Bị đơn, dòng thời gian sự kiện, tình tiết pháp lý và tạo các tờ bút lục chứng cứ trực quan đúng chuẩn CSDL.
+                  Hỗ trợ tải trực tiếp tệp <strong>PDF, Word (.docx/.doc), TXT, JSON</strong> hoặc dán văn bản bản án từ Cổng thông tin TANDTC. AI sẽ tự động nhận diện Nguyên đơn/Bị đơn, mốc thời gian, lọc bỏ kết quả tuyên án trước và tạo các tờ bút lục chứng cứ trực quan đúng chuẩn CSDL.
                 </p>
                 <div className="grid gap-3 md:grid-cols-3">
                   <div>
@@ -223,7 +311,7 @@ export default function SimulationSetup() {
                       id="upload-case-title"
                       type="text"
                       maxLength={190}
-                      placeholder="Để trống AI sẽ tự đặt tên..."
+                      placeholder="Để trống AI sẽ tự đặt tên từ bản án..."
                       value={uploadForm.title}
                       onChange={(e) => setUploadForm((cur) => ({ ...cur, title: e.target.value }))}
                       className="w-full rounded border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white"
@@ -263,24 +351,55 @@ export default function SimulationSetup() {
                     id="custom-case-raw-text"
                     rows={6}
                     required
-                    placeholder="Dán nội dung bản án, tóm tắt diễn biến vụ việc, lời trình bày của các bên và các tài liệu chứng cứ vào đây..."
+                    placeholder="Dán nội dung bản án, tóm tắt diễn biến vụ việc, lời trình bày của các bên và các tài liệu chứng cứ vào đây (hoặc chọn tệp PDF/DOCX/TXT ở trên)..."
                     value={uploadForm.raw_text}
                     onChange={(e) => setUploadForm((cur) => ({ ...cur, raw_text: e.target.value }))}
                     className="w-full rounded border border-slate-700 bg-slate-950 p-3 text-xs text-white"
                   />
                 </div>
+
+                {uploadPreview && (
+                  <div className="rounded-lg border border-blue-400/40 bg-slate-950/90 p-3.5 text-xs text-slate-200 space-y-2" role="region" aria-label="Bản xem trước cấu trúc AI bóc tách">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
+                      <strong className="text-amber-300">✓ Kết quả AI bóc tách dự kiến (Chuẩn CSDL CourtSim)</strong>
+                      <span className="rounded bg-blue-500/20 px-2 py-0.5 text-[11px] font-semibold text-blue-300">{uploadPreview.category} · Mốc: {uploadPreview.reference_date}</span>
+                    </div>
+                    <p><strong>Tên vụ án:</strong> {uploadPreview.title}</p>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {uploadPreview.parties?.map((party, idx) => (
+                        <div key={idx} className="rounded border border-slate-800 bg-slate-900/70 p-2">
+                          <strong className="text-blue-300">{party.side === 'plaintiff' ? 'Nguyên đơn / Bị hại' : 'Bị đơn / Bị cáo'}: {party.name}</strong>
+                          <p className="mt-1 text-[11px] text-slate-300">{party.claims?.[0]}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-[11px] text-slate-300">
+                      <strong>Đã bóc tách:</strong> {uploadPreview.timeline?.length || 0} mốc thời gian · {uploadPreview.evidence_inventory?.length || 0} bút lục chứng cứ trực quan ({uploadPreview.evidence_inventory?.map((e) => e.name).join(', ')})
+                    </p>
+                  </div>
+                )}
+
                 {uploadState.error && <p role="alert" className="text-xs text-rose-400">{uploadState.error}</p>}
-                <div className="flex justify-end gap-2">
+                <div className="flex flex-wrap justify-end gap-2">
                   <button
                     type="button"
                     className="rounded border border-slate-700 px-3 py-1.5 text-xs text-slate-300"
-                    onClick={() => setUploadOpen(false)}
+                    onClick={() => { setUploadOpen(false); setUploadPreview(null); }}
                   >
                     Hủy
                   </button>
                   <button
+                    type="button"
+                    disabled={uploadState.loading || uploadState.previewing || uploadForm.raw_text.trim().length < 30}
+                    onClick={handlePreviewCase}
+                    className="inline-flex items-center gap-1.5 rounded border border-blue-400/50 bg-blue-500/10 px-3 py-1.5 text-xs font-semibold text-blue-200 hover:bg-blue-500/20 disabled:opacity-40"
+                  >
+                    <Eye size={13} />
+                    {uploadState.previewing ? 'Đang bóc tách xem trước...' : 'Xem trước cấu trúc bóc tách'}
+                  </button>
+                  <button
                     type="submit"
-                    disabled={uploadState.loading || uploadForm.raw_text.trim().length < 30}
+                    disabled={uploadState.loading || uploadState.previewing || uploadForm.raw_text.trim().length < 30}
                     className="setup-next inline-flex items-center gap-1.5 rounded px-4 py-1.5 text-xs font-bold"
                   >
                     <Sparkles size={14} />

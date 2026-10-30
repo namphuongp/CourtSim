@@ -20,7 +20,7 @@ const anPhucClientCase = {
   evidence_inventory: evidenceInventory(caseAnPhucMai),
 };
 
-test('Ưu tiên 1: 5 bản án mẫu, tự tải lên bản án riêng (AI bóc tách), bút lục trực quan Nguyễn Ngọc Mai (02-BV/2026), đồng bộ Note cá nhân, đọc to đa câu và kết thúc phiên tòa tự nhiên bằng chat', async ({ page }) => {
+test('Ưu tiên 1: 5 bản án mẫu, tự tải lên bản án riêng (Xem trước & AI bóc tách), bút lục trực quan Nguyễn Ngọc Mai (01-BV/2026), đồng bộ Note cá nhân, đọc to đa câu và kết thúc phiên tòa tự nhiên bằng chat', async ({ page }) => {
   const sessionId = '507f1f77bcf86cd799439088';
   const opening = openingStatement(anPhucClientCase, 'plaintiff_lawyer');
   const ttsPayloads = [];
@@ -74,7 +74,17 @@ test('Ưu tiên 1: 5 bản án mẫu, tự tải lên bản án riêng (AI bóc 
     if (path.endsWith('/cases/upload-parse') && method === 'POST') {
       const body = request.postDataJSON();
       uploadedPayloads.push(body);
-      return route.fulfill({ status: 201, json: { data: anPhucClientCase } });
+      if (body.save === false) {
+        return route.fulfill({
+          status: 200,
+          json: {
+            data: anPhucClientCase,
+            parsed: anPhucClientCase,
+            extracted_text: anPhucClientCase.full_document,
+          },
+        });
+      }
+      return route.fulfill({ status: 201, json: { data: anPhucClientCase, extracted_text: anPhucClientCase.full_document } });
     }
     if (path.endsWith('/cases')) {
       return route.fulfill({
@@ -138,7 +148,7 @@ test('Ưu tiên 1: 5 bản án mẫu, tự tải lên bản án riêng (AI bóc 
             purpose: 'close',
             next_speaker: 'learner',
             content:
-              'Hội đồng xét xử ghi nhận quan điểm tổng kết và Bản tường trình số 02-BV/2026 của phía nguyên đơn Nguyễn Ngọc Mai. Các tình tiết trọng tâm đã được làm rõ, Chủ tọa tuyên bố kết thúc phần tranh tụng để Hội đồng xét xử vào Nghị án.',
+              'Hội đồng xét xử ghi nhận quan điểm tổng kết và Bản tường trình của phía nguyên đơn Nguyễn Ngọc Mai. Các tình tiết trọng tâm đã được làm rõ, Chủ tọa tuyên bố kết thúc phần tranh tụng để Hội đồng xét xử vào Nghị án.',
             timestamp: '2026-10-31T02:02:05.000Z',
           },
         ];
@@ -165,7 +175,7 @@ test('Ưu tiên 1: 5 bản án mẫu, tự tải lên bản án riêng (AI bóc 
         status: 'completed',
         evaluation: {
           overall_score: 88,
-          summary: 'Luật sư nắm vững hồ sơ chứng cứ 02-BV/2026 và lập luận chặt chẽ.',
+          summary: 'Luật sư nắm vững hồ sơ chứng cứ và lập luận chặt chẽ.',
           criteria: [],
         },
       };
@@ -174,7 +184,7 @@ test('Ưu tiên 1: 5 bản án mẫu, tự tải lên bản án riêng (AI bóc 
     return route.fulfill({ json: { data: anPhucClientCase } });
   });
 
-  // 1. Kiểm tra danh mục 5 bản án mẫu & luồng tự tải lên bản án riêng (AI bóc tách chuẩn CSDL)
+  // 1. Kiểm tra danh mục 5 bản án mẫu & luồng tự tải lên bản án riêng (Xem trước + AI bóc tách chuẩn CSDL)
   await page.goto('/dashboard/setup');
   await expect(page.locator('.setup-option')).toHaveCount(5);
   await expect(page.getByRole('button', { name: /Vụ án Nguyễn Ngọc Mai/i })).toBeVisible();
@@ -184,8 +194,13 @@ test('Ưu tiên 1: 5 bản án mẫu, tự tải lên bản án riêng (AI bóc 
   await page.getByRole('button', { name: /Tải lên bản án riêng/i }).click();
   await page.getByRole('button', { name: /Điền mẫu bản án thử nghiệm/i }).click();
   await expect(page.locator('#custom-case-raw-text')).toHaveValue(/BẢN ÁN DÂN SỰ SƠ THẨM/);
+
+  // Bấm "Xem trước cấu trúc bóc tách" trước khi nạp
+  await page.getByRole('button', { name: /Xem trước cấu trúc bóc tách/i }).click();
+  await expect(page.getByRole('region', { name: 'Bản xem trước cấu trúc AI bóc tách' })).toContainText('Kết quả AI bóc tách dự kiến');
+
   await page.getByRole('button', { name: /AI Phân tích & Nạp vào Hồ sơ/i }).click();
-  expect(uploadedPayloads.length).toBe(1);
+  expect(uploadedPayloads.length).toBe(2);
 
   // 2. Sau khi nạp bản án, hệ thống tự động chuyển sang Bước 2 (Hồ sơ vụ án)
   await expect(page.getByRole('heading', { name: 'Tóm tắt diễn biến' })).toBeVisible();
@@ -195,12 +210,11 @@ test('Ưu tiên 1: 5 bản án mẫu, tự tải lên bản án riêng (AI bóc 
 
   const visualSheet = page.getByLabel(/Bản chụp hồ sơ: Bản tường trình của Nguyễn Ngọc Mai/i);
   await expect(visualSheet).toBeVisible();
-  await expect(visualSheet).toContainText('02-BV/2026');
+  await expect(visualSheet).toContainText('01-BV/2026');
   await expect(visualSheet).toContainText('15/09/2026');
   await expect(visualSheet).toContainText('Cơ sở lưu trú An Phúc');
   await expect(visualSheet).toContainText('Trương Văn Báu');
   await expect(visualSheet).toContainText('CƠ QUAN ĐIỀU TRA');
-  await expect(visualSheet).toContainText('HS-XX-26');
 
   // Bấm "＋ Ghi vào Note cá nhân" và kiểm tra Bảng ghi chú cá nhân cập nhật ngay
   const maiCard = page.locator('#evidence-EV-anphuc-tuongtrinh');
