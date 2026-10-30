@@ -4,7 +4,7 @@ import { AppError } from '../utils/AppError.js';
 import { generateDebateTurn } from './simulationService.js';
 import { getRecords, MAX_TURNS, replayTurn, withSessionLock } from './sessionStore.js';
 
-import { initialConversation, chooseSpeakingPlan } from './conversationPolicy.js';
+import { initialConversation, chooseSpeakingPlan, isExplicitEndByChat } from './conversationPolicy.js';
 import { classifyDialogueInput } from './dialogueInput.js';
 import { hearingState } from './hearingState.js';
 
@@ -27,14 +27,16 @@ export async function runConversation(session, command, { generate = generateDeb
     if (command.action === 'submit') {
       const replay = replayTurn(locked, command.requestId, command.content);
       if (replay) return; // Khôi phục lượt lỗi qua resume, không thêm lời người học lần nữa.
-      if (state.status !== 'learner') throw new AppError('Hãy đọc hết lượt hiện tại trước khi gửi lập luận mới.', 409, 'TURN_NOT_INVITED');
+      const canSubmit = state.status === 'learner' || (state.status === 'awaiting_continue' && state.next_speaker === 'learner');
+      if (!canSubmit) throw new AppError('Hãy đọc hết lượt hiện tại trước khi gửi lập luận mới.', 409, 'TURN_NOT_INVITED');
       if (locked.turn_count >= MAX_TURNS) throw new AppError('Đã đủ số lượt. Hãy kết thúc để nhận đánh giá.', 409, 'TURN_LIMIT');
       if (command.revision !== state.revision) throw new AppError('Phiên đã thay đổi. Hãy tải lại để xem lượt hiện tại.', 409, 'STALE_TURN');
       const user = makeRecord(locked, { sender_type: 'user', sender_name: 'Bạn', content: command.content, request_id: command.requestId,
         input_kind: classifyDialogueInput(command.content),
         evidence_ids: command.evidenceIds, legal_reference_ids: command.citations.map(c => c.reference_id), citations: command.citations });
       const selection = chooseSpeakingPlan(locked, command.content);
-      state = { ...state, ...selection, status: 'generating', revision: state.revision + 1, cursor: 0,
+      const autoComplete = Boolean(isExplicitEndByChat(command.content) || selection.phase === 'summary');
+      state = { ...state, ...selection, auto_complete: autoComplete, status: 'generating', revision: state.revision + 1, cursor: 0,
         turn_index: locked.turns.length, last_speaker: 'learner', current_record_id: String(user._id), next_speaker: selection.plan[0], started_at: new Date() };
       await save({ $set: { conversation: state }, $push: { turns: { request_id: command.requestId, records: [user] } }, $inc: { turn_count: 1 } });
       locked.turns.push({ request_id: command.requestId, records: [user] });
@@ -73,6 +75,7 @@ export async function runConversation(session, command, { generate = generateDeb
         hearing_state: progress,
         current_issue: speech.issue ?? state.current_issue ?? null,
         last_purpose: speech.purpose ?? null,
+        auto_complete: Boolean(state.auto_complete || state.phase === 'summary' || speech.purpose === 'close'),
         last_speaker: state.plan[state.cursor], next_speaker: state.plan[state.cursor + 1] ?? 'learner', current_record_id: String(speech._id), started_at: null };
       await save({ $set: { conversation: updated }, $push: { [`turns.${state.turn_index}.records`]: speech } });
       return timing;

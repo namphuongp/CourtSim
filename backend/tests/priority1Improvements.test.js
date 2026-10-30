@@ -15,7 +15,7 @@ import { validateCaseDetails, validateEvidenceReferences } from '../src/services
 import { validateCaseFacts } from '../src/services/caseKnowledge.js';
 import { validateTimeline } from '../src/services/legalTimeline.js';
 import { validatePracticeContext, openingStatement } from '../src/services/casePractice.js';
-import { chooseSpeakingPlan, publicConversation } from '../src/services/conversationPolicy.js';
+import { chooseSpeakingPlan, publicConversation, isExplicitEndByChat } from '../src/services/conversationPolicy.js';
 import { hearingState } from '../src/services/hearingState.js';
 import { turnTask, roleTask, dialogueProblem, guidedContinuation } from '../src/services/debatePolicy.js';
 import { dialogueContext, validateDialogueQuantities } from '../src/services/dialogueContext.js';
@@ -75,7 +75,7 @@ test('Danh mục 5 vụ án mẫu: hợp lệ schema, đầy đủ chứng cứ 
   assert.equal(manifest.collections.cases.sha256, sha256);
 });
 
-test('Kịch bản phiên tòa 4 giai đoạn: khai mạc, đa tranh điểm, phản biện IRAC và kết thúc tự nhiên', () => {
+test('Kịch bản phiên tòa 4 giai đoạn: khai mạc, đa tranh điểm, phản biện IRAC và kết thúc tự nhiên bằng chat', () => {
   for (const c of [caseAnPhucMai, caseLaborSaoKhue, caseDepositContractThuDuc]) {
     const state = hearingState({ user_court_role: 'plaintiff_lawyer' }, c, []);
     assert.equal(state.issues.length, 3);
@@ -89,12 +89,14 @@ test('Kịch bản phiên tòa 4 giai đoạn: khai mạc, đa tranh điểm, ph
     assert.match(open, /Trình bày yêu cầu mở đầu, Xét hỏi làm rõ chứng cứ, Tranh luận đối đáp pháp lý và Tổng kết nghị án/);
   }
 
-  // Khi người dùng chủ động đề nghị kết thúc / nghị án hoặc phát biểu tổng kết -> chuyển sang summary & Chủ tọa khép lại phiên tòa
+  // Khi người dùng chủ động đề nghị kết thúc / nghị án bằng chat hoặc phát biểu tổng kết -> chuyển sang summary & Chủ tọa khép lại phiên tòa
   const closingPhrases = [
     'Tóm lại, phía nguyên đơn giữ nguyên yêu cầu bồi thường 45.000.000 đồng.',
     'Thưa Hội đồng xét xử, tôi không còn ý kiến gì thêm, đề nghị HĐXX chuyển sang phần nghị án.',
     'Tôi xin dừng tranh luận và muốn kết thúc phiên tòa để HĐXX phán quyết.',
     'Lời nói sau cùng, kính đề nghị Hội đồng xét xử chấp nhận toàn bộ yêu cầu khởi kiện.',
+    'Kết thúc phiên tòa.',
+    'Đề nghị HĐXX vào nghị án và chấm điểm.',
   ];
   for (const phrase of closingPhrases) {
     const plan = chooseSpeakingPlan(
@@ -105,6 +107,11 @@ test('Kịch bản phiên tòa 4 giai đoạn: khai mạc, đa tranh điểm, ph
     assert.deepEqual(plan.plan, ['judge']);
   }
 
+  assert.equal(isExplicitEndByChat('Tôi xin kết thúc phiên tòa.'), true);
+  assert.equal(isExplicitEndByChat('Đề nghị HĐXX vào nghị án và chấm điểm.'), true);
+  assert.equal(isExplicitEndByChat('Kết thúc phiên tòa'), true);
+  assert.equal(isExplicitEndByChat('Tôi chưa kết thúc ngay mà cần đối chiếu thêm.'), false);
+
   // Câu phủ định không bị nhận nhầm là kết thúc phiên
   const nonClosing = chooseSpeakingPlan(
     { user_court_role: 'plaintiff_lawyer', turn_count: 2, conversation: { phase: 'clarification', last_speaker: 'judge' } },
@@ -112,9 +119,10 @@ test('Kịch bản phiên tòa 4 giai đoạn: khai mạc, đa tranh điểm, ph
   );
   assert.notEqual(nonClosing.phase, 'summary');
 
-  // Kiểm tra trạng thái ready_to_close trả về cho frontend
+  // Kiểm tra trạng thái ready_to_close và auto_complete trả về cho frontend để tự động chấm điểm khi kết thúc bằng chat
   const pubSummary = publicConversation({ conversation: { status: 'learner', phase: 'summary', last_purpose: 'close', revision: 4 } });
   assert.equal(pubSummary.ready_to_close, true);
+  assert.equal(pubSummary.auto_complete, true);
   assert.equal(pubSummary.last_purpose, 'close');
 
   // Kiểm tra chỉ dẫn Chủ tọa ở giai đoạn summary tuyên bố kết thúc phần tranh tụng để vào nghị án

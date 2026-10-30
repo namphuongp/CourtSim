@@ -20,7 +20,7 @@ const anPhucClientCase = {
   evidence_inventory: evidenceInventory(caseAnPhucMai),
 };
 
-test('Ưu tiên 1: 5 bản án mẫu, bút lục trực quan Nguyễn Ngọc Mai (02-BV/2026), đồng bộ Note cá nhân, đọc to đa câu và kết thúc phiên tòa tự nhiên', async ({ page }) => {
+test('Ưu tiên 1: 5 bản án mẫu, bút lục trực quan Nguyễn Ngọc Mai (02-BV/2026), đồng bộ Note cá nhân, đọc to đa câu và kết thúc phiên tòa tự nhiên bằng chat', async ({ page }) => {
   const sessionId = '507f1f77bcf86cd799439088';
   const opening = openingStatement(anPhucClientCase, 'plaintiff_lawyer');
   const ttsPayloads = [];
@@ -43,6 +43,7 @@ test('Ưu tiên 1: 5 bản án mẫu, bút lục trực quan Nguyễn Ngọc Mai
       next_speaker: 'learner',
       last_purpose: 'open',
       ready_to_close: false,
+      auto_complete: false,
       revision: 1,
     },
   };
@@ -139,12 +140,13 @@ test('Ưu tiên 1: 5 bản án mẫu, bút lục trực quan Nguyễn Ngọc Mai
           ...session,
           turn_count: 1,
           conversation: {
-            status: 'learner',
+            status: 'awaiting_continue',
             phase: 'summary',
             current_record_id: 'rec-judge-close',
             next_speaker: 'learner',
             last_purpose: 'close',
             ready_to_close: true,
+            auto_complete: true,
             revision: session.conversation.revision + 1,
           },
         };
@@ -216,22 +218,15 @@ test('Ưu tiên 1: 5 bản án mẫu, bút lục trực quan Nguyễn Ngọc Mai
   await page.getByRole('button', { name: /Nghe đọc/i }).click();
   await expect.poll(() => ttsPayloads.length).toBeGreaterThanOrEqual(1);
 
-  // 5. Chuyển sang lượt trình bày, gửi đề nghị kết thúc / nghị án và kiểm tra nút "Nghị án & Chấm điểm kết quả"
-  await page.getByRole('button', { name: /Trình bày ý kiến/i }).click();
-  await page.getByLabel('Lập luận của bạn').fill(
-    'Thưa Hội đồng xét xử, căn cứ [CC:EV-anphuc-tuongtrinh] Bản tường trình ngày 15/09/2026 của chị Nguyễn Ngọc Mai, phía nguyên đơn đề nghị HĐXX chuyển sang phần nghị án và chấp nhận toàn bộ yêu cầu khởi kiện.'
-  );
-  await page.getByRole('button', { name: /Gửi lập luận/i }).click();
-
-  await expect(page.locator('.court-stage-toolbar')).toContainText('Giai đoạn IV: Tổng kết tranh tụng & HĐXX Nghị án');
-  const closeBtn = page.getByRole('button', { name: /Nghị án & Chấm điểm kết quả/i });
-  await expect(closeBtn).toBeVisible();
-
   // Kiểm tra không tràn chiều ngang trên cả Desktop và Mobile
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflow).toBeLessThanOrEqual(1);
 
-  await closeBtn.click();
-  await page.getByRole('button', { name: 'Xác nhận kết thúc' }).click();
+  // 5. Gõ trực tiếp vào ô chat đề nghị kết thúc / nghị án (không cần bấm nút Kết thúc thủ công) -> Tự động chấm điểm và chuyển sang trang Kết quả
+  await page.getByLabel('Lập luận của bạn').fill(
+    'Thưa Hội đồng xét xử, căn cứ [CC:EV-anphuc-tuongtrinh] Bản tường trình ngày 15/09/2026 của chị Nguyễn Ngọc Mai, phía nguyên đơn đề nghị HĐXX chuyển sang phần nghị án và xin kết thúc phiên tòa.'
+  );
+  await page.getByRole('button', { name: /Gửi lập luận/i }).click();
+
   await expect(page).toHaveURL(`/simulation/${sessionId}/result`);
 });

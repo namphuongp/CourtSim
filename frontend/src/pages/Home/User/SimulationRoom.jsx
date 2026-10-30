@@ -199,18 +199,27 @@ function Room({ sessionId }) {
     finally { busy.current = false; setState((s) => ({ ...s, sending: false })); }
   }
 
+  const canLearnerSpeak = !conversation || conversation.status === 'learner' || (conversation.status === 'awaiting_continue' && conversation.next_speaker === 'learner');
+
   async function send(event) {
     event.preventDefault();
-    if (busy.current || disabled || cooldown || (conversation && conversation.status !== 'learner') || draft.content.trim().length < 3) return;
+    if (busy.current || disabled || cooldown || (conversation && !canLearnerSpeak) || draft.content.trim().length < 3) return;
     unlockCourtroomAudio();
     busy.current = true;
     setSubmittedContent(draft.content);
     setState((s) => ({ ...s, sending: true, error: '' }));
+    let shouldAutoComplete = false;
     try {
       const command = { ...draft, ...(conversation ? { action: 'submit', revision: conversation.revision } : {}), expected_turn_count: userTurns, evidence_ids: evidenceIds(draft.content, session.case_id.evidence_inventory), legal_reference_ids: draft.content.includes('[PL:') ? [...new Set([...draft.content.matchAll(/\[PL:([^\]\s]+)\]/gu)].map((match) => match[1]))] : undefined };
       const { data } = conversation ? await postDialogue(sessionId, command, setStreamedSpeech) : await api.post(`/v1/sessions/${sessionId}/messages`, command);
-      if (conversation) { setSession(data.data.session); setRecords(data.data.records); }
-      else setRecords((current) => [...new Map([...current, ...data.data].map((r) => [r._id, r])).values()]);
+      if (conversation) {
+        setSession(data.data.session);
+        setRecords(data.data.records);
+        const nextConv = data.data.session?.conversation;
+        shouldAutoComplete = Boolean(nextConv?.auto_complete || nextConv?.phase === 'summary' || nextConv?.last_purpose === 'close');
+      } else {
+        setRecords((current) => [...new Map([...current, ...data.data].map((r) => [r._id, r])).values()]);
+      }
       setSelectedId(null);
       setDraft({ content: '', request_id: crypto.randomUUID() });
     } catch (error) {
@@ -232,6 +241,9 @@ function Room({ sessionId }) {
       // Kích hoạt cooldown 2.5s để chống click dồn / spam token
       setCooldown(true);
       setTimeout(() => setCooldown(false), 2500);
+    }
+    if (shouldAutoComplete) {
+      await complete({ autoFromChat: true });
     }
   }
 
@@ -271,7 +283,7 @@ function Room({ sessionId }) {
   }
 
   async function complete(options = {}) {
-    if (busy.current || disabled) return;
+    if (!options?.autoFromChat && (busy.current || disabled)) return;
 
     // Nếu người dùng chọn gửi lời tranh tụng dở dang làm phần kết luận trước khi chấm điểm
     if (options?.sendDraft && draft.content.trim()) {
@@ -302,7 +314,7 @@ function Room({ sessionId }) {
       busy.current = false;
     }
 
-    if (userTurns < 1 && !options?.sendDraft) return;
+    if (userTurns < 1 && !options?.sendDraft && !options?.autoFromChat) return;
 
     busy.current = true;
     saveDraft(completionKey, { requested: true });
@@ -385,25 +397,25 @@ function Room({ sessionId }) {
     }
   }, [ttsEnabled, view?.record, view?.streaming, view?.actor]);
   const panelTitles = { notebook: 'Sổ tay phiên', guide: 'Hướng dẫn phiên tòa', case: 'Hồ sơ phiên tòa', assistant: 'Trợ lý luật', history: 'Hồ sơ phiên tòa', speech: 'Lời trình bày đầy đủ' };
-  const ready = !disabled && (!conversation || conversation.status === 'learner') && userTurns < (session?.max_turns ?? 20);
+  const ready = !disabled && canLearnerSpeak && userTurns < (session?.max_turns ?? 20);
   const reviewing = Boolean(selectedId && selectedId !== (conversation?.current_record_id ?? records.at(-1)?._id));
   const nextSpeaker = conversation?.next_speaker === 'judge' ? 'Chủ tọa' : conversation?.next_speaker === 'opponent' ? 'Bên đối lập' : 'Bạn';
   const isReadyToClose = Boolean(conversation && (conversation.ready_to_close || conversation.phase === 'summary' || conversation.last_purpose === 'close') && userTurns >= 1);
   const currentPhase = conversation?.phase ?? (userTurns === 0 ? 'opening' : 'debate');
   const argumentPlaceholder = isReadyToClose || currentPhase === 'summary'
-    ? 'Phát biểu lời tranh luận tổng kết cuối cùng của phía bạn hoặc bấm nút Nghị án & Chấm điểm kết quả…'
+    ? 'Phát biểu lời tranh luận tổng kết cuối cùng của phía bạn hoặc gõ "Tôi xin kết thúc phiên tòa" để HĐXX nghị án…'
     : currentPhase === 'clarification'
-      ? 'Trả lời trực tiếp câu hỏi xét hỏi của Chủ tọa, dẫn chiếu bút lục chứng cứ trong hồ sơ… Hoặc bấm nút Micro để nói.'
+      ? 'Trả lời trực tiếp câu hỏi xét hỏi của Chủ tọa, dẫn chiếu bút lục chứng cứ trong hồ sơ… Hoặc gõ "Xin kết thúc phiên tòa" khi đã trình bày xong.'
       : userTurns === 0
         ? 'Kính thưa Hội đồng xét xử, trình bày yêu cầu khởi kiện/phản bác mở đầu và chứng cứ cốt lõi của phía bạn…'
-        : 'Đối đáp trực diện luận điểm của bên đối lập, liên hệ bút lục chứng cứ và căn cứ pháp luật… Hoặc bấm nút Micro để nói.';
-  const status = state.ending ? 'Đang chấm điểm' : state.sending ? (conversation ? 'Đang chuẩn bị lượt tiếp theo' : submittedContent ? 'Đang chờ phản hồi' : 'Đang lưu ngày') : session?.processing ? (readDraft(completionKey)?.requested ? 'Đang chấm điểm' : 'Đang xử lý lượt trước') : completed ? 'Phiên đã kết thúc' : userTurns >= (session?.max_turns ?? 20) ? 'Đã đủ số lượt' : isReadyToClose && ready ? 'Giai đoạn tổng kết · Có thể kết thúc phiên' : ready ? 'Đến lượt bạn' : conversation?.status === 'awaiting_continue' ? 'Đọc lời thoại rồi bấm Tiếp tục' : conversation?.status === 'failed' ? 'Có thể thử lại lời thoại' : 'Kiểm tra thông tin phiên';
+        : 'Đối đáp trực diện luận điểm của bên đối lập, liên hệ bút lục chứng cứ… Hoặc gõ "Đề nghị HĐXX vào nghị án" để kết thúc phiên tòa bằng chat.';
+  const status = state.ending ? 'Đang nghị án & chấm điểm' : state.sending ? (conversation ? 'Đang chuẩn bị lượt tiếp theo' : submittedContent ? 'Đang chờ phản hồi' : 'Đang lưu ngày') : session?.processing ? (readDraft(completionKey)?.requested ? 'Đang chấm điểm' : 'Đang xử lý lượt trước') : completed ? 'Phiên đã kết thúc' : userTurns >= (session?.max_turns ?? 20) ? 'Đã đủ số lượt' : isReadyToClose && ready ? 'Giai đoạn tổng kết · Có thể kết thúc phiên' : ready ? 'Đến lượt bạn' : conversation?.status === 'awaiting_continue' ? 'Đọc lời thoại rồi bấm Tiếp tục' : conversation?.status === 'failed' ? 'Có thể thử lại lời thoại' : 'Kiểm tra thông tin phiên';
   const speechControls = reviewing ? <div className="speech-controls"><button type="button" className="dialogue-next" onClick={returnToCurrent}>Trở về lượt hiện tại</button></div> : conversation && !completed ? <div className="speech-controls">
       {preparing && <p role="status" aria-live="polite">{streamedSpeech?.content ? 'Đang nhận lời thoại. Bạn có thể đọc phần đã hiện.' : conversation.next_speaker === 'judge' ? 'Chủ tọa đang chuẩn bị câu hỏi…' : conversation.next_speaker === 'opponent' ? 'Bên đối lập đang chuẩn bị lời đáp…' : 'Đang gửi lập luận…'}</p>}
       {slow && preparing && <p role="status">{waitExpired ? 'Chưa xác nhận được kết quả. Kiểm tra kết nối và tiến trình trước khi thử lại để tránh gửi trùng.' : 'Phản hồi đang lâu hơn thường lệ.'} <button type="button" onClick={() => setReload(n => n + 1)}>Kiểm tra tiến trình</button></p>}
       {conversation.status === 'awaiting_continue' && <button type="button" className="dialogue-next" disabled={disabled} onClick={() => continueDialogue('advance')}>{nextSpeaker === 'Bạn' ? 'Trình bày ý kiến' : `Tiếp tục: ${nextSpeaker}`} <span aria-hidden="true">→</span></button>}
       {conversation.status === 'failed' && <button type="button" className="dialogue-next" disabled={disabled} onClick={() => continueDialogue('resume')}>Thử lại lời thoại</button>}
-      {isReadyToClose && !preparing && <button type="button" className="dialogue-complete-btn" disabled={disabled} onClick={() => setConfirmEnd(true)}>Nghị án & Chấm điểm kết quả ⚖️</button>}
+      {isReadyToClose && !preparing && <button type="button" className="dialogue-complete-btn" disabled={disabled} onClick={() => complete({ autoFromChat: true })}>Nghị án & Chấm điểm kết quả ⚖️</button>}
     </div> : null;
   if (state.loading) return <main className="courtroom-page"><LoadingState>Đang tải phiên tòa...</LoadingState></main>;
   return <main className="courtroom-page">
