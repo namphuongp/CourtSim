@@ -8,6 +8,8 @@ import { hearingState } from './hearingState.js';
 const sentences = text => (text ?? '').split(/(?<=[.!?])\s+|\n+/u).map(s => s.trim()).filter(Boolean);
 const words = text => new Set((text.toLocaleLowerCase('vi').match(/[\p{L}\p{N}]{3,}/gu) ?? []));
 
+export const LEARNER_ATTRIBUTION_REGEX = /(?:bạn|người học|luật sư|vị luật sư|người bảo vệ|phía\s+(?:nguyên đơn|bị đơn|bị cáo|bị hại|kháng cáo|đối lập|bên kia)|đại diện\s+(?:nguyên đơn|bị đơn|bị cáo|bị hại)|đồng nghiệp)\s+(?:vừa\s+)?(?:nêu|nói|viện dẫn|cho rằng|trình bày|khẳng định|đề cập|lập luận)|theo\s+(?:lời|quan điểm|lập luận|trình bày)\s+(?:của\s+)?(?:bạn|người học|luật sư|phía\s+(?:nguyên đơn|bị đơn|bị cáo|bị hại))/iu;
+
 export function needsLegalResearch(records, courtCase) {
   const last = records.findLast(r => r.sender_type === 'user');
   const mentionsLaw = Boolean(last?.legal_reference_ids?.length || last?.citations?.length
@@ -156,7 +158,7 @@ export function validateDialogueQuantities(content, context) {
   const claims = new Set(quantities(context.learner.map(s => s.text).join('\n')));
   const law = new Set(quantities(context.retrievedLaw.map(s => s.text).join('\n')));
   for (const sentence of sentences(content)) {
-    const attributed = /(?:bạn|người học)\s+(?:nêu|nói|viện dẫn|cho rằng)|theo lời bạn/iu.test(sentence);
+    const attributed = LEARNER_ATTRIBUTION_REGEX.test(sentence);
     const legal = /(?:quy định|điều luật|pháp luật)/iu.test(sentence);
     if (quantities(sentence).some(value => !sources.has(value) && !(attributed && claims.has(value)) && !(legal && law.has(value)))) {
       throw new AppError('Lời thoại có số đo/số tiền chưa có trong hồ sơ hoặc chưa giữ đúng nguồn lời trình bày.', 502, 'AI_UNGROUNDED_FACT');

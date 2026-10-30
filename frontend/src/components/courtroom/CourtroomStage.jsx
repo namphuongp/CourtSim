@@ -68,8 +68,16 @@ export default function CourtroomStage({ session, view, records, onHistory, onRe
   const activeActor = view.streaming ? view.actor : invited || preparing ? null : view.actor;
   const currentPhase = session?.conversation?.phase ?? (records.length <= 1 ? 'opening' : 'debate');
   const phaseLabel = session?.status === 'completed' ? 'Phiên tòa đã khép lại — Hoàn tất nghị án' : (PHASE_LABELS[currentPhase] ?? 'Phiên luyện tập');
+  const currentIssueLabel = session?.status !== 'completed' && currentPhase !== 'summary'
+    ? session?.conversation?.hearing_state?.current_issue?.label
+    : null;
   return <section className="court-stage-section" aria-label="Phòng xử án">
-    <div className="court-stage-toolbar"><span>PHÒNG XỬ ÁN <span className="stage-divider">/</span> {phaseLabel}</span></div>
+    <div className="court-stage-toolbar">
+      <span>
+        PHÒNG XỬ ÁN <span className="stage-divider">/</span> {phaseLabel}
+        {currentIssueLabel ? <> <span className="stage-divider">·</span> Trọng tâm: {currentIssueLabel}</> : null}
+      </span>
+    </div>
     <div className="court-viewport"><div className="court-scene">
       <img className="court-background" src="/courtsim-courtroom-background-v2.png" alt="" aria-hidden="true" onError={() => setBackgroundFailed(true)} />
       {backgroundFailed && <p className="background-error">Chưa tải được nền phòng xử án. Bạn vẫn có thể tiếp tục phiên.</p>}

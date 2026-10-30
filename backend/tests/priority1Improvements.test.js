@@ -17,8 +17,10 @@ import { validateTimeline } from '../src/services/legalTimeline.js';
 import { validatePracticeContext, openingStatement } from '../src/services/casePractice.js';
 import { chooseSpeakingPlan, publicConversation } from '../src/services/conversationPolicy.js';
 import { hearingState } from '../src/services/hearingState.js';
-import { turnTask } from '../src/services/debatePolicy.js';
-import { dialogueContext } from '../src/services/dialogueContext.js';
+import { turnTask, roleTask, dialogueProblem, guidedContinuation } from '../src/services/debatePolicy.js';
+import { dialogueContext, validateDialogueQuantities } from '../src/services/dialogueContext.js';
+import { validateHearingGrounding } from '../src/services/hearingValidation.js';
+import { controlTurn } from '../src/services/dialogueInput.js';
 import { sanitizeTextForTts, fetchGoogleVietnameseSpeech } from '../src/services/aiVoiceService.js';
 import { caseIntroduction } from '../../shared/casePresentation.mjs';
 import { learnerText } from '../../shared/learnerText.mjs';
@@ -144,3 +146,82 @@ test('Đọc to (TTS) đa câu: không cắt câu dài của Chủ tọa và gh�
   );
 });
 
+test('Chống máy móc cho Chủ tọa & Luật sư AI: chấp nhận xưng hô chuẩn tòa án, định dạng ngày Việt Nam và lời dẫn bám sát tranh điểm', () => {
+  const records = [
+    {
+      _id: 'u1',
+      sender_type: 'user',
+      content: 'Kính thưa Hội đồng xét xử, phía nguyên đơn yêu cầu bồi thường 80 triệu đồng dựa trên sự việc ngày 14/09/2026 và Bản tường trình ngày 15/09/2026.',
+    },
+  ];
+  const ctx = dialogueContext(
+    { user_court_role: 'plaintiff_lawyer', case_event_date: '2026-09-15', conversation: { phase: 'debate' } },
+    caseAnPhucMai,
+    records,
+    { citations: [] }
+  );
+
+  // 1. Khi AI dùng xưng hô chuẩn mực ("Luật sư vừa nêu", "Phía nguyên đơn cho rằng", "Vị luật sư đồng nghiệp trình bày") để dẫn lại con số của người học -> Không bị báo lỗi AI_UNGROUNDED_FACT
+  assert.doesNotThrow(() =>
+    validateDialogueQuantities('Theo lời Luật sư vừa nêu, mức yêu cầu 80 triệu đồng chưa có hóa đơn chứng từ chứng minh thiệt hại thực tế.', ctx)
+  );
+  assert.doesNotThrow(() =>
+    validateDialogueQuantities('Phía nguyên đơn cho rằng mức bồi thường là 80 triệu đồng nhưng chưa đưa ra căn cứ định lượng.', ctx)
+  );
+  assert.doesNotThrow(() =>
+    validateDialogueQuantities('Vị luật sư đồng nghiệp viện dẫn con số 80 triệu đồng song hồ sơ hiện tại chỉ ghi nhận yêu cầu 45.000.000 đồng.', ctx)
+  );
+
+  // 2. Khi AI đọc ngày tháng theo chuẩn Việt Nam DD/MM/YYYY từ mốc YYYY-MM-DD trong hồ sơ -> Không bị báo lỗi AI_HEARING_GROUNDING
+  assert.doesNotThrow(() =>
+    validateHearingGrounding(
+      { content: 'Đối chiếu văn bản lập ngày 15/09/2026 và sự việc ngày 14/09/2026, tài liệu này chỉ ghi nhận lời trình bày một phía của chị Mai.' },
+      ctx
+    )
+  );
+
+  // 3. Luật sư AI phản biện tự nhiên (130 từ, có câu hỏi tu từ + câu hỏi chất vấn) -> Không bị dialogueProblem từ chối oan
+  const naturalOpponentContent = [
+    'Kính thưa Hội đồng xét xử, phía chúng tôi không đồng ý với suy diễn của vị luật sư đồng nghiệp.',
+    'Thứ nhất, Bản tường trình lập ngày 15/09/2026 chỉ là lời trình bày đơn phương từ phía nguyên đơn sau khi rời cơ sở lưu trú, hoàn toàn chưa có biên bản kết luận vi phạm của cơ quan có thẩm quyền.',
+    'Thứ hai, vi bằng tin nhắn tuyển dụng chỉ ghi nhận việc trao đổi công việc hỗ trợ sự kiện từ trước, không phải chứng cứ trực tiếp chứng minh hành vi giữ người trái ý muốn tại phòng riêng.',
+    'Nếu chỉ dựa vào lời khai một phía mà chưa có dữ liệu trích xuất camera gốc, làm sao có thể quy kết trách nhiệm bồi thường cho thân chủ chúng tôi? Phía nguyên đơn còn tài liệu khách quan nào khác ngoài lời tự thuật không?',
+  ].join(' ');
+  const oppProblem = dialogueProblem(
+    {
+      content: naturalOpponentContent,
+      purpose: 'rebut',
+      dialogue_focus: { learner_quote: records[0].content },
+    },
+    'opponent',
+    records,
+    caseAnPhucMai,
+    'debate',
+    'learner'
+  );
+  assert.equal(oppProblem, null);
+
+  // 4. Lời nối điều hành dự phòng (guidedContinuation) của Chủ tọa gắn trực tiếp với tranh điểm hiện tại và không chứa dấu chấm phẩy
+  const fallbackTurn = guidedContinuation('judge', caseAnPhucMai, records, 'opponent', 'debate', ctx);
+  assert.equal(fallbackTurn.purpose, 'transition');
+  assert.equal(fallbackTurn.next_speaker, 'opponent');
+  assert.match(fallbackTurn.content, new RegExp(ctx.state.current_issue.label.toLocaleLowerCase('vi')));
+  assert.doesNotMatch(fallbackTurn.content, /;/);
+
+  const closeTurn = guidedContinuation('judge', caseAnPhucMai, records, 'learner', 'summary', ctx);
+  assert.equal(closeTurn.purpose, 'close');
+  assert.doesNotMatch(closeTurn.content, /;/);
+
+  // 5. Role task của Chủ tọa và Luật sư AI phân hóa rõ theo từng giai đoạn tố tụng
+  assert.match(roleTask('judge', 'presentation'), /Mở đầu và Trình bày yêu cầu/);
+  assert.match(roleTask('judge', 'clarification'), /Xét hỏi công khai và Kiểm tra chứng cứ/);
+  assert.match(roleTask('judge', 'debate'), /Tranh luận và Đối đáp pháp lý/);
+  assert.match(roleTask('judge', 'summary'), /purpose=close/);
+  assert.match(roleTask('opponent', 'clarification'), /phạm vi chứng minh/);
+  assert.match(roleTask('opponent', 'debate'), /nhịp điệu phản biện/);
+
+  // 6. Control turn khi người học chỉ nói ngắn ("Tôi không đồng ý") phản hồi chuẩn mực như Chủ tọa thật
+  const briefControl = controlTurn('brief_position');
+  assert.match(briefControl.content, /nêu rõ lý do pháp lý và tài liệu, chứng cứ/);
+  assert.doesNotMatch(briefControl.content, /;/);
+});
