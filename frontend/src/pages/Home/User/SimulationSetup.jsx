@@ -59,6 +59,7 @@ export default function SimulationSetup() {
   const [detailError, setDetailError] = useState('');
   const [reload, setReload] = useState(0);
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [uploadedFileName, setUploadedFileName] = useState('');
   const [uploadForm, setUploadForm] = useState({ raw_text: '', title: '', category: '', reference_date: '' });
   const [uploadPreview, setUploadPreview] = useState(null);
   const [uploadState, setUploadState] = useState({ loading: false, previewing: false, error: '', success: '' });
@@ -98,6 +99,7 @@ export default function SimulationSetup() {
       setUploadState({ loading: false, previewing: false, error: 'Tệp tải lên quá lớn (tối đa 5MB). Vui lòng chọn tệp nhỏ hơn.', success: '' });
       return;
     }
+    setUploadedFileName(file.name);
     const ext = file.name.toLowerCase().match(/\.([a-z0-9]+)$/u)?.[1] ?? '';
     const isBinaryDoc = ['pdf', 'doc', 'docx', 'html', 'htm'].includes(ext);
 
@@ -126,13 +128,13 @@ export default function SimulationSetup() {
           loading: false,
           previewing: false,
           error: '',
-          success: `Đã trích xuất văn bản và bóc tách cấu trúc từ tệp "${file.name}". Kiểm tra bản xem trước bên dưới rồi bấm Nạp vào Hồ sơ.`,
+          success: `Đã đọc nội dung từ tệp "${file.name}". Kiểm tra tóm tắt hồ sơ bên dưới rồi bấm Hoàn tất & Mở hồ sơ vụ án.`,
         });
       } catch (error) {
         setUploadState({
           loading: false,
           previewing: false,
-          error: getApiError(error, 'Không thể trích xuất nội dung từ tệp đã chọn. Vui lòng dán trực tiếp văn bản bản án vào ô bên dưới.'),
+          error: getApiError(error, 'Không thể đọc nội dung từ tệp đã chọn. Vui lòng dán trực tiếp văn bản bản án vào ô bên dưới.'),
           success: '',
         });
       }
@@ -148,7 +150,7 @@ export default function SimulationSetup() {
         title: cur.title || cleanName.slice(0, 150),
       }));
       setUploadPreview(null);
-      setUploadState({ loading: false, previewing: false, error: '', success: `Đã đọc tệp "${file.name}". Bấm Xem trước hoặc AI Phân tích & Nạp vào Hồ sơ.` });
+      setUploadState({ loading: false, previewing: false, error: '', success: `Đã đọc tệp "${file.name}". Bấm Xem trước hồ sơ hoặc Hoàn tất & Mở hồ sơ vụ án.` });
     } catch {
       setUploadState({ loading: false, previewing: false, error: 'Không thể đọc tệp đã chọn. Vui lòng dán trực tiếp nội dung bản án vào ô bên dưới.', success: '' });
     }
@@ -178,7 +180,7 @@ export default function SimulationSetup() {
       setUploadState({
         loading: false,
         previewing: false,
-        error: getApiError(error, 'Chưa thể xem trước cấu trúc bản án. Vui lòng kiểm tra lại nội dung.'),
+        error: getApiError(error, 'Chưa thể tóm tắt hồ sơ bản án. Vui lòng kiểm tra lại nội dung.'),
         success: '',
       });
     }
@@ -208,19 +210,20 @@ export default function SimulationSetup() {
       setReviewedCase(created._id);
       setUploadOpen(false);
       setUploadPreview(null);
+      setUploadedFileName('');
       setUploadForm({ raw_text: '', title: '', category: '', reference_date: '' });
       setUploadState({
         loading: false,
         previewing: false,
         error: '',
-        success: `Đã phân tích và nạp hồ sơ "${created.title}" vào CSDL thành công.`,
+        success: `Đã tạo hồ sơ vụ án "${created.title}" thành công.`,
       });
       setStep(1);
     } catch (error) {
       setUploadState({
         loading: false,
         previewing: false,
-        error: getApiError(error, 'Chưa thể phân tích bản án tải lên. Vui lòng kiểm tra lại nội dung.'),
+        error: getApiError(error, 'Chưa thể xử lý bản án tải lên. Vui lòng kiểm tra lại nội dung.'),
         success: '',
       });
     }
@@ -254,7 +257,7 @@ export default function SimulationSetup() {
   return <section className="practice-dashboard simulation-setup mx-auto space-y-6">
     <header className="flex flex-wrap items-start justify-between gap-4"><div><h1 className="text-3xl font-bold text-white">Thiết lập phiên tòa</h1><p className="mt-2 text-slate-400">Đọc hồ sơ, chọn vai và mốc tra cứu — chuẩn bị trước khi vào phòng xử án.</p><nav className="setup-step-tabs" aria-label="Các bước thiết lập">{steps.map((title, index) => <button key={title} type="button" aria-current={step === index ? 'step' : undefined} disabled={state.submitting || (index > 0 && !ready)} onClick={() => goStep(index)}>{index < step && completedSteps[index] ? '✓' : index + 1} {title}</button>)}</nav></div><Link to="/guide" className="setup-guide-link flex items-center gap-2 px-4 py-2 text-sm"><CircleHelp size={16}/> Xem hướng dẫn</Link></header>
     {state.error && <p role="alert" className="dashboard-card dashboard-alert">{state.error} <button className="underline" onClick={() => setReload(n => n + 1)}>Thử lại</button></p>}
-    {uploadState.success && <p role="status" className="dashboard-card border border-emerald-500/40 bg-emerald-950/30 p-3 text-sm text-emerald-200">{uploadState.success}</p>}
+    {uploadState.success && <p role="status" className="dashboard-card setup-upload-success p-3.5 text-sm">{uploadState.success}</p>}
     <fieldset disabled={state.submitting} className="setup-grid grid gap-6 lg:grid-cols-3">
       <div className="setup-step-content lg:col-span-2">
         <article className="setup-card p-6">
@@ -264,31 +267,38 @@ export default function SimulationSetup() {
               <p className="setup-step-description !mb-0">Đọc tóm tắt và chọn tình huống bạn muốn thực hành hoặc tải lên bản án của riêng bạn.</p>
               <button
                 type="button"
-                className="setup-upload-trigger inline-flex items-center gap-2 rounded-lg border border-amber-400/50 bg-amber-500/10 px-3.5 py-2 text-xs font-semibold text-amber-200 transition hover:bg-amber-500/20"
+                className="setup-upload-trigger"
                 aria-expanded={uploadOpen}
                 onClick={() => setUploadOpen((v) => !v)}
               >
-                <Upload size={14} />
-                {uploadOpen ? 'Đóng khung tải bản án' : '＋ Tải lên bản án riêng (AI bóc tách)'}
+                <Upload size={15} />
+                {uploadOpen ? 'Đóng khung tải hồ sơ' : '＋ Tải lên bản án / hồ sơ riêng'}
               </button>
             </div>
 
             {uploadOpen && (
-              <form onSubmit={handleUploadCase} className="mb-5 space-y-4 rounded-xl border border-amber-400/40 bg-slate-900/80 p-4" aria-label="Tải lên bản án của riêng bạn">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h3 className="flex items-center gap-2 text-sm font-bold text-amber-200">
-                    <Sparkles size={16} /> AI Phát hiện nội dung & Chuẩn hóa bản án vào CSDL
+              <form onSubmit={handleUploadCase} className="setup-upload-panel" aria-label="Tải lên bản án của riêng bạn">
+                <div className="setup-upload-header">
+                  <h3 className="setup-upload-title">
+                    <Sparkles size={17} /> Tải lên bản án hoặc hồ sơ vụ việc của riêng bạn
                   </h3>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <label className="cursor-pointer inline-flex items-center gap-1.5 rounded border border-slate-600 bg-slate-800 px-2.5 py-1 text-xs text-slate-200 hover:bg-slate-700">
-                      <FileText size={13} /> Chọn tệp (.pdf, .docx, .doc, .txt, .json)
-                      <input type="file" accept=".pdf,.docx,.doc,.html,.htm,.txt,.md,.json,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,application/json" onChange={handleFileSelect} className="hidden" />
+                  <div className="setup-upload-toolbar">
+                    <label className="setup-upload-file-btn">
+                      <FileText size={14} />
+                      <span>{uploadedFileName ? `Đã chọn: ${uploadedFileName.slice(0, 28)}` : 'Chọn tệp bản án (.pdf, .docx, .doc, .txt)'}</span>
+                      <input
+                        type="file"
+                        accept=".pdf,.docx,.doc,.html,.htm,.txt,.md,.json,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,application/json"
+                        onChange={handleFileSelect}
+                        className="setup-file-input"
+                      />
                     </label>
                     <button
                       type="button"
-                      className="rounded border border-amber-400/40 bg-amber-500/10 px-2.5 py-1 text-xs text-amber-200 hover:bg-amber-500/20"
+                      className="setup-upload-sample-btn"
                       onClick={() => {
                         setUploadPreview(null);
+                        setUploadedFileName('');
                         setUploadForm({
                           raw_text: SAMPLE_UPLOAD_TEXT,
                           title: 'Vụ án tranh chấp hợp đồng thuê mặt bằng giữa bà Lê Hoàng Yến và Công ty Minh Phát',
@@ -297,35 +307,33 @@ export default function SimulationSetup() {
                         });
                       }}
                     >
-                      Điền mẫu bản án thử nghiệm
+                      Điền mẫu bản án tham khảo
                     </button>
                   </div>
                 </div>
-                <p className="text-xs text-slate-300">
-                  Hỗ trợ tải trực tiếp tệp <strong>PDF, Word (.docx/.doc), TXT, JSON</strong> hoặc dán văn bản bản án từ Cổng thông tin TANDTC. AI sẽ tự động nhận diện Nguyên đơn/Bị đơn, mốc thời gian, lọc bỏ kết quả tuyên án trước và tạo các tờ bút lục chứng cứ trực quan đúng chuẩn CSDL.
+                <p className="setup-upload-desc">
+                  Tải lên tệp bản án <strong>PDF, Word (.docx/.doc), văn bản (.txt)</strong> hoặc dán nội dung vụ việc vào ô bên dưới. Hệ thống sẽ tự động tóm tắt diễn biến, xác định các bên đương sự, lập dòng thời gian và trích xuất danh mục tài liệu, chứng cứ cho phiên tòa.
                 </p>
                 <div className="grid gap-3 md:grid-cols-3">
                   <div>
-                    <label htmlFor="upload-case-title" className="mb-1 block text-xs font-medium text-slate-300">Tên vụ án (tùy chọn)</label>
+                    <label htmlFor="upload-case-title">Tên vụ án (tùy chọn)</label>
                     <input
                       id="upload-case-title"
                       type="text"
                       maxLength={190}
-                      placeholder="Để trống AI sẽ tự đặt tên từ bản án..."
+                      placeholder="Để trống hệ thống sẽ tự đặt tên..."
                       value={uploadForm.title}
                       onChange={(e) => setUploadForm((cur) => ({ ...cur, title: e.target.value }))}
-                      className="w-full rounded border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white"
                     />
                   </div>
                   <div>
-                    <label htmlFor="upload-case-category" className="mb-1 block text-xs font-medium text-slate-300">Lĩnh vực (tùy chọn)</label>
+                    <label htmlFor="upload-case-category">Lĩnh vực (tùy chọn)</label>
                     <select
                       id="upload-case-category"
                       value={uploadForm.category}
                       onChange={(e) => setUploadForm((cur) => ({ ...cur, category: e.target.value }))}
-                      className="w-full rounded border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white"
                     >
-                      <option value="">Tự động nhận diện bằng AI</option>
+                      <option value="">Tự động xác định theo nội dung</option>
                       <option value="dân sự">Dân sự</option>
                       <option value="hình sự">Hình sự</option>
                       <option value="lao động">Lao động</option>
@@ -335,56 +343,54 @@ export default function SimulationSetup() {
                     </select>
                   </div>
                   <div>
-                    <label htmlFor="upload-case-date" className="mb-1 block text-xs font-medium text-slate-300">Mốc ngày tham chiếu (tùy chọn)</label>
+                    <label htmlFor="upload-case-date">Mốc ngày sự kiện / xét xử (tùy chọn)</label>
                     <input
                       id="upload-case-date"
                       type="date"
                       value={uploadForm.reference_date}
                       onChange={(e) => setUploadForm((cur) => ({ ...cur, reference_date: e.target.value }))}
-                      className="w-full rounded border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white"
                     />
                   </div>
                 </div>
-                <div>
-                  <label htmlFor="custom-case-raw-text" className="mb-1 block text-xs font-medium text-slate-300">Nội dung bản án / hồ sơ vụ án *</label>
+                <div className="mt-3">
+                  <label htmlFor="custom-case-raw-text">Nội dung bản án / hồ sơ vụ án *</label>
                   <textarea
                     id="custom-case-raw-text"
                     rows={6}
                     required
-                    placeholder="Dán nội dung bản án, tóm tắt diễn biến vụ việc, lời trình bày của các bên và các tài liệu chứng cứ vào đây (hoặc chọn tệp PDF/DOCX/TXT ở trên)..."
+                    placeholder="Dán toàn văn hoặc tóm tắt nội dung bản án, lời trình bày của các bên và các tài liệu chứng cứ vào đây (hoặc chọn tệp PDF/Word ở trên)..."
                     value={uploadForm.raw_text}
                     onChange={(e) => setUploadForm((cur) => ({ ...cur, raw_text: e.target.value }))}
-                    className="w-full rounded border border-slate-700 bg-slate-950 p-3 text-xs text-white"
                   />
                 </div>
 
                 {uploadPreview && (
-                  <div className="rounded-lg border border-blue-400/40 bg-slate-950/90 p-3.5 text-xs text-slate-200 space-y-2" role="region" aria-label="Bản xem trước cấu trúc AI bóc tách">
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
-                      <strong className="text-amber-300">✓ Kết quả AI bóc tách dự kiến (Chuẩn CSDL CourtSim)</strong>
-                      <span className="rounded bg-blue-500/20 px-2 py-0.5 text-[11px] font-semibold text-blue-300">{uploadPreview.category} · Mốc: {uploadPreview.reference_date}</span>
+                  <div className="setup-upload-preview" role="region" aria-label="Bản xem trước tóm tắt hồ sơ">
+                    <div className="setup-upload-preview-head">
+                      <strong>✓ Tóm tắt hồ sơ trích xuất</strong>
+                      <span className="setup-upload-preview-badge">{uploadPreview.category} · Mốc tra cứu: {uploadPreview.reference_date}</span>
                     </div>
-                    <p><strong>Tên vụ án:</strong> {uploadPreview.title}</p>
-                    <div className="grid gap-2 sm:grid-cols-2">
+                    <p className="setup-upload-preview-title"><strong>Tên vụ án:</strong> {uploadPreview.title}</p>
+                    <div className="setup-upload-party-grid">
                       {uploadPreview.parties?.map((party, idx) => (
-                        <div key={idx} className="rounded border border-slate-800 bg-slate-900/70 p-2">
-                          <strong className="text-blue-300">{party.side === 'plaintiff' ? 'Nguyên đơn / Bị hại' : 'Bị đơn / Bị cáo'}: {party.name}</strong>
-                          <p className="mt-1 text-[11px] text-slate-300">{party.claims?.[0]}</p>
+                        <div key={idx} className="setup-upload-party-card">
+                          <strong>{party.side === 'plaintiff' ? 'Nguyên đơn / Bị hại' : 'Bị đơn / Bị cáo'}: {party.name}</strong>
+                          <p>{party.claims?.[0]}</p>
                         </div>
                       ))}
                     </div>
-                    <p className="text-[11px] text-slate-300">
-                      <strong>Đã bóc tách:</strong> {uploadPreview.timeline?.length || 0} mốc thời gian · {uploadPreview.evidence_inventory?.length || 0} bút lục chứng cứ trực quan ({uploadPreview.evidence_inventory?.map((e) => e.name).join(', ')})
+                    <p className="setup-upload-preview-meta">
+                      <strong>Hồ sơ gồm:</strong> {uploadPreview.timeline?.length || 0} mốc thời gian · {uploadPreview.evidence_inventory?.length || 0} tài liệu, chứng cứ ({uploadPreview.evidence_inventory?.map((e) => e.name).join(', ')})
                     </p>
                   </div>
                 )}
 
-                {uploadState.error && <p role="alert" className="text-xs text-rose-400">{uploadState.error}</p>}
-                <div className="flex flex-wrap justify-end gap-2">
+                {uploadState.error && <p role="alert" className="mt-2 text-xs font-semibold text-rose-600">{uploadState.error}</p>}
+                <div className="setup-upload-actions">
                   <button
                     type="button"
-                    className="rounded border border-slate-700 px-3 py-1.5 text-xs text-slate-300"
-                    onClick={() => { setUploadOpen(false); setUploadPreview(null); }}
+                    className="setup-upload-cancel-btn"
+                    onClick={() => { setUploadOpen(false); setUploadPreview(null); setUploadedFileName(''); }}
                   >
                     Hủy
                   </button>
@@ -392,18 +398,18 @@ export default function SimulationSetup() {
                     type="button"
                     disabled={uploadState.loading || uploadState.previewing || uploadForm.raw_text.trim().length < 30}
                     onClick={handlePreviewCase}
-                    className="inline-flex items-center gap-1.5 rounded border border-blue-400/50 bg-blue-500/10 px-3 py-1.5 text-xs font-semibold text-blue-200 hover:bg-blue-500/20 disabled:opacity-40"
+                    className="setup-upload-preview-btn"
                   >
-                    <Eye size={13} />
-                    {uploadState.previewing ? 'Đang bóc tách xem trước...' : 'Xem trước cấu trúc bóc tách'}
+                    <Eye size={14} />
+                    {uploadState.previewing ? 'Đang trích xuất hồ sơ...' : 'Xem trước hồ sơ'}
                   </button>
                   <button
                     type="submit"
                     disabled={uploadState.loading || uploadState.previewing || uploadForm.raw_text.trim().length < 30}
-                    className="setup-next inline-flex items-center gap-1.5 rounded px-4 py-1.5 text-xs font-bold"
+                    className="setup-next inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-bold"
                   >
                     <Sparkles size={14} />
-                    {uploadState.loading ? 'AI đang phân tích & chuẩn hóa CSDL...' : 'AI Phân tích & Nạp vào Hồ sơ'}
+                    {uploadState.loading ? 'Đang khởi tạo hồ sơ vụ án...' : 'Hoàn tất & Mở hồ sơ vụ án'}
                   </button>
                 </div>
               </form>
