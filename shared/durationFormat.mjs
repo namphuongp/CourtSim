@@ -33,3 +33,4 @@ export function formatDurationLong(seconds) {
   if (secs > 0 || parts.length === 0) parts.push(`${secs} giây`);
   return parts.join(' ');
 }
+

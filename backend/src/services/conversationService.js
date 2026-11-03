@@ -34,8 +34,8 @@ export async function runConversation(session, command, { generate = generateDeb
       const user = makeRecord(locked, { sender_type: 'user', sender_name: 'Bạn', content: command.content, request_id: command.requestId,
         input_kind: classifyDialogueInput(command.content),
         evidence_ids: command.evidenceIds, legal_reference_ids: command.citations.map(c => c.reference_id), citations: command.citations });
-      const selection = chooseSpeakingPlan(locked, command.content);
-      const autoComplete = Boolean(isExplicitEndByChat(command.content) || selection.phase === 'summary');
+      const selection = chooseSpeakingPlan(locked, command.content, { close_requested: command.close_requested });
+      const autoComplete = Boolean(command.close_requested || isExplicitEndByChat(command.content) || selection.phase === 'summary');
       state = { ...state, ...selection, auto_complete: autoComplete, status: 'generating', revision: state.revision + 1, cursor: 0,
         turn_index: locked.turns.length, last_speaker: 'learner', current_record_id: String(user._id), next_speaker: selection.plan[0], started_at: new Date() };
       await save({ $set: { conversation: state }, $push: { turns: { request_id: command.requestId, records: [user] } }, $inc: { turn_count: 1 } });
@@ -71,12 +71,15 @@ export async function runConversation(session, command, { generate = generateDeb
         state = { ...state, plan: [...state.plan.slice(0, state.cursor + 1), 'judge'] };
         speech.next_speaker = 'judge';
       }
-      const updated = { ...state, cursor: state.cursor + 1, status: 'awaiting_continue', revision: state.revision + 1,
+      const isConcluded = Boolean(speech.purpose === 'close' || state.phase === 'summary');
+      const updated = { ...state, cursor: state.cursor + 1, status: isConcluded ? 'concluded' : 'awaiting_continue', revision: state.revision + 1,
         hearing_state: progress,
         current_issue: speech.issue ?? state.current_issue ?? null,
         last_purpose: speech.purpose ?? null,
-        auto_complete: Boolean(state.auto_complete || state.phase === 'summary' || speech.purpose === 'close'),
-        last_speaker: state.plan[state.cursor], next_speaker: state.plan[state.cursor + 1] ?? 'learner', current_record_id: String(speech._id), started_at: null };
+        concluded: isConcluded,
+        ready_to_close: isConcluded || state.phase === 'summary',
+        auto_complete: Boolean(state.auto_complete || isConcluded),
+        last_speaker: state.plan[state.cursor], next_speaker: isConcluded ? 'judge' : (state.plan[state.cursor + 1] ?? 'learner'), current_record_id: String(speech._id), started_at: null };
       await save({ $set: { conversation: updated }, $push: { [`turns.${state.turn_index}.records`]: speech } });
       return timing;
     } catch (error) {

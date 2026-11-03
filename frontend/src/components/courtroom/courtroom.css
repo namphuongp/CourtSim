@@ -1956,5 +1956,88 @@ body .court-speech.court-dialogue-stream {
   flex-shrink: 0;
 }
 
+/* =========================================================
+   BANNER KẾT LUẬN TRANH TỤNG (CONCLUDED HEARING BANNER)
+   ========================================================= */
+
+.courtroom-concluded-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 58, 138, 0.4) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.45);
+  border-radius: 12px;
+  padding: 10px 18px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  flex-shrink: 0;
+}
+
+.concluded-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.concluded-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #38bdf8;
+  letter-spacing: 0.05em;
+}
+
+.concluded-text {
+  font-size: 13px;
+  color: #e2e8f0;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.concluded-countdown {
+  color: #fbbf24;
+  font-weight: 600;
+  font-style: italic;
+}
+
+.concluded-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.concluded-action-btn {
+  background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  border: 1px solid #60a5fa !important;
+  border-radius: 9px !important;
+  padding: 8px 16px !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4) !important;
+  transition: all 0.2s ease !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.concluded-action-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0369a1 0%, #1d4ed8 100%) !important;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.6) !important;
+  transform: translateY(-1px);
+}
+
+.concluded-action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+
 
 

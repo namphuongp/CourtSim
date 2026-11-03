@@ -72,6 +72,7 @@ function Room({ sessionId }) {
   const autoSpokenRecordIdsRef = useRef(new Set());
   const isInitialLoadedRef = useRef(false);
   const prevTtsEnabledRef = useRef(false);
+  const [autoCloseCountdown, setAutoCloseCountdown] = useState(null);
 
   function handleToggleTts() {
     unlockCourtroomAudio();
@@ -257,15 +258,19 @@ function Room({ sessionId }) {
     busy.current = true;
     setSubmittedContent(draft.content);
     setState((s) => ({ ...s, sending: true, error: '' }));
-    let shouldAutoComplete = false;
     try {
-      const command = { ...draft, ...(conversation ? { action: 'submit', revision: conversation.revision } : {}), expected_turn_count: userTurns, evidence_ids: evidenceIds(draft.content, session.case_id.evidence_inventory), legal_reference_ids: draft.content.includes('[PL:') ? [...new Set([...draft.content.matchAll(/\[PL:([^\]\s]+)\]/gu)].map((match) => match[1]))] : undefined };
+      const command = {
+        ...draft,
+        close_requested: Boolean(draft.close_requested),
+        ...(conversation ? { action: 'submit', revision: conversation.revision } : {}),
+        expected_turn_count: userTurns,
+        evidence_ids: evidenceIds(draft.content, session.case_id.evidence_inventory),
+        legal_reference_ids: draft.content.includes('[PL:') ? [...new Set([...draft.content.matchAll(/\[PL:([^\]\s]+)\]/gu)].map((match) => match[1]))] : undefined
+      };
       const { data } = conversation ? await postDialogue(sessionId, command, setStreamedSpeech) : await api.post(`/v1/sessions/${sessionId}/messages`, command);
       if (conversation) {
         setSession(data.data.session);
         setRecords(data.data.records);
-        const nextConv = data.data.session?.conversation;
-        shouldAutoComplete = Boolean(nextConv?.auto_complete || nextConv?.phase === 'summary' || nextConv?.last_purpose === 'close');
       } else {
         setRecords((current) => [...new Map([...current, ...data.data].map((r) => [r._id, r])).values()]);
       }
@@ -290,9 +295,6 @@ function Room({ sessionId }) {
       // Kích hoạt cooldown 2.5s để chống click dồn / spam token
       setCooldown(true);
       setTimeout(() => setCooldown(false), 2500);
-    }
-    if (shouldAutoComplete) {
-      await complete({ autoFromChat: true });
     }
   }
 
@@ -486,7 +488,37 @@ function Room({ sessionId }) {
   const ready = !disabled && canLearnerSpeak && userTurns < (session?.max_turns ?? 20);
   const reviewing = Boolean(selectedId && selectedId !== (conversation?.current_record_id ?? records.at(-1)?._id));
   const nextSpeaker = conversation?.next_speaker === 'judge' ? 'Chủ tọa' : conversation?.next_speaker === 'opponent' ? 'Bên đối lập' : 'Bạn';
-  const isReadyToClose = Boolean(conversation && (conversation.ready_to_close || conversation.phase === 'summary' || conversation.last_purpose === 'close') && userTurns >= 1);
+  const lastRecord = records.at(-1);
+  const isJudgeClose = lastRecord?.sender_type === 'ai_judge' && lastRecord?.purpose === 'close';
+  const isConcluded = Boolean(
+    completed ||
+    conversation?.concluded ||
+    (conversation?.phase === 'summary' && isJudgeClose)
+  );
+  const isReadyToClose = Boolean(
+    (isConcluded || conversation?.ready_to_close || conversation?.phase === 'summary' || isJudgeClose) &&
+    userTurns >= 1
+  );
+
+  useEffect(() => {
+    if (!isConcluded || completed || state.ending) {
+      setAutoCloseCountdown(null);
+      return;
+    }
+    setAutoCloseCountdown(5);
+    const interval = setInterval(() => {
+      setAutoCloseCountdown((prev) => {
+        if (prev === null) return 5;
+        if (prev <= 1) {
+          clearInterval(interval);
+          complete({ autoFromChat: true });
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isConcluded, completed]);
   const currentPhase = conversation?.phase ?? (userTurns === 0 ? 'opening' : 'debate');
   const argumentPlaceholder = isReadyToClose || currentPhase === 'summary'
     ? 'Phát biểu lời tranh luận tổng kết cuối cùng của phía bạn hoặc gõ "Tôi xin kết thúc phiên tòa" để HĐXX nghị án…'
@@ -740,6 +772,28 @@ function Room({ sessionId }) {
         <div className="courtroom-notice text-center py-2">
           <p className="m-0 text-slate-300">Phiên tòa đã kết thúc. Biên bản ở chế độ chỉ đọc. Bấm nút <strong>Xem kết quả đánh giá</strong> để xem bảng điểm chi tiết.</p>
         </div>
+      ) : isConcluded ? (
+        <div className="courtroom-concluded-banner">
+          <div className="concluded-info">
+            <span className="concluded-badge">⚖️ Tuyên bố khép lại phần tranh luận</span>
+            <p className="concluded-text">
+              Chủ tọa phiên tòa đã tuyên bố kết thúc phần tranh tụng để Hội đồng xét xử bước vào phòng nghị án và chấm điểm.
+              {autoCloseCountdown !== null && autoCloseCountdown > 0 && (
+                <span className="concluded-countdown"> Tự động chuyển vào nghị án sau {autoCloseCountdown}s…</span>
+              )}
+            </p>
+          </div>
+          <div className="concluded-actions">
+            <button
+              type="button"
+              className="concluded-action-btn"
+              onClick={() => complete({ autoFromChat: true })}
+              disabled={state.ending}
+            >
+              {state.ending ? 'Đang chấm điểm...' : 'Vào nghị án & Nhận kết quả ➔'}
+            </button>
+          </div>
+        </div>
       ) : (
         <form onSubmit={send} className="courtroom-composer-form">
           <div className="composer-row-top">
@@ -807,7 +861,10 @@ function Room({ sessionId }) {
                 <button
                   type="button"
                   className="quick-template-btn text-amber-300 hover:text-amber-200"
-                  onClick={() => insertIntoArgument('Kính thưa Hội đồng xét xử, tôi đã trình bày xong toàn bộ luận cứ bảo vệ cho thân chủ và không còn ý kiến tranh luận gì thêm, đề nghị Hội đồng xét xử vào nghị án.')}
+                  onClick={() => {
+                    insertIntoArgument('Kính thưa Hội đồng xét xử, tôi đã trình bày xong toàn bộ luận cứ bảo vệ cho thân chủ và không còn ý kiến tranh luận gì thêm, đề nghị Hội đồng xét xử vào nghị án.');
+                    setDraft((d) => ({ ...d, close_requested: true }));
+                  }}
                 >
                   ＋ Đề nghị kết thúc tranh luận (Nghị án)
                 </button>
