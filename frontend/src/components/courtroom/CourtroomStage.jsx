@@ -538,15 +538,26 @@ export default function CourtroomStage({
                             <span className="chip-badge">⚖️ Căn cứ:</span>
                             <span className="chip-items">
                               {uniqueCitations.slice(0, 3).map((c, i) => {
-                                const label =
-                                  typeof c === 'object'
-                                    ? `${c.title || c.law_number || 'Văn bản'}${
-                                        c.article ? ` (Đ.${c.article})` : ''
-                                      }`
-                                    : String(c);
+                                const isObj = typeof c === 'object';
+                                const label = isObj
+                                  ? `${c.title || c.law_number || 'Văn bản'}${
+                                      c.article ? ` (Đ.${c.article})` : ''
+                                    }`
+                                  : String(c);
+                                const isExpired = isObj && c.validity_status === 'expired';
+                                const isAmended = isObj && c.validity_status === 'amended';
+                                const tooltip = isObj && c.validity_warning
+                                  ? `${label} — ${c.validity_warning}`
+                                  : isObj ? (c.context_text || c.text || label) : label;
                                 return (
-                                  <span key={c.id || i} className="chip-item" title={c.context_text || c.text || label}>
+                                  <span
+                                    key={c.id || i}
+                                    className={`chip-item ${isExpired ? 'chip-expired' : isAmended ? 'chip-amended' : ''}`}
+                                    title={tooltip}
+                                  >
                                     {label}
+                                    {isExpired && <span className="chip-validity-tag expired">Hết HL</span>}
+                                    {isAmended && <span className="chip-validity-tag amended">Đã sửa</span>}
                                   </span>
                                 );
                               })}

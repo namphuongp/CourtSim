@@ -1,3 +1,4 @@
+import { getValidityDetails } from '../data/legalAuthorities.js';
 import { EVIDENCE_ASSUMPTION_POLICY } from '../../../shared/casePresentation.mjs';
 import { RESPONSE_STYLE, TECHNICAL_TEXT } from '../../../shared/userCopy.mjs';
 import { caseKnowledge } from './caseKnowledge.js';
@@ -131,18 +132,27 @@ function commonContext(session, courtCase, records, legalContext, fullHistory = 
         sourceUrl: citation.source_url,
       })),
     })),
-    retrievedLaw: legalContext.citations.map(({ id, law_number, title, locator, context_text, temporal_note, source_files, source_url, version, application_date, application_reason, source_verification, application_status }) => ({
-      version, applicationDate: application_date, applicationReason: application_reason,
-      citationId: id,
-      lawNumber: law_number,
-      title,
-      locator,
-      text: context_text,
-      temporalNote: temporal_note,
-      sourceFiles: source_files,
-      sourceUrl: source_url,
-      sourceStatus: source_verification, applicationStatus: application_status,
-    })),
+    retrievedLaw: legalContext.citations.map((c) => {
+      const validity = c.law_number ? getValidityDetails(c.law_number) : null;
+      return {
+        version: c.version,
+        applicationDate: c.application_date,
+        applicationReason: c.application_reason,
+        citationId: c.id,
+        lawNumber: c.law_number,
+        title: c.title,
+        locator: c.locator,
+        text: c.context_text,
+        temporalNote: c.temporal_note,
+        sourceFiles: c.source_files,
+        sourceUrl: c.source_url,
+        sourceStatus: c.source_verification,
+        applicationStatus: c.application_status,
+        validityStatus: c.validity_status ?? validity?.validity_status ?? 'unknown',
+        validityWarning: c.validity_warning ?? validity?.validity_warning ?? null,
+        changeHistory: c.change_history ?? validity?.change_history ?? [],
+      };
+    }),
     legalCoverageWarnings: legalContext.warnings,
   };
 
@@ -288,7 +298,7 @@ function makeTurnPrompt(roleInstructions, context) {
     ...(needsAnswer ? { answer: { question_id: question.id, status: 'supported hoặc not_determined', evidence_ids: [], direct_answer: 'câu trả lời trực tiếp' } } : {}),
     content: 'lời thoại đối đáp tự nhiên tại tòa' };
   return [DEBATE_POLICY, RESPONSE_STYLE, roleInstructions,
-    `Chỉ trả JSON theo cấu trúc này, metadata trước content: ${JSON.stringify(schema)}. Giữ đúng role, issue, next_speaker. focus.learner chọn luận điểm thật trong learner. focus.dossier chọn 1–3 mã D từ dossier khi dùng tình tiết hồ sơ/làm rõ chứng cứ, được rỗng khi chỉ xét suy luận của người học, giới hạn tra cứu, mời hoặc hỏi rõ quan điểm/thủ tục. citation_ids chỉ lấy mã trong retrievedLaw: khi trong content có trích dẫn hoặc nhắc đến Điều luật cụ thể (ví dụ Điều 166 Bộ luật Dân sự), BẮT BUỘC phải đưa đúng citationId tương ứng vào mảng citation_ids; tuyệt đối không nhắc số điều luật nếu điều đó không có trong retrievedLaw. content phải là lời phát biểu đối đáp tự nhiên, khúc chiết, mang khẩu khí con người tranh tụng tại phiên tòa thực tế, tuyệt đối không đưa mã hoặc nhãn nội bộ vào content.`,
+    `Chỉ trả JSON theo cấu trúc này, metadata trước content: ${JSON.stringify(schema)}. Giữ đúng role, issue, next_speaker. focus.learner chọn luận điểm thật trong learner. focus.dossier chọn 1–3 mã D từ dossier khi dùng tình tiết hồ sơ/làm rõ chứng cứ, được rỗng khi chỉ xét suy luận của người học, giới hạn tra cứu, mời hoặc hỏi rõ quan điểm/thủ tục. citation_ids chỉ lấy mã trong retrievedLaw: khi trong content có trích dẫn hoặc nhắc đến Điều luật cụ thể (ví dụ Điều 166 Bộ luật Dân sự), BẮT BUỘC phải đưa đúng citationId tương ứng vào mảng citation_ids; tuyệt đối không nhắc số điều luật nếu điều đó không có trong retrievedLaw. Nếu điều luật đó có validityWarning (hoặc validityStatus là expired/amended), trong content AI BẮT BUỘC phải nêu rõ câu cảnh báo hiệu lực hiện nay của điều luật để người nghe nắm rõ (ví dụ: Lưu ý: Điều luật này áp dụng tại thời điểm vụ án, hiện nay đã được thay thế/sửa đổi bởi...). content phải là lời phát biểu đối đáp tự nhiên, khúc chiết, mang khẩu khí con người tranh tụng tại phiên tòa thực tế, tuyệt đối không đưa mã hoặc nhãn nội bộ vào content.`,
     needsAnswer ? 'answer là bắt buộc. evidence_ids chép chính xác id trong hearing.available_evidence (không tự tạo mã và không dùng mã D). focus.dossier dùng mã D tương ứng với evidence_id đó. content phải bắt đầu nguyên văn bằng direct_answer. supported chỉ dùng bản provided có đoạn trong focus.dossier và gọi đúng tên tài liệu. mentioned_only được giả định có bản gốc, nhưng chỉ trả lời về phần nội dung đã nêu, không tự điền nội dung còn thiếu. Không có tài liệu đủ thì dùng not_determined, evidence_ids rỗng, nói rõ chưa xác định được từ dữ liệu cung cấp, không giả định kết quả sẽ có trong tương lai.' : '',
     '<UNTRUSTED_CASE_AND_LAW_DATA_JSON>', serializeUntrustedData(context), '</UNTRUSTED_CASE_AND_LAW_DATA_JSON>',
   ].join('\n');

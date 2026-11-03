@@ -1,5 +1,6 @@
 import { researchAssistant } from './vbplResearch.js';
 import { hasReadableLawSource, hasVerifiedSource, legalReferenceLabel } from '../../../shared/legalSourcePolicy.mjs';
+import { getValidityDetails } from '../data/legalAuthorities.js';
 import { researchWebLaw, webReferenceEnabled, legalWebQuery } from './webLegalResearch.js';
 import { dialogueText } from '../../../shared/dialogueText.mjs';
 import { createHash, randomUUID } from 'node:crypto';
@@ -72,11 +73,21 @@ export async function answerLegalQuestion({ session, courtCase, question }, depe
   // Cảnh báo thời điểm áp dụng: nêu rõ ngày sự kiện và nghĩa vụ đối chiếu hiệu lực.
   const temporalWarning = timelines.length
     ? ' BẮT BUỘC đối chiếu hiệu lực tại thời điểm sự kiện (' + timelines.map(p => p.label.toLowerCase() + ': ' + p.date).join('; ') + '), không mặc định dùng phiên bản luật hiện hành cho sự kiện cũ. Kiểm tra điều khoản chuyển tiếp nếu luật thay đổi trong giai đoạn liên quan.'
-    : ' Chưa xác định ngày sự kiện; cần làm rõ thời điểm xảy ra hành vi/giao dịch trước khi kết luận phiên bản luật áp dụng.';
+    : ' Chưa xác định ngày sự kiện; cần làm rõ thời điểm xảy ra hành vi/giao dịch trước khi kết luận phiên bản luật áp dụng (tuyệt đối không tự suy diễn căn cứ luật).';
+
+  // Tổng hợp cảnh báo tình trạng hiệu lực hiện nay của các văn bản được trích dẫn (ví dụ đã hết hiệu lực / được thay thế)
+  const uniqueLawNumbers = [...new Set(results.map(r => r.law_number).filter(Boolean))];
+  const validityWarnings = uniqueLawNumbers
+    .map(num => getValidityDetails(num)?.validity_warning)
+    .filter(Boolean);
+  const validityWarningBlock = validityWarnings.length
+    ? '\n\n⚠️ CẢNH BÁO TÌNH TRẠNG HIỆU LỰC HIỆN NAY:\n' + validityWarnings.map(w => '• ' + w).join('\n')
+    : '';
+
   return { answer: 'Tìm thấy ' + results.length + (local ? ' trích đoạn từ tài liệu pháp luật trong kho mô phỏng.\n' : useWeb ? ' trích đoạn pháp luật Việt Nam đã đọc từ nguồn web.\n' : ' văn bản có nội dung được đối chiếu với nguồn.\n') + summary + '\n'
       + (results.length > 1 ? 'Có nhiều văn bản phù hợp, hãy chọn đúng số hiệu và thời kỳ cần tra cứu.\n' : '') + timing
       + (missing.length ? ' Cần làm rõ mốc ' + missing.join(', ') + ' nếu liên quan đến câu hỏi.' : '')
-      + ' Đọc trích đoạn bên dưới và đối chiếu sửa đổi, hiệu lực, chuyển tiếp trước khi áp dụng.' + temporalWarning,
+      + ' Đọc trích đoạn bên dưới và đối chiếu sửa đổi, hiệu lực, chuyển tiếp trước khi áp dụng.' + temporalWarning + validityWarningBlock,
     verification_status: results.every(hasVerifiedSource) ? 'verified' : 'unverified', citations, sources };
 }
 

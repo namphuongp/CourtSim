@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildLegalPlan, assessVersion, isValidDateOnly } from '../src/services/legalTimeline.js';
+import { getValidityDetails, legalAuthorities } from '../src/data/legalAuthorities.js';
+import { learnerCitation } from '../src/services/learnerPresentation.js';
 
 // ===== Tests cho logic thời điểm áp dụng pháp luật =====
 
@@ -100,3 +102,62 @@ test('assessVersion: không có rule phù hợp phiên bản trong khoảng ngà
   assert.equal(result.verified, false, 'phải unverified khi không có rule phù hợp với khoảng thời gian sự kiện');
 });
 
+// ===== Tests mới cho Cảnh báo tình trạng hiệu lực & Lịch sử thay đổi =====
+
+test('getValidityDetails: Luật Đất đai 45/2013/QH13 phải có status expired, cảnh báo thay thế và lịch sử thay đổi', () => {
+  const details = getValidityDetails('45/2013/QH13');
+  assert.ok(details, 'phải trả về validity details');
+  assert.equal(details.validity_status, 'expired', 'Luật 2013 phải hết hiệu lực hiện nay');
+  assert.ok(details.validity_warning.includes('HẾT HIỆU LỰC'), 'Cảnh báo phải nêu rõ hết hiệu lực');
+  assert.ok(details.validity_warning.includes('31/2024/QH15'), 'Cảnh báo phải nêu được văn bản thay thế 31/2024/QH15');
+  assert.ok(details.change_history.length >= 2, 'Lịch sử phải có ít nhất văn bản gốc và văn bản thay thế');
+
+  const orig = details.change_history.find(h => h.type === 'original');
+  assert.ok(orig, 'Phải có mục văn bản gốc');
+  assert.equal(orig.law_number, '45/2013/QH13');
+  assert.equal(orig.effective_from, '2014-07-01');
+
+  const rep = details.change_history.find(h => h.type === 'replacement');
+  assert.ok(rep, 'Phải có mục văn bản thay thế');
+  assert.equal(rep.law_number, '31/2024/QH15');
+  assert.equal(rep.effective_from, '2024-08-01');
+});
+
+test('getValidityDetails: Luật Đất đai 31/2024/QH15 có status amended (sửa đổi bởi Luật 43/2024/QH15)', () => {
+  const details = getValidityDetails('31/2024/QH15');
+  assert.ok(details);
+  assert.equal(details.validity_status, 'amended', 'Luật 31/2024 đã được sửa đổi ngày hiệu lực bởi Luật 43/2024');
+  assert.ok(details.validity_warning.includes('43/2024/QH15'), 'Cảnh báo phải nhắc đến Luật 43/2024/QH15');
+  assert.ok(details.change_history.some(h => h.type === 'amendment' && h.law_number === '43/2024/QH15'),
+    'Lịch sử thay đổi phải liệt kê Luật 43/2024/QH15');
+  assert.ok(details.change_history.some(h => h.type === 'superseded' && h.law_number === '45/2013/QH13'),
+    'Lịch sử thay đổi phải liệt kê văn bản tiền nhiệm 45/2013/QH13');
+});
+
+test('getValidityDetails: Luật Đất đai 13/2003/QH11 có status expired và thay thế bởi 45/2013/QH13', () => {
+  const details = getValidityDetails('13/2003/QH11');
+  assert.ok(details);
+  assert.equal(details.validity_status, 'expired');
+  assert.ok(details.validity_warning.includes('45/2013/QH13'));
+});
+
+test('learnerCitation: tự động gắn validity_status, validity_warning và change_history cho trích dẫn', () => {
+  const citation = {
+    id: 'CIT-TEST-1',
+    law_number: '45/2013/QH13',
+    title: 'Luật Đất đai',
+    article: '166',
+    text: 'Điều 166. Quyền chung của người sử dụng đất...',
+    source_url: 'https://vbpl.vn/example',
+    source_verification: 'verified',
+    verification_status: 'verified',
+    application_status: 'verified',
+  };
+
+  const formatted = learnerCitation(citation);
+  assert.equal(formatted.validity_status, 'expired');
+  assert.ok(formatted.validity_warning.includes('HẾT HIỆU LỰC'));
+  assert.ok(formatted.change_history.length >= 2);
+  assert.equal(formatted.effective_from, '2014-07-01');
+  assert.equal(formatted.effective_to, '2024-07-31');
+});

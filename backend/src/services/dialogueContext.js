@@ -1,3 +1,4 @@
+import { getValidityDetails } from '../data/legalAuthorities.js';
 import { caseKnowledge } from './caseKnowledge.js';
 import { evidenceInventory } from './caseEvidence.js';
 import { AppError } from '../utils/AppError.js';
@@ -120,9 +121,17 @@ export function dialogueContext(session, courtCase, records, legalContext) {
       previous_questions: records.filter(r => r.sender_type !== 'user').flatMap(r => (r.content ?? '').match(/[^.!?\n]*\?/gu) ?? []).slice(-16) },
     learner, dossier, legal_assessment_mode: legalContext.legal_assessment_mode, assessment_note: legalContext.assessment_note,
     recentProceedings: records.slice(-6).map(r => ({ ...brief(r), text: r.content })),
-    retrievedLaw: legalContext.citations.filter(hasReadableLawSource).map(c => ({ citationId: c.id, lawNumber: c.law_number, title: c.title, locator: c.locator,
-      text: c.context_text ?? c.text, source_url: c.source_url, checked_at: c.checked_at, version: c.version,
-      applicationStatus: c.application_status, applicationDate: c.application_date, applicationReason: c.application_reason })),
+    retrievedLaw: legalContext.citations.filter(hasReadableLawSource).map(c => {
+      const validity = c.law_number ? getValidityDetails(c.law_number) : null;
+      return {
+        citationId: c.id, lawNumber: c.law_number, title: c.title, locator: c.locator,
+        text: c.context_text ?? c.text, source_url: c.source_url, checked_at: c.checked_at, version: c.version,
+        applicationStatus: c.application_status, applicationDate: c.application_date, applicationReason: c.application_reason,
+        validityStatus: c.validity_status ?? validity?.validity_status ?? 'unknown',
+        validityWarning: c.validity_warning ?? validity?.validity_warning ?? null,
+        changeHistory: c.change_history ?? validity?.change_history ?? [],
+      };
+    }),
   };
   // Toàn văn hồ sơ dùng để đối chiếu số liệu, không đưa vào prompt (non-enumerable nên JSON.stringify bỏ qua).
   Object.defineProperty(context, 'groundingText', { enumerable: false, value: caseGroundingText(courtCase) });
