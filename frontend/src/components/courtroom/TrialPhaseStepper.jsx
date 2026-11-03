@@ -1,50 +1,7 @@
-import { Check, Flame, HelpCircle } from 'lucide-react';
+import { Check } from 'lucide-react';
+import { TRIAL_STAGES, getTrialStageIndex } from '../../services/courtroom.js';
 
-export const TRIAL_STAGES = [
-  {
-    index: 0,
-    key: 'opening',
-    title: 'Thủ tục bắt đầu',
-    shortLabel: 'Khai mạc',
-    description: 'Khai mạc phiên tòa, phổ biến quyền & nghĩa vụ tố tụng',
-  },
-  {
-    index: 1,
-    key: 'clarification',
-    title: 'Xét hỏi',
-    shortLabel: 'Xét hỏi & Chứng cứ',
-    description: 'Thẩm vấn, làm rõ tình tiết và kiểm tra tính hợp pháp của tài liệu chứng cứ',
-  },
-  {
-    index: 2,
-    key: 'debate',
-    title: 'Tranh luận',
-    shortLabel: 'Tranh luận pháp lý',
-    description: 'Tranh tụng trực diện, bảo vệ luận điểm và phản bác ý kiến bên đối lập',
-  },
-  {
-    index: 3,
-    key: 'summary',
-    title: 'Nghị án & Chấm điểm',
-    shortLabel: 'Nghị án',
-    description: 'Phát biểu tổng kết, Hội đồng xét xử nghị án và đưa ra bảng điểm đánh giá',
-  },
-];
-
-export function getTrialStageIndex(session, records = []) {
-  if (session?.status === 'completed' || session?.conversation?.phase === 'summary') {
-    return 3;
-  }
-  const phase = session?.conversation?.phase;
-  if (phase === 'opening') return 0;
-  if (phase === 'presentation' || phase === 'clarification') return 1;
-  if (phase === 'debate') return 2;
-
-  const userTurns = records.filter((r) => r.sender_type === 'user').length;
-  if (userTurns === 0) return 0;
-  if (userTurns <= 2) return 1;
-  return 2;
-}
+export { TRIAL_STAGES, getTrialStageIndex };
 
 export default function TrialPhaseStepper({ session, records = [], userTurns = 0, maxTurns = 20 }) {
   const currentStageIndex = getTrialStageIndex(session, records);

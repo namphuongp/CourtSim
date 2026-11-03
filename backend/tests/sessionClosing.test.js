@@ -7,6 +7,7 @@ import {
   chooseSpeakingPlan,
   publicConversation
 } from '../src/services/conversationPolicy.js';
+import { getTrialStageIndex } from '../../frontend/src/services/courtroom.js';
 
 test('Chống kết thúc nhầm: Không bắt từ khóa khi người dùng chưa trình bày xong hoặc nói trong ngữ cảnh bình thường', () => {
   // Câu phủ định hoặc chưa muốn kết luận
@@ -97,4 +98,29 @@ test('publicConversation: Trả về các cờ trạng thái cấu trúc conclud
   assert.equal(pub2.ready_to_close, true);
   assert.equal(pub2.auto_complete, true);
 });
+
+test('TrialPhaseStepper getTrialStageIndex: xác định chính xác 4 giai đoạn phiên xử', () => {
+  // Giai đoạn hoàn tất hoặc nghị án (stage 3)
+  assert.equal(getTrialStageIndex({ status: 'completed' }), 3);
+  assert.equal(getTrialStageIndex({ conversation: { phase: 'summary' } }), 3);
+  assert.equal(getTrialStageIndex({ conversation: { phase: 'closed' } }), 3);
+  assert.equal(getTrialStageIndex({ conversation: { concluded: true } }), 3);
+
+  // Giai đoạn tranh luận (stage 2)
+  assert.equal(getTrialStageIndex({ conversation: { phase: 'debate' } }), 2);
+
+  // Giai đoạn xét hỏi & chứng cứ (stage 1)
+  assert.equal(getTrialStageIndex({ conversation: { phase: 'clarification' } }), 1);
+  assert.equal(getTrialStageIndex({ conversation: { phase: 'presentation' } }), 1);
+
+  // Giai đoạn khai mạc mở đầu (stage 0)
+  assert.equal(getTrialStageIndex({ conversation: { phase: 'opening' } }), 0);
+
+  // Fallback theo số lượt phát biểu của người học
+  assert.equal(getTrialStageIndex({}, []), 0);
+  assert.equal(getTrialStageIndex({}, [{ sender_type: 'user' }]), 1);
+  assert.equal(getTrialStageIndex({}, [{ sender_type: 'user' }, { sender_type: 'user' }]), 1);
+  assert.equal(getTrialStageIndex({}, [{ sender_type: 'user' }, { sender_type: 'user' }, { sender_type: 'user' }]), 2);
+});
+
 
