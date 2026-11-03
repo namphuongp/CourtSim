@@ -22,7 +22,7 @@ export function sessionFeatures(session, user) {
   const purchased = MEMBERSHIP_PLANS[normalizeMembership(session?.access_plan)];
 
   // Trong cả 02 case dùng thử miễn phí đầu tiên của tài khoản Free,
-  // người dùng BẮT BUỘC được quyền xem chấm điểm chi tiết (detailedScoring: true) giống hệt tài khoản Pro.
+  // người dùng BẮT BUỘC được mở cả tính năng Chấm điểm chi tiết và Trợ lý Luật giống như cam kết dùng thử.
   const isExplicitNonTrial = session?.is_free_trial === false || session?.access_source === 'unauthorized';
   const isFreeTrial = !isExplicitNonTrial && (
     session?.is_free_trial === true ||
@@ -31,10 +31,11 @@ export function sessionFeatures(session, user) {
   );
 
   const detailedScoring = Boolean(membership.detailedScoring || purchased.detailedScoring || isFreeTrial);
+  const legalAssistant = Boolean(membership.legalAssistant || purchased.legalAssistant || isFreeTrial);
 
   return {
     ...membership,
-    legalAssistant: membership.legalAssistant || purchased.legalAssistant,
+    legalAssistant,
     detailedScoring,
     isFreeTrial: Boolean(isFreeTrial),
   };

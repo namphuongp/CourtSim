@@ -198,7 +198,7 @@ function SessionResult({ sessionId }) {
         />
 
         {/* Thông báo quyền lợi nếu tài khoản Free ngoài 2 case dùng thử bị giới hạn */}
-        {!canViewDetailedScoring && <UpgradeNotice />}
+        {!canViewDetailedScoring && !isFreeTrial && <UpgradeNotice />}
 
         {result.assessed_max < 100 && (
           <p className="my-2 text-sm text-slate-500">

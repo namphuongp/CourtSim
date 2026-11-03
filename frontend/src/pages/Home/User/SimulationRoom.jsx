@@ -435,7 +435,22 @@ function Room({ sessionId }) {
         </div>
       </>}
       {panel === 'notebook' && <SessionNotebook key={sessionId} sessionId={sessionId} caseId={session?.case_id?._id} onInsert={insertIntoArgument} insertionDisabled={!ready}/>}
-      {panel === 'assistant' && (session?.features?.legalAssistant ? <LegalAssistant sessionId={sessionId} open onInsert={insertIntoArgument} insertionDisabled={!ready} /> : <UpgradeNotice />)}
+      {panel === 'assistant' && (
+        !session && state.loading ? (
+          <LoadingState>Đang tải thông tin phiên tòa...</LoadingState>
+        ) : !session && state.error ? (
+          <div role="alert" className="courtroom-notice p-4">
+            <p className="text-rose-400 font-semibold">{state.error}</p>
+            <button type="button" className="underline mt-2 text-sm text-blue-300" onClick={() => setReload((n) => n + 1)}>
+              Tải lại dữ liệu
+            </button>
+          </div>
+        ) : (session?.features?.legalAssistant || session?.features?.isFreeTrial) ? (
+          <LegalAssistant sessionId={sessionId} open onInsert={insertIntoArgument} insertionDisabled={!ready} />
+        ) : (
+          <UpgradeNotice />
+        )
+      )}
       {panel === 'speech' && <Transcript session={session} records={records} selected={view.record?._id} fullRecord={panel === 'speech' ? fullRecord : null} onSelect={selectRecord} />}
     </StudyPanel>
     <ConfirmEndDialog open={confirmEnd} pending={state.ending} hasDraft={Boolean(draft.content.trim())} userTurns={userTurns} onCancel={() => setConfirmEnd(false)} onConfirm={complete} />

@@ -25,7 +25,15 @@ export default function LegalAssistant({ sessionId, open, onInsert, insertionDis
       if (!active) return;
       setItems(data.data); setError(''); setLoaded(true);
       setDraft((current) => data.data.some((item) => item.request_id === current.request_id && item.status === 'completed') ? { question: '', request_id: crypto.randomUUID() } : current);
-    }).catch(() => { if (active) { setLoaded(true); setError('Chưa tải được lịch sử tra cứu. Vui lòng thử lại.'); } });
+    }).catch((err) => {
+      if (!active) return;
+      setLoaded(true);
+      if (err.response?.status === 403 && err.response?.data?.error?.code === 'MEMBERSHIP_REQUIRED') {
+        setError('Trợ lý luật dành cho các gói trả phí hoặc khi mở phiên có quyền dùng thử.');
+      } else {
+        setError(getApiError(err, 'Chưa tải được lịch sử tra cứu do sự cố mạng. Vui lòng bấm Tải lại để thử lại.'));
+      }
+    });
     return () => { active = false; };
   }, [sessionId, open, reload]);
   useEffect(() => {
@@ -43,8 +51,13 @@ export default function LegalAssistant({ sessionId, open, onInsert, insertionDis
       setItems((current) => [...current.filter((i) => i._id !== data.data._id), data.data]);
       setSelected(data.data._id);
       setDraft({ question: '', request_id: crypto.randomUUID() });
-    } catch (err) { setError(getApiError(err, 'Chưa nhận được câu trả lời. Câu hỏi của bạn vẫn được giữ lại. Vui lòng thử lại.')); }
-    finally { busy.current = false; setSending(false); }
+    } catch (err) {
+      if (err.response?.status === 403 && err.response?.data?.error?.code === 'MEMBERSHIP_REQUIRED') {
+        setError('Trợ lý luật dành cho các gói trả phí hoặc khi mở phiên có quyền dùng thử.');
+      } else {
+        setError(getApiError(err, 'Chưa nhận được câu trả lời do sự cố kết nối. Câu hỏi của bạn vẫn được giữ lại. Vui lòng thử lại.'));
+      }
+    } finally { busy.current = false; setSending(false); }
   }
   const current = items.find(item => item._id === selected) ?? items.at(-1);
   return <div className="legal-assistant space-y-4 text-sm">
