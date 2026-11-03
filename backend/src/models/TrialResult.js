@@ -40,6 +40,7 @@ const trialResultSchema = new mongoose.Schema({
   citations: { type: [legalCitationSchema], default: [] },
   citation_warnings: { type: [String], default: [] },
   fact_analysis: { type: factAnalysisSchema, default: () => ({}) },
+  duration_seconds: { type: Number, default: 0, min: 0 },
   created_at: { type: Date, default: Date.now }
 });
 

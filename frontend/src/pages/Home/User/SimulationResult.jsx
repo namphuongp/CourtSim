@@ -2,7 +2,8 @@ import ScoringSummary from '../../../components/ScoringSummary';
 import LearnerFeedback from '../../../components/feedback/LearnerFeedback';
 import { LegalCitations, LegalResearchResult } from '../../../components/LegalBasis';
 import { useEffect, useState } from 'react';
-import { Home, FileDown, Sparkles, CheckCircle2, Info } from 'lucide-react';
+import { Home, FileDown, Sparkles, CheckCircle2, Info, Clock } from 'lucide-react';
+import { formatDuration, formatDurationLong } from '../../../components/courtroom/SessionTimer';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import api, { getApiError } from '../../../services/api';
 import './simulationResult.css';
@@ -143,15 +144,24 @@ function SessionResult({ sessionId }) {
       <div className="result-container space-y-6">
         <header className="result-hero flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="flex items-center gap-2">
-              <span>Kết quả phiên mô phỏng</span>
+            <div className="flex items-center gap-2 flex-wrap mb-1">
+              <span className="text-slate-400 text-sm">Kết quả phiên mô phỏng</span>
+              {Number(result.duration_seconds) > 0 && (
+                <span
+                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/15 text-blue-200 border border-blue-400/30"
+                  title={`Tổng thời lượng phiên tòa: ${formatDurationLong(result.duration_seconds)}`}
+                >
+                  <Clock size={12} className="text-blue-400 shrink-0" />
+                  <span>Thời lượng: <strong className="text-white font-mono">{formatDuration(result.duration_seconds)}</strong></span>
+                </span>
+              )}
               {isFreeTrial && (
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">
                   <Sparkles size={12} />
                   Case dùng thử miễn phí · Mở khóa tính năng cốt lõi Pro
                 </span>
               )}
-            </p>
+            </div>
             <h1 id="result-heading" tabIndex={-1}>{detailView ? 'Điểm & nhận xét chi tiết' : 'Kết quả luyện tập'}</h1>
           </div>
           <div className="flex flex-wrap items-center gap-3 result-hero-actions">

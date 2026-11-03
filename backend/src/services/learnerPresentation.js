@@ -103,7 +103,8 @@ export function learnerEvaluation(result, courtCase = {}) {
   const r = result.toObject ? result.toObject() : result;
   const inventory = evidenceInventory(courtCase);
   const summary = scoreSummary(r);
-  return { session_id: r.session_id, created_at: r.created_at, score: summary.score, score_scope: summary.partial ? `${summary.label}. Chưa có điểm toàn bài.` : learnerText(r.score_scope),
+  const duration_seconds = r.duration_seconds ?? (r.completed_at && r.created_at ? Math.max(0, Math.round((new Date(r.completed_at).getTime() - new Date(r.created_at).getTime()) / 1000)) : 0);
+  return { session_id: r.session_id, created_at: r.created_at, duration_seconds, score: summary.score, score_scope: summary.partial ? `${summary.label}. Chưa có điểm toàn bài.` : learnerText(r.score_scope),
     legal_assessment_mode: r.legal_assessment_mode, assessment_note: r.assessment_note,
     earned_score: r.earned_score, assessed_max: r.assessed_max, assessment_status: r.assessment_status,
     rubric_scores: r.rubric_scores, rubric_version: r.rubric_version,

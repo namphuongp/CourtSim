@@ -34,6 +34,7 @@ const simulationSessionSchema = new mongoose.Schema({
     updated_at: { type: Date, required: true },
   }, { _id: false }), default: undefined },
   completed_at: { type: Date, default: null },
+  duration_seconds: { type: Number, default: 0, min: 0 },
   created_at: { type: Date, default: Date.now }
 });
 

@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
+import { Clock } from 'lucide-react';
 import { learningHighlights, scoreSummary } from '../../../shared/scorePresentation.mjs';
+import { formatDuration, formatDurationLong } from './courtroom/SessionTimer';
 
 const groupNames = {
   issue_identification: 'Vấn đề và mục tiêu',
@@ -30,6 +32,12 @@ export default function ScoringSummary({ result, sessionId, detailsOnly = false,
           <p className="mt-2 font-medium">
             {summary.partial ? `Đã đánh giá ${summary.assessed}/100 điểm tiêu chí` : 'Đã đánh giá đầy đủ các tiêu chí'}
           </p>
+          {Number(result.duration_seconds) > 0 && (
+            <div className="mt-4 pt-3 border-t border-blue-200/70 flex items-center gap-2 text-xs text-blue-900 font-medium">
+              <Clock size={14} className="text-blue-600 shrink-0" />
+              <span>Thời lượng diễn ra phiên tòa: <strong className="font-mono text-sm text-blue-950 font-bold">{formatDuration(result.duration_seconds)}</strong> ({formatDurationLong(result.duration_seconds)})</span>
+            </div>
+          )}
         </section>
       )}
 

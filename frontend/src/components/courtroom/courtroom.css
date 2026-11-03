@@ -1860,4 +1860,101 @@ body .court-speech.court-dialogue-stream {
   box-shadow: 0 6px 18px rgba(2, 132, 199, 0.65);
 }
 
+/* =========================================================
+   ĐỒNG HỒ ĐẾM GIỜ PHIÊN TÒA (SESSION TIMER)
+   ========================================================= */
+
+.trial-timer-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  border-radius: 999px;
+  padding: 3.5px 10px;
+  color: #e2e8f0;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  user-select: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.trial-timer-badge.is-running {
+  border-color: rgba(59, 130, 246, 0.45);
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(30, 58, 138, 0.35) 100%);
+}
+
+.trial-timer-badge.is-completed {
+  border-color: rgba(16, 185, 129, 0.4);
+  background: linear-gradient(135deg, rgba(6, 78, 59, 0.3) 0%, rgba(15, 23, 42, 0.75) 100%);
+  color: #a7f3d0;
+}
+
+.trial-timer-icon {
+  color: #60a5fa;
+  flex-shrink: 0;
+}
+
+.trial-timer-badge.is-completed .trial-timer-icon {
+  color: #34d399;
+}
+
+.trial-timer-label {
+  color: #94a3b8;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+@media (max-width: 640px) {
+  .trial-timer-label {
+    display: none;
+  }
+}
+
+.trial-timer-digits {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+  color: #ffffff;
+}
+
+.trial-timer-badge.is-completed .trial-timer-digits {
+  color: #6ee7b7;
+}
+
+/* Chấm nhấp nháy thời gian thực */
+.trial-timer-pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  animation: timerPulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  flex-shrink: 0;
+}
+
+@keyframes timerPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(0.85);
+  }
+}
+
+.trial-timer-stopped-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #34d399;
+  flex-shrink: 0;
+}
+
+
 

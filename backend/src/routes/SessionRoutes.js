@@ -322,8 +322,17 @@ router.post('/:sessionId/complete', asyncHandler(async (request, response) => {
     if (locked.turn_count < 1) throw new AppError('Cần ít nhất một lượt tranh luận trước khi kết thúc phiên.');
     const [courtCase, records] = await Promise.all([getCase(locked), getRecords(locked)]);
     const evaluation = await evaluateSession({ session: locked, courtCase, records });
-    const result = { ...evaluation, session_id: locked._id, created_at: new Date() };
-    const saved = await SimulationSession.updateOne(fence, { $set: { evaluation: result, status: 'completed', completed_at: new Date() } });
+    const completedAt = new Date();
+    const durationSeconds = Math.max(0, Math.round((completedAt.getTime() - new Date(locked.created_at || Date.now()).getTime()) / 1000));
+    const result = { ...evaluation, session_id: locked._id, duration_seconds: durationSeconds, created_at: completedAt };
+    const saved = await SimulationSession.updateOne(fence, {
+      $set: {
+        evaluation: result,
+        status: 'completed',
+        completed_at: completedAt,
+        duration_seconds: durationSeconds
+      }
+    });
     if (!saved.matchedCount) {
       const recheck = await SimulationSession.findById(locked._id).select('status evaluation').lean();
       if (recheck?.status === 'completed' && recheck.evaluation) {
@@ -343,7 +352,9 @@ router.get('/:sessionId/result', asyncHandler(async (request, response) => {
   if (!result) throw new AppError('Phiên chưa có kết quả. Hãy trở lại phiên và chọn Kết thúc.', 404, 'RESULT_NOT_FOUND');
   await requireSurvey(request.authUser);
   const courtCase = session.case_snapshot ?? await Case.findById(session.case_id).lean() ?? {};
-  response.json({ data: memberEvaluation(result, session, request.authUser, courtCase) });
+  const durationSeconds = result.duration_seconds ?? session.duration_seconds ?? (session.completed_at && session.created_at ? Math.max(0, Math.round((new Date(session.completed_at).getTime() - new Date(session.created_at).getTime()) / 1000)) : 0);
+  const enrichedResult = { ...result, duration_seconds: durationSeconds };
+  response.json({ data: memberEvaluation(enrichedResult, session, request.authUser, courtCase) });
 }));
 
 export default router;

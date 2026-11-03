@@ -24,6 +24,7 @@ import PdfExportModal from '../../../components/courtroom/PdfExportModal';
 import FeedbackModal from '../../../components/feedback/FeedbackModal';
 import TrialPhaseStepper from '../../../components/courtroom/TrialPhaseStepper';
 import CaseQuickSummaryModal from '../../../components/courtroom/CaseQuickSummaryModal';
+import SessionTimer from '../../../components/courtroom/SessionTimer';
 import { BookOpen, FileText, Gavel, HelpCircle, ListChecks, Maximize2, Scale } from 'lucide-react';
 import { LoadingState } from '../../../components/WorkspaceStates';
 
@@ -579,6 +580,7 @@ function Room({ sessionId }) {
         </div>
 
         <nav className="courtroom-controls" aria-label="Công cụ phiên tòa">
+          <SessionTimer session={session} completed={completed} />
           <button className="tool-guide" aria-expanded={panel === 'guide'} onClick={() => setPanel(panel === 'guide' ? null : 'guide')}>
             Hướng dẫn
           </button>
