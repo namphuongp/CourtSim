@@ -69,10 +69,14 @@ export async function answerLegalQuestion({ session, courtCase, question }, depe
   const summary = results.map(r => r.title + ' (' + r.law_number + ')' + (r.article ? ' — ' + r.locator : '') + '.').join('\n');
   const timing = dates ? 'Mốc trong hồ sơ: ' + dates + '.' : 'Chưa có mốc sự kiện hoặc giao dịch được xác nhận.';
   const local = results.some(r => r.source_verification === 'local_read');
+  // Cảnh báo thời điểm áp dụng: nêu rõ ngày sự kiện và nghĩa vụ đối chiếu hiệu lực.
+  const temporalWarning = timelines.length
+    ? ' BẮT BUỘC đối chiếu hiệu lực tại thời điểm sự kiện (' + timelines.map(p => p.label.toLowerCase() + ': ' + p.date).join('; ') + '), không mặc định dùng phiên bản luật hiện hành cho sự kiện cũ. Kiểm tra điều khoản chuyển tiếp nếu luật thay đổi trong giai đoạn liên quan.'
+    : ' Chưa xác định ngày sự kiện; cần làm rõ thời điểm xảy ra hành vi/giao dịch trước khi kết luận phiên bản luật áp dụng.';
   return { answer: 'Tìm thấy ' + results.length + (local ? ' trích đoạn từ tài liệu pháp luật trong kho mô phỏng.\n' : useWeb ? ' trích đoạn pháp luật Việt Nam đã đọc từ nguồn web.\n' : ' văn bản có nội dung được đối chiếu với nguồn.\n') + summary + '\n'
       + (results.length > 1 ? 'Có nhiều văn bản phù hợp, hãy chọn đúng số hiệu và thời kỳ cần tra cứu.\n' : '') + timing
       + (missing.length ? ' Cần làm rõ mốc ' + missing.join(', ') + ' nếu liên quan đến câu hỏi.' : '')
-      + ' Đọc trích đoạn bên dưới và đối chiếu sửa đổi, hiệu lực, chuyển tiếp trước khi áp dụng.',
+      + ' Đọc trích đoạn bên dưới và đối chiếu sửa đổi, hiệu lực, chuyển tiếp trước khi áp dụng.' + temporalWarning,
     verification_status: results.every(hasVerifiedSource) ? 'verified' : 'unverified', citations, sources };
 }
 
