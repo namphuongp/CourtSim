@@ -549,45 +549,191 @@ function Room({ sessionId }) {
         onToggleTts={handleToggleTts}
       />
     </div>
-    <nav className="court-action-deck" aria-label="Thẻ công cụ tranh tụng">
-      <button type="button" onClick={() => setPanel('assistant')} title="Mở trợ lý tra cứu pháp luật"><Scale/><strong>Dẫn điều luật</strong><small>Tra cứu căn cứ</small></button>
-      <button type="button" onClick={() => { setDossierTab('evidence'); setPanel('case'); }} title="Mở tài liệu gốc trong hồ sơ"><FileText/><strong>Đưa chứng cứ</strong><small>Đối chiếu tài liệu</small></button>
-      {[[Gavel, 'Phản bác', 'Làm rõ ý kiến'], [HelpCircle, 'Đặt câu hỏi', 'Làm sáng tỏ tình tiết'], [ListChecks, 'Tóm tắt', 'Hệ thống lập luận']].map(([Icon, label, detail]) => <button key={label} type="button" disabled={!ready} onClick={() => { setDraftMode(label); setExpandedComposer(true); }}><Icon/><strong>{label}</strong><small>{detail}</small></button>)}
-      <button type="button" className="deck-transcript" onClick={() => setPanel('history')}><BookOpen/><strong>Biên bản</strong><small>{records.length} phát biểu</small></button>
-    </nav>
-    {completed ? <p className="courtroom-notice">Phiên đã kết thúc. Đây là biên bản chỉ đọc.</p> : <form onSubmit={send} className="courtroom-composer">
-      <div className="composer-heading"><label htmlFor="argument">Lập luận của bạn</label><span role="status" className="composer-turn-status">{status}</span><button type="button" className="expand-argument" disabled={!ready} onClick={() => { setDraftMode(null); setExpandedComposer(true); }}><Maximize2 size={13}/> Mở rộng trình bày</button></div>
-      <VoiceDebateControls
-        disabled={!ready}
-        onAppendText={appendVoiceTranscript}
-        textareaRef={argumentRef}
-        ttsEnabled={ttsEnabled}
-        onToggleTts={handleToggleTts}
-      />
-      <div className="composer-fields"><textarea ref={argumentRef} onDrop={dropEvidence} onDragOver={(event) => { if (event.dataTransfer.types.includes(EVIDENCE_MIME)) { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; } }} id="argument" disabled={!ready} maxLength={4000} value={draft.content} onChange={(e) => setDraft({ content: e.target.value, request_id: crypto.randomUUID() })} placeholder={argumentPlaceholder} /><button className="composer-send" disabled={!ready || state.sending || cooldown || draft.content.trim().length < 3} title={cooldown ? 'Vui lòng chờ ít giây trước khi gửi tiếp' : undefined}>{state.sending ? 'Đang gửi…' : cooldown ? 'Chờ giây lát…' : <>Gửi lập luận <span aria-hidden="true">↗</span></>}</button></div>
-      <div className="composer-foot flex flex-wrap items-center justify-between gap-2">
-        <span>{draft.content.length}/4000</span>
-        {ready && (
-          userTurns === 0 ? (
+    <div className="courtroom-bottom-console">
+      {/* Thanh công cụ và điều khiển phiên tòa tích hợp cố định trong tầm mắt */}
+      <div className="console-action-deck" aria-label="Thanh công cụ và điều khiển phiên tòa">
+        <div className="deck-group-primary">
+          <button
+            type="button"
+            className={`deck-btn deck-evidence-btn ${panel === 'case' ? 'is-active' : ''}`}
+            onClick={() => { setDossierTab('evidence'); setPanel(panel === 'case' ? null : 'case'); }}
+            title="Mở hồ sơ vụ án và đối chiếu tài liệu chứng cứ"
+          >
+            <FileText size={15} aria-hidden="true" />
+            <strong>Hồ sơ chứng cứ</strong>
+          </button>
+
+          <button
+            type="button"
+            className={`deck-btn deck-law-btn ${panel === 'assistant' ? 'is-active' : ''}`}
+            onClick={() => setPanel(panel === 'assistant' ? null : 'assistant')}
+            title="Mở Trợ lý tra cứu điều luật và căn cứ pháp lý"
+          >
+            <Scale size={15} aria-hidden="true" />
+            <strong>Trợ lý Luật</strong>
+          </button>
+
+          <button
+            type="button"
+            className={`deck-btn deck-notebook-btn ${panel === 'notebook' ? 'is-active' : ''}`}
+            onClick={() => setPanel(panel === 'notebook' ? null : 'notebook')}
+            title="Mở sổ tay ghi chép của luật sư trong phiên"
+          >
+            <BookOpen size={14} aria-hidden="true" />
+            <span>Sổ tay</span>
+          </button>
+
+          <div className="deck-separator" aria-hidden="true" />
+
+          {[[Gavel, 'Phản bác', 'Làm rõ ý kiến'], [HelpCircle, 'Đặt câu hỏi', 'Làm sáng tỏ tình tiết'], [ListChecks, 'Tóm tắt', 'Hệ thống lập luận']].map(([Icon, label, detail]) => (
+            <button
+              key={label}
+              type="button"
+              className="deck-btn deck-quick-btn"
+              disabled={!ready}
+              onClick={() => { setDraftMode(label); setExpandedComposer(true); }}
+              title={`${label}: ${detail}`}
+            >
+              <Icon size={14} aria-hidden="true" />
+              <span>{label}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="deck-group-controls">
+          {conversation?.status === 'awaiting_continue' && (
             <button
               type="button"
-              className="text-xs text-blue-300 underline hover:text-blue-200"
-              onClick={() => insertIntoArgument('Kính thưa Hội đồng xét xử, với tư cách Luật sư bảo vệ quyền và lợi ích hợp pháp cho thân chủ, tôi xin trình bày quan điểm mở đầu và chứng cứ cốt lõi như sau: ')}
+              className="deck-btn deck-continue-btn animate-pulse"
+              disabled={disabled}
+              onClick={() => continueDialogue('advance')}
             >
-              ＋ Mẫu lời mở đầu chuẩn mực
+              <span>{nextSpeaker === 'Bạn' ? 'Trình bày ý kiến' : `Tiếp tục: ${nextSpeaker}`} →</span>
             </button>
+          )}
+
+          {conversation?.status === 'failed' && (
+            <button
+              type="button"
+              className="deck-btn deck-retry-btn"
+              disabled={disabled}
+              onClick={() => continueDialogue('resume')}
+            >
+              <span>Thử lại lời thoại</span>
+            </button>
+          )}
+
+          {completed ? (
+            <Link to={`/simulation/${sessionId}/result`} className="deck-btn deck-result-btn">
+              🏆 Xem kết quả đánh giá
+            </Link>
           ) : (
             <button
               type="button"
-              className="text-xs text-amber-300 underline hover:text-amber-200"
-              onClick={() => insertIntoArgument('Kính thưa Hội đồng xét xử, tôi đã trình bày xong toàn bộ luận cứ bảo vệ cho thân chủ và không còn ý kiến tranh luận gì thêm, đề nghị Hội đồng xét xử vào nghị án.')}
+              className={`deck-btn deck-complete-btn ${(isReadyToClose || userTurns >= (session?.max_turns ?? 20)) ? 'is-highlight' : ''}`}
+              disabled={disabled || !userTurns}
+              onClick={() => setConfirmEnd(true)}
+              title="Kết thúc tranh luận và đề nghị Hội đồng xét xử nghị án chấm điểm"
             >
-              ＋ Đề nghị kết thúc tranh luận (Nghị án)
+              <span>{isReadyToClose ? 'Nghị án & Chấm điểm ⚖️' : 'Nghị án & Chấm điểm'}</span>
             </button>
-          )
-        )}
-      </div>{userTurns >= (session?.max_turns ?? 20) && <p>Đã đủ số lượt. Chọn Kết thúc và chấm điểm để xem kết quả.</p>}
-    </form>}
+          )}
+
+          <button
+            type="button"
+            className="deck-btn deck-transcript-btn"
+            onClick={() => setPanel(panel === 'history' ? null : 'history')}
+            title="Mở toàn bộ biên bản phát biểu của phiên tòa"
+          >
+            <BookOpen size={13} aria-hidden="true" />
+            <span>Biên bản ({records.length})</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Form soạn thảo và Voice Controls gắn cố định bên dưới */}
+      {completed ? (
+        <div className="courtroom-notice text-center py-2">
+          <p className="m-0 text-slate-300">Phiên tòa đã kết thúc. Biên bản ở chế độ chỉ đọc. Bấm nút <strong>Xem kết quả đánh giá</strong> để xem bảng điểm chi tiết.</p>
+        </div>
+      ) : (
+        <form onSubmit={send} className="courtroom-composer-form">
+          <div className="composer-row-top">
+            <VoiceDebateControls
+              disabled={!ready}
+              onAppendText={appendVoiceTranscript}
+              textareaRef={argumentRef}
+              ttsEnabled={ttsEnabled}
+              onToggleTts={handleToggleTts}
+            />
+            <div className="composer-status-badge" role="status">
+              <span className="status-dot" aria-hidden="true" />
+              <span className="status-text">{status}</span>
+            </div>
+            <button
+              type="button"
+              className="expand-argument"
+              disabled={!ready}
+              onClick={() => { setDraftMode(null); setExpandedComposer(true); }}
+              title="Mở rộng trình bày toàn màn hình"
+            >
+              <Maximize2 size={13} /> Mở rộng
+            </button>
+          </div>
+
+          <div className="composer-fields">
+            <textarea
+              ref={argumentRef}
+              onDrop={dropEvidence}
+              onDragOver={(event) => {
+                if (event.dataTransfer.types.includes(EVIDENCE_MIME)) {
+                  event.preventDefault();
+                  event.dataTransfer.dropEffect = 'copy';
+                }
+              }}
+              id="argument"
+              disabled={!ready}
+              maxLength={4000}
+              value={draft.content}
+              onChange={(e) => setDraft({ content: e.target.value, request_id: crypto.randomUUID() })}
+              placeholder={argumentPlaceholder}
+            />
+            <button
+              type="submit"
+              className="composer-send"
+              disabled={!ready || state.sending || cooldown || draft.content.trim().length < 3}
+              title={cooldown ? 'Vui lòng chờ ít giây trước khi gửi tiếp' : undefined}
+            >
+              {state.sending ? 'Đang gửi…' : cooldown ? 'Chờ giây lát…' : <>Gửi lập luận <span aria-hidden="true">↗</span></>}
+            </button>
+          </div>
+
+          <div className="composer-foot flex flex-wrap items-center justify-between gap-2">
+            <span>{draft.content.length}/4000 ký tự</span>
+            {ready && (
+              userTurns === 0 ? (
+                <button
+                  type="button"
+                  className="quick-template-btn text-blue-300 hover:text-blue-200"
+                  onClick={() => insertIntoArgument('Kính thưa Hội đồng xét xử, với tư cách Luật sư bảo vệ quyền và lợi ích hợp pháp cho thân chủ, tôi xin trình bày quan điểm mở đầu và chứng cứ cốt lõi như sau: ')}
+                >
+                  ＋ Mẫu lời mở đầu chuẩn mực
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="quick-template-btn text-amber-300 hover:text-amber-200"
+                  onClick={() => insertIntoArgument('Kính thưa Hội đồng xét xử, tôi đã trình bày xong toàn bộ luận cứ bảo vệ cho thân chủ và không còn ý kiến tranh luận gì thêm, đề nghị Hội đồng xét xử vào nghị án.')}
+                >
+                  ＋ Đề nghị kết thúc tranh luận (Nghị án)
+                </button>
+              )
+            )}
+          </div>
+          {userTurns >= (session?.max_turns ?? 20) && <p className="text-amber-300 text-xs mt-1">Đã đủ số lượt quy định. Chọn <strong>Nghị án & Chấm điểm</strong> để xem kết quả.</p>}
+        </form>
+      )}
+    </div>
     <PdfExportModal
       open={pdfModalOpen}
       onClose={() => setPdfModalOpen(false)}
