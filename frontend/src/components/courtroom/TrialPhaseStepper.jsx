@@ -128,3 +128,4 @@ export default function TrialPhaseStepper({ session, records = [], userTurns = 0
     </div>
   );
 }
+
