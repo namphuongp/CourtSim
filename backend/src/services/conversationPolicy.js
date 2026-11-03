@@ -46,8 +46,9 @@ export function isClosingIntent(content, turnCount = 0, options = {}) {
   if (/(?:thời hạn|thời điểm|ngày|hợp đồng|dự án|giai đoạn|kế hoạch)\s+(?:kết thúc|dừng|chấm dứt)/iu.test(trimmed)) return false;
   if (trimmed.length > 280 || trimmed.includes('[PL:') || trimmed.includes('[Chứng cứ:')) return false;
 
-  // Câu chốt quan điểm độc lập sau khi đã có tranh luận
-  const summaryStatement = /(?:^|[.!?\n]\s*)(?:tóm lại(?:[,:]|\s)|tổng kết lại(?:[,:]|\s)|kết luận lại(?:[,:]|\s)|lời nói sau cùng(?:[,:]|\s)|(?:tôi|chúng tôi|phía chúng tôi)\s+(?:xin\s+)?(?:kết luận|tổng kết|giữ nguyên\s+(?:yêu cầu|quan điểm|kháng cáo)|không còn ý kiến|kết thúc)(?:\s|[.,:]|$))/iu.test(trimmed);
+  // Câu chốt quan điểm độc lập sau khi đã có tranh luận (phải kết hợp rõ việc giữ nguyên yêu cầu/kết luận hoặc không còn ý kiến)
+  const summaryStatement = /(?:^|[.!?\n]\s*)(?:tóm lại|tổng kết lại|kết luận lại|lời nói sau cùng)(?:[,:]|\s).*?(?:giữ nguyên\s+(?:yêu cầu|quan điểm|kháng cáo)|không còn\s+(?:ý kiến|tranh luận|luận điểm)|xin\s+(?:kết luận|tổng kết|nghị án|kết thúc))/iu.test(trimmed)
+    || /(?:^|[.!?\n]\s*)(?:(?:tôi|chúng tôi|phía chúng tôi)\s+)(?:xin\s+)?(?:giữ nguyên\s+(?:yêu cầu|quan điểm|kháng cáo)|không còn ý kiến|kết thúc)(?:\s|[.,:!?]|$)/iu.test(trimmed);
   return Boolean(summaryStatement && turnCount > 0);
 }
 

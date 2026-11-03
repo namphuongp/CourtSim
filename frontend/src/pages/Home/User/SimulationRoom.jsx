@@ -334,6 +334,7 @@ function Room({ sessionId }) {
   }
 
   async function complete(options = {}) {
+    setAutoCloseCountdown(null);
     if (!options?.autoFromChat && (busy.current || disabled)) return;
 
     // Nếu người dùng chọn gửi lời tranh tụng dở dang làm phần kết luận trước khi chấm điểm
@@ -518,7 +519,7 @@ function Room({ sessionId }) {
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [isConcluded, completed]);
+  }, [isConcluded, completed, state.ending]);
   const currentPhase = conversation?.phase ?? (userTurns === 0 ? 'opening' : 'debate');
   const argumentPlaceholder = isReadyToClose || currentPhase === 'summary'
     ? 'Phát biểu lời tranh luận tổng kết cuối cùng của phía bạn hoặc gõ "Tôi xin kết thúc phiên tòa" để HĐXX nghị án…'
@@ -784,10 +785,23 @@ function Room({ sessionId }) {
             </p>
           </div>
           <div className="concluded-actions">
+            {autoCloseCountdown !== null && autoCloseCountdown > 0 && (
+              <button
+                type="button"
+                className="concluded-pause-btn"
+                onClick={() => setAutoCloseCountdown(null)}
+                title="Dừng tự động chuyển trang để bạn đọc kỹ lại biên bản"
+              >
+                Dừng đếm ngược
+              </button>
+            )}
             <button
               type="button"
               className="concluded-action-btn"
-              onClick={() => complete({ autoFromChat: true })}
+              onClick={() => {
+                setAutoCloseCountdown(null);
+                complete({ autoFromChat: true });
+              }}
               disabled={state.ending}
             >
               {state.ending ? 'Đang chấm điểm...' : 'Vào nghị án & Nhận kết quả ➔'}

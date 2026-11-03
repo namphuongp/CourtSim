@@ -2038,6 +2038,26 @@ body .court-speech.court-dialogue-stream {
   cursor: not-allowed;
 }
 
+.concluded-pause-btn {
+  background: rgba(30, 41, 59, 0.8) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+  border-radius: 8px !important;
+  padding: 6px 12px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.concluded-pause-btn:hover {
+  background: rgba(51, 65, 85, 0.9) !important;
+  color: #ffffff !important;
+  border-color: #94a3b8 !important;
+}
+
+
 
 
 

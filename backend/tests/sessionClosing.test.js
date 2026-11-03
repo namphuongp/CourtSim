@@ -18,6 +18,10 @@ test('Chống kết thúc nhầm: Không bắt từ khóa khi người dùng ch�
   assert.equal(isClosingIntent('Trước khi kết thúc phần tranh luận này, tôi muốn làm rõ biên bản giao nhận.', 3), false);
   assert.equal(isClosingIntent('Dự án kết thúc vào tháng 5 và hai bên đã tiến hành nghiệm thu.', 2), false);
 
+  // Câu dùng từ nối "tóm lại" nhưng không phải chốt giữ nguyên yêu cầu/kết thúc -> Không kết thúc nhầm
+  assert.equal(isClosingIntent('Tóm lại, chứng cứ đã rõ.', 2), false);
+  assert.equal(isClosingIntent('Tóm lại, bị đơn không chứng minh được ranh giới.', 3), false);
+
   // Phân tích dài có dẫn chứng luật hoặc bút lục
   const longArgument = 'Tóm lại, bị đơn đã vi phạm thỏa thuận theo hợp đồng chuyển nhượng quyền sử dụng đất. Căn cứ [PL:LAW-1234] và [Chứng cứ: Biên bản đo đạc thực địa] đã xác định ranh giới rõ ràng, đề nghị Tòa buộc bị đơn tháo dỡ công trình.';
   assert.equal(isClosingIntent(longArgument, 4), false);
@@ -93,3 +97,4 @@ test('publicConversation: Trả về các cờ trạng thái cấu trúc conclud
   assert.equal(pub2.ready_to_close, true);
   assert.equal(pub2.auto_complete, true);
 });
+

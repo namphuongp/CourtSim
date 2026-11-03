@@ -314,11 +314,16 @@ router.post('/:sessionId/complete', asyncHandler(async (request, response) => {
   const session = await getOwnedSession(request.params.sessionId, request.auth.userId);
 
   // Idempotency: Nếu phiên đã kết thúc và đã có kết quả đánh giá, trả về ngay lập tức không tạo bản ghi mới
-  if (session.status === 'completed' && session.evaluation) {
-    if (!await surveyVerified(request.authUser)) return response.json({ data: { status: 'completed', survey_required: true } });
-    const courtCase = session.case_snapshot ?? await Case.findById(session.case_id).lean() ?? {};
-    const durationSeconds = session.evaluation.duration_seconds ?? session.duration_seconds ?? (session.completed_at && session.created_at ? Math.max(0, Math.round((new Date(session.completed_at).getTime() - new Date(session.created_at).getTime()) / 1000)) : 0);
-    return response.json({ data: memberEvaluation({ ...session.evaluation, duration_seconds: durationSeconds }, session, request.authUser, courtCase) });
+  if (session.status === 'completed') {
+    const existing = session.evaluation
+      ?? (await SimulationSession.findById(session._id).select('evaluation duration_seconds completed_at created_at').lean())?.evaluation
+      ?? (await TrialResult.findOne({ session_id: session._id }).lean());
+    if (existing) {
+      if (!await surveyVerified(request.authUser)) return response.json({ data: { status: 'completed', survey_required: true } });
+      const courtCase = session.case_snapshot ?? await Case.findById(session.case_id).lean() ?? {};
+      const durationSeconds = existing.duration_seconds ?? session.duration_seconds ?? (session.completed_at && session.created_at ? Math.max(0, Math.round((new Date(session.completed_at).getTime() - new Date(session.created_at).getTime()) / 1000)) : 0);
+      return response.json({ data: memberEvaluation({ ...existing, duration_seconds: durationSeconds }, session, request.authUser, courtCase) });
+    }
   }
 
   const result = await withSessionLock(session, async (locked, fence) => {
