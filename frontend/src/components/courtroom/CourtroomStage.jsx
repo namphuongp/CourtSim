@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, Scale, Volume2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Gauge, Scale, Volume2 } from 'lucide-react';
 import { dialogueText } from '../../../../shared/dialogueText.mjs';
 import { actorFor, courtroomRoles } from '../../services/courtroom';
 import FeedbackModal from '../feedback/FeedbackModal';
-import { getSpeakingRecordId, speakCourtroomText, stopCourtroomSpeech, subscribeCourtroomSpeech, unlockCourtroomAudio } from '../../services/voiceService';
+import { cycleCourtroomSpeechRate, getCourtroomSpeechRate, getSpeakingRecordId, speakCourtroomText, stopCourtroomSpeech, subscribeCourtroomSpeech, subscribeCourtroomSpeechRate, unlockCourtroomAudio } from '../../services/voiceService';
 import './courtroom.css';
 
 const PHASE_LABELS = {
@@ -29,10 +29,15 @@ export default function CourtroomStage({ session, view, records, onHistory, onRe
   const roles = courtroomRoles(session);
   const [backgroundFailed, setBackgroundFailed] = useState(false);
   const [speakingRecordId, setSpeakingRecordId] = useState(() => getSpeakingRecordId());
+  const [speechRate, setSpeechRate] = useState(() => getCourtroomSpeechRate());
   const [inspectedActor, setInspectedActor] = useState(null);
 
   useEffect(() => {
     return subscribeCourtroomSpeech((id) => setSpeakingRecordId(id));
+  }, []);
+
+  useEffect(() => {
+    return subscribeCourtroomSpeechRate((r) => setSpeechRate(r));
   }, []);
 
   const inspectedRole = inspectedActor ? roles[inspectedActor] : null;
@@ -156,6 +161,23 @@ export default function CourtroomStage({ session, view, records, onHistory, onRe
                 }}
               />
               {isCurrentSpeaking ? 'Đang đọc…' : 'Nghe đọc'}
+            </button>
+            <button
+              type="button"
+              onClick={() => cycleCourtroomSpeechRate()}
+              className="speech-rate-btn"
+              aria-label={`Tốc độ đọc hiện tại: ${speechRate}x. Bấm để đổi`}
+              title={`Tốc độ đọc âm thanh hiện tại: ${speechRate}x. Bấm để chuyển đổi giữa 1.0x, 1.25x và 1.5x`}
+            >
+              <Gauge
+                size={12}
+                style={{
+                  display: 'inline-block',
+                  verticalAlign: '-1px',
+                  marginRight: '3px',
+                }}
+              />
+              {speechRate}x
             </button>
             <button type="button" onClick={() => onReadFull(record)} aria-label="Phóng to lời thoại">Phóng to{record.citations?.length ? ' và xem căn cứ' : ''}</button>
             {!view.pending && <button type="button" onClick={onHistory}>Biên bản phiên</button>}

@@ -253,6 +253,10 @@ export function cleanTextForSpeech(raw) {
     .trim();
 }
 
+export const COURTROOM_SPEECH_RATES = [1.0, 1.25, 1.5];
+export const DEFAULT_COURTROOM_SPEECH_RATE = 1.25;
+const STORAGE_KEY_RATE = 'courtsim_speech_rate';
+
 let activeAudio = null;
 let activeUtterance = null;
 let activeAbortController = null;
@@ -262,6 +266,18 @@ let currentSpeakingRecordId = null;
 let cachedVoices = [];
 const clientAudioCache = new Map();
 const speechListeners = new Set();
+const speechRateListeners = new Set();
+
+let currentSpeechRate = (() => {
+  if (typeof window === 'undefined') return DEFAULT_COURTROOM_SPEECH_RATE;
+  try {
+    const saved = parseFloat(localStorage.getItem(STORAGE_KEY_RATE));
+    if (saved && COURTROOM_SPEECH_RATES.includes(saved)) {
+      return saved;
+    }
+  } catch { /* Bỏ qua */ }
+  return DEFAULT_COURTROOM_SPEECH_RATE;
+})();
 
 function notifySpeechListeners() {
   for (const listener of speechListeners) {
@@ -269,6 +285,45 @@ function notifySpeechListeners() {
       listener(currentSpeakingRecordId);
     } catch { /* Bỏ qua */ }
   }
+}
+
+function notifyRateListeners() {
+  for (const listener of speechRateListeners) {
+    try {
+      listener(currentSpeechRate);
+    } catch { /* Bỏ qua */ }
+  }
+}
+
+export function subscribeCourtroomSpeechRate(listener) {
+  speechRateListeners.add(listener);
+  return () => speechRateListeners.delete(listener);
+}
+
+export function getCourtroomSpeechRate() {
+  return currentSpeechRate;
+}
+
+export function setCourtroomSpeechRate(rate) {
+  const numRate = Number(rate);
+  if (!COURTROOM_SPEECH_RATES.includes(numRate)) return currentSpeechRate;
+  currentSpeechRate = numRate;
+  try {
+    localStorage.setItem(STORAGE_KEY_RATE, String(numRate));
+  } catch { /* Bỏ qua */ }
+  if (activeAudio) {
+    try {
+      activeAudio.playbackRate = numRate;
+    } catch { /* Bỏ qua */ }
+  }
+  notifyRateListeners();
+  return currentSpeechRate;
+}
+
+export function cycleCourtroomSpeechRate() {
+  const currentIndex = COURTROOM_SPEECH_RATES.indexOf(currentSpeechRate);
+  const nextIndex = (currentIndex + 1) % COURTROOM_SPEECH_RATES.length;
+  return setCourtroomSpeechRate(COURTROOM_SPEECH_RATES[nextIndex]);
 }
 
 export function subscribeCourtroomSpeech(listener) {
@@ -474,16 +529,18 @@ export function speakCourtroomText(text, { role = 'judge', recordId = null, onSt
       activeUtterance = utterance;
       utterance.voice = viVoice;
       utterance.lang = 'vi-VN';
+      let baseRate = 1.1;
       if (role === 'judge') {
-        utterance.rate = 0.95;
+        baseRate = 1.05;
         utterance.pitch = 0.95;
       } else if (role === 'opponent') {
-        utterance.rate = 1.0;
+        baseRate = 1.15;
         utterance.pitch = 1.05;
       } else {
-        utterance.rate = 1.0;
+        baseRate = 1.1;
         utterance.pitch = 1.0;
       }
+      utterance.rate = Math.min(Math.max(baseRate * currentSpeechRate, 0.5), 2.5);
       utterance.onstart = () => markStarted();
       utterance.onend = () => {
         if (activeUtterance === utterance) activeUtterance = null;
@@ -516,9 +573,14 @@ export function speakCourtroomText(text, { role = 'judge', recordId = null, onSt
       const audio = getSharedAudio() || new Audio();
       activeAudio = audio;
       audio.volume = 1;
+      audio.defaultPlaybackRate = currentSpeechRate;
+      audio.playbackRate = currentSpeechRate;
       audio.src = audioUrl;
 
       audio.onplay = () => {
+        try {
+          audio.playbackRate = currentSpeechRate;
+        } catch { /* Bỏ qua */ }
         markStarted();
       };
       audio.onended = () => {

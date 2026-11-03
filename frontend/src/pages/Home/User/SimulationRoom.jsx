@@ -171,9 +171,15 @@ function Room({ sessionId }) {
     });
   }
 
-  // Dọn dẹp âm thanh khi rời phòng
+  // Khóa cuộn toàn bộ trang khi ở phòng mô phỏng để vừa vặn trong 1 màn hình (100vh)
   useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    const prevHeight = document.body.style.height;
+    document.body.style.overflow = 'hidden';
+    document.body.style.height = '100vh';
     return () => {
+      document.body.style.overflow = prevOverflow;
+      document.body.style.height = prevHeight;
       stopCourtroomSpeech();
     };
   }, []);
