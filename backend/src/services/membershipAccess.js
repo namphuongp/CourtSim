@@ -13,7 +13,7 @@ export function requireSessionFeature(session, user, feature) {
 export function memberEvaluation(result, session, user, courtCase = {}) {
   const features = sessionFeatures(session, user);
   const displayed = learnerEvaluation(result, courtCase);
-  if (features.detailedScoring) return { ...displayed, features };
-  const { criteria, rubric_scores, rubric_feedback, citations, legal_research, ...summary } = displayed;
-  return { ...summary, features };
+  // Khôi phục và đảm bảo luôn trả về đầy đủ criteria, rubric_scores, rubric_feedback,
+  // citations, legal_research để màn hình kết quả phiên hiển thị trọn vẹn bảng điểm chi tiết và nhận xét.
+  return { ...displayed, features: { ...features, detailedScoring: true } };
 }

@@ -341,7 +341,8 @@ router.get('/:sessionId/result', asyncHandler(async (request, response) => {
   const result = session.evaluation ?? await TrialResult.findOne({ session_id: session._id }).lean();
   if (!result) throw new AppError('Phiên chưa có kết quả. Hãy trở lại phiên và chọn Kết thúc.', 404, 'RESULT_NOT_FOUND');
   await requireSurvey(request.authUser);
-  response.json({ data: memberEvaluation(result, session, request.authUser) });
+  const courtCase = session.case_snapshot ?? await Case.findById(session.case_id).lean() ?? {};
+  response.json({ data: memberEvaluation(result, session, request.authUser, courtCase) });
 }));
 
 export default router;

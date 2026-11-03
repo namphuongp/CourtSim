@@ -82,7 +82,7 @@ export function learnerEvaluation(result, courtCase = {}) {
     legal_assessment_mode: r.legal_assessment_mode, assessment_note: r.assessment_note,
     earned_score: r.earned_score, assessed_max: r.assessed_max, assessment_status: r.assessment_status,
     rubric_scores: r.rubric_scores, rubric_version: r.rubric_version,
-    criteria: presentationTree(r.criteria, inventory), rubric_feedback: presentationTree(r.rubric_feedback, inventory),
+    criteria: presentationTree(r.criteria ?? [], inventory), rubric_feedback: presentationTree(r.rubric_feedback ?? {}, inventory),
     verdict: learnerText(dialogueText(r.verdict, inventory), 'Đã hoàn thành phiên luyện tập.'), feedback: learnerText(dialogueText(r.feedback, inventory)),
     improvement_suggestions: learnerText(dialogueText(r.improvement_suggestions, inventory)),
     citations: (r.citations ?? []).map(learnerCitation), legal_research: learnerResearch(r.legal_research) };
