@@ -20,8 +20,22 @@ export function memberFeatures(user) {
 export function sessionFeatures(session, user) {
   const membership = memberFeatures(user);
   const purchased = MEMBERSHIP_PLANS[normalizeMembership(session?.access_plan)];
-  return { ...membership,
+
+  // Trong cả 02 case dùng thử miễn phí đầu tiên của tài khoản Free,
+  // người dùng BẮT BUỘC được quyền xem chấm điểm chi tiết (detailedScoring: true) giống hệt tài khoản Pro.
+  const isExplicitNonTrial = session?.is_free_trial === false || session?.access_source === 'unauthorized';
+  const isFreeTrial = !isExplicitNonTrial && (
+    session?.is_free_trial === true ||
+    session?.access_source === 'free_trial' ||
+    (membership.id === 'freemium' && (session?.access_plan === 'freemium' || !session?.access_plan))
+  );
+
+  const detailedScoring = Boolean(membership.detailedScoring || purchased.detailedScoring || isFreeTrial);
+
+  return {
+    ...membership,
     legalAssistant: membership.legalAssistant || purchased.legalAssistant,
-    detailedScoring: membership.detailedScoring || purchased.detailedScoring,
+    detailedScoring,
+    isFreeTrial: Boolean(isFreeTrial),
   };
 }

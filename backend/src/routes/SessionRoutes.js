@@ -87,7 +87,8 @@ router.post('/', asyncHandler(async (request, response) => {
         if (error.code === 'PAYMENT_REQUIRED') await SimulationSession.deleteOne(fence);
         throw error;
       }
-      const saved = await SimulationSession.updateOne(fence, { $set: { access_ready: true, access_plan: access.plan } });
+      const isFreeTrial = access.source === 'free_trial';
+      const saved = await SimulationSession.updateOne(fence, { $set: { access_ready: true, access_plan: access.plan, access_source: access.source, is_free_trial: isFreeTrial } });
       if (!saved.matchedCount) throw new AppError('Chưa xác nhận được quyền mở phiên. Giữ nguyên thiết lập và thử lại.', 409, 'SESSION_ACCESS_PENDING');
       // Cấp quyền xong mới bỏ bản ghi tạm, không hoàn lượt hoặc trừ thêm khi retry.
       await finishCaseAllocation(request.auth.userId, requestId).catch(() => {});

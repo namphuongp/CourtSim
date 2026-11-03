@@ -2,7 +2,7 @@ import ScoringSummary from '../../../components/ScoringSummary';
 import LearnerFeedback from '../../../components/feedback/LearnerFeedback';
 import { LegalCitations, LegalResearchResult } from '../../../components/LegalBasis';
 import { useEffect, useState } from 'react';
-import { Home, FileDown } from 'lucide-react';
+import { Home, FileDown, Sparkles } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import api, { getApiError } from '../../../services/api';
 import './simulationResult.css';
@@ -53,7 +53,6 @@ function SessionResult({ sessionId }) {
       if (active) {
         setOptionalFeedback(invitation);
         setFeedbackOpen(false);
-        // Đảm bảo dữ liệu kết quả luôn sẵn sàng và an toàn
         const rawResult = data.data || {};
         setResult(rawResult);
         setError('');
@@ -135,18 +134,28 @@ function SessionResult({ sessionId }) {
     );
   }
 
+  const canViewDetailedScoring = result.features?.detailedScoring !== false;
   const hasCriteria = Array.isArray(result.criteria) && result.criteria.length > 0;
+  const isFreeTrial = result.features?.isFreeTrial === true;
 
   return (
     <main className="result-page">
       <div className="result-container space-y-6">
         <header className="result-hero flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p>Kết quả phiên mô phỏng</p>
+            <p className="flex items-center gap-2">
+              <span>Kết quả phiên mô phỏng</span>
+              {isFreeTrial && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">
+                  <Sparkles size={12} />
+                  Case dùng thử miễn phí · Trải nghiệm trọn vẹn Pro
+                </span>
+              )}
+            </p>
             <h1 id="result-heading" tabIndex={-1}>{detailView ? 'Điểm & nhận xét chi tiết' : 'Kết quả luyện tập'}</h1>
           </div>
           <div className="flex flex-wrap items-center gap-3 result-hero-actions">
-            {hasCriteria && (
+            {hasCriteria && canViewDetailedScoring && (
               <button
                 className="result-view-switch"
                 onClick={() => { setDetailView(value => !value); setActiveGroup('all'); }}
@@ -166,7 +175,7 @@ function SessionResult({ sessionId }) {
           </div>
         </header>
 
-        {detailView && hasCriteria && (
+        {detailView && hasCriteria && canViewDetailedScoring && (
           <nav className="result-group-tabs" aria-label="Lọc nhóm kỹ năng">
             <button aria-pressed={activeGroup === 'all'} onClick={() => setActiveGroup('all')}>
               Tất cả tiêu chí
@@ -188,8 +197,8 @@ function SessionResult({ sessionId }) {
           sessionId={sessionId}
         />
 
-        {/* Thông báo quyền lợi nếu tài khoản bị giới hạn theo membership mock */}
-        {result.features?.detailedScoring === false && <UpgradeNotice />}
+        {/* Thông báo quyền lợi nếu tài khoản Free ngoài 2 case dùng thử bị giới hạn */}
+        {!canViewDetailedScoring && <UpgradeNotice />}
 
         {result.assessed_max < 100 && (
           <p className="my-2 text-sm text-slate-500">
@@ -197,8 +206,8 @@ function SessionResult({ sessionId }) {
           </p>
         )}
 
-        {/* Nhận xét chuyên sâu theo 4 kỹ năng tố tụng nếu có */}
-        {result.rubric_feedback && Object.keys(result.rubric_feedback).length > 0 && (
+        {/* Nhận xét chuyên sâu theo 4 kỹ năng tố tụng nếu có và được phép xem */}
+        {canViewDetailedScoring && result.rubric_feedback && Object.keys(result.rubric_feedback).length > 0 && (
           <section className="result-rubric-grid grid gap-4 md:grid-cols-2" aria-label="Nhận xét theo nhóm kỹ năng">
             {Object.entries(result.rubric_feedback).map(([key, item]) => (
               <article key={key} className="result-card space-y-3">
@@ -212,17 +221,19 @@ function SessionResult({ sessionId }) {
           </section>
         )}
 
-        {/* Khối Nhận xét của Hội đồng & Gợi ý hướng cải thiện hiển thị trực tiếp, đầy đủ */}
-        <section className="result-two-col grid gap-6 md:grid-cols-2" aria-label="Đánh giá và gợi ý cải thiện">
-          <article className="result-card">
-            <h2>Nhận xét của Hội đồng</h2>
-            <p className="whitespace-pre-wrap">{result.feedback || 'Chưa có nhận xét tổng quan được lưu cho phiên này.'}</p>
-          </article>
-          <article className="result-card result-improvement">
-            <h2>Gợi ý hướng cải thiện</h2>
-            <p className="whitespace-pre-wrap">{result.improvement_suggestions || 'Chưa có gợi ý cải thiện được lưu cho phiên này.'}</p>
-          </article>
-        </section>
+        {/* Khối Nhận xét của Hội đồng & Gợi ý hướng cải thiện */}
+        {canViewDetailedScoring && (
+          <section className="result-two-col grid gap-6 md:grid-cols-2" aria-label="Đánh giá và gợi ý cải thiện">
+            <article className="result-card">
+              <h2>Nhận xét của Hội đồng</h2>
+              <p className="whitespace-pre-wrap">{result.feedback || 'Chưa có nhận xét tổng quan được lưu cho phiên này.'}</p>
+            </article>
+            <article className="result-card result-improvement">
+              <h2>Gợi ý hướng cải thiện</h2>
+              <p className="whitespace-pre-wrap">{result.improvement_suggestions || 'Chưa có gợi ý cải thiện được lưu cho phiên này.'}</p>
+            </article>
+          </section>
+        )}
 
         {/* Căn cứ pháp luật đã sử dụng */}
         <section className="result-card result-law" aria-label="Căn cứ pháp luật đã sử dụng">
