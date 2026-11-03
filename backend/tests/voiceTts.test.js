@@ -1,6 +1,14 @@
+process.env.JWT_SECRET ||= 'test-only-secret-that-is-long-enough';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { sanitizeTextForTts, ROLE_VOICE_MAP, generateCourtroomSpeech, fetchGoogleVietnameseSpeech, clearSpeechCache } from '../src/services/aiVoiceService.js';
+
+const {
+  sanitizeTextForTts,
+  ROLE_VOICE_MAP,
+  generateCourtroomSpeech,
+  fetchGoogleVietnameseSpeech,
+  clearSpeechCache
+} = await import('../src/services/aiVoiceService.js');
 
 test('aiVoiceService: sanitizeTextForTts làm sạch văn bản tố tụng chuẩn xác', () => {
   const dirty = 'Kính thưa [Chủ tọa](https://court.vn) và Hội đồng xét xử [CC: EV-01] [PL: LAW-02]. <p>Chúng tôi đề nghị bác đơn!</p> **Căn cứ** Điều 100.';

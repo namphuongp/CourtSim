@@ -115,6 +115,13 @@ export default function CourtroomStage({
   const prevRecordCountRef = useRef(0);
 
   useEffect(() => {
+    return () => {
+      // Dọn dẹp sạch mọi tiến trình đọc âm thanh khi stage unmount
+      stopCourtroomSpeech();
+    };
+  }, []);
+
+  useEffect(() => {
     return subscribeCourtroomSpeech((id, state) => {
       setSpeakingRecordId(id);
       setIsPaused(Boolean(state?.isPaused));

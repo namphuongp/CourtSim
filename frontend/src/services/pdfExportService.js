@@ -14,6 +14,16 @@ export function formatVietnameseDate(dateInput) {
   return `ngày ${day} tháng ${month} năm ${year}`;
 }
 
+export function formatDurationForDoc(seconds) {
+  const sec = Number(seconds);
+  if (!Number.isFinite(sec) || sec <= 0) return '—';
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  if (m === 0) return `${s} giây`;
+  if (s === 0) return `${m} phút`;
+  return `${m} phút ${s} giây`;
+}
+
 /**
  * Xếp loại kết quả theo điểm số (thang 100)
  */
@@ -296,6 +306,53 @@ export function generateCourtroomDocumentHtml({
       font-style: italic;
       color: #444;
     }
+    .validity-warning-pdf {
+      margin: 4px 0 6px 0;
+      padding: 5px 8px;
+      background: #fffbeb;
+      border: 1px solid #f59e0b;
+      border-left: 3px solid #d97706;
+      font-size: 10.5pt;
+      line-height: 1.35;
+      color: #92400e;
+      font-style: normal;
+    }
+    .validity-tag-pdf {
+      display: inline-block;
+      padding: 1px 5px;
+      font-size: 9pt;
+      font-weight: bold;
+      border-radius: 3px;
+      margin-left: 4px;
+      font-style: normal;
+      vertical-align: middle;
+    }
+    .validity-tag-pdf.expired {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #f87171;
+    }
+    .validity-tag-pdf.amended {
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fbbf24;
+    }
+    .validity-tag-pdf.active {
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #86efac;
+    }
+    .legal-history-pdf {
+      margin: 4px 0 6px 12px;
+      padding-left: 8px;
+      border-left: 2px solid #3b82f6;
+      font-size: 10.5pt;
+      color: #334155;
+      font-style: normal;
+    }
+    .legal-history-pdf .history-item {
+      margin-bottom: 2px;
+    }
     /* Phần ký tên */
     .signature-grid {
       display: flex;
@@ -423,6 +480,11 @@ export function generateCourtroomDocumentHtml({
         <td class="value">${session?.case_event_date || 'Theo hồ sơ vụ án'}</td>
       </tr>
       <tr>
+        <td class="label">Thời lượng tranh tụng</td>
+        <td class="colon">:</td>
+        <td class="value">${formatDurationForDoc(result?.duration_seconds ?? session?.duration_seconds)}</td>
+      </tr>
+      <tr>
         <td class="label">Số lượt tranh luận</td>
         <td class="colon">:</td>
         <td class="value">${records?.filter(r => r.sender_type === 'user')?.length || session?.turn_count || 0} lượt hoàn thành</td>
@@ -506,12 +568,48 @@ export function generateCourtroomDocumentHtml({
     <div style="margin-top: 10px;">
       <strong style="font-size: 13pt;">4. Danh mục căn cứ pháp luật đã được xác minh:</strong>
       <ul style="margin: 4px 0; padding-left: 24px;">
-        ${result.citations.map(c => `
-          <li>
-            <strong>${c.title || c.law_number || 'Văn bản quy phạm pháp luật'}</strong>:
-            Điều ${c.article || ''} ${c.text ? `- ${c.text.slice(0, 160)}…` : ''}
+        ${result.citations.map(c => {
+          const isObj = c && typeof c === 'object';
+          const title = isObj ? (c.title || c.law_number || 'Văn bản quy phạm pháp luật') : String(c);
+          const article = isObj && c.article ? `Điều ${c.article}` : '';
+          const isExpired = isObj && c.validity_status === 'expired';
+          const isAmended = isObj && c.validity_status === 'amended';
+          const isActive = isObj && c.validity_status === 'active';
+          const validityTag = isExpired
+            ? '<span class="validity-tag-pdf expired">HẾT HIỆU LỰC HIỆN HÀNH</span>'
+            : isAmended
+            ? '<span class="validity-tag-pdf amended">ĐÃ SỬA ĐỔI, BỔ SUNG</span>'
+            : isActive
+            ? '<span class="validity-tag-pdf active">ĐANG CÓ HIỆU LỰC</span>'
+            : '';
+          const textPreview = isObj && c.text ? ` - ${escapeHtml(c.text.slice(0, 160))}…` : '';
+          const warningBox = isObj && c.validity_warning ? `
+            <div class="validity-warning-pdf">
+              <strong>⚠️ Lưu ý về hiệu lực:</strong> ${escapeHtml(c.validity_warning)}
+            </div>
+          ` : '';
+          const historyList = isObj && Array.isArray(c.change_history) && c.change_history.length > 0 ? `
+            <div class="legal-history-pdf">
+              <em>Lịch sử thay đổi văn bản qua các thời kỳ:</em>
+              ${c.change_history.map(h => `
+                <div class="history-item">
+                  • <strong>${escapeHtml(h.title || '')}</strong> ${h.law_number ? `(${escapeHtml(h.law_number)})` : ''}
+                  ${h.effective_from ? `— Có hiệu lực từ: <strong>${escapeHtml(h.effective_from)}</strong>` : ''}
+                  ${h.note ? ` (${escapeHtml(h.note)})` : ''}
+                </div>
+              `).join('')}
+            </div>
+          ` : '';
+
+          return `
+          <li style="margin-bottom: 8px;">
+            <strong>${escapeHtml(title)}</strong>${article ? `: ${article}` : ''} ${validityTag}
+            ${textPreview}
+            ${warningBox}
+            ${historyList}
           </li>
-        `).join('')}
+          `;
+        }).join('')}
       </ul>
     </div>
     ` : ''}
@@ -550,7 +648,22 @@ export function generateCourtroomDocumentHtml({
           <p class="dialogue-body">${escapeHtml(content)}</p>
           ${record.citations?.length ? `
           <div class="dialogue-citations">
-            Căn cứ pháp luật: ${record.citations.map(c => `${c.title || c.law_number} (Điều ${c.article || ''})`).join('; ')}
+            <strong>Căn cứ pháp luật:</strong>
+            ${record.citations.map(c => {
+              const isObj = c && typeof c === 'object';
+              const label = isObj
+                ? `${c.title || c.law_number || 'Văn bản'}${c.article ? ` (Điều ${c.article})` : ''}`
+                : String(c);
+              const tag = isObj && c.validity_status === 'expired'
+                ? ' <span class="validity-tag-pdf expired">Hết HL</span>'
+                : isObj && c.validity_status === 'amended'
+                ? ' <span class="validity-tag-pdf amended">Đã sửa</span>'
+                : '';
+              const warn = isObj && c.validity_warning
+                ? `<div class="validity-warning-pdf" style="margin: 2px 0 4px; font-size: 10pt;">⚠️ ${escapeHtml(c.validity_warning)}</div>`
+                : '';
+              return `<span>${escapeHtml(label)}${tag}</span>${warn}`;
+            }).join('; ')}
           </div>
           ` : ''}
         </div>

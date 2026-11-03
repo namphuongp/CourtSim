@@ -766,6 +766,10 @@ export function stopCourtroomSpeech() {
   activeSpeechSessionId++;
   currentSpeakingRecordId = null;
   isPausedState = false;
+  lastSpeakingCall = { recordId: null, timestamp: 0 };
+  if (!isAutoplayBlockedState) {
+    pendingBlockedSpeech = null;
+  }
   notifySpeechListeners();
 
   if (activeAbortController) {

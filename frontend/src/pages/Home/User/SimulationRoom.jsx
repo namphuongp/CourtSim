@@ -73,6 +73,7 @@ function Room({ sessionId }) {
   const isInitialLoadedRef = useRef(false);
   const prevTtsEnabledRef = useRef(false);
   const [autoCloseCountdown, setAutoCloseCountdown] = useState(null);
+  const [countdownStopped, setCountdownStopped] = useState(false);
 
   function handleToggleTts() {
     unlockCourtroomAudio();
@@ -334,6 +335,7 @@ function Room({ sessionId }) {
   }
 
   async function complete(options = {}) {
+    setCountdownStopped(true);
     setAutoCloseCountdown(null);
     if (!options?.autoFromChat && (busy.current || disabled)) return;
 
@@ -502,24 +504,27 @@ function Room({ sessionId }) {
   );
 
   useEffect(() => {
-    if (!isConcluded || completed || state.ending) {
+    if (!isConcluded || completed || state.ending || countdownStopped) {
       setAutoCloseCountdown(null);
       return;
     }
     setAutoCloseCountdown(5);
     const interval = setInterval(() => {
       setAutoCloseCountdown((prev) => {
-        if (prev === null) return 5;
+        if (prev === null) {
+          clearInterval(interval);
+          return null;
+        }
         if (prev <= 1) {
           clearInterval(interval);
           complete({ autoFromChat: true });
-          return 0;
+          return null;
         }
         return prev - 1;
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [isConcluded, completed, state.ending]);
+  }, [isConcluded, completed, state.ending, countdownStopped]);
   const currentPhase = conversation?.phase ?? (userTurns === 0 ? 'opening' : 'debate');
   const argumentPlaceholder = isReadyToClose || currentPhase === 'summary'
     ? 'Phát biểu lời tranh luận tổng kết cuối cùng của phía bạn hoặc gõ "Tôi xin kết thúc phiên tòa" để HĐXX nghị án…'
@@ -789,7 +794,10 @@ function Room({ sessionId }) {
               <button
                 type="button"
                 className="concluded-pause-btn"
-                onClick={() => setAutoCloseCountdown(null)}
+                onClick={() => {
+                  setCountdownStopped(true);
+                  setAutoCloseCountdown(null);
+                }}
                 title="Dừng tự động chuyển trang để bạn đọc kỹ lại biên bản"
               >
                 Dừng đếm ngược
@@ -799,6 +807,7 @@ function Room({ sessionId }) {
               type="button"
               className="concluded-action-btn"
               onClick={() => {
+                setCountdownStopped(true);
                 setAutoCloseCountdown(null);
                 complete({ autoFromChat: true });
               }}
