@@ -571,7 +571,15 @@ async function fetchSegmentBlob(segmentText, role, signal) {
  * @param {function} [options.onEnd]
  * @param {function} [options.onError]
  */
+let lastSpeakingCall = { recordId: null, timestamp: 0 };
+
 export function speakCourtroomText(text, { role = 'judge', recordId = null, onStart, onEnd, onError } = {}) {
+  const now = Date.now();
+  if (recordId && recordId === lastSpeakingCall.recordId && now - lastSpeakingCall.timestamp < 600) {
+    return () => {};
+  }
+  lastSpeakingCall = { recordId, timestamp: now };
+
   stopCourtroomSpeech();
 
   const clean = cleanTextForSpeech(text);
@@ -774,6 +782,8 @@ export function stopCourtroomSpeech() {
       activeAudio.onerror = null;
       activeAudio.pause();
       activeAudio.currentTime = 0;
+      activeAudio.removeAttribute('src');
+      activeAudio.load();
     } catch { /* Bỏ qua */ }
   }
 
