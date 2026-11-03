@@ -524,8 +524,14 @@ function Room({ sessionId }) {
               Tải lại dữ liệu
             </button>
           </div>
-        ) : (session?.features?.legalAssistant || session?.features?.isFreeTrial) ? (
-          <LegalAssistant sessionId={sessionId} open onInsert={insertIntoArgument} insertionDisabled={!ready} />
+        ) : (session?.features?.legalAssistant || session?.features?.isFreeTrial || session?.is_free_trial || session?.access_source === 'free_trial' || !session?.access_plan || session?.access_plan === 'freemium') ? (
+          <LegalAssistant
+            sessionId={sessionId}
+            open
+            onInsert={insertIntoArgument}
+            insertionDisabled={!ready}
+            isFreeTrial={Boolean(session?.features?.isFreeTrial || session?.is_free_trial || session?.access_source === 'free_trial' || (!session?.access_source && (!session?.access_plan || session?.access_plan === 'freemium')))}
+          />
         ) : (
           <UpgradeNotice />
         )

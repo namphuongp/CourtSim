@@ -6,7 +6,7 @@ import { BookOpen, Search, Sparkles } from 'lucide-react';
 import { LoadingState } from './WorkspaceStates';
 import './courtroom/courtroomTools.css';
 
-export default function LegalAssistant({ sessionId, open, onInsert, insertionDisabled }) {
+export default function LegalAssistant({ sessionId, open, onInsert, insertionDisabled, isFreeTrial = false }) {
   const key = draftKey(`${sessionId}:assistant`);
   const [draft, setDraft] = useState(() => readDraft(key) ?? { question: '', request_id: crypto.randomUUID() });
   const [items, setItems] = useState([]);
@@ -61,7 +61,21 @@ export default function LegalAssistant({ sessionId, open, onInsert, insertionDis
   }
   const current = items.find(item => item._id === selected) ?? items.at(-1);
   return <div className="legal-assistant space-y-4 text-sm">
-    <div className="assistant-intro"><Sparkles size={24}/><div><h3>Tra cứu cùng trợ lý luật</h3><small>Căn cứ rõ ràng · Đọc nguồn trước khi viện dẫn</small></div></div>
+    <div className="assistant-intro">
+      <Sparkles size={24} className="text-amber-400" />
+      <div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <h3 className="font-bold text-base text-slate-100">Tra cứu cùng Trợ lý Luật</h3>
+          {isFreeTrial && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">
+              <Sparkles size={11} />
+              Case dùng thử miễn phí · Trải nghiệm trọn vẹn Pro
+            </span>
+          )}
+        </div>
+        <small>Căn cứ rõ ràng · Đọc nguồn trước khi viện dẫn</small>
+      </div>
+    </div>
     <p>Tìm theo số hiệu, tên luật hoặc vấn đề tranh chấp đất đai. Trợ lý ưu tiên kho tài liệu pháp luật và có thể tra cứu thêm trên web. Đọc nguồn và trạng thái áp dụng trước khi đưa trích dẫn vào lập luận.</p>
     <p className="text-slate-400">Tra cứu không gửi lượt tranh luận và không tự thay đổi điểm.</p>
     <form onSubmit={ask} className="assistant-form space-y-2"><label className="block" htmlFor="legal-question">Câu hỏi tra cứu luật</label><textarea id="legal-question" maxLength={1500} disabled={sending} value={draft.question} onChange={(e) => setDraft({ question: e.target.value, request_id: crypto.randomUUID() })} className="min-h-28 w-full rounded-lg border border-slate-600 bg-slate-950 p-3" placeholder="Quy định nào cần xem xét đối với yêu cầu trong vụ án?" /><div><small>{draft.question.length}/1500 ký tự</small><button disabled={sending || draft.question.trim().length < 5}><Search size={14}/>{sending ? 'Đang tra cứu...' : 'Hỏi trợ lý'}</button></div></form>
