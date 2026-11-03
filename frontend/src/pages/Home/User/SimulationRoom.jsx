@@ -1,10 +1,11 @@
 import { canCiteEvidence } from '../../../../../shared/casePresentation.mjs';
+import { dialogueText } from '../../../../../shared/dialogueText.mjs';
 import DossierTabs from '../../../components/courtroom/DossierTabs';
 import CourtroomGuide from '../../../components/courtroom/CourtroomGuide';
 import CourtroomStage from '../../../components/courtroom/CourtroomStage';
 import Transcript from '../../../components/courtroom/Transcript';
 import SessionNotebook from '../../../components/courtroom/SessionNotebook';
-import { courtroomView } from '../../../services/courtroom';
+import { actorFor, courtroomView } from '../../../services/courtroom';
 import ConfirmEndDialog from '../../../components/ConfirmEndDialog';
 import CaseDossier from '../../../components/CaseDossier';
 import { EVIDENCE_MIME, evidenceText, evidenceIds } from '../../../services/references';
@@ -54,10 +55,34 @@ function Room({ sessionId }) {
   const [waitExpired, setWaitExpired] = useState(false);
   const [state, setState] = useState({ loading: true, sending: false, ending: false, error: '' });
   const [cooldown, setCooldown] = useState(false);
-  const [ttsEnabled, setTtsEnabled] = useState(false);
+  const [ttsEnabled, setTtsEnabled] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    try {
+      const saved = localStorage.getItem('courtsim_tts_enabled');
+      return saved !== null ? saved === 'true' : true;
+    } catch {
+      return true;
+    }
+  });
   const [pdfModalOpen, setPdfModalOpen] = useState(false);
   const lastSpokenRecordIdRef = useRef(null);
   const prevTtsEnabledRef = useRef(false);
+
+  function handleToggleTts() {
+    unlockCourtroomAudio();
+    setTtsEnabled((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('courtsim_tts_enabled', String(next));
+      } catch { /* Bỏ qua */ }
+      if (!next) {
+        stopCourtroomSpeech();
+      } else {
+        lastSpokenRecordIdRef.current = null;
+      }
+      return next;
+    });
+  }
   useEffect(() => { saveDraft(storageKey, draft); }, [storageKey, draft]);
   useEffect(() => {
     let active = true;
@@ -396,12 +421,14 @@ function Room({ sessionId }) {
       return;
     }
     const record = view?.record;
-    if (!record || view.streaming || record.sender_type === 'user') return;
+    if (!record || view.streaming || state.sending || record.sender_type === 'user') return;
     if (record._id && record._id !== lastSpokenRecordIdRef.current) {
       lastSpokenRecordIdRef.current = record._id;
-      speakCourtroomText(record.content, { role: view.actor, recordId: record._id });
+      const speechRole = actorFor(record);
+      const textToSpeak = dialogueText(record.display_content || record.content, session?.case_id?.evidence_inventory);
+      speakCourtroomText(textToSpeak, { role: speechRole, recordId: record._id });
     }
-  }, [ttsEnabled, view?.record, view?.streaming, view?.actor]);
+  }, [ttsEnabled, view?.record, view?.streaming, state.sending, session?.case_id?.evidence_inventory]);
   const panelTitles = { notebook: 'Sổ tay phiên', guide: 'Hướng dẫn phiên tòa', case: 'Hồ sơ phiên tòa', assistant: 'Trợ lý luật', history: 'Hồ sơ phiên tòa', speech: 'Lời trình bày đầy đủ' };
   const ready = !disabled && canLearnerSpeak && userTurns < (session?.max_turns ?? 20);
   const reviewing = Boolean(selectedId && selectedId !== (conversation?.current_record_id ?? records.at(-1)?._id));
@@ -459,7 +486,26 @@ function Room({ sessionId }) {
     {insertError && !panel && <p role="alert" className="courtroom-notice">{insertError}</p>}
     {state.error && <div role="alert" className="courtroom-notice">{state.error}<button disabled={state.sending || state.ending} onClick={() => setReload((n) => n + 1)}>Tải lại dữ liệu</button></div>}
     {session && !session.case_event_date && !completed && <form onSubmit={saveEventDate} className="courtroom-notice"><p>Bổ sung ngày trong hồ sơ hoặc một ngày giả định cho bài tập để tiếp tục.</p><label>Ngày tra cứu <input required type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} className="m-2 rounded border p-2" /></label><button disabled={state.sending || !eventDate}>Lưu ngày</button></form>}
-    <div className="courtroom-workspace"><CourtroomStage speechControls={speechControls} session={session} preparationStalled={waitExpired} pendingSpeaker={state.sending && !submittedContent && ['judge', 'opponent'].includes(conversation?.next_speaker) ? conversation.next_speaker : null} view={view} records={records} onSelectRecord={selectRecord} navigationDisabled={state.sending || state.ending || session?.processing} onHistory={() => setPanel('history')} onReadFull={(record) => { setFullRecord(record); setPanel('speech'); }} onEnableTts={(recordId) => { lastSpokenRecordIdRef.current = recordId; setTtsEnabled(true); }} />
+    <div className="courtroom-workspace">
+      <CourtroomStage
+        speechControls={speechControls}
+        session={session}
+        preparationStalled={waitExpired}
+        pendingSpeaker={state.sending && !submittedContent && ['judge', 'opponent'].includes(conversation?.next_speaker) ? conversation.next_speaker : null}
+        view={view}
+        records={records}
+        onSelectRecord={selectRecord}
+        navigationDisabled={state.sending || state.ending || session?.processing}
+        onHistory={() => setPanel('history')}
+        onReadFull={(record) => { setFullRecord(record); setPanel('speech'); }}
+        onEnableTts={(recordId) => {
+          lastSpokenRecordIdRef.current = recordId;
+          setTtsEnabled(true);
+          try { localStorage.setItem('courtsim_tts_enabled', 'true'); } catch { /* Bỏ qua */ }
+        }}
+        ttsEnabled={ttsEnabled}
+        onToggleTts={handleToggleTts}
+      />
     </div>
     <nav className="court-action-deck" aria-label="Thẻ công cụ tranh tụng">
       <button type="button" onClick={() => setPanel('assistant')} title="Mở trợ lý tra cứu pháp luật"><Scale/><strong>Dẫn điều luật</strong><small>Tra cứu căn cứ</small></button>
@@ -474,14 +520,7 @@ function Room({ sessionId }) {
         onAppendText={appendVoiceTranscript}
         textareaRef={argumentRef}
         ttsEnabled={ttsEnabled}
-        onToggleTts={() => {
-          unlockCourtroomAudio();
-          setTtsEnabled((v) => {
-            const next = !v;
-            if (next) lastSpokenRecordIdRef.current = null;
-            return next;
-          });
-        }}
+        onToggleTts={handleToggleTts}
       />
       <div className="composer-fields"><textarea ref={argumentRef} onDrop={dropEvidence} onDragOver={(event) => { if (event.dataTransfer.types.includes(EVIDENCE_MIME)) { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; } }} id="argument" disabled={!ready} maxLength={4000} value={draft.content} onChange={(e) => setDraft({ content: e.target.value, request_id: crypto.randomUUID() })} placeholder={argumentPlaceholder} /><button className="composer-send" disabled={!ready || state.sending || cooldown || draft.content.trim().length < 3} title={cooldown ? 'Vui lòng chờ ít giây trước khi gửi tiếp' : undefined}>{state.sending ? 'Đang gửi…' : cooldown ? 'Chờ giây lát…' : <>Gửi lập luận <span aria-hidden="true">↗</span></>}</button></div>
       <div className="composer-foot flex flex-wrap items-center justify-between gap-2">

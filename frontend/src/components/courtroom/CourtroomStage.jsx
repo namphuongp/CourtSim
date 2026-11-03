@@ -1,9 +1,24 @@
 import { useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, Gauge, Scale, Volume2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Gauge, Pause, Play, RotateCcw, Scale, Volume2, VolumeX } from 'lucide-react';
 import { dialogueText } from '../../../../shared/dialogueText.mjs';
 import { actorFor, courtroomRoles } from '../../services/courtroom';
 import FeedbackModal from '../feedback/FeedbackModal';
-import { cycleCourtroomSpeechRate, getCourtroomSpeechRate, getSpeakingRecordId, speakCourtroomText, stopCourtroomSpeech, subscribeCourtroomSpeech, subscribeCourtroomSpeechRate, unlockCourtroomAudio } from '../../services/voiceService';
+import {
+  cycleCourtroomSpeechRate,
+  getCourtroomSpeechRate,
+  getSpeakingRecordId,
+  isAutoplayBlocked,
+  isCourtroomSpeechPaused,
+  pauseCourtroomSpeech,
+  resumeCourtroomSpeech,
+  speakCourtroomText,
+  stopCourtroomSpeech,
+  subscribeAutoplayBlocked,
+  subscribeCourtroomSpeech,
+  subscribeCourtroomSpeechRate,
+  unlockAndResumeCourtroomSpeech,
+  unlockCourtroomAudio,
+} from '../../services/voiceService';
 import './courtroom.css';
 
 const PHASE_LABELS = {
@@ -25,15 +40,40 @@ function Character({ actor, role, active, preparing, invited, onInspect }) {
   </div>;
 }
 
-export default function CourtroomStage({ session, view, records, onHistory, onReadFull, onSelectRecord, navigationDisabled = false, preparationStalled = false, pendingSpeaker = null, speechControls, onEnableTts }) {
+export default function CourtroomStage({
+  session,
+  view,
+  records,
+  onHistory,
+  onReadFull,
+  onSelectRecord,
+  navigationDisabled = false,
+  preparationStalled = false,
+  pendingSpeaker = null,
+  speechControls,
+  onEnableTts,
+  ttsEnabled = false,
+  onToggleTts,
+}) {
   const roles = courtroomRoles(session);
   const [backgroundFailed, setBackgroundFailed] = useState(false);
   const [speakingRecordId, setSpeakingRecordId] = useState(() => getSpeakingRecordId());
+  const [isPaused, setIsPaused] = useState(() => isCourtroomSpeechPaused());
+  const [autoplayBlocked, setAutoplayBlocked] = useState(() => isAutoplayBlocked());
   const [speechRate, setSpeechRate] = useState(() => getCourtroomSpeechRate());
   const [inspectedActor, setInspectedActor] = useState(null);
 
   useEffect(() => {
-    return subscribeCourtroomSpeech((id) => setSpeakingRecordId(id));
+    return subscribeCourtroomSpeech((id, state) => {
+      setSpeakingRecordId(id);
+      setIsPaused(Boolean(state?.isPaused));
+    });
+  }, []);
+
+  useEffect(() => {
+    return subscribeAutoplayBlocked((blocked) => {
+      setAutoplayBlocked(blocked);
+    });
   }, []);
 
   useEffect(() => {
@@ -45,25 +85,61 @@ export default function CourtroomStage({ session, view, records, onHistory, onRe
   const record = view.record;
   const owner = record ? actorFor(record) : 'judge';
   const content = dialogueText(record?.display_content ?? record?.content, session?.case_id?.evidence_inventory) || 'Chưa hiển thị được phản hồi này. Hãy tải lại phiên.';
-  const isCurrentSpeaking = Boolean(record?._id && speakingRecordId === record?._id);
+  const isCurrentSpeaking = Boolean(record?._id && speakingRecordId === record?._id && !isPaused);
+  const isCurrentPaused = Boolean(record?._id && speakingRecordId === record?._id && isPaused);
 
   function handleToggleSpeech() {
     if (isCurrentSpeaking) {
-      stopCourtroomSpeech();
-      setSpeakingRecordId(null);
+      pauseCourtroomSpeech();
+    } else if (isCurrentPaused) {
+      resumeCourtroomSpeech();
     } else {
       unlockCourtroomAudio();
-      onEnableTts?.( record?._id );
+      onEnableTts?.(record?._id);
       setSpeakingRecordId(record?._id);
+      setIsPaused(false);
       speakCourtroomText(content, {
         role: owner,
         recordId: record?._id,
-        onStart: () => setSpeakingRecordId(record?._id),
-        onEnd: () => setSpeakingRecordId((cur) => (cur === record?._id ? null : cur)),
-        onError: () => setSpeakingRecordId((cur) => (cur === record?._id ? null : cur)),
+        onStart: () => {
+          setSpeakingRecordId(record?._id);
+          setIsPaused(false);
+        },
+        onEnd: () => {
+          setSpeakingRecordId((cur) => (cur === record?._id ? null : cur));
+          setIsPaused(false);
+        },
+        onError: () => {
+          setSpeakingRecordId((cur) => (cur === record?._id ? null : cur));
+          setIsPaused(false);
+        },
       });
     }
   }
+
+  function handleReplaySpeech() {
+    unlockCourtroomAudio();
+    onEnableTts?.(record?._id);
+    setSpeakingRecordId(record?._id);
+    setIsPaused(false);
+    speakCourtroomText(content, {
+      role: owner,
+      recordId: record?._id,
+      onStart: () => {
+        setSpeakingRecordId(record?._id);
+        setIsPaused(false);
+      },
+      onEnd: () => {
+        setSpeakingRecordId((cur) => (cur === record?._id ? null : cur));
+        setIsPaused(false);
+      },
+      onError: () => {
+        setSpeakingRecordId((cur) => (cur === record?._id ? null : cur));
+        setIsPaused(false);
+      },
+    });
+  }
+
   const index = records.findIndex((r) => r._id === record?._id);
   const canNavigate = !navigationDisabled && !view.pending && !view.streaming && index >= 0 && Boolean(onSelectRecord);
   const latest = !view.pending && index === records.length - 1;
@@ -82,7 +158,59 @@ export default function CourtroomStage({ session, view, records, onHistory, onRe
         PHÒNG XỬ ÁN <span className="stage-divider">/</span> {phaseLabel}
         {currentIssueLabel ? <> <span className="stage-divider">·</span> Trọng tâm: {currentIssueLabel}</> : null}
       </span>
+      <div className="stage-audio-master-controls">
+        {typeof onToggleTts === 'function' && (
+          <button
+            type="button"
+            onClick={onToggleTts}
+            className={`stage-master-sound-btn ${ttsEnabled ? 'is-active' : ''}`}
+            title={ttsEnabled ? 'Đang bật tự động phát âm thanh AI (Bấm để tắt âm thanh)' : 'Đang tắt âm thanh AI (Bấm để bật âm thanh tự động)'}
+            aria-label={ttsEnabled ? 'Tắt âm thanh phiên tòa' : 'Bật âm thanh phiên tòa'}
+          >
+            {ttsEnabled ? (
+              <>
+                <Volume2 size={13} className="text-emerald-400" />
+                <span>Âm thanh: Bật</span>
+              </>
+            ) : (
+              <>
+                <VolumeX size={13} className="text-slate-400" />
+                <span>Âm thanh: Tắt</span>
+              </>
+            )}
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => cycleCourtroomSpeechRate()}
+          className="stage-master-rate-btn"
+          aria-label={`Tốc độ đọc hiện tại: ${speechRate}x. Bấm để đổi`}
+          title={`Tốc độ đọc âm thanh hiện tại: ${speechRate}x. Bấm để chuyển đổi 1.0x, 1.25x và 1.5x`}
+        >
+          <Gauge size={12} className="text-sky-400" />
+          <span>{speechRate}x</span>
+        </button>
+      </div>
     </div>
+    {autoplayBlocked && (
+      <aside role="alert" className="court-autoplay-banner">
+        <div className="autoplay-banner-content">
+          <VolumeX size={16} className="text-amber-400 animate-pulse" aria-hidden="true" />
+          <strong>Trình duyệt đã chặn tự động phát âm thanh.</strong>
+          <span>Bấm kích hoạt để nghe giọng đọc của Hội đồng xét xử và Bên đối lập:</span>
+        </div>
+        <button
+          type="button"
+          className="autoplay-enable-btn"
+          onClick={() => {
+            unlockAndResumeCourtroomSpeech();
+            setAutoplayBlocked(false);
+          }}
+        >
+          <Volume2 size={14} aria-hidden="true" /> Bật âm thanh phiên tòa
+        </button>
+      </aside>
+    )}
     <div className="court-viewport"><div className="court-scene">
       <img className="court-background" src="/courtsim-courtroom-background-v2.png" alt="" aria-hidden="true" onError={() => setBackgroundFailed(true)} />
       {backgroundFailed && <p className="background-error">Chưa tải được nền phòng xử án. Bạn vẫn có thể tiếp tục phiên.</p>}
@@ -147,20 +275,66 @@ export default function CourtroomStage({ session, view, records, onHistory, onRe
             <button
               type="button"
               onClick={handleToggleSpeech}
-              aria-label={isCurrentSpeaking ? 'Dừng đọc lời thoại' : 'Nghe đọc lời thoại'}
-              title={isCurrentSpeaking ? 'Bấm để dừng đọc' : 'Nghe phát biểu bằng giọng nói tiếng Việt tự nhiên'}
-              className={`speech-voice-btn ${isCurrentSpeaking ? 'is-speaking' : ''}`}
+              aria-label={isCurrentSpeaking ? 'Tạm dừng đọc lời thoại' : isCurrentPaused ? 'Tiếp tục đọc lời thoại' : 'Nghe đọc lời thoại'}
+              title={isCurrentSpeaking ? 'Bấm để tạm dừng giọng đọc' : isCurrentPaused ? 'Bấm để tiếp tục nghe' : 'Nghe phát biểu bằng giọng nói tiếng Việt tự nhiên'}
+              className={`speech-voice-btn ${isCurrentSpeaking ? 'is-speaking' : isCurrentPaused ? 'is-paused' : ''}`}
             >
-              <Volume2
-                size={15}
+              {isCurrentSpeaking ? (
+                <>
+                  <Pause
+                    size={14}
+                    style={{
+                      display: 'inline-block',
+                      verticalAlign: '-2px',
+                      marginRight: '4px',
+                      color: '#0284c7',
+                    }}
+                  />
+                  Tạm dừng
+                </>
+              ) : isCurrentPaused ? (
+                <>
+                  <Play
+                    size={14}
+                    style={{
+                      display: 'inline-block',
+                      verticalAlign: '-2px',
+                      marginRight: '4px',
+                      color: '#d97706',
+                    }}
+                  />
+                  Tiếp tục
+                </>
+              ) : (
+                <>
+                  <Volume2
+                    size={14}
+                    style={{
+                      display: 'inline-block',
+                      verticalAlign: '-2px',
+                      marginRight: '4px',
+                    }}
+                  />
+                  Nghe đọc
+                </>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={handleReplaySpeech}
+              className="speech-replay-btn"
+              aria-label="Phát lại lời thoại từ đầu"
+              title="Phát lại toàn bộ lời thoại này từ đầu"
+            >
+              <RotateCcw
+                size={13}
                 style={{
                   display: 'inline-block',
                   verticalAlign: '-2px',
-                  marginRight: '4px',
-                  color: isCurrentSpeaking ? '#38bdf8' : undefined,
+                  marginRight: '3px',
                 }}
               />
-              {isCurrentSpeaking ? 'Đang đọc…' : 'Nghe đọc'}
+              Phát lại
             </button>
             <button
               type="button"
