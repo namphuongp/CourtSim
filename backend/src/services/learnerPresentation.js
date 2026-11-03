@@ -30,6 +30,7 @@ export function learnerCase(value) {
 }
 
 export function learnerCitation(citation) {
+  if (!citation || typeof citation !== 'object') return citation;
   const sourceVerified = hasVerifiedSource(citation);
   const readable = hasReadableLawSource(citation);
   const verified = citation.verification_status === 'verified' && sourceVerified;

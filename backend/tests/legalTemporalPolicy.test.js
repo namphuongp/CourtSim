@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildLegalPlan, assessVersion, isValidDateOnly } from '../src/services/legalTimeline.js';
-import { getValidityDetails, legalAuthorities } from '../src/data/legalAuthorities.js';
+import { getValidityDetails, getAuthorityMetadata, legalAuthorities } from '../src/data/legalAuthorities.js';
 import { learnerCitation } from '../src/services/learnerPresentation.js';
+import { legalCitationSchema } from '../src/schemas/legalCitationSchema.js';
 
 // ===== Tests cho logic thời điểm áp dụng pháp luật =====
 
@@ -102,7 +103,7 @@ test('assessVersion: không có rule phù hợp phiên bản trong khoảng ngà
   assert.equal(result.verified, false, 'phải unverified khi không có rule phù hợp với khoảng thời gian sự kiện');
 });
 
-// ===== Tests mới cho Cảnh báo tình trạng hiệu lực & Lịch sử thay đổi =====
+// ===== Tests cho Cảnh báo tình trạng hiệu lực & Lịch sử thay đổi =====
 
 test('getValidityDetails: Luật Đất đai 45/2013/QH13 phải có status expired, cảnh báo thay thế và lịch sử thay đổi', () => {
   const details = getValidityDetails('45/2013/QH13');
@@ -141,6 +142,19 @@ test('getValidityDetails: Luật Đất đai 13/2003/QH11 có status expired và
   assert.ok(details.validity_warning.includes('45/2013/QH13'));
 });
 
+test('getValidityDetails: An toàn với khoảng trắng, chữ thường và ngày không hợp lệ', () => {
+  const lowercase = getValidityDetails('  45/2013/qh13  ');
+  assert.ok(lowercase);
+  assert.equal(lowercase.validity_status, 'expired');
+
+  const invalidDate = getValidityDetails('45/2013/QH13', 'not-a-date');
+  assert.ok(invalidDate);
+  assert.equal(invalidDate.validity_status, 'expired');
+
+  const unknown = getValidityDetails('UNKNOWN/9999');
+  assert.equal(unknown, null);
+});
+
 test('learnerCitation: tự động gắn validity_status, validity_warning và change_history cho trích dẫn', () => {
   const citation = {
     id: 'CIT-TEST-1',
@@ -160,4 +174,17 @@ test('learnerCitation: tự động gắn validity_status, validity_warning và 
   assert.ok(formatted.change_history.length >= 2);
   assert.equal(formatted.effective_from, '2014-07-01');
   assert.equal(formatted.effective_to, '2024-07-31');
+
+  // Guard null/undefined
+  assert.equal(learnerCitation(null), null);
+  assert.equal(learnerCitation(undefined), undefined);
+});
+
+test('legalCitationSchema: chứa đầy đủ các trường validity_status, validity_warning, change_history', () => {
+  const paths = legalCitationSchema.paths;
+  assert.ok(paths.validity_status, 'phải có validity_status trên schema');
+  assert.ok(paths.validity_warning, 'phải có validity_warning trên schema');
+  assert.ok(paths.change_history, 'phải có change_history trên schema');
+  assert.ok(paths.effective_to, 'phải có effective_to trên schema');
+  assert.ok(paths.issuing_body, 'phải có issuing_body trên schema');
 });

@@ -192,7 +192,8 @@ export const legalAuthorities = Object.freeze({
 });
 
 export function getAuthorityMetadata(lawNumber) {
-  return legalAuthorities[lawNumber] ?? null;
+  const normalized = typeof lawNumber === 'string' ? lawNumber.trim().toUpperCase() : '';
+  return legalAuthorities[normalized] ?? legalAuthorities[lawNumber] ?? null;
 }
 
 /**
@@ -201,9 +202,17 @@ export function getAuthorityMetadata(lawNumber) {
  * @param {Date|string} atDate - Ngày xét hiệu lực (mặc định là hiện tại)
  */
 export function getValidityDetails(lawNumber, atDate = new Date()) {
-  const auth = legalAuthorities[lawNumber];
+  const normalized = typeof lawNumber === 'string' ? lawNumber.trim().toUpperCase() : '';
+  const auth = legalAuthorities[normalized] ?? legalAuthorities[lawNumber];
   if (!auth) return null;
-  const todayStr = (atDate instanceof Date ? atDate : new Date(atDate)).toISOString().slice(0, 10);
+
+  let todayStr;
+  try {
+    const d = atDate instanceof Date ? atDate : new Date(atDate);
+    todayStr = Number.isFinite(d.getTime()) ? d.toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
+  } catch {
+    todayStr = new Date().toISOString().slice(0, 10);
+  }
 
   let validityStatus = 'active';
   let warning = null;
