@@ -67,15 +67,20 @@ export default function LegalAssistant({ sessionId, open, onInsert, insertionDis
         <div className="flex items-center gap-2 flex-wrap">
           <h3 className="font-bold text-base text-slate-100">Tra cứu cùng Trợ lý Luật</h3>
           {isFreeTrial && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">
               <Sparkles size={11} />
-              Case dùng thử miễn phí · Trải nghiệm trọn vẹn Pro
+              Dùng thử miễn phí · Mở khóa tính năng cốt lõi Pro
             </span>
           )}
         </div>
         <small>Căn cứ rõ ràng · Đọc nguồn trước khi viện dẫn</small>
       </div>
     </div>
+    {isFreeTrial && (
+      <p className="text-xs text-emerald-200/90 bg-emerald-950/30 border border-emerald-500/25 rounded-lg p-2.5">
+        Tính năng Trợ lý Luật của gói Pro được mở khóa đầy đủ trong 02 case dùng thử để bạn trải nghiệm tra cứu căn cứ pháp lý và đưa trích dẫn trực tiếp vào bài phát biểu.
+      </p>
+    )}
     <p>Tìm theo số hiệu, tên luật hoặc vấn đề tranh chấp đất đai. Trợ lý ưu tiên kho tài liệu pháp luật và có thể tra cứu thêm trên web. Đọc nguồn và trạng thái áp dụng trước khi đưa trích dẫn vào lập luận.</p>
     <p className="text-slate-400">Tra cứu không gửi lượt tranh luận và không tự thay đổi điểm.</p>
     <form onSubmit={ask} className="assistant-form space-y-2"><label className="block" htmlFor="legal-question">Câu hỏi tra cứu luật</label><textarea id="legal-question" maxLength={1500} disabled={sending} value={draft.question} onChange={(e) => setDraft({ question: e.target.value, request_id: crypto.randomUUID() })} className="min-h-28 w-full rounded-lg border border-slate-600 bg-slate-950 p-3" placeholder="Quy định nào cần xem xét đối với yêu cầu trong vụ án?" /><div><small>{draft.question.length}/1500 ký tự</small><button disabled={sending || draft.question.trim().length < 5}><Search size={14}/>{sending ? 'Đang tra cứu...' : 'Hỏi trợ lý'}</button></div></form>

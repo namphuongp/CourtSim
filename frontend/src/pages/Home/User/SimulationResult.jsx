@@ -2,7 +2,7 @@ import ScoringSummary from '../../../components/ScoringSummary';
 import LearnerFeedback from '../../../components/feedback/LearnerFeedback';
 import { LegalCitations, LegalResearchResult } from '../../../components/LegalBasis';
 import { useEffect, useState } from 'react';
-import { Home, FileDown, Sparkles } from 'lucide-react';
+import { Home, FileDown, Sparkles, CheckCircle2, Info } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import api, { getApiError } from '../../../services/api';
 import './simulationResult.css';
@@ -148,7 +148,7 @@ function SessionResult({ sessionId }) {
               {isFreeTrial && (
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">
                   <Sparkles size={12} />
-                  Case dùng thử miễn phí · Trải nghiệm trọn vẹn Pro
+                  Case dùng thử miễn phí · Mở khóa tính năng cốt lõi Pro
                 </span>
               )}
             </p>
@@ -174,6 +174,50 @@ function SessionResult({ sessionId }) {
             <button onClick={() => navigate('/dashboard')}><Home size={17} /> Tổng quan</button>
           </div>
         </header>
+
+        {/* Hộp thông tin minh bạch quyền lợi dùng thử theo yêu cầu */}
+        {isFreeTrial && (
+          <section className="rounded-2xl border border-emerald-500/30 bg-emerald-950/25 p-4 text-xs text-slate-300 space-y-2.5" aria-label="Chính sách dùng thử minh bạch">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2 font-bold text-emerald-300 text-sm">
+                <Sparkles size={16} />
+                <span>Chính sách dùng thử minh bạch (Áp dụng trong 02 case miễn phí đầu tiên)</span>
+              </div>
+              <span className="text-emerald-400 font-medium">Cam kết trải nghiệm thực tế</span>
+            </div>
+            <p className="leading-relaxed">
+              CourtSim mở khóa phần lớn các tính năng cốt lõi của gói Pro trong 02 case dùng thử này để bạn đánh giá chính xác giá trị sản phẩm:
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-1">
+              <div className="flex items-start gap-1.5 text-emerald-200">
+                <CheckCircle2 size={14} className="text-emerald-400 shrink-0 mt-0.5" />
+                <span><strong>Bảng điểm chi tiết:</strong> Đánh giá 6 nhóm kỹ năng, điểm số từng mục & căn cứ phát biểu.</span>
+              </div>
+              <div className="flex items-start gap-1.5 text-emerald-200">
+                <CheckCircle2 size={14} className="text-emerald-400 shrink-0 mt-0.5" />
+                <span><strong>Nhận xét & Gợi ý cải thiện:</strong> Nhận xét sâu theo 4 kỹ năng tố tụng và đề xuất hoàn thiện.</span>
+              </div>
+              <div className="flex items-start gap-1.5 text-emerald-200">
+                <CheckCircle2 size={14} className="text-emerald-400 shrink-0 mt-0.5" />
+                <span><strong>Trợ lý Luật:</strong> Tra cứu văn bản pháp luật, xem trích đoạn và đưa căn cứ vào lập luận.</span>
+              </div>
+              <div className="flex items-start gap-1.5 text-emerald-200">
+                <CheckCircle2 size={14} className="text-emerald-400 shrink-0 mt-0.5" />
+                <span><strong>Công cụ phòng xử án:</strong> Hồ sơ chứng cứ, sổ tay ghi chép, giọng đọc AI và xuất biên bản PDF.</span>
+              </div>
+            </div>
+            <div className="border-t border-emerald-500/20 pt-2 text-slate-400 space-y-1">
+              <p className="font-semibold text-slate-300 flex items-center gap-1.5">
+                <Info size={13} className="text-sky-400 shrink-0" />
+                <span>Tính năng đặc thù gói Pro chưa bao gồm trong dùng thử:</span>
+              </p>
+              <ul className="list-disc list-inside pl-2 space-y-0.5 text-slate-400">
+                <li><strong>Phân tích kỹ năng nâng cao (Analytics):</strong> Theo dõi biểu đồ tiến bộ dài hạn tích lũy qua nhiều phiên (dành riêng cho thành viên Pro).</li>
+                <li><strong>Số lượt mở phiên:</strong> Gói Pro không giới hạn số lượt mở phiên; tài khoản dùng thử được áp dụng tối đa 02 case miễn phí.</li>
+              </ul>
+            </div>
+          </section>
+        )}
 
         {detailView && hasCriteria && canViewDetailedScoring && (
           <nav className="result-group-tabs" aria-label="Lọc nhóm kỹ năng">
