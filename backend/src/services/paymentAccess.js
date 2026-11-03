@@ -53,10 +53,25 @@ async function ensureQuota(userId) {
       quota = await UserUsageQuota.findOne({ user_id: userId }).lean();
     }
   }
-  if (quota.free_cases_used === undefined) {
-    // Dữ liệu cũ dùng chung cases_played: giữ số lượt miễn phí đã tiêu thụ.
-    await UserUsageQuota.updateOne({ _id: quota._id, free_cases_used: { $exists: false } },
-      { $set: { free_cases_used: Math.min(FREE_SESSION_LIMIT, Math.max(0, quota.cases_played ?? 0)) } });
+
+  // Tự động kiểm tra và đồng bộ chính xác số case miễn phí thực tế từ SimulationSession
+  const activeFreeSessions = await SimulationSession.countDocuments({
+    user_id: userId,
+    status: { $in: ['completed', 'ongoing'] },
+    $or: [
+      { is_free_trial: true },
+      { access_source: 'free_trial' },
+      { access_plan: 'freemium' },
+      { access_plan: { $exists: false } }
+    ]
+  });
+
+  if (quota.free_cases_used === undefined || quota.free_cases_used > activeFreeSessions) {
+    const freeUsed = Math.min(FREE_SESSION_LIMIT, Math.max(activeFreeSessions, quota.free_cases_used ?? 0));
+    await UserUsageQuota.updateOne(
+      { _id: quota._id },
+      { $set: { free_cases_used: freeUsed } }
+    );
     quota = await UserUsageQuota.findById(quota._id).lean();
   }
   return quota;
@@ -65,17 +80,49 @@ async function ensureQuota(userId) {
 export async function membershipStatus(user, creationRequestId) {
   const features = memberFeatures(user);
   const quota = await UserUsageQuota.findOne({ user_id: user._id }).lean();
-  const freeUsed = quota?.free_cases_used ?? Math.min(FREE_SESSION_LIMIT, Math.max(0, quota?.cases_played ?? 0));
+
+  // Đếm chính xác số case miễn phí người dùng đã HOÀN THÀNH XONG
+  const completedFreeCases = await SimulationSession.countDocuments({
+    user_id: user._id,
+    status: 'completed',
+    $or: [
+      { is_free_trial: true },
+      { access_source: 'free_trial' },
+      { access_plan: 'freemium' },
+      { access_plan: { $exists: false } }
+    ]
+  });
+
+  const rawFreeUsed = quota?.free_cases_used ?? Math.min(FREE_SESSION_LIMIT, Math.max(0, quota?.cases_played ?? 0));
+  const freeUsed = Math.min(FREE_SESSION_LIMIT, Math.max(completedFreeCases, rawFreeUsed));
   const freeRemaining = Math.max(0, FREE_SESSION_LIMIT - freeUsed);
+
+  // Người dùng chỉ hết thời gian dùng thử SAU KHI đã hoàn thành xong 02 case miễn phí đầu tiên
+  const isTrialActive = features.id === 'freemium' && completedFreeCases < FREE_SESSION_LIMIT;
+
   const credits = Math.max(0, quota?.case_credits ?? 0);
   // Lượt mua từ phiên bản cũ vẫn có đầy đủ quyền của phiên trả phí.
   const plan = features.id === 'freemium' && credits > 0 ? 'pay-per-use' : features.id;
   const effective = plan === 'pay-per-use' ? memberFeatures({ tier: plan }) : features;
   const resumable = creationRequestId ? await SimulationSession.exists({ user_id: user._id, creation_request_id: creationRequestId }) : null;
-  return { ...effective, freeLimit: FREE_SESSION_LIMIT, freeUsed, freeRemaining, caseCredits: credits,
+
+  // Trong thời gian dùng thử (khi chưa hoàn tất xong cả 2 case), luôn mở Trợ lý Luật và Chấm điểm chi tiết
+  const trialEffective = isTrialActive
+    ? { ...effective, legalAssistant: true, detailedScoring: true, isFreeTrial: true }
+    : effective;
+
+  return {
+    ...trialEffective,
+    freeLimit: FREE_SESSION_LIMIT,
+    freeUsed,
+    freeRemaining,
+    completedFreeCases,
+    isTrialActive,
+    caseCredits: credits,
     remainingSessions: effective.unlimitedSessions ? null : freeRemaining + credits,
     resumeRequestId: resumable ? creationRequestId : null,
-    canCreateSession: effective.unlimitedSessions || freeRemaining + credits > 0 };
+    canCreateSession: effective.unlimitedSessions || freeRemaining + credits > 0
+  };
 }
 
 export async function consumeCaseAccess(userId, tier, requestId = randomUUID(), role = 'user') {
