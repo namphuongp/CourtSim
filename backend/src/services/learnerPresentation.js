@@ -67,11 +67,36 @@ export function learnerRecord(record, courtCase = {}) {
   const r = record.toObject ? record.toObject() : record;
   const inventory = evidenceInventory(courtCase);
   const displayed = dialogueText(r.content, inventory);
-  return { _id: r._id, sender_type: r.sender_type, sender_name: ({ user: 'Bạn', ai_judge: 'Chủ tọa', ai_prosecutor: 'Bên đối lập' })[r.sender_type] ?? 'Người tham gia', created_at: r.created_at, request_id: r.request_id,
+  const isCriminal = /hình sự/iu.test(courtCase?.category ?? '');
+
+  let resolvedName = r.sender_name;
+  if (!resolvedName || resolvedName === 'Người tham gia') {
+    if (r.sender_type === 'user') {
+      resolvedName = 'Bạn';
+    } else if (r.sender_type === 'ai_judge') {
+      resolvedName = 'Thẩm phán (Chủ tọa)';
+    } else if (r.sender_type === 'ai_prosecutor') {
+      resolvedName = isCriminal ? 'Kiểm sát viên' : 'Luật sư bên đối lập';
+    } else if (r.sender_type === 'ai_opponent') {
+      resolvedName = isCriminal ? 'Bị cáo / Bên đối lập' : 'Bên đối lập';
+    } else {
+      resolvedName = 'Người tham gia';
+    }
+  }
+
+  return {
+    _id: r._id,
+    sender_type: r.sender_type,
+    sender_name: resolvedName,
+    role: r.role || (r.sender_type === 'user' ? 'learner' : r.sender_type === 'ai_judge' ? 'judge' : 'opponent'),
+    created_at: r.created_at,
+    request_id: r.request_id,
     content: r.sender_type === 'user' ? r.content : learnerText(displayed, 'Chưa hiển thị được phản hồi này. Hãy tải lại phiên.'),
     display_content: r.sender_type === 'user' ? displayed : learnerText(displayed, 'Chưa hiển thị được phản hồi này. Hãy tải lại phiên.'),
-    evidence_ids: r.evidence_ids ?? [], legal_reference_ids: r.legal_reference_ids ?? [],
-    citations: (r.citations ?? []).map(learnerCitation) };
+    evidence_ids: r.evidence_ids ?? [],
+    legal_reference_ids: r.legal_reference_ids ?? [],
+    citations: (r.citations ?? []).map(learnerCitation),
+  };
 }
 
 export function learnerEvaluation(result, courtCase = {}) {

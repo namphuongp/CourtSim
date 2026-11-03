@@ -306,7 +306,7 @@ function Room({ sessionId }) {
       setSession(data.data.session); setRecords(data.data.records);
       requestAnimationFrame(() => {
         if (data.data.session.conversation.status === 'learner') argumentRef.current?.focus();
-        else document.querySelector('.speech-content')?.focus();
+        else document.querySelector('.speech-content, .dialogue-messages-scroll')?.focus({ preventScroll: true });
       });
     } catch (error) {
       setState(s => ({ ...s, error: getApiError(error, 'Chưa tạo được lời thoại tiếp theo. Các lượt đã lưu vẫn được giữ lại, hãy thử lại.') }));
@@ -425,7 +425,7 @@ function Room({ sessionId }) {
   }
   function returnToCurrent() {
     setSelectedId(null);
-    requestAnimationFrame(() => document.querySelector('.speech-content')?.focus());
+    requestAnimationFrame(() => document.querySelector('.speech-content, .dialogue-messages-scroll')?.focus({ preventScroll: true }));
   }
   const view = streamedSpeech?.content && state.sending ? { record: { _id: 'streaming', content: streamedSpeech.content, sender_type: streamedSpeech.role === 'judge' ? 'ai_judge' : 'ai_prosecutor' }, actor: streamedSpeech.role, streaming: true }
     : courtroomView({ records, selectedId: selectedId ?? conversation?.current_record_id, sending: state.sending && Boolean(submittedContent) && !session?.processing, pendingContent: submittedContent, processing: session?.processing, ending: state.ending });
