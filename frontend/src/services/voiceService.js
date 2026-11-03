@@ -245,9 +245,11 @@ export function cleanTextForSpeech(raw) {
   return raw
     .replace(/\[([^\]]+)\]\([^)]+\)/gu, '$1') // Giữ lại text của link markdown
     .replace(/<[^>]+>/gu, '') // Lược bỏ thẻ HTML
-    .replace(/\[(?:CC|PL):[^\]]+\]/gu, '')
-    .replace(/\[(?:Chứng cứ|Điều luật):[^\]]+\]/gu, '')
+    .replace(/\[(?:CC|PL|BL):[^\]]+\]/gu, '')
+    .replace(/\[(?:Chứng cứ|Điều luật|Căn cứ|Bút lục):[^\]]+\]/gu, '')
     .replace(/https?:\/\/[^\s]+/gu, '')
+    .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+    .replace(/[-=_]{3,}/gu, ' ')
     .replace(/[#*`_~]/gu, '')
     .replace(/\s+/gu, ' ')
     .trim();

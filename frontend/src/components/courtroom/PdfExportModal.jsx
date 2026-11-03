@@ -42,6 +42,15 @@ export default function PdfExportModal({
   const [exporting, setExporting] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  // Luôn đồng bộ dữ liệu phiên và biên bản mới nhất từ props khi mở modal
+  useEffect(() => {
+    if (open) {
+      if (propSession) setSession(propSession);
+      if (propResult) setResult(propResult);
+      if (propRecords && propRecords.length > 0) setRecords(propRecords);
+    }
+  }, [open, propSession, propResult, propRecords]);
+
   // Tự động tải dữ liệu nếu chưa có sẵn
   useEffect(() => {
     if (!open || !sessionId) return;
@@ -137,7 +146,8 @@ export default function PdfExportModal({
   if (!open) return null;
 
   const caseTitle = session?.case_id?.title || session?.case_snapshot?.title || 'Phiên mô phỏng';
-  const filename = `${docType === 'result' ? 'Ket_Qua_Tranh_Tung' : docType === 'transcript' ? 'Bien_Ban_Phien_Toa' : 'Ho_So_Phien_Toa'}_${String(sessionId).slice(-6)}`;
+  const sessionSafeId = String(sessionId || session?._id || '').slice(-6) || 'EXPORT';
+  const filename = `${docType === 'result' ? 'Ket_Qua_Tranh_Tung' : docType === 'transcript' ? 'Bien_Ban_Phien_Toa' : 'Ho_So_Phien_Toa'}_${sessionSafeId}`;
 
   async function handlePrintPdf() {
     setExporting(true);

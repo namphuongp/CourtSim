@@ -26,9 +26,11 @@ export function sanitizeTextForTts(rawText, maxLength = 3500) {
   let cleaned = rawText
     .replace(/\[([^\]]+)\]\([^)]+\)/gu, '$1') // Giữ lại chữ của markdown link
     .replace(/<[^>]+>/gu, '') // Bỏ thẻ HTML
-    .replace(/\[(?:CC|PL):[^\]]+\]/gu, '') // Bỏ mã chứng cứ, căn cứ luật
-    .replace(/\[(?:Chứng cứ|Điều luật):[^\]]+\]/gu, '')
+    .replace(/\[(?:CC|PL|BL):[^\]]+\]/gu, '') // Bỏ mã chứng cứ, căn cứ luật, bút lục
+    .replace(/\[(?:Chứng cứ|Điều luật|Căn cứ|Bút lục):[^\]]+\]/gu, '') // Bỏ nhãn trích dẫn tố tụng
     .replace(/https?:\/\/[^\s]+/gu, '') // Bỏ liên kết web
+    .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '') // Bỏ emoji
+    .replace(/[-=_]{3,}/gu, ' ') // Bỏ phân cách markdown
     .replace(/[#*`_~]/gu, '') // Bỏ ký tự markdown
     .replace(/\s+/gu, ' ')
     .trim();

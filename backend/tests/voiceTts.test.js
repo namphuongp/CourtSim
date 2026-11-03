@@ -11,11 +11,16 @@ const {
 } = await import('../src/services/aiVoiceService.js');
 
 test('aiVoiceService: sanitizeTextForTts làm sạch văn bản tố tụng chuẩn xác', () => {
-  const dirty = 'Kính thưa [Chủ tọa](https://court.vn) và Hội đồng xét xử [CC: EV-01] [PL: LAW-02]. <p>Chúng tôi đề nghị bác đơn!</p> **Căn cứ** Điều 100.';
+  const dirty = 'Kính thưa [Chủ tọa](https://court.vn) và Hội đồng xét xử [CC: EV-01] [PL: LAW-02] [Căn cứ: 45/2013/QH13, Điều 100] [Bút lục: 24]. <p>Chúng tôi đề nghị bác đơn! ⚖️ 🛡️</p> --- **Căn cứ** Điều 100.';
   const cleaned = sanitizeTextForTts(dirty);
   assert.equal(cleaned.includes('https://court.vn'), false, 'Không chứa URL');
   assert.equal(cleaned.includes('[CC: EV-01]'), false, 'Không chứa mã chứng cứ');
   assert.equal(cleaned.includes('[PL: LAW-02]'), false, 'Không chứa mã căn cứ luật');
+  assert.equal(cleaned.includes('[Căn cứ:'), false, 'Không chứa nhãn [Căn cứ:]');
+  assert.equal(cleaned.includes('[Bút lục:'), false, 'Không chứa nhãn [Bút lục:]');
+  assert.equal(cleaned.includes('⚖️'), false, 'Không chứa emoji cái cân');
+  assert.equal(cleaned.includes('🛡️'), false, 'Không chứa emoji cái khiên');
+  assert.equal(cleaned.includes('---'), false, 'Không chứa đường kẻ markdown');
   assert.equal(cleaned.includes('<p>'), false, 'Không chứa thẻ HTML');
   assert.equal(cleaned.includes('**'), false, 'Không chứa ký tự markdown');
   assert.equal(cleaned.includes('Chủ tọa và Hội đồng xét xử'), true, 'Giữ lại nội dung lời nói');
