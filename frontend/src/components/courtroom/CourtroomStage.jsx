@@ -397,6 +397,15 @@ export default function CourtroomStage({
             VS
           </span>
 
+          <button className="stage-transcript-info" type="button" onClick={onHistory}>
+            <span>BIÊN BẢN PHIÊN</span>
+            <strong>
+              {records.length}
+              <small> phát biểu đã lưu</small>
+            </strong>
+            <span>Mở biên bản →</span>
+          </button>
+
           <div className="stage-session-info">
             <span>PHẦN TRÌNH BÀY CỦA BẠN</span>
             <strong>
@@ -409,15 +418,6 @@ export default function CourtroomStage({
               max={session?.max_turns ?? 20}
             />
           </div>
-
-          <button className="stage-transcript-info" type="button" onClick={onHistory}>
-            <span>BIÊN BẢN PHIÊN</span>
-            <strong>
-              {records.length}
-              <small> phát biểu đã lưu</small>
-            </strong>
-            <span>Mở biên bản →</span>
-          </button>
 
           <div className="court-turn-badge" role="status">
             {!session

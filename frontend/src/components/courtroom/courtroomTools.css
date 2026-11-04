@@ -57,8 +57,8 @@ body .courtroom-controls .end-session:disabled { background:#1c2c53; color:#859b
 .session-notebook button { border:0; border-radius:999px; padding:8px 14px; color:white; background:#2d77ff; font-size:11px; }
 .session-notebook button:disabled { opacity:.4; }
 .stage-session-info,.stage-transcript-info { position:absolute; z-index:4; top:5%; width:21%; border:1px solid #758be665; border-radius:9px; padding:12px; background:linear-gradient(120deg,#182359ce,#1c3e77a0); color:#d5e4ff; text-align:left; }
-.stage-session-info { left:3%; border-left:3px solid #db8498; }
-.stage-transcript-info { right:3%; border-right:3px solid #64c9ff; }
+.stage-session-info { right:3%; border-right:3px solid #34d399; left:auto; }
+.stage-transcript-info { left:3%; border-left:3px solid #64c9ff; right:auto; }
 .stage-session-info>span,.stage-transcript-info>span { display:block; font-size:9px; color:#98b2e1; letter-spacing:.03em; }
 .stage-session-info strong,.stage-transcript-info strong { display:block; font-size:22px; margin:5px 0; }
 .stage-session-info small,.stage-transcript-info small { font-size:10px; font-weight:400; color:#96b3e8; }

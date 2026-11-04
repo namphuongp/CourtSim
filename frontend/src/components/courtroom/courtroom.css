@@ -461,7 +461,7 @@ body .voice-rate-btn strong {
   border-radius: 8px; font-size: 12px; color: #991b1b;
 }
 /* Arena: characters and speech stay live; the backdrop is built from existing assets and CSS. */
-body .courtroom-page { height:100vh !important; height:100dvh !important; max-height:100vh !important; max-height:100dvh !important; min-height:0 !important; overflow:hidden !important; display:flex !important; flex-direction:column !important; box-sizing:border-box !important; background:radial-gradient(ellipse at 50% 65%,#123fbc,#08113e 75%); color:#d6e4ff; padding:6px clamp(10px,1.2vw,18px) 0 !important; }
+body .courtroom-page { height:100vh !important; height:100dvh !important; max-height:100vh !important; max-height:100dvh !important; min-height:0 !important; overflow:hidden !important; overflow-x:hidden !important; display:flex !important; flex-direction:column !important; box-sizing:border-box !important; background:radial-gradient(ellipse at 50% 65%,#123fbc,#08113e 75%); color:#d6e4ff; padding:6px clamp(10px,1.2vw,18px) 0 !important; width:100vw !important; max-width:100vw !important; }
 body .courtroom-header { gap:10px; margin-bottom:4px; flex-shrink:0; }
 body .courtroom-header h1 { color:#edf4ff; font-size:clamp(14px,1.1vw,17px); font-weight:750; margin:2px 0; }
 body .courtroom-back { color:#a0b9f1; }
@@ -474,7 +474,7 @@ body .courtroom-controls .end-session { color:#d8ff42; border-color:#c9ef4d70; }
 body .courtroom-workspace { flex:1 1 0% !important; min-height:0 !important; max-height:none !important; margin:0 !important; overflow:hidden !important; display:flex !important; flex-direction:column !important; width:100% !important; } body .court-stage-section { height:100% !important; min-height:0 !important; display:flex !important; flex-direction:column !important; overflow:hidden !important; border:1px solid #5876ca60; border-radius:14px; background:#0b184e; box-shadow:0 10px 35px #02092560; }
 body .court-stage-toolbar { color:#b8caf4; background:#0a1544; border-bottom:1px solid #405d9e60; min-height:24px; font-size:10px; letter-spacing:.06em; flex-shrink:0; padding:2px 10px; }
 body .court-viewport { flex:1 1 0% !important; min-height:0 !important; position:relative !important; overflow:hidden !important; width:100% !important; height:100% !important; } body .court-scene { position:relative !important; width:100% !important; height:100% !important; min-height:0 !important; aspect-ratio:auto !important; overflow:hidden !important; background:radial-gradient(ellipse at 50% 90%,#1d63f0c0,transparent 60%),linear-gradient(100deg,#1c215e,#071342 50%,#123678); }
-body .court-scene::before { content:''; position:absolute; inset:0; z-index:0; pointer-events:none; background:repeating-linear-gradient(90deg,transparent 0 6%,#6598ff12 6.2% 8.2%,transparent 8.4% 13%),linear-gradient(0deg,#133ecd80,transparent 65%); }
+body .court-scene::before { content:''; position:absolute; inset:0; z-index:0; pointer-events:none; background:radial-gradient(ellipse at 50% 30%, rgba(59, 130, 246, 0.12) 0%, transparent 70%), linear-gradient(0deg, #133ecd80, transparent 65%); }
 body .court-background { filter:grayscale(1) sepia(1) hue-rotate(180deg) saturate(4) brightness(.33); opacity:.32; object-fit:fill; }
 .court-emblem { position:absolute; z-index:1; top:7%; left:calc(50% - 52px); width:104px; height:104px; padding:22px; color:#8ab7ff30; border:1px solid #80adff30; border-radius:50%; }
 .court-versus { position:absolute; z-index:5; left:calc(50% - 40px); top:68%; color:white; font-size:50px; font-weight:900; font-style:italic; text-shadow:0 4px 0 #3b87ff,0 0 25px #349cff; line-height:1; pointer-events:none; }
@@ -558,14 +558,13 @@ body .courtroom-page .guide-actions button:last-child { border-radius:999px; bac
 @media(min-width:851px) {
   body .courtroom-page { height:100vh !important; height:100dvh !important; max-height:100vh !important; max-height:100dvh !important; min-height:0 !important; overflow:hidden !important; }
   body .courtroom-workspace { flex:1 1 0% !important; min-height:0 !important; height:100% !important; } body .court-stage-section { height:100% !important; min-height:0 !important; } body .court-viewport { height:100% !important; min-height:0 !important; } body .court-scene { height:100% !important; min-height:0 !important; aspect-ratio:auto !important; }
-  body .character-judge .character-portrait { top:0% !important; left:43% !important; width:14% !important; height:25% !important; }
+  body .character-judge .character-portrait { top:0% !important; left:42% !important; width:16% !important; height:25% !important; }
   body .character-judge .character-name { left:41% !important; top:19% !important; width:18% !important; padding:3px 6px !important; }
-  body .character-opponent .character-portrait { left:2% !important; top:16% !important; height:70% !important; width:24% !important; }
-  body .character-learner .character-portrait { right:2% !important; top:16% !important; height:70% !important; width:24% !important; }
-  body .character-opponent .character-name { left:3% !important; top:83% !important; width:22% !important; padding:5px 4px !important; }
-  body .character-learner .character-name { right:3% !important; top:83% !important; width:22% !important; padding:5px 4px !important; }
-  body .desk-judge { top:18% !important; }
-  body .court-speech { top:25% !important; left:27% !important; width:46% !important; bottom:6px !important; max-height:calc(75% - 8px) !important; padding:8px 12px !important; }
+  body .character-opponent .character-portrait { left:3% !important; top:16% !important; height:68% !important; width:22% !important; }
+  body .character-learner .character-portrait { right:3% !important; top:16% !important; height:68% !important; width:22% !important; }
+  body .character-opponent .character-name { left:3% !important; top:84% !important; width:22% !important; padding:5px 4px !important; }
+  body .character-learner .character-name { right:3% !important; top:84% !important; width:22% !important; padding:5px 4px !important; }
+  body .court-speech { top:24% !important; left:26% !important; width:48% !important; bottom:6px !important; max-height:calc(76% - 8px) !important; padding:8px 12px !important; }
   body .speech-content { max-height:none !important; flex:1 1 auto !important; min-height:0 !important; overflow-y:auto !important; }
   body .courtroom-page:has(.study-panel) .court-stage-section { filter:brightness(.65); }
 }
@@ -721,6 +720,9 @@ body .stage-master-rate-btn:hover {
   display: flex;
   flex-direction: column;
   gap: 5px;
+  max-width: 100vw !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
 }
 
 /* Thanh công cụ hành động tích hợp */
@@ -729,7 +731,13 @@ body .stage-master-rate-btn:hover {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.console-action-deck::-webkit-scrollbar {
+  display: none;
 }
 
 .deck-group-primary, .deck-group-controls {
@@ -927,6 +935,7 @@ body .stage-master-rate-btn:hover {
 
 body .courtroom-header {
   width: 100%;
+  max-width: 100% !important;
   display: flex !important;
   flex-direction: column !important;
   gap: 5px !important;
@@ -939,6 +948,7 @@ body .courtroom-header {
   backdrop-filter: blur(8px) !important;
   flex-shrink: 0 !important;
   box-sizing: border-box !important;
+  overflow: hidden !important;
 }
 
 .courtroom-header-top {
@@ -947,6 +957,9 @@ body .courtroom-header {
   justify-content: space-between;
   gap: 10px;
   min-height: 28px;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .courtroom-header-left {
@@ -954,7 +967,9 @@ body .courtroom-header {
   align-items: center;
   gap: 8px;
   min-width: 0;
-  flex: 1;
+  max-width: 100%;
+  flex: 1 1 auto;
+  overflow: hidden;
 }
 
 .courtroom-back-btn {
@@ -983,7 +998,9 @@ body .courtroom-header {
   align-items: center;
   gap: 8px;
   min-width: 0;
+  max-width: 100%;
   flex-wrap: nowrap;
+  overflow: hidden;
 }
 
 .case-main-title {
@@ -994,8 +1011,9 @@ body .courtroom-header {
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
-  max-width: clamp(160px, 24vw, 360px) !important;
+  max-width: clamp(120px, 18vw, 260px) !important;
   line-height: 1.25 !important;
+  flex-shrink: 0 !important;
 }
 
 .case-badges-row {
@@ -1034,20 +1052,37 @@ body .courtroom-header {
   padding: 1.5px 7px;
   white-space: nowrap;
   color: #cbd5e1;
+  max-width: clamp(140px, 22vw, 300px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 1;
 }
 .case-parties-badge .party-p {
   color: #60a5fa;
   font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 130px;
+  display: inline-block;
+  vertical-align: middle;
 }
 .case-parties-badge .party-vs {
   font-size: 9px;
   font-weight: 800;
   color: #64748b;
   padding: 0 1px;
+  flex-shrink: 0;
 }
 .case-parties-badge .party-d {
   color: #f87171;
   font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 140px;
+  display: inline-block;
+  vertical-align: middle;
 }
 
 .case-user-role-badge {
@@ -1106,6 +1141,8 @@ body .courtroom-header {
 .courtroom-header-stepper-row {
   border-top: 1px solid rgba(88, 118, 202, 0.22);
   padding-top: 4px;
+  width: 100%;
+  overflow: hidden;
 }
 
 .trial-stepper-container {
@@ -1114,13 +1151,16 @@ body .courtroom-header {
   justify-content: space-between;
   gap: 10px;
   min-height: 24px;
+  width: 100%;
 }
 
 .trial-stepper-track {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 0;
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -1134,6 +1174,7 @@ body .courtroom-header {
   gap: 6px;
   position: relative;
   flex-shrink: 0;
+  height: 26px;
 }
 
 .step-indicator {
@@ -1628,11 +1669,11 @@ body .courtroom-header {
 body .court-speech.court-dialogue-stream {
   position: absolute !important;
   z-index: 6 !important;
-  top: 23% !important;
-  left: 25% !important;
-  width: 50% !important;
+  top: 24% !important;
+  left: 26% !important;
+  width: 48% !important;
   bottom: 8px !important;
-  max-height: calc(77% - 8px) !important;
+  max-height: calc(76% - 8px) !important;
   padding: 0 !important;
   border-radius: 14px !important;
   border: 1px solid rgba(88, 118, 202, 0.45) !important;
@@ -1860,9 +1901,21 @@ body .court-speech.court-dialogue-stream {
 /* Footer thanh điều khiển bên trong khung chat */
 .dialogue-stream-footer {
   border-top: 1px solid rgba(88, 118, 202, 0.25);
-  padding: 4px 10px;
+  padding: 5px 12px;
   background: rgba(14, 28, 77, 0.85);
   flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.dialogue-stream-footer .speech-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+.dialogue-stream-footer .dialogue-next {
+  margin: 0 auto;
 }
 
 /* NÚT NỔI CUỘN XUỐNG ĐÁY */
