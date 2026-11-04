@@ -3,12 +3,17 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Gavel,
   Gauge,
+  Maximize2,
   MessageSquare,
+  Minimize2,
   Pause,
   Play,
   RotateCcw,
   Scale,
+  Shield,
+  User,
   Volume2,
   VolumeX,
 } from 'lucide-react';
@@ -107,6 +112,7 @@ export default function CourtroomStage({
   const [autoplayBlocked, setAutoplayBlocked] = useState(() => isAutoplayBlocked());
   const [speechRate, setSpeechRate] = useState(() => getCourtroomSpeechRate());
   const [inspectedActor, setInspectedActor] = useState(null);
+  const [isStreamExpanded, setIsStreamExpanded] = useState(false);
 
   // Auto-scroll state & refs
   const chatScrollRef = useRef(null);
@@ -458,15 +464,26 @@ export default function CourtroomStage({
           <div className="court-desk-layer desk-front" aria-hidden="true" />
 
           {/* KHUNG HỘI THOẠI PHIÊN TÒA: DANH SÁCH BONG BÓNG CHAT VỚI AUTO-SCROLL THÔNG MINH */}
-          <article className="court-speech court-dialogue-stream" aria-label="Khung hội thoại phiên tòa">
+          <article className={`court-speech court-dialogue-stream ${isStreamExpanded ? 'is-stream-expanded' : ''}`} aria-label="Khung hội thoại phiên tòa">
             <div className="dialogue-stream-header">
               <span className="dialogue-stream-title">
                 <MessageSquare size={13} className="text-sky-400" />
                 HỘI THOẠI PHIÊN TÒA
               </span>
-              <span className="dialogue-stream-count">
-                {displayRecords.length} lượt phát biểu
-              </span>
+              <div className="dialogue-stream-header-actions">
+                <span className="dialogue-stream-count">
+                  {displayRecords.length} lượt phát biểu
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsStreamExpanded((v) => !v)}
+                  className="dialogue-stream-expand-toggle"
+                  title={isStreamExpanded ? 'Thu nhỏ khung hội thoại' : 'Mở rộng khung hội thoại'}
+                  aria-label={isStreamExpanded ? 'Thu nhỏ' : 'Mở rộng'}
+                >
+                  {isStreamExpanded ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+                </button>
+              </div>
             </div>
 
             <div
@@ -497,7 +514,13 @@ export default function CourtroomStage({
                     <div className="bubble-header">
                       <div className="bubble-speaker-info">
                         <span className={`bubble-avatar avatar-${speaker.actor}`} aria-hidden="true">
-                          {speaker.actor === 'judge' ? '⚖️' : speaker.actor === 'opponent' ? '🛡️' : '👤'}
+                          {speaker.actor === 'judge' ? (
+                            <Gavel size={12} className="text-amber-400" />
+                          ) : speaker.actor === 'opponent' ? (
+                            <Shield size={12} className="text-rose-400" />
+                          ) : (
+                            <User size={12} className="text-sky-400" />
+                          )}
                         </span>
                         <strong className="bubble-speaker-name">{speaker.name}</strong>
                         <span className="bubble-role-pill">{speaker.roleTag}</span>
@@ -554,7 +577,7 @@ export default function CourtroomStage({
                             title="Bấm để xem chi tiết căn cứ pháp luật và toàn văn lời thoại"
                             aria-label="Căn cứ pháp lý trích dẫn"
                           >
-                            <span className="chip-badge">⚖️ Căn cứ:</span>
+                            <span className="chip-badge inline-flex items-center gap-1"><Scale size={11} className="text-sky-400" /> Căn cứ:</span>
                             <span className="chip-items">
                               {uniqueCitations.slice(0, 3).map((c, i) => {
                                 const isObj = typeof c === 'object';
@@ -645,10 +668,18 @@ export default function CourtroomStage({
               {/* Trạng thái đang chuẩn bị lượt tiếp theo */}
               {preparing && !view?.streaming && (
                 <div className="dialogue-bubble bubble-preparing" role="status">
-                  <span className="preparing-indicator">
-                    {session?.conversation?.next_speaker === 'judge'
-                      ? '⚖️ Thẩm phán (Chủ tọa) đang chuẩn bị câu hỏi xét hỏi…'
-                      : '🛡️ Bên đối lập đang chuẩn bị lập luận…'}
+                  <span className="preparing-indicator inline-flex items-center gap-1.5">
+                    {session?.conversation?.next_speaker === 'judge' ? (
+                      <>
+                        <Gavel size={13} className="text-amber-400" />
+                        <span>Thẩm phán (Chủ tọa) đang chuẩn bị câu hỏi xét hỏi…</span>
+                      </>
+                    ) : (
+                      <>
+                        <Shield size={13} className="text-rose-400" />
+                        <span>Bên đối lập đang chuẩn bị lập luận…</span>
+                      </>
+                    )}
                   </span>
                 </div>
               )}

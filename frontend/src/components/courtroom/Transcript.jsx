@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { FileDown, Pause, Play, Search, Volume2 } from 'lucide-react';
+import { FileDown, Gavel, Pause, Play, Search, Shield, User, Volume2 } from 'lucide-react';
 import {
   getSpeakingRecordId,
   isCourtroomSpeechPaused,
@@ -135,7 +135,7 @@ export default function Transcript({ session, records = [], selected, onSelect, 
               >
                 <h3>
                   <span className={`transcript-avatar actor-${speakerInfo.actor}`} aria-hidden="true">
-                    {speakerInfo.actor === 'judge' ? '⚖️' : speakerInfo.actor === 'opponent' ? '🛡️' : '👤'}
+                    {speakerInfo.actor === 'judge' ? <Gavel size={13} className="text-amber-400" /> : speakerInfo.actor === 'opponent' ? <Shield size={13} className="text-rose-400" /> : <User size={13} className="text-sky-400" />}
                   </span>
                   {label}
                   {record.created_at && (

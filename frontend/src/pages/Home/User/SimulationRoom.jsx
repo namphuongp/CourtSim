@@ -25,7 +25,7 @@ import FeedbackModal from '../../../components/feedback/FeedbackModal';
 import TrialPhaseStepper from '../../../components/courtroom/TrialPhaseStepper';
 import CaseQuickSummaryModal from '../../../components/courtroom/CaseQuickSummaryModal';
 import SessionTimer from '../../../components/courtroom/SessionTimer';
-import { BookOpen, FileText, Gavel, HelpCircle, ListChecks, Maximize2, Scale } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Award, BookOpen, CircleHelp, ClipboardList, FileDown, FileText, FolderOpen, Gavel, HelpCircle, Loader2, LogOut, Maximize2, MessageSquareQuote, Plus, Scale, Send, Shield, Tag, User } from 'lucide-react';
 import { LoadingState } from '../../../components/WorkspaceStates';
 
 export default function SimulationRoom() {
@@ -547,7 +547,7 @@ function Room({ sessionId }) {
       {slow && preparing && <p role="status">{waitExpired ? 'Chưa xác nhận được kết quả. Kiểm tra kết nối và tiến trình trước khi thử lại để tránh gửi trùng.' : 'Phản hồi đang lâu hơn thường lệ.'} <button type="button" onClick={() => setReload(n => n + 1)}>Kiểm tra tiến trình</button></p>}
       {conversation.status === 'awaiting_continue' && <button type="button" className="dialogue-next" disabled={disabled} onClick={() => continueDialogue('advance')}>{nextSpeaker === 'Bạn' ? 'Trình bày ý kiến' : `Tiếp tục: ${nextSpeaker}`} <span aria-hidden="true">→</span></button>}
       {conversation.status === 'failed' && <button type="button" className="dialogue-next" disabled={disabled} onClick={() => continueDialogue('resume')}>Thử lại lời thoại</button>}
-      {isReadyToClose && !preparing && <button type="button" className="dialogue-complete-btn" disabled={disabled} onClick={() => complete({ autoFromChat: true })}>Nghị án & Chấm điểm kết quả ⚖️</button>}
+      {isReadyToClose && !preparing && <button type="button" className="dialogue-complete-btn inline-flex items-center gap-1.5" disabled={disabled} onClick={() => complete({ autoFromChat: true })}><Gavel size={14} aria-hidden="true" /><span>Nghị án & Chấm điểm kết quả</span></button>}
     </div> : null;
   if (state.loading) return <main className="courtroom-page"><LoadingState>Đang tải phiên tòa...</LoadingState></main>;
   return <main className="courtroom-page">
@@ -591,8 +591,9 @@ function Room({ sessionId }) {
       {/* Tầng 1: Thông tin tóm tắt vụ án & Công cụ điều khiển */}
       <div className="courtroom-header-top">
         <div className="courtroom-header-left">
-          <Link className="courtroom-back-btn" to="/dashboard/sessions" title="Quay lại danh sách các phiên tòa">
-            ← Danh sách
+          <Link className="courtroom-back-btn inline-flex items-center gap-1" to="/dashboard/sessions" title="Quay lại danh sách các phiên tòa">
+            <ArrowLeft size={13} aria-hidden="true" />
+            <span>Danh sách</span>
           </Link>
           <div className="case-title-group">
             <h1 className="case-main-title" title={courtCase?.title ?? 'Phiên mô phỏng'}>
@@ -600,14 +601,15 @@ function Room({ sessionId }) {
             </h1>
             <div className="case-badges-row">
               {courtCase?.category && (
-                <span className="case-category-badge" title="Lĩnh vực tranh chấp">
-                  🏷️ {courtCase.category}
+                <span className="case-category-badge inline-flex items-center gap-1" title="Lĩnh vực tranh chấp">
+                  <Tag size={11} className="text-sky-400" aria-hidden="true" />
+                  <span>{courtCase.category}</span>
                 </span>
               )}
               <span className="case-parties-badge" title={`Nguyên đơn: ${plaintiffName} | Bị đơn: ${defendantName}`}>
-                <span className="party-p">⚖️ {plaintiffName}</span>
+                <span className="party-p inline-flex items-center gap-1"><Scale size={11} className="text-sky-400" /><span>{plaintiffName}</span></span>
                 <span className="party-vs">vs</span>
-                <span className="party-d">🛡️ {defendantName}</span>
+                <span className="party-d inline-flex items-center gap-1"><Shield size={11} className="text-rose-400" /><span>{defendantName}</span></span>
               </span>
               <span className="case-user-role-badge" title="Tư cách tố tụng của bạn trong phiên">
                 Vai: <strong>{userRoleText}</strong>
@@ -627,19 +629,23 @@ function Room({ sessionId }) {
 
         <nav className="courtroom-controls" aria-label="Công cụ phiên tòa">
           <SessionTimer session={session} completed={completed} />
-          <button className="tool-guide" aria-expanded={panel === 'guide'} onClick={() => setPanel(panel === 'guide' ? null : 'guide')}>
-            Hướng dẫn
+          <button className="tool-guide inline-flex items-center gap-1" aria-expanded={panel === 'guide'} onClick={() => setPanel(panel === 'guide' ? null : 'guide')}>
+            <HelpCircle size={13} aria-hidden="true" />
+            <span>Hướng dẫn</span>
           </button>
-          <button type="button" className="tool-export" onClick={() => setPdfModalOpen(true)} title="Xuất biên bản phiên tòa dạng PDF">
-            Xuất PDF
+          <button type="button" className="tool-export inline-flex items-center gap-1" onClick={() => setPdfModalOpen(true)} title="Xuất biên bản phiên tòa dạng PDF">
+            <FileDown size={13} aria-hidden="true" />
+            <span>Xuất PDF</span>
           </button>
           {completed ? (
-            <Link to={'/simulation/' + sessionId + '/result'} className="result-link-btn">
-              Xem kết quả
+            <Link to={'/simulation/' + sessionId + '/result'} className="result-link-btn inline-flex items-center gap-1">
+              <Award size={13} aria-hidden="true" />
+              <span>Xem kết quả</span>
             </Link>
           ) : (
-            <button className="end-session" disabled={disabled || !userTurns} onClick={() => setConfirmEnd(true)}>
-              {state.ending ? 'Đang chấm điểm...' : 'Kết thúc phiên'}
+            <button className="end-session inline-flex items-center gap-1" disabled={disabled || !userTurns} onClick={() => setConfirmEnd(true)}>
+              <LogOut size={13} aria-hidden="true" />
+              <span>{state.ending ? 'Đang chấm điểm...' : 'Kết thúc phiên'}</span>
             </button>
           )}
         </nav>
@@ -691,7 +697,7 @@ function Room({ sessionId }) {
             onClick={() => { setDossierTab('evidence'); setPanel(panel === 'case' ? null : 'case'); }}
             title="Mở hồ sơ vụ án và đối chiếu tài liệu chứng cứ"
           >
-            <FileText size={15} aria-hidden="true" />
+            <FolderOpen size={15} aria-hidden="true" />
             <strong>Hồ sơ chứng cứ</strong>
           </button>
 
@@ -717,7 +723,7 @@ function Room({ sessionId }) {
 
           <div className="deck-separator" aria-hidden="true" />
 
-          {[[Gavel, 'Phản bác', 'Làm rõ ý kiến'], [HelpCircle, 'Đặt câu hỏi', 'Làm sáng tỏ tình tiết'], [ListChecks, 'Tóm tắt', 'Hệ thống lập luận']].map(([Icon, label, detail]) => (
+          {[[MessageSquareQuote, 'Phản biện', 'Làm rõ ý kiến'], [CircleHelp, 'Đặt câu hỏi', 'Làm sáng tỏ tình tiết'], [FileText, 'Tóm tắt', 'Hệ thống lập luận']].map(([Icon, label, detail]) => (
             <button
               key={label}
               type="button"
@@ -736,11 +742,12 @@ function Room({ sessionId }) {
           {conversation?.status === 'awaiting_continue' && (
             <button
               type="button"
-              className="deck-btn deck-continue-btn animate-pulse"
+              className="deck-btn deck-continue-btn inline-flex items-center gap-1 animate-pulse"
               disabled={disabled}
               onClick={() => continueDialogue('advance')}
             >
-              <span>{nextSpeaker === 'Bạn' ? 'Trình bày ý kiến' : `Tiếp tục: ${nextSpeaker}`} →</span>
+              <span>{nextSpeaker === 'Bạn' ? 'Trình bày ý kiến' : `Tiếp tục: ${nextSpeaker}`}</span>
+              <ArrowRight size={13} aria-hidden="true" />
             </button>
           )}
 
@@ -756,28 +763,30 @@ function Room({ sessionId }) {
           )}
 
           {completed ? (
-            <Link to={`/simulation/${sessionId}/result`} className="deck-btn deck-result-btn">
-              🏆 Xem kết quả đánh giá
+            <Link to={`/simulation/${sessionId}/result`} className="deck-btn deck-result-btn inline-flex items-center gap-1.5">
+              <Award size={14} aria-hidden="true" />
+              <span>Xem kết quả đánh giá</span>
             </Link>
           ) : (
             <button
               type="button"
-              className={`deck-btn deck-complete-btn ${(isReadyToClose || userTurns >= (session?.max_turns ?? 20)) ? 'is-highlight' : ''}`}
+              className={`deck-btn deck-complete-btn inline-flex items-center gap-1.5 ${(isReadyToClose || userTurns >= (session?.max_turns ?? 20)) ? 'is-highlight' : ''}`}
               disabled={disabled || !userTurns}
               onClick={() => setConfirmEnd(true)}
               title="Kết thúc tranh luận và đề nghị Hội đồng xét xử nghị án chấm điểm"
             >
-              <span>{isReadyToClose ? 'Nghị án & Chấm điểm ⚖️' : 'Nghị án & Chấm điểm'}</span>
+              <Gavel size={14} aria-hidden="true" />
+              <span>Nghị án & Chấm điểm</span>
             </button>
           )}
 
           <button
             type="button"
-            className="deck-btn deck-transcript-btn"
+            className="deck-btn deck-transcript-btn inline-flex items-center gap-1.5"
             onClick={() => setPanel(panel === 'history' ? null : 'history')}
             title="Mở toàn bộ biên bản phát biểu của phiên tòa"
           >
-            <BookOpen size={13} aria-hidden="true" />
+            <ClipboardList size={13} aria-hidden="true" />
             <span>Biên bản ({records.length})</span>
           </button>
         </div>
@@ -791,7 +800,7 @@ function Room({ sessionId }) {
       ) : isConcluded ? (
         <div className="courtroom-concluded-banner">
           <div className="concluded-info">
-            <span className="concluded-badge">⚖️ Tuyên bố khép lại phần tranh luận</span>
+            <span className="concluded-badge inline-flex items-center gap-1.5"><Gavel size={13} aria-hidden="true" /><span>Tuyên bố khép lại phần tranh luận</span></span>
             <p className="concluded-text">
               Chủ tọa phiên tòa đã tuyên bố kết thúc phần tranh tụng để Hội đồng xét xử bước vào phòng nghị án và chấm điểm.
               {autoCloseCountdown !== null && autoCloseCountdown > 0 && (
@@ -815,7 +824,7 @@ function Room({ sessionId }) {
             )}
             <button
               type="button"
-              className="concluded-action-btn"
+              className="concluded-action-btn inline-flex items-center justify-center gap-1.5"
               onClick={() => {
                 setCountdownStopped(true);
                 setAutoCloseCountdown(null);
@@ -823,7 +832,17 @@ function Room({ sessionId }) {
               }}
               disabled={state.ending}
             >
-              {state.ending ? 'Đang chấm điểm...' : 'Vào nghị án & Nhận kết quả ➔'}
+              {state.ending ? (
+                <>
+                  <Loader2 size={13} className="animate-spin" />
+                  <span>Đang chấm điểm...</span>
+                </>
+              ) : (
+                <>
+                  <span>Vào nghị án & Nhận kết quả</span>
+                  <ArrowRight size={13} aria-hidden="true" />
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -871,11 +890,23 @@ function Room({ sessionId }) {
             />
             <button
               type="submit"
-              className="composer-send"
+              className="composer-send inline-flex items-center justify-center gap-1.5"
               disabled={!ready || state.sending || cooldown || draft.content.trim().length < 3}
               title={cooldown ? 'Vui lòng chờ ít giây trước khi gửi tiếp' : undefined}
             >
-              {state.sending ? 'Đang gửi…' : cooldown ? 'Chờ giây lát…' : <>Gửi lập luận <span aria-hidden="true">↗</span></>}
+              {state.sending ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  <span>Đang gửi…</span>
+                </>
+              ) : cooldown ? (
+                <span>Chờ giây lát…</span>
+              ) : (
+                <>
+                  <span>Gửi lập luận</span>
+                  <Send size={13} aria-hidden="true" />
+                </>
+              )}
             </button>
           </div>
 
@@ -885,21 +916,23 @@ function Room({ sessionId }) {
               userTurns === 0 ? (
                 <button
                   type="button"
-                  className="quick-template-btn text-blue-300 hover:text-blue-200"
+                  className="quick-template-btn text-blue-300 hover:text-blue-200 inline-flex items-center gap-1"
                   onClick={() => insertIntoArgument('Kính thưa Hội đồng xét xử, với tư cách Luật sư bảo vệ quyền và lợi ích hợp pháp cho thân chủ, tôi xin trình bày quan điểm mở đầu và chứng cứ cốt lõi như sau: ')}
                 >
-                  ＋ Mẫu lời mở đầu chuẩn mực
+                  <Plus size={12} aria-hidden="true" />
+                  <span>Mẫu lời mở đầu chuẩn mực</span>
                 </button>
               ) : (
                 <button
                   type="button"
-                  className="quick-template-btn text-amber-300 hover:text-amber-200"
+                  className="quick-template-btn text-amber-300 hover:text-amber-200 inline-flex items-center gap-1"
                   onClick={() => {
                     insertIntoArgument('Kính thưa Hội đồng xét xử, tôi đã trình bày xong toàn bộ luận cứ bảo vệ cho thân chủ và không còn ý kiến tranh luận gì thêm, đề nghị Hội đồng xét xử vào nghị án.');
                     setDraft((d) => ({ ...d, close_requested: true }));
                   }}
                 >
-                  ＋ Đề nghị kết thúc tranh luận (Nghị án)
+                  <Gavel size={12} aria-hidden="true" />
+                  <span>Đề nghị kết thúc tranh luận (Nghị án)</span>
                 </button>
               )
             )}

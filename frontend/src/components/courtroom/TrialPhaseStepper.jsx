@@ -1,4 +1,4 @@
-import { Check } from 'lucide-react';
+import { Check, Scale } from 'lucide-react';
 import { TRIAL_STAGES, getTrialStageIndex } from '../../services/courtroom.js';
 
 export default function TrialPhaseStepper({ session, records = [], userTurns = 0, maxTurns = 20 }) {
@@ -59,7 +59,7 @@ export default function TrialPhaseStepper({ session, records = [], userTurns = 0
       <div className="trial-stepper-meta">
         {currentIssue && !isCompleted && (
           <div className="stepper-issue-tag" title={`Trọng tâm đang xét hỏi/tranh tụng: ${currentIssue}`}>
-            <span className="issue-icon" aria-hidden="true">⚖️</span>
+            <Scale size={13} className="text-sky-400 shrink-0" aria-hidden="true" />
             <span className="issue-label">Trọng tâm:</span>
             <strong className="issue-name">{currentIssue}</strong>
           </div>
