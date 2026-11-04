@@ -20,8 +20,26 @@ export function memberFeatures(user) {
 export function sessionFeatures(session, user) {
   const membership = memberFeatures(user);
   const purchased = MEMBERSHIP_PLANS[normalizeMembership(session?.access_plan)];
-  return { ...membership,
-    legalAssistant: membership.legalAssistant || purchased.legalAssistant,
-    detailedScoring: membership.detailedScoring || purchased.detailedScoring,
+
+  // Trong cả 02 case dùng thử miễn phí đầu tiên của tài khoản Free,
+  // người dùng BẮT BUỘC được mở cả tính năng Chấm điểm chi tiết và Trợ lý Luật giống như cam kết dùng thử.
+  // Tuyệt đối không để giá trị mặc định is_free_trial: false của schema làm mất quyền dùng thử của người dùng Free.
+  const isUnauthorized = session?.access_source === 'unauthorized';
+  const isExplicitPaid = session?.access_source === 'credit' || session?.access_source === 'subscription';
+
+  const isFreeTrial = !isUnauthorized && (
+    session?.is_free_trial === true ||
+    session?.access_source === 'free_trial' ||
+    (membership.id === 'freemium' && !isExplicitPaid)
+  );
+
+  const detailedScoring = Boolean(membership.detailedScoring || purchased.detailedScoring || isFreeTrial);
+  const legalAssistant = Boolean(membership.legalAssistant || purchased.legalAssistant || isFreeTrial);
+
+  return {
+    ...membership,
+    legalAssistant,
+    detailedScoring,
+    isFreeTrial: Boolean(isFreeTrial),
   };
 }

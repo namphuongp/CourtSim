@@ -10,7 +10,13 @@ export const pricingPlans = [
     cadence: 'Dùng thử',
     checkoutLabel: 'Bắt đầu miễn phí',
     description: 'Trải nghiệm trực tiếp giá trị của CourtSim trước khi quyết định trả phí.',
-    bullets: ['02 lượt mô phỏng miễn phí cho mỗi tài khoản', 'Chọn vai luật sư, đối đáp với AI', 'Kết quả và nhận xét tổng quan', 'Xem lại biên bản và lịch sử', 'Chưa bao gồm trợ lý luật và điểm chi tiết'],
+    bullets: [
+      '02 lượt mô phỏng miễn phí đầu tiên',
+      'Mở khóa tính năng cốt lõi Pro trong 2 case dùng thử',
+      'Trợ lý Luật tra cứu trực tiếp trong phiên',
+      'Bảng điểm chi tiết & nhận xét của Hội đồng xét xử',
+      'Chưa bao gồm: Phân tích kỹ năng nâng cao (Analytics) & Lượt mở phiên không giới hạn của Pro'
+    ],
   },
   {
     id: 'pay-per-use',

@@ -10,6 +10,8 @@ const simulationSessionSchema = new mongoose.Schema({
   creation_request_id: { type: String },
   access_ready: { type: Boolean },
   access_plan: { type: String, enum: ['freemium', 'pay-per-use', 'lite', 'pro'] },
+  access_source: { type: String, enum: ['free_trial', 'credit', 'subscription'], default: null },
+  is_free_trial: { type: Boolean, default: false },
   case_snapshot: { type: mongoose.Schema.Types.Mixed, default: null },
   opening: { type: mongoose.Schema.Types.Mixed, default: null },
   // Ghi cả lượt và biên bản trong một document để MongoDB standalone cũng nguyên tử.
@@ -32,6 +34,7 @@ const simulationSessionSchema = new mongoose.Schema({
     updated_at: { type: Date, required: true },
   }, { _id: false }), default: undefined },
   completed_at: { type: Date, default: null },
+  duration_seconds: { type: Number, default: 0, min: 0 },
   created_at: { type: Date, default: Date.now }
 });
 

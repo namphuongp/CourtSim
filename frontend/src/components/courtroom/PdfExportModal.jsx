@@ -35,12 +35,17 @@ export default function PdfExportModal({
     setDocType(initialType);
   }
 
-  const [session, setSession] = useState(propSession);
-  const [result, setResult] = useState(propResult);
-  const [records, setRecords] = useState(propRecords || []);
+  const [fetchedSession, setFetchedSession] = useState(null);
+  const [fetchedResult, setFetchedResult] = useState(null);
+  const [fetchedRecords, setFetchedRecords] = useState([]);
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // Dữ liệu luôn đồng bộ và ưu tiên prop mới nhất từ component cha
+  const session = propSession ?? fetchedSession;
+  const result = propResult ?? fetchedResult;
+  const records = propRecords && propRecords.length > 0 ? propRecords : fetchedRecords;
 
   // Tự động tải dữ liệu nếu chưa có sẵn
   useEffect(() => {
@@ -80,9 +85,9 @@ export default function PdfExportModal({
       .then(responses => {
         if (!active) return;
         responses.forEach(item => {
-          if (item.type === 'session') setSession(item.data);
-          if (item.type === 'result') setResult(item.data);
-          if (item.type === 'records') setRecords(item.data);
+          if (item.type === 'session') setFetchedSession(item.data);
+          if (item.type === 'result') setFetchedResult(item.data);
+          if (item.type === 'records') setFetchedRecords(item.data);
         });
       })
       .finally(() => {
@@ -137,7 +142,8 @@ export default function PdfExportModal({
   if (!open) return null;
 
   const caseTitle = session?.case_id?.title || session?.case_snapshot?.title || 'Phiên mô phỏng';
-  const filename = `${docType === 'result' ? 'Ket_Qua_Tranh_Tung' : docType === 'transcript' ? 'Bien_Ban_Phien_Toa' : 'Ho_So_Phien_Toa'}_${String(sessionId).slice(-6)}`;
+  const sessionSafeId = String(sessionId || session?._id || '').slice(-6) || 'EXPORT';
+  const filename = `${docType === 'result' ? 'Ket_Qua_Tranh_Tung' : docType === 'transcript' ? 'Bien_Ban_Phien_Toa' : 'Ho_So_Phien_Toa'}_${sessionSafeId}`;
 
   async function handlePrintPdf() {
     setExporting(true);

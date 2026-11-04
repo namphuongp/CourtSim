@@ -35,5 +35,10 @@ export const legalCitationSchema = new mongoose.Schema({
   page_to: { type: Number, default: null },
   temporal_note: { type: String, default: '' },
   effective_from: { type: String, default: null },
+  effective_to: { type: String, default: null },
   verified_through: { type: String, default: null },
+  validity_status: { type: String, default: 'unknown' },
+  validity_warning: { type: String, default: null },
+  change_history: { type: [mongoose.Schema.Types.Mixed], default: [] },
+  issuing_body: { type: String, default: null },
 }, { _id: false });

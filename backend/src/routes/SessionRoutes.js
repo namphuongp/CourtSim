@@ -86,7 +86,8 @@ router.post('/', asyncHandler(async (request, response) => {
         if (error.code === 'PAYMENT_REQUIRED') await SimulationSession.deleteOne(fence);
         throw error;
       }
-      const saved = await SimulationSession.updateOne(fence, { $set: { access_ready: true, access_plan: access.plan } });
+      const isFreeTrial = access.source === 'free_trial';
+      const saved = await SimulationSession.updateOne(fence, { $set: { access_ready: true, access_plan: access.plan, access_source: access.source, is_free_trial: isFreeTrial } });
       if (!saved.matchedCount) throw new AppError('Chưa xác nhận được quyền mở phiên. Giữ nguyên thiết lập và thử lại.', 409, 'SESSION_ACCESS_PENDING');
       // Cấp quyền xong mới bỏ bản ghi tạm, không hoàn lượt hoặc trừ thêm khi retry.
       await finishCaseAllocation(request.auth.userId, requestId).catch(() => {});
@@ -309,18 +310,44 @@ router.post('/:sessionId/complete', asyncHandler(async (request, response) => {
     'Bạn đã gửi yêu cầu chấm điểm quá nhiều lần liên tiếp. Vui lòng chờ 15 phút.'
   );
   const session = await getOwnedSession(request.params.sessionId, request.auth.userId);
+
+  // Idempotency: Nếu phiên đã kết thúc và đã có kết quả đánh giá, trả về ngay lập tức không tạo bản ghi mới
+  if (session.status === 'completed') {
+    const existing = session.evaluation
+      ?? (await SimulationSession.findById(session._id).select('evaluation duration_seconds completed_at created_at').lean())?.evaluation
+      ?? (await TrialResult.findOne({ session_id: session._id }).lean());
+    if (existing) {
+      if (!await surveyVerified(request.authUser)) return response.json({ data: { status: 'completed', survey_required: true } });
+      const courtCase = session.case_snapshot ?? await Case.findById(session.case_id).lean() ?? {};
+      const durationSeconds = existing.duration_seconds ?? session.duration_seconds ?? (session.completed_at && session.created_at ? Math.max(0, Math.round((new Date(session.completed_at).getTime() - new Date(session.created_at).getTime()) / 1000)) : 0);
+      return response.json({ data: memberEvaluation({ ...existing, duration_seconds: durationSeconds }, session, request.authUser, courtCase) });
+    }
+  }
+
   const result = await withSessionLock(session, async (locked, fence) => {
     if (locked.evaluation) return locked.evaluation;
     if (locked.status === 'completed') {
-      const existing = locked.evaluation ?? (await SimulationSession.findById(locked._id).select('evaluation').lean())?.evaluation ?? await TrialResult.findOne({ session_id: locked._id }).lean();
+      const existing = locked.evaluation ?? (await SimulationSession.findById(locked._id).select('evaluation duration_seconds completed_at created_at').lean())?.evaluation ?? await TrialResult.findOne({ session_id: locked._id }).lean();
       if (!existing) throw new AppError('Chưa tải được kết quả của phiên này. Vui lòng thử lại sau.', 409, 'RESULT_UNAVAILABLE');
       return existing;
     }
     if (locked.turn_count < 1) throw new AppError('Cần ít nhất một lượt tranh luận trước khi kết thúc phiên.');
     const [courtCase, records] = await Promise.all([getCase(locked), getRecords(locked)]);
     const evaluation = await evaluateSession({ session: locked, courtCase, records });
-    const result = { ...evaluation, session_id: locked._id, created_at: new Date() };
-    const saved = await SimulationSession.updateOne(fence, { $set: { evaluation: result, status: 'completed', completed_at: new Date() } });
+    const completedAt = new Date();
+    const durationSeconds = Math.max(0, Math.round((completedAt.getTime() - new Date(locked.created_at || Date.now()).getTime()) / 1000));
+    const result = { ...evaluation, session_id: locked._id, duration_seconds: durationSeconds, created_at: completedAt };
+    const saved = await SimulationSession.updateOne(fence, {
+      $set: {
+        evaluation: result,
+        status: 'completed',
+        completed_at: completedAt,
+        duration_seconds: durationSeconds,
+        'conversation.phase': 'closed',
+        'conversation.status': 'closed',
+        'conversation.concluded': true
+      }
+    });
     if (!saved.matchedCount) {
       const recheck = await SimulationSession.findById(locked._id).select('status evaluation').lean();
       if (recheck?.status === 'completed' && recheck.evaluation) {
@@ -328,6 +355,14 @@ router.post('/:sessionId/complete', asyncHandler(async (request, response) => {
       }
       throw new AppError('Yêu cầu đã hết thời gian xử lý. Vui lòng tải lại phiên.', 409, 'SESSION_LOCK_EXPIRED');
     }
+
+    // Khóa trạng thái Idempotency cho TrialResult model: duy nhất 1 bản ghi
+    await TrialResult.findOneAndUpdate(
+      { session_id: locked._id },
+      { $setOnInsert: result },
+      { upsert: true }
+    ).catch(() => {});
+
     return result;
   }, { leaseMs: 210_000 });
   response.json({ data: memberEvaluation(result, session, request.authUser, session.case_snapshot ?? await Case.findById(session.case_id).lean() ?? {}) });
@@ -337,7 +372,11 @@ router.get('/:sessionId/result', asyncHandler(async (request, response) => {
   const session = await getOwnedSession(request.params.sessionId, request.auth.userId);
   const result = session.evaluation ?? await TrialResult.findOne({ session_id: session._id }).lean();
   if (!result) throw new AppError('Phiên chưa có kết quả. Hãy trở lại phiên và chọn Kết thúc.', 404, 'RESULT_NOT_FOUND');
-  response.json({ data: memberEvaluation(result, session, request.authUser) });
+  await requireSurvey(request.authUser);
+  const courtCase = session.case_snapshot ?? await Case.findById(session.case_id).lean() ?? {};
+  const durationSeconds = result.duration_seconds ?? session.duration_seconds ?? (session.completed_at && session.created_at ? Math.max(0, Math.round((new Date(session.completed_at).getTime() - new Date(session.created_at).getTime()) / 1000)) : 0);
+  const enrichedResult = { ...result, duration_seconds: durationSeconds };
+  response.json({ data: memberEvaluation(enrichedResult, session, request.authUser, courtCase) });
 }));
 
 export default router;

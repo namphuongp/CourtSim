@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { FileDown, Search } from 'lucide-react';
 import { dialogueText } from '../../../../shared/dialogueText.mjs';
-import { actorFor, courtroomRoles } from '../../services/courtroom';
+import { actorFor, courtroomRoles, getSpeakerInfo } from '../../services/courtroom';
 import { LegalCitations } from '../LegalBasis';
 import PdfExportModal from './PdfExportModal';
 import './courtroomTools.css';
@@ -19,7 +19,7 @@ export default function Transcript({ session, records = [], selected, onSelect, 
   if (fullRecord) {
     return (
       <article className="transcript-full">
-        <h3>{roles[actorFor(fullRecord)].name}</h3>
+        <h3>{getSpeakerInfo(fullRecord, session).name}</h3>
         <RecordContent record={fullRecord} session={session} />
       </article>
     );
@@ -89,7 +89,8 @@ export default function Transcript({ session, records = [], selected, onSelect, 
             <p>Không có phát biểu phù hợp. Hãy đổi bộ lọc hoặc từ khóa.</p>
           )}
           {visible.map(({ record, index }) => {
-            const label = `${String(index + 1).padStart(2, '0')} · ${roles[actorFor(record)].name}`;
+            const speakerInfo = getSpeakerInfo(record, session);
+            const label = `${String(index + 1).padStart(2, '0')} · ${speakerInfo.name}`;
             return (
               <article
                 key={record._id}
@@ -98,8 +99,8 @@ export default function Transcript({ session, records = [], selected, onSelect, 
                 data-selected={selected === record._id}
               >
                 <h3>
-                  <span className={`transcript-avatar actor-${actorFor(record)}`} aria-hidden="true">
-                    {roles[actorFor(record)].name.slice(0, 1)}
+                  <span className={`transcript-avatar actor-${speakerInfo.actor}`} aria-hidden="true">
+                    {speakerInfo.actor === 'judge' ? '⚖️' : speakerInfo.actor === 'opponent' ? '🛡️' : '👤'}
                   </span>
                   {label}
                   {record.created_at && (

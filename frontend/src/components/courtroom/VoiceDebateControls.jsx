@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Mic, MicOff, Volume2, VolumeX, Sparkles } from 'lucide-react';
-import { createSpeechRecognizer, isSpeechRecognitionSupported, isSpeechSynthesisSupported } from '../../services/voiceService';
+import { Gauge, Mic, MicOff, Volume2, VolumeX, Sparkles } from 'lucide-react';
+import { createSpeechRecognizer, cycleCourtroomSpeechRate, getCourtroomSpeechRate, isSpeechRecognitionSupported, isSpeechSynthesisSupported, subscribeCourtroomSpeechRate } from '../../services/voiceService';
 
 export default function VoiceDebateControls({
   disabled = false,
@@ -12,7 +12,12 @@ export default function VoiceDebateControls({
   const [supported] = useState(isSpeechRecognitionSupported);
   const [isListening, setIsListening] = useState(false);
   const [interimText, setInterimText] = useState('');
+  const [speechRate, setSpeechRate] = useState(() => getCourtroomSpeechRate());
   const recognizerRef = useRef(null);
+
+  useEffect(() => {
+    return subscribeCourtroomSpeechRate((r) => setSpeechRate(r));
+  }, []);
 
   const lastEmittedRef = useRef({ text: '', time: 0 });
 
@@ -116,25 +121,37 @@ export default function VoiceDebateControls({
 
         {/* Nút Bật/Tắt Giọng đọc phiên toà (TTS) */}
         {isSpeechSynthesisSupported() && (
-          <button
-            type="button"
-            onClick={onToggleTts}
-            className={`voice-tts-btn ${ttsEnabled ? 'is-active' : ''}`}
-            title={ttsEnabled ? 'Đang bật giọng đọc Tòa án (Bấm để tắt)' : 'Bấm để nghe giọng đọc của Chủ tọa và Bên đối lập'}
-            aria-pressed={ttsEnabled}
-          >
-            {ttsEnabled ? (
-              <>
-                <Volume2 size={16} className="text-emerald-600" />
-                <span>Giọng đọc Tòa: Bật</span>
-              </>
-            ) : (
-              <>
-                <VolumeX size={16} className="text-slate-400" />
-                <span>Giọng đọc Tòa: Tắt</span>
-              </>
-            )}
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={onToggleTts}
+              className={`voice-tts-btn ${ttsEnabled ? 'is-active' : ''}`}
+              title={ttsEnabled ? 'Đang bật giọng đọc Tòa án (Bấm để tắt)' : 'Bấm để nghe giọng đọc của Chủ tọa và Bên đối lập'}
+              aria-pressed={ttsEnabled}
+            >
+              {ttsEnabled ? (
+                <>
+                  <Volume2 size={16} className="text-emerald-600" />
+                  <span>Giọng đọc Tòa: Bật</span>
+                </>
+              ) : (
+                <>
+                  <VolumeX size={16} className="text-slate-400" />
+                  <span>Giọng đọc Tòa: Tắt</span>
+                </>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => cycleCourtroomSpeechRate()}
+              className="voice-rate-btn"
+              aria-label={`Tốc độ đọc giọng nói: ${speechRate}x`}
+              title={`Tốc độ đọc âm thanh hiện tại: ${speechRate}x. Bấm để chuyển đổi giữa 1.0x, 1.25x và 1.5x`}
+            >
+              <Gauge size={14} className="text-blue-500" />
+              <span>Tốc độ: <strong>{speechRate}x</strong></span>
+            </button>
+          </>
         )}
       </div>
 

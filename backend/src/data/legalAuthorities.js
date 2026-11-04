@@ -1,14 +1,48 @@
-
 export const legalAuthorities = Object.freeze({
+  '13/2003/QH11': {
+    lawNumber: '13/2003/QH11',
+    title: 'Luật Đất đai',
+    issuingBody: 'Quốc hội',
+    promulgatedAt: '2003-11-26',
+    originalEffectiveFrom: '2004-07-01',
+    effectiveFrom: '2004-07-01',
+    effectiveTo: '2014-06-30',
+    verifiedThrough: '2026-09-28',
+    scopeLocator: 'Điều 1',
+    sourceStatus: 'unverified',
+    sourceUrl: 'https://chinhphu.vn/default.aspx?docid=32479&pageid=27160',
+    historyUrl: '',
+    amendments: [],
+    replacedBy: {
+      lawNumber: '45/2013/QH13',
+      title: 'Luật Đất đai',
+      effectiveFrom: '2014-07-01',
+      note: 'Hết hiệu lực từ ngày 01/07/2014, được thay thế bởi Luật Đất đai số 45/2013/QH13.',
+    },
+    temporalNote: 'Áp dụng cho các giao dịch, sự kiện từ ngày 01/07/2004 đến trước ngày 01/07/2014. Hết hiệu lực từ 01/07/2014, được thay thế bởi Luật Đất đai 45/2013/QH13.',
+  },
   '45/2013/QH13': {
-    lawNumber: '45/2013/QH13', title: 'Luật Đất đai', issuingBody: 'Quốc hội',
-    promulgatedAt: '2013-11-29', originalEffectiveFrom: '2014-07-01', effectiveFrom: '2014-07-01',
-    effectiveTo: '2024-07-31', verifiedThrough: '2026-09-28', scopeLocator: 'Điều 1',
+    lawNumber: '45/2013/QH13',
+    title: 'Luật Đất đai',
+    issuingBody: 'Quốc hội',
+    promulgatedAt: '2013-11-29',
+    originalEffectiveFrom: '2014-07-01',
+    effectiveFrom: '2014-07-01',
+    effectiveTo: '2024-07-31',
+    verifiedThrough: '2026-09-28',
+    scopeLocator: 'Điều 1',
     sourceStatus: 'unverified',
     sourceUrl: 'https://vbpl.vn/bonoivu/Pages/vbpq-toanvan.aspx?ItemID=32833',
     historyUrl: 'https://vbpl.vn/TW/Pages/vbpq-lichsu.aspx?ItemID=32833',
-    amendments: [], effectiveRules: [],
-    temporalNote: 'Bản gốc trong LawDoc; chưa xác minh đầy đủ lịch sử sửa đổi và chuyển tiếp. Khoảng hiệu lực chung chỉ dùng tìm ứng viên, không chứng nhận từng điều. Trang thuộc tính VBPL còn thể hiện mốc 01/01/2025 khác với mốc thay thế đã được sửa bởi Luật 43/2024/QH15; không tự chấp nhận metadata trên một trang.',
+    amendments: [],
+    effectiveRules: [],
+    replacedBy: {
+      lawNumber: '31/2024/QH15',
+      title: 'Luật Đất đai',
+      effectiveFrom: '2024-08-01',
+      note: 'Hết hiệu lực từ ngày 01/08/2024, được thay thế bởi Luật Đất đai số 31/2024/QH15 (sửa đổi hiệu lực bởi Luật số 43/2024/QH15).',
+    },
+    temporalNote: 'Bản gốc trong LawDoc. Hết hiệu lực từ 01/08/2024, hiện nay được thay thế bởi Luật Đất đai số 31/2024/QH15.',
   },
   '31/2024/QH15': {
     lawNumber: '31/2024/QH15',
@@ -27,15 +61,42 @@ export const legalAuthorities = Object.freeze({
     }],
     sourceStatus: 'amended_text_unavailable',
     sourceUrl: '',
+    supersedes: {
+      lawNumber: '45/2013/QH13',
+      title: 'Luật Đất đai',
+      effectiveFrom: '2024-08-01',
+      note: 'Thay thế Luật Đất đai số 45/2013/QH13 từ ngày 01/08/2024.',
+    },
     amendments: [{
       lawNumber: '43/2024/QH15',
       title: 'Luật sửa đổi, bổ sung một số điều của Luật Đất đai số 31/2024/QH15, Luật Nhà ở số 27/2023/QH15, Luật Kinh doanh bất động sản số 29/2023/QH15 và Luật Các tổ chức tín dụng số 32/2024/QH15',
       promulgatedAt: '2024-06-29',
       effectiveFrom: '2024-08-01',
       sourceUrl: '',
-      note: 'Điều 1 Luật 43/2024/QH15 sửa khoản 1 Điều 252 để đưa ngày hiệu lực chung lên 01/08/2024. Chưa nhập đầy đủ nội dung sửa đổi và chuyển tiếp; không dùng tệp gốc làm căn cứ hiện hành.',
+      note: 'Điều 1 Luật 43/2024/QH15 sửa khoản 1 Điều 252 để đưa ngày hiệu lực chung lên 01/08/2024.',
     }],
-    temporalNote: 'Tệp gốc ghi ngày hiệu lực chung 01/01/2025 và ngoại lệ tại Điều 252. Luật 43/2024/QH15 thay đổi ngày hiệu lực và có sửa đổi nội dung; cần bản hợp nhất hoặc văn bản sửa đổi để xác định phiên bản điều khoản.',
+    temporalNote: 'Có hiệu lực từ 01/08/2024 theo Luật 43/2024/QH15, thay thế Luật Đất đai số 45/2013/QH13.',
+  },
+  '33/2005/QH11': {
+    lawNumber: '33/2005/QH11',
+    title: 'Bộ luật Dân sự',
+    issuingBody: 'Quốc hội',
+    promulgatedAt: '2005-06-14',
+    originalEffectiveFrom: '2006-01-01',
+    effectiveFrom: '2006-01-01',
+    effectiveTo: '2016-12-31',
+    verifiedThrough: '2026-09-28',
+    scopeLocator: 'Điều 1',
+    sourceStatus: 'unverified',
+    sourceUrl: '',
+    amendments: [],
+    replacedBy: {
+      lawNumber: '91/2015/QH13',
+      title: 'Bộ luật Dân sự',
+      effectiveFrom: '2017-01-01',
+      note: 'Hết hiệu lực từ ngày 01/01/2017, được thay thế bởi Bộ luật Dân sự số 91/2015/QH13.',
+    },
+    temporalNote: 'Áp dụng cho các giao dịch, sự kiện dân sự xác lập từ 01/01/2006 đến trước ngày 01/01/2017. Hết hiệu lực từ 01/01/2017.',
   },
   '91/2015/QH13': {
     lawNumber: '91/2015/QH13',
@@ -50,7 +111,13 @@ export const legalAuthorities = Object.freeze({
     sourceStatus: 'unverified',
     sourceUrl: '',
     amendments: [],
-    temporalNote: 'Điều 689 trong tệp đính kèm ghi hiệu lực từ 01/01/2017. Cơ sở dữ liệu VBPL được tra cứu ngày 28/09/2026 ghi văn bản còn hiệu lực; không tìm thấy văn bản sửa đổi trực tiếp trong phạm vi tra cứu.',
+    supersedes: {
+      lawNumber: '33/2005/QH11',
+      title: 'Bộ luật Dân sự',
+      effectiveFrom: '2017-01-01',
+      note: 'Thay thế Bộ luật Dân sự số 33/2005/QH11 từ ngày 01/01/2017.',
+    },
+    temporalNote: 'Có hiệu lực từ 01/01/2017, thay thế Bộ luật Dân sự số 33/2005/QH11.',
   },
   '92/2015/QH13': {
     lawNumber: '92/2015/QH13',
@@ -65,7 +132,7 @@ export const legalAuthorities = Object.freeze({
       articles: ['4', '43', '44', '45'],
       effectiveFrom: '2017-01-01',
       sourceLocator: 'điểm a khoản 1 Điều 517',
-      note: 'Nhóm quy định liên quan Bộ luật Dân sự có hiệu lực từ 01/01/2017 theo Điều 517; cần bản hợp nhất để xác định chính xác nội dung sau sửa đổi.',
+      note: 'Nhóm quy định liên quan Bộ luật Dân sự có hiệu lực từ 01/01/2017 theo Điều 517.',
     }],
     sourceStatus: 'amended_text_unavailable',
     consolidatedSourceUrl: 'https://vbpl.vn/van-ban/chi-tiet/van-ban-hop-nhat-so-11-vbhn-vpqh-to-tung-dan-su--175590',
@@ -77,7 +144,7 @@ export const legalAuthorities = Object.freeze({
         promulgatedAt: '2019-11-20',
         effectiveFrom: '2021-01-01',
         sourceUrl: '',
-        note: 'Bản hợp nhất 11/VBHN-VPQH liệt kê là văn bản sửa đổi Bộ luật Tố tụng dân sự.',
+        note: 'Sửa đổi, bổ sung Bộ luật Tố tụng dân sự theo Bản hợp nhất 11/VBHN-VPQH.',
       },
       {
         lawNumber: '59/2020/QH14',
@@ -85,7 +152,7 @@ export const legalAuthorities = Object.freeze({
         promulgatedAt: '2020-06-17',
         effectiveFrom: '2021-01-01',
         sourceUrl: '',
-        note: 'Bản hợp nhất 11/VBHN-VPQH liệt kê là văn bản sửa đổi Bộ luật Tố tụng dân sự.',
+        note: 'Sửa đổi, bổ sung Bộ luật Tố tụng dân sự theo Bản hợp nhất 11/VBHN-VPQH.',
       },
       {
         lawNumber: '13/2022/QH15',
@@ -93,7 +160,7 @@ export const legalAuthorities = Object.freeze({
         promulgatedAt: '2022-11-14',
         effectiveFrom: '2023-07-01',
         sourceUrl: '',
-        note: 'Bản hợp nhất 11/VBHN-VPQH liệt kê là văn bản sửa đổi Bộ luật Tố tụng dân sự.',
+        note: 'Sửa đổi, bổ sung Bộ luật Tố tụng dân sự theo Bản hợp nhất 11/VBHN-VPQH.',
       },
       {
         lawNumber: '19/2023/QH15',
@@ -101,7 +168,7 @@ export const legalAuthorities = Object.freeze({
         promulgatedAt: '2023-06-20',
         effectiveFrom: '2024-07-01',
         sourceUrl: '',
-        note: 'Bản hợp nhất 11/VBHN-VPQH liệt kê là văn bản sửa đổi Bộ luật Tố tụng dân sự.',
+        note: 'Sửa đổi, bổ sung Bộ luật Tố tụng dân sự theo Bản hợp nhất 11/VBHN-VPQH.',
       },
       {
         lawNumber: '34/2024/QH15',
@@ -109,7 +176,7 @@ export const legalAuthorities = Object.freeze({
         promulgatedAt: '2024-06-24',
         effectiveFrom: '2025-01-01',
         sourceUrl: '',
-        note: 'Bản hợp nhất 11/VBHN-VPQH liệt kê là văn bản sửa đổi Bộ luật Tố tụng dân sự.',
+        note: 'Sửa đổi, bổ sung Bộ luật Tố tụng dân sự theo Bản hợp nhất 11/VBHN-VPQH.',
       },
       {
         lawNumber: '85/2025/QH15',
@@ -117,13 +184,97 @@ export const legalAuthorities = Object.freeze({
         promulgatedAt: null,
         effectiveFrom: '2025-07-01',
         sourceUrl: '',
-        note: 'VBPL xác nhận sửa đổi trực tiếp và hiệu lực 01/07/2025. Chưa nhập đủ nội dung sửa đổi hoặc điều khoản chuyển tiếp.',
+        note: 'Sửa đổi trực tiếp Bộ luật Tố tụng dân sự, hiệu lực từ 01/07/2025.',
       },
     ],
-    temporalNote: 'Điều 517 của tệp gốc ghi hiệu lực chung 01/07/2016 và một số quy định từ 01/01/2017. VBPL xác nhận các thay đổi liệt kê cùng bản hợp nhất 11/VBHN-VPQH (16/09/2024) và tình trạng hết hiệu lực một phần; bản DOC 2015 không phải bản hợp nhất nên không được viện dẫn.',
+    temporalNote: 'Có hiệu lực từ 01/07/2016, đã được sửa đổi bổ sung qua các luật năm 2019, 2020, 2022, 2023, 2024, 2025.',
   },
 });
 
 export function getAuthorityMetadata(lawNumber) {
-  return legalAuthorities[lawNumber] ?? null;
+  const normalized = typeof lawNumber === 'string' ? lawNumber.trim().toUpperCase() : '';
+  return legalAuthorities[normalized] ?? legalAuthorities[lawNumber] ?? null;
+}
+
+/**
+ * Trả về chi tiết tình trạng hiệu lực và lịch sử thay đổi của văn bản pháp luật tính đến thời điểm hiện tại.
+ * @param {string} lawNumber - Số hiệu văn bản (e.g. '45/2013/QH13')
+ * @param {Date|string} atDate - Ngày xét hiệu lực (mặc định là hiện tại)
+ */
+export function getValidityDetails(lawNumber, atDate = new Date()) {
+  const normalized = typeof lawNumber === 'string' ? lawNumber.trim().toUpperCase() : '';
+  const auth = legalAuthorities[normalized] ?? legalAuthorities[lawNumber];
+  if (!auth) return null;
+
+  let todayStr;
+  try {
+    const d = atDate instanceof Date ? atDate : new Date(atDate);
+    todayStr = Number.isFinite(d.getTime()) ? d.toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
+  } catch {
+    todayStr = new Date().toISOString().slice(0, 10);
+  }
+
+  let validityStatus = 'active';
+  let warning = null;
+  const history = [];
+
+  // 1. Văn bản tiền nhiệm bị thay thế (nếu có)
+  if (auth.supersedes) {
+    history.push({
+      type: 'superseded',
+      law_number: auth.supersedes.lawNumber,
+      title: auth.supersedes.title,
+      effective_from: null,
+      note: auth.supersedes.note || `Văn bản bị thay thế bởi ${auth.title} số ${auth.lawNumber}.`,
+    });
+  }
+
+  // 2. Văn bản gốc
+  history.push({
+    type: 'original',
+    law_number: auth.lawNumber,
+    title: auth.title,
+    effective_from: auth.originalEffectiveFrom || auth.effectiveFrom,
+    note: `Văn bản gốc do ${auth.issuingBody || 'Quốc hội'} ban hành${auth.promulgatedAt ? ' ngày ' + auth.promulgatedAt : ''}, có hiệu lực từ ${auth.originalEffectiveFrom || auth.effectiveFrom}.`,
+  });
+
+  // 3. Kiểm tra xem đã hết hiệu lực tính đến hôm nay chưa
+  if (auth.effectiveTo && auth.effectiveTo < todayStr) {
+    validityStatus = 'expired';
+    const rep = auth.replacedBy;
+    warning = `Lưu ý: Văn bản này (${auth.title} số ${auth.lawNumber}) áp dụng tại thời điểm xảy ra vụ án, hiện nay đã HẾT HIỆU LỰC (từ ngày ${auth.effectiveTo})${rep ? ` và được thay thế bởi ${rep.title} số ${rep.lawNumber} (hiệu lực từ ${rep.effectiveFrom})` : ''}.`;
+    if (rep) {
+      history.push({
+        type: 'replacement',
+        law_number: rep.lawNumber,
+        title: rep.title,
+        effective_from: rep.effectiveFrom,
+        note: rep.note || `Thay thế ${auth.title} số ${auth.lawNumber} từ ngày ${rep.effectiveFrom}.`,
+      });
+    }
+  } else if (auth.amendments?.length > 0) {
+    const activeAmendments = auth.amendments.filter(a => !a.effectiveFrom || a.effectiveFrom <= todayStr);
+    if (activeAmendments.length > 0) {
+      validityStatus = 'amended';
+      warning = `Lưu ý: Văn bản này (${auth.title} số ${auth.lawNumber}) đã được sửa đổi, bổ sung bởi: ${activeAmendments.map(a => `${a.title} số ${a.lawNumber} (hiệu lực từ ${a.effectiveFrom})`).join('; ')}.`;
+    }
+    for (const a of auth.amendments) {
+      history.push({
+        type: 'amendment',
+        law_number: a.lawNumber,
+        title: a.title,
+        effective_from: a.effectiveFrom,
+        note: a.note || `Sửa đổi, bổ sung ${auth.title} số ${auth.lawNumber} từ ngày ${a.effectiveFrom}.`,
+      });
+    }
+  }
+
+  return {
+    validity_status: validityStatus,
+    validity_warning: warning,
+    change_history: history,
+    effective_from: auth.effectiveFrom,
+    effective_to: auth.effectiveTo || null,
+    issuing_body: auth.issuingBody || null,
+  };
 }

@@ -6,7 +6,7 @@ import { BookOpen, Search, Sparkles } from 'lucide-react';
 import { LoadingState } from './WorkspaceStates';
 import './courtroom/courtroomTools.css';
 
-export default function LegalAssistant({ sessionId, open, onInsert, insertionDisabled }) {
+export default function LegalAssistant({ sessionId, open, onInsert, insertionDisabled, isFreeTrial = false }) {
   const key = draftKey(`${sessionId}:assistant`);
   const [draft, setDraft] = useState(() => readDraft(key) ?? { question: '', request_id: crypto.randomUUID() });
   const [items, setItems] = useState([]);
@@ -25,7 +25,15 @@ export default function LegalAssistant({ sessionId, open, onInsert, insertionDis
       if (!active) return;
       setItems(data.data); setError(''); setLoaded(true);
       setDraft((current) => data.data.some((item) => item.request_id === current.request_id && item.status === 'completed') ? { question: '', request_id: crypto.randomUUID() } : current);
-    }).catch(() => { if (active) { setLoaded(true); setError('Chưa tải được lịch sử tra cứu. Vui lòng thử lại.'); } });
+    }).catch((err) => {
+      if (!active) return;
+      setLoaded(true);
+      if (err.response?.status === 403 && err.response?.data?.error?.code === 'MEMBERSHIP_REQUIRED') {
+        setError('Trợ lý luật dành cho các gói trả phí hoặc khi mở phiên có quyền dùng thử.');
+      } else {
+        setError(getApiError(err, 'Chưa tải được lịch sử tra cứu do sự cố mạng. Vui lòng bấm Tải lại để thử lại.'));
+      }
+    });
     return () => { active = false; };
   }, [sessionId, open, reload]);
   useEffect(() => {
@@ -43,12 +51,36 @@ export default function LegalAssistant({ sessionId, open, onInsert, insertionDis
       setItems((current) => [...current.filter((i) => i._id !== data.data._id), data.data]);
       setSelected(data.data._id);
       setDraft({ question: '', request_id: crypto.randomUUID() });
-    } catch (err) { setError(getApiError(err, 'Chưa nhận được câu trả lời. Câu hỏi của bạn vẫn được giữ lại. Vui lòng thử lại.')); }
-    finally { busy.current = false; setSending(false); }
+    } catch (err) {
+      if (err.response?.status === 403 && err.response?.data?.error?.code === 'MEMBERSHIP_REQUIRED') {
+        setError('Trợ lý luật dành cho các gói trả phí hoặc khi mở phiên có quyền dùng thử.');
+      } else {
+        setError(getApiError(err, 'Chưa nhận được câu trả lời do sự cố kết nối. Câu hỏi của bạn vẫn được giữ lại. Vui lòng thử lại.'));
+      }
+    } finally { busy.current = false; setSending(false); }
   }
   const current = items.find(item => item._id === selected) ?? items.at(-1);
   return <div className="legal-assistant space-y-4 text-sm">
-    <div className="assistant-intro"><Sparkles size={24}/><div><h3>Tra cứu cùng trợ lý luật</h3><small>Căn cứ rõ ràng · Đọc nguồn trước khi viện dẫn</small></div></div>
+    <div className="assistant-intro">
+      <Sparkles size={24} className="text-amber-400" />
+      <div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <h3 className="font-bold text-base text-slate-100">Tra cứu cùng Trợ lý Luật</h3>
+          {isFreeTrial && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">
+              <Sparkles size={11} />
+              Dùng thử miễn phí · Mở khóa tính năng cốt lõi Pro
+            </span>
+          )}
+        </div>
+        <small>Căn cứ rõ ràng · Đọc nguồn trước khi viện dẫn</small>
+      </div>
+    </div>
+    {isFreeTrial && (
+      <p className="text-xs text-emerald-200/90 bg-emerald-950/30 border border-emerald-500/25 rounded-lg p-2.5">
+        Tính năng Trợ lý Luật của gói Pro được mở khóa đầy đủ trong 02 case dùng thử để bạn trải nghiệm tra cứu căn cứ pháp lý và đưa trích dẫn trực tiếp vào bài phát biểu.
+      </p>
+    )}
     <p>Tìm theo số hiệu, tên luật hoặc vấn đề tranh chấp đất đai. Trợ lý ưu tiên kho tài liệu pháp luật và có thể tra cứu thêm trên web. Đọc nguồn và trạng thái áp dụng trước khi đưa trích dẫn vào lập luận.</p>
     <p className="text-slate-400">Tra cứu không gửi lượt tranh luận và không tự thay đổi điểm.</p>
     <form onSubmit={ask} className="assistant-form space-y-2"><label className="block" htmlFor="legal-question">Câu hỏi tra cứu luật</label><textarea id="legal-question" maxLength={1500} disabled={sending} value={draft.question} onChange={(e) => setDraft({ question: e.target.value, request_id: crypto.randomUUID() })} className="min-h-28 w-full rounded-lg border border-slate-600 bg-slate-950 p-3" placeholder="Quy định nào cần xem xét đối với yêu cầu trong vụ án?" /><div><small>{draft.question.length}/1500 ký tự</small><button disabled={sending || draft.question.trim().length < 5}><Search size={14}/>{sending ? 'Đang tra cứu...' : 'Hỏi trợ lý'}</button></div></form>

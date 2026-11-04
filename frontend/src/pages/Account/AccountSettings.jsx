@@ -86,7 +86,32 @@ function Linked({ account, update }) {
 }
 function MembershipAccount() {
   const resource = useMembership();
-  return <div className="membership-account"><MembershipSummary resource={resource}/>{resource.data && <section className="account-card membership-entitlements"><h2>Quyền lợi của bạn</h2>{[['Mở phiên luyện tập', resource.data.canCreateSession], ['Trợ lý tra cứu luật', resource.data.legalAssistant], ['Điểm và nhận xét chi tiết', resource.data.detailedScoring], ['Phân tích kỹ năng nâng cao', resource.data.skillAnalytics], ['Lịch sử và biên bản', true]].map(([title, enabled]) => <div key={title}>{enabled ? <CheckCircle2 size={18}/> : <LockKeyhole size={18}/>}<strong>{title}</strong><span className={enabled ? 'is-enabled' : ''}>{enabled ? 'Đã mở' : 'Chưa bao gồm'}</span></div>)}<Link to="/pricing">So sánh các gói luyện tập →</Link></section>}</div>;
+  const m = resource.data;
+  const isTrial = Boolean(m?.isTrialActive);
+  return (
+    <div className="membership-account">
+      <MembershipSummary resource={resource} />
+      {m && (
+        <section className="account-card membership-entitlements">
+          <h2>Quyền lợi của bạn</h2>
+          {[
+            ['Mở phiên luyện tập', m.canCreateSession, m.unlimitedSessions ? 'Không giới hạn' : `Còn ${m.freeRemaining ?? 0} lượt`],
+            ['Trợ lý tra cứu luật', m.legalAssistant, isTrial ? 'Đã mở (Dùng thử)' : m.legalAssistant ? 'Đã mở' : 'Chưa bao gồm'],
+            ['Điểm và nhận xét chi tiết', m.detailedScoring, isTrial ? 'Đã mở (Dùng thử)' : m.detailedScoring ? 'Đã mở' : 'Chưa bao gồm'],
+            ['Phân tích kỹ năng nâng cao', m.skillAnalytics, m.skillAnalytics ? 'Đã mở' : 'Dành riêng cho Pro'],
+            ['Lịch sử và biên bản', true, 'Đã mở']
+          ].map(([title, enabled, statusText]) => (
+            <div key={title}>
+              {enabled ? <CheckCircle2 size={18} /> : <LockKeyhole size={18} />}
+              <strong>{title}</strong>
+              <span className={enabled ? 'is-enabled' : ''}>{statusText}</span>
+            </div>
+          ))}
+          <Link to="/pricing">So sánh các gói luyện tập →</Link>
+        </section>
+      )}
+    </div>
+  );
 }
 
 export default function AccountSettings() {

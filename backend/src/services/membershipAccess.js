@@ -13,7 +13,12 @@ export function requireSessionFeature(session, user, feature) {
 export function memberEvaluation(result, session, user, courtCase = {}) {
   const features = sessionFeatures(session, user);
   const displayed = learnerEvaluation(result, courtCase);
-  if (features.detailedScoring) return { ...displayed, features };
+  // Cả tài khoản Pro lẫn 02 case dùng thử miễn phí của tài khoản Free đều có features.detailedScoring === true,
+  // đảm bảo BẮT BUỘC hiển thị đầy đủ bảng điểm theo từng tiêu chí, nhận xét chi tiết và gợi ý cải thiện.
+  if (features.detailedScoring) {
+    return { ...displayed, features };
+  }
+  // Nếu tài khoản Free ngoài 2 case dùng thử (không có detailedScoring), chỉ hiển thị tổng quan
   const { criteria, rubric_scores, rubric_feedback, citations, legal_research, ...summary } = displayed;
   return { ...summary, features };
 }

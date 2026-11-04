@@ -1,9 +1,36 @@
-import { useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, Scale, Volume2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Gauge,
+  MessageSquare,
+  Pause,
+  Play,
+  RotateCcw,
+  Scale,
+  Volume2,
+  VolumeX,
+} from 'lucide-react';
 import { dialogueText } from '../../../../shared/dialogueText.mjs';
-import { actorFor, courtroomRoles } from '../../services/courtroom';
+import { actorFor, courtroomRoles, getSpeakerInfo } from '../../services/courtroom';
 import FeedbackModal from '../feedback/FeedbackModal';
-import { getSpeakingRecordId, speakCourtroomText, stopCourtroomSpeech, subscribeCourtroomSpeech, unlockCourtroomAudio } from '../../services/voiceService';
+import {
+  cycleCourtroomSpeechRate,
+  getCourtroomSpeechRate,
+  getSpeakingRecordId,
+  isAutoplayBlocked,
+  isCourtroomSpeechPaused,
+  pauseCourtroomSpeech,
+  resumeCourtroomSpeech,
+  speakCourtroomText,
+  stopCourtroomSpeech,
+  subscribeAutoplayBlocked,
+  subscribeCourtroomSpeech,
+  subscribeCourtroomSpeechRate,
+  unlockAndResumeCourtroomSpeech,
+  unlockCourtroomAudio,
+} from '../../services/voiceService';
 import './courtroom.css';
 
 const PHASE_LABELS = {
@@ -16,153 +43,663 @@ const PHASE_LABELS = {
 
 function Character({ actor, role, active, preparing, invited, onInspect }) {
   const [failed, setFailed] = useState(false);
-  return <div className={`court-character character-${actor}${active ? ' is-speaking' : ''}${preparing ? ' is-preparing' : ''}${invited ? ' is-invited' : ''}`} data-actor={actor} data-state={preparing ? 'preparing' : invited ? 'invited' : active ? 'speaking' : 'listening'}>
-    <div className="character-portrait">
-      {['listening', 'speaking'].map((state) => <img key={state} src={`/courtsim-characters/${role.asset}-${state}.png`} alt={state === (active ? 'speaking' : 'listening') ? `${role.name} — ${active ? 'minh họa phát biểu' : 'đang lắng nghe'}` : ''} aria-hidden={state !== (active ? 'speaking' : 'listening')} className={`character-image state-${state}`} draggable="false" onError={() => setFailed(true)} />)}
-      {failed && <span className="asset-error">Chưa tải được ảnh {role.name.toLocaleLowerCase('vi')}</span>}
+  return (
+    <div
+      className={`court-character character-${actor}${active ? ' is-speaking' : ''}${preparing ? ' is-preparing' : ''}${invited ? ' is-invited' : ''}`}
+      data-actor={actor}
+      data-state={preparing ? 'preparing' : invited ? 'invited' : active ? 'speaking' : 'listening'}
+    >
+      <div className="character-portrait">
+        {['listening', 'speaking'].map((state) => (
+          <img
+            key={state}
+            src={`/courtsim-characters/${role.asset}-${state}.png`}
+            alt={
+              state === (active ? 'speaking' : 'listening')
+                ? `${role.name} — ${active ? 'minh họa phát biểu' : 'đang lắng nghe'}`
+                : ''
+            }
+            aria-hidden={state !== (active ? 'speaking' : 'listening')}
+            className={`character-image state-${state}`}
+            draggable="false"
+            onError={() => setFailed(true)}
+          />
+        ))}
+        {failed && <span className="asset-error">Chưa tải được ảnh {role.name.toLocaleLowerCase('vi')}</span>}
+      </div>
+      <button
+        type="button"
+        className="character-name"
+        onClick={onInspect}
+        aria-label={`Xem vai ${role.name.toLocaleLowerCase('vi')}`}
+      >
+        <strong>{role.name}</strong>
+        <span>{role.detail}</span>
+        {(active || preparing || invited) && (
+          <small className="character-status">
+            {preparing ? 'Đang chuẩn bị…' : invited ? 'Được mời phát biểu' : 'Đang phát biểu'}
+          </small>
+        )}
+      </button>
     </div>
-    <button type="button" className="character-name" onClick={onInspect} aria-label={`Xem vai ${role.name.toLocaleLowerCase('vi')}`}><strong>{role.name}</strong><span>{role.detail}</span>{(active || preparing || invited) && <small className="character-status">{preparing ? 'Đang chuẩn bị…' : invited ? 'Được mời phát biểu' : 'Đang phát biểu'}</small>}</button>
-  </div>;
+  );
 }
 
-export default function CourtroomStage({ session, view, records, onHistory, onReadFull, onSelectRecord, navigationDisabled = false, preparationStalled = false, pendingSpeaker = null, speechControls, onEnableTts }) {
+export default function CourtroomStage({
+  session,
+  view,
+  records = [],
+  onHistory,
+  onReadFull,
+  onSelectRecord,
+  navigationDisabled = false,
+  preparationStalled = false,
+  pendingSpeaker = null,
+  speechControls,
+  onEnableTts,
+  ttsEnabled = false,
+  onToggleTts,
+}) {
   const roles = courtroomRoles(session);
   const [backgroundFailed, setBackgroundFailed] = useState(false);
   const [speakingRecordId, setSpeakingRecordId] = useState(() => getSpeakingRecordId());
+  const [isPaused, setIsPaused] = useState(() => isCourtroomSpeechPaused());
+  const [autoplayBlocked, setAutoplayBlocked] = useState(() => isAutoplayBlocked());
+  const [speechRate, setSpeechRate] = useState(() => getCourtroomSpeechRate());
   const [inspectedActor, setInspectedActor] = useState(null);
 
+  // Auto-scroll state & refs
+  const chatScrollRef = useRef(null);
+  const userScrolledUpRef = useRef(false);
+  const [hasNewMessageWhileScrolledUp, setHasNewMessageWhileScrolledUp] = useState(false);
+  const prevRecordCountRef = useRef(0);
+
   useEffect(() => {
-    return subscribeCourtroomSpeech((id) => setSpeakingRecordId(id));
+    return () => {
+      // Dọn dẹp sạch mọi tiến trình đọc âm thanh khi stage unmount
+      stopCourtroomSpeech();
+    };
   }, []);
 
-  const inspectedRole = inspectedActor ? roles[inspectedActor] : null;
-  const inspectedSide = (inspectedActor === 'learner' ? session?.user_court_role === 'defense_lawyer' : session?.user_court_role !== 'defense_lawyer') ? 'defendant' : 'plaintiff';
-  const record = view.record;
-  const owner = record ? actorFor(record) : 'judge';
-  const content = dialogueText(record?.display_content ?? record?.content, session?.case_id?.evidence_inventory) || 'Chưa hiển thị được phản hồi này. Hãy tải lại phiên.';
-  const isCurrentSpeaking = Boolean(record?._id && speakingRecordId === record?._id);
+  useEffect(() => {
+    return subscribeCourtroomSpeech((id, state) => {
+      setSpeakingRecordId(id);
+      setIsPaused(Boolean(state?.isPaused));
+    });
+  }, []);
 
-  function handleToggleSpeech() {
-    if (isCurrentSpeaking) {
-      stopCourtroomSpeech();
-      setSpeakingRecordId(null);
+  useEffect(() => {
+    return subscribeAutoplayBlocked((blocked) => {
+      setAutoplayBlocked(blocked);
+    });
+  }, []);
+
+  useEffect(() => {
+    return subscribeCourtroomSpeechRate((r) => setSpeechRate(r));
+  }, []);
+
+  // Xây dựng danh sách tin nhắn theo đúng thứ tự lượt phát biểu
+  const sortedRecords = [...records].sort((a, b) => {
+    if (a.created_at && b.created_at) {
+      const timeA = new Date(a.created_at).getTime();
+      const timeB = new Date(b.created_at).getTime();
+      if (!isNaN(timeA) && !isNaN(timeB) && timeA !== timeB) {
+        return timeA - timeB;
+      }
+    }
+    return 0;
+  });
+
+  const displayRecords = [...sortedRecords];
+
+  // Thêm tin nhắn đang gửi của người dùng (pending)
+  if (view?.pending && view?.record?.content) {
+    displayRecords.push({
+      _id: 'pending-user',
+      sender_type: 'user',
+      content: view.record.content,
+      display_content: view.record.content,
+      created_at: new Date().toISOString(),
+      pending: true,
+    });
+  }
+
+  // Thêm tin nhắn đang stream của AI (streaming)
+  if (view?.streaming && view?.record?.content) {
+    displayRecords.push({
+      _id: 'streaming-ai',
+      sender_type: view.record.sender_type || (view.actor === 'judge' ? 'ai_judge' : 'ai_prosecutor'),
+      content: view.record.content,
+      display_content: view.record.content,
+      created_at: new Date().toISOString(),
+      streaming: true,
+    });
+  }
+
+  // Xử lý sự kiện cuộn từ người dùng
+  function handleChatScroll() {
+    const el = chatScrollRef.current;
+    if (!el) return;
+
+    // Khoảng cách từ thanh cuộn hiện tại đến đáy danh sách tin nhắn
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    // Ngưỡng: nếu cách đáy > 50px nghĩa là người dùng đang cuộn lên trên đọc tin cũ
+    const isScrolledUp = distanceFromBottom > 50;
+    userScrolledUpRef.current = isScrolledUp;
+
+    // Nếu người dùng đã tự cuộn xuống sát đáy thì ẩn nút thông báo tin mới
+    if (!isScrolledUp) {
+      setHasNewMessageWhileScrolledUp(false);
+    }
+  }
+
+  // Tự động cuộn thông minh khi có tin mới hoặc stream
+  useEffect(() => {
+    const el = chatScrollRef.current;
+    if (!el) return;
+
+    const currentCount = displayRecords.length;
+    const isNewMessage = currentCount > prevRecordCountRef.current;
+    prevRecordCountRef.current = currentCount;
+
+    // NẾU NGƯỜI DÙNG ĐANG CUỘN LÊN TRÊN ĐỌC TIN NHẮN CŨ:
+    // TUYỆT ĐỐI KHÔNG TỰ ĐỘNG KÉO XUỐNG ĐÁY!
+    if (userScrolledUpRef.current) {
+      if (isNewMessage || view?.streaming) {
+        setHasNewMessageWhileScrolledUp(true);
+      }
+      return;
+    }
+
+    // NẾU NGƯỜI DÙNG ĐANG Ở SẴN CUỐI DANH SÁCH TIN NHẮN:
+    // Tự động cuộn xuống đáy để theo dõi lời thoại mới nhất
+    el.scrollTop = el.scrollHeight;
+  }, [displayRecords.length, view?.streaming, view?.record?.content]);
+
+  // Hàm người dùng bấm nút chủ động cuộn xuống đáy
+  function scrollToBottom() {
+    const el = chatScrollRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    userScrolledUpRef.current = false;
+    setHasNewMessageWhileScrolledUp(false);
+  }
+
+  function handleToggleSpeechForRecord(rec, role, text) {
+    if (!rec?._id) return;
+    const isThisSpeaking = Boolean(speakingRecordId === rec._id && !isPaused);
+    const isThisPaused = Boolean(speakingRecordId === rec._id && isPaused);
+
+    if (isThisSpeaking) {
+      pauseCourtroomSpeech();
+    } else if (isThisPaused) {
+      resumeCourtroomSpeech();
     } else {
       unlockCourtroomAudio();
-      onEnableTts?.( record?._id );
-      setSpeakingRecordId(record?._id);
-      speakCourtroomText(content, {
-        role: owner,
-        recordId: record?._id,
-        onStart: () => setSpeakingRecordId(record?._id),
-        onEnd: () => setSpeakingRecordId((cur) => (cur === record?._id ? null : cur)),
-        onError: () => setSpeakingRecordId((cur) => (cur === record?._id ? null : cur)),
+      onEnableTts?.(rec._id);
+      setSpeakingRecordId(rec._id);
+      setIsPaused(false);
+      speakCourtroomText(text, {
+        role,
+        recordId: rec._id,
+        onStart: () => {
+          setSpeakingRecordId(rec._id);
+          setIsPaused(false);
+        },
+        onEnd: () => {
+          setSpeakingRecordId((cur) => (cur === rec._id ? null : cur));
+          setIsPaused(false);
+        },
+        onError: () => {
+          setSpeakingRecordId((cur) => (cur === rec._id ? null : cur));
+          setIsPaused(false);
+        },
       });
     }
   }
-  const index = records.findIndex((r) => r._id === record?._id);
-  const canNavigate = !navigationDisabled && !view.pending && !view.streaming && index >= 0 && Boolean(onSelectRecord);
-  const latest = !view.pending && index === records.length - 1;
-  const preparing = preparationStalled || view.streaming ? null : session?.conversation?.status === 'generating' ? session.conversation.next_speaker : pendingSpeaker;
-  // Lời cũ vẫn được giữ để đọc, nhưng quyền phát biểu đã chuyển sang người học.
-  const invited = session?.status !== 'completed' && session?.conversation?.status === 'learner' && !view.pending && record?._id === session.conversation.current_record_id;
+
+  function handleReplaySpeechForRecord(rec, role, text) {
+    if (!rec?._id) return;
+    unlockCourtroomAudio();
+    onEnableTts?.(rec._id);
+    setSpeakingRecordId(rec._id);
+    setIsPaused(false);
+    speakCourtroomText(text, {
+      role,
+      recordId: rec._id,
+      onStart: () => {
+        setSpeakingRecordId(rec._id);
+        setIsPaused(false);
+      },
+      onEnd: () => {
+        setSpeakingRecordId((cur) => (cur === rec._id ? null : cur));
+        setIsPaused(false);
+      },
+      onError: () => {
+        setSpeakingRecordId((cur) => (cur === rec._id ? null : cur));
+        setIsPaused(false);
+      },
+    });
+  }
+
+  const inspectedRole = inspectedActor ? roles[inspectedActor] : null;
+  const inspectedSide =
+    (inspectedActor === 'learner'
+      ? session?.user_court_role === 'defense_lawyer'
+      : session?.user_court_role !== 'defense_lawyer')
+      ? 'defendant'
+      : 'plaintiff';
+
+  const preparing =
+    preparationStalled || view.streaming
+      ? null
+      : session?.conversation?.status === 'generating'
+      ? session.conversation.next_speaker
+      : pendingSpeaker;
+
+  const invited =
+    session?.status !== 'completed' &&
+    session?.conversation?.status === 'learner' &&
+    !view.pending &&
+    view.record?._id === session?.conversation?.current_record_id;
+
   const activeActor = view.streaming ? view.actor : invited || preparing ? null : view.actor;
   const currentPhase = session?.conversation?.phase ?? (records.length <= 1 ? 'opening' : 'debate');
-  const phaseLabel = session?.status === 'completed' ? 'Phiên tòa đã khép lại — Hoàn tất nghị án' : (PHASE_LABELS[currentPhase] ?? 'Phiên luyện tập');
-  const currentIssueLabel = session?.status !== 'completed' && currentPhase !== 'summary'
-    ? session?.conversation?.hearing_state?.current_issue?.label
-    : null;
-  return <section className="court-stage-section" aria-label="Phòng xử án">
-    <div className="court-stage-toolbar">
-      <span>
-        PHÒNG XỬ ÁN <span className="stage-divider">/</span> {phaseLabel}
-        {currentIssueLabel ? <> <span className="stage-divider">·</span> Trọng tâm: {currentIssueLabel}</> : null}
-      </span>
-    </div>
-    <div className="court-viewport"><div className="court-scene">
-      <img className="court-background" src="/courtsim-courtroom-background-v2.png" alt="" aria-hidden="true" onError={() => setBackgroundFailed(true)} />
-      {backgroundFailed && <p className="background-error">Chưa tải được nền phòng xử án. Bạn vẫn có thể tiếp tục phiên.</p>}
-      <Scale className="court-emblem" aria-hidden="true" />
-      <span className="court-versus" aria-hidden="true">VS</span>
-      <div className="stage-session-info"><span>PHẦN TRÌNH BÀY CỦA BẠN</span><strong>{records.filter(item => item.sender_type === 'user').length}<small> / {session?.max_turns ?? 20} lượt</small></strong><progress aria-label="Số lượt đã trình bày" value={records.filter(item => item.sender_type === 'user').length} max={session?.max_turns ?? 20}/></div>
-      <button className="stage-transcript-info" type="button" onClick={onHistory}><span>BIÊN BẢN PHIÊN</span><strong>{records.length}<small> phát biểu đã lưu</small></strong><span>Mở biên bản →</span></button>
-      <div className="court-turn-badge" role="status">{!session ? 'Chưa tải được phiên' : preparing ? 'Đang chuẩn bị lượt tiếp theo' : invited ? 'Đến lượt bạn trình bày' : session.status === 'completed' ? 'Phiên đã hoàn tất' : 'Đang diễn ra'}</div>
-      <Character actor="judge" role={roles.judge} active={activeActor === 'judge'} preparing={preparing === 'judge'} onInspect={() => setInspectedActor('judge')} />
-      {/* Dùng lại đúng nền làm lớp che bàn: không chỉnh/cắt tệp gốc hoặc thêm chứng cứ minh họa. */}
-      <div className="court-desk-layer desk-judge" aria-hidden="true" />
-      <Character actor="opponent" role={roles.opponent} active={activeActor === 'opponent'} preparing={preparing === 'opponent'} onInspect={() => setInspectedActor('opponent')} />
-      <Character actor="learner" role={roles.learner} active={activeActor === 'learner'} invited={invited} onInspect={() => setInspectedActor('learner')} />
-      <div className="court-desk-layer desk-front" aria-hidden="true" />
-      {record && <article id={`record-${record._id}`} className={`court-speech speech-${owner}`} aria-label={`Lời ${roles[owner].name.toLocaleLowerCase('vi')}`}>
-        <div className="speech-heading"><strong>{roles[owner].name}</strong><span>{view.streaming ? 'Đang nhận lời thoại…' : view.pending ? 'Đang gửi lập luận' : latest ? 'Lời gần nhất' : 'Đang xem lại'}</span></div>
-        <p key={record._id} className="speech-content" tabIndex={0} role="region" aria-label="Nội dung lời thoại">{content}</p>
-        {Boolean(record.citations?.length) && (() => {
-          const validCitations = record.citations.filter(Boolean);
-          if (!validCitations.length) return null;
-          const seen = new Set();
-          const uniqueCitations = validCitations.filter((c) => {
-            const key = typeof c === 'object' ? `${c.id || ''}:${c.law_number || ''}:${c.article || ''}` : String(c);
-            if (seen.has(key)) return false;
-            seen.add(key);
-            return true;
-          });
-          return (
-            <div
-              className="speech-citations-chip"
-              role="button"
-              tabIndex={0}
-              onClick={() => onReadFull(record)}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onReadFull(record); }}
-              title="Bấm để xem chi tiết căn cứ pháp luật và toàn văn lời thoại"
-              aria-label="Căn cứ pháp lý trích dẫn - bấm để phóng to và xem chi tiết"
-            >
-              <span className="chip-badge">⚖️ Căn cứ:</span>
-              <span className="chip-items">
-                {uniqueCitations.map((c, i) => {
-                  const label = typeof c === 'object'
-                    ? `${c.title || c.law_number || 'Văn bản pháp luật'}${c.article ? ` (Điều ${c.article})` : ''}`
-                    : String(c);
-                  return (
-                    <span key={c.id || i} className="chip-item" title={c.context_text || c.text || label}>
-                      {label}
-                    </span>
-                  );
-                })}
-              </span>
-            </div>
-          );
-        })()}
-        <div className="speech-footer">
-          <nav className="speech-navigation" aria-label="Duyệt lời thoại">
-            <button type="button" aria-label="Lời thoại trước" title="Lời thoại trước" disabled={!canNavigate || index === 0} onClick={() => onSelectRecord(records[index - 1]._id)}><ChevronLeft size={20} aria-hidden="true" /></button>
-            <span aria-live="polite" aria-atomic="true" aria-label={index >= 0 ? `Lời thoại ${index + 1} trên ${records.length}` : 'Đang chuẩn bị lời thoại'}>{index >= 0 ? index + 1 : '—'} / {records.length}</span>
-            <button type="button" aria-label="Lời thoại sau" title="Lời thoại sau" disabled={!canNavigate || index === records.length - 1} onClick={() => onSelectRecord(records[index + 1]._id)}><ChevronRight size={20} aria-hidden="true" /></button>
-          </nav>
-          {speechControls}
-          <div className="speech-tools" aria-label="Công cụ đọc lời thoại">
+  const phaseLabel =
+    session?.status === 'completed'
+      ? 'Phiên tòa đã khép lại — Hoàn tất nghị án'
+      : (PHASE_LABELS[currentPhase] ?? 'Phiên luyện tập');
+  const currentIssueLabel =
+    session?.status !== 'completed' && currentPhase !== 'summary'
+      ? session?.conversation?.hearing_state?.current_issue?.label
+      : null;
+
+  return (
+    <section className="court-stage-section" aria-label="Phòng xử án">
+      <div className="court-stage-toolbar">
+        <span>
+          PHÒNG XỬ ÁN <span className="stage-divider">/</span> {phaseLabel}
+          {currentIssueLabel ? <> <span className="stage-divider">·</span> Trọng tâm: {currentIssueLabel}</> : null}
+        </span>
+        <div className="stage-audio-master-controls">
+          {typeof onToggleTts === 'function' && (
             <button
               type="button"
-              onClick={handleToggleSpeech}
-              aria-label={isCurrentSpeaking ? 'Dừng đọc lời thoại' : 'Nghe đọc lời thoại'}
-              title={isCurrentSpeaking ? 'Bấm để dừng đọc' : 'Nghe phát biểu bằng giọng nói tiếng Việt tự nhiên'}
-              className={`speech-voice-btn ${isCurrentSpeaking ? 'is-speaking' : ''}`}
+              onClick={onToggleTts}
+              className={`stage-master-sound-btn ${ttsEnabled ? 'is-active' : ''}`}
+              title={
+                ttsEnabled
+                  ? 'Đang bật tự động phát âm thanh AI (Bấm để tắt âm thanh)'
+                  : 'Đang tắt âm thanh AI (Bấm để bật âm thanh tự động)'
+              }
+              aria-label={ttsEnabled ? 'Tắt âm thanh phiên tòa' : 'Bật âm thanh phiên tòa'}
             >
-              <Volume2
-                size={15}
-                style={{
-                  display: 'inline-block',
-                  verticalAlign: '-2px',
-                  marginRight: '4px',
-                  color: isCurrentSpeaking ? '#38bdf8' : undefined,
-                }}
-              />
-              {isCurrentSpeaking ? 'Đang đọc…' : 'Nghe đọc'}
+              {ttsEnabled ? (
+                <>
+                  <Volume2 size={13} className="text-emerald-400" />
+                  <span>Âm thanh: Bật</span>
+                </>
+              ) : (
+                <>
+                  <VolumeX size={13} className="text-slate-400" />
+                  <span>Âm thanh: Tắt</span>
+                </>
+              )}
             </button>
-            <button type="button" onClick={() => onReadFull(record)} aria-label="Phóng to lời thoại">Phóng to{record.citations?.length ? ' và xem căn cứ' : ''}</button>
-            {!view.pending && <button type="button" onClick={onHistory}>Biên bản phiên</button>}
-          </div>
+          )}
+          <button
+            type="button"
+            onClick={() => cycleCourtroomSpeechRate()}
+            className="stage-master-rate-btn"
+            aria-label={`Tốc độ đọc hiện tại: ${speechRate}x. Bấm để đổi`}
+            title={`Tốc độ đọc âm thanh hiện tại: ${speechRate}x. Bấm để chuyển đổi 1.0x, 1.25x và 1.5x`}
+          >
+            <Gauge size={12} className="text-sky-400" />
+            <span>{speechRate}x</span>
+          </button>
         </div>
-      </article>}
-    </div></div>
-    {inspectedRole && <FeedbackModal title={`Vai trò: ${inspectedRole.name}`} onClose={() => setInspectedActor(null)}><div className="court-role-preview"><img src={`/courtsim-characters/${inspectedRole.asset}-listening.png`} alt={inspectedRole.name}/><div><h3>{inspectedRole.detail}</h3>{inspectedActor === 'judge' ? <p>Chủ tọa do AI đảm nhiệm, đặt câu hỏi làm rõ và điều hành lượt phát biểu.</p> : <><p>{inspectedActor === 'learner' ? 'Bạn bảo vệ quan điểm của phía đã chọn dựa trên tình tiết và chứng cứ trong hồ sơ.' : 'Bên đối lập do AI đảm nhiệm và phản hồi lập luận của phía bạn.'}</p>{session?.case_id?.parties?.filter(party => party.side === inspectedSide).map((party, index) => <article key={index}><h4>{party.name}</h4><ul>{party.claims?.map((claim, i) => <li key={i}>{claim}</li>)}</ul></article>)}</>}<button className="court-role-close" onClick={() => setInspectedActor(null)}>Quay lại phiên tòa →</button></div></div></FeedbackModal>}
-  </section>;
+      </div>
+
+      {autoplayBlocked && (
+        <aside role="alert" className="court-autoplay-banner">
+          <div className="autoplay-banner-content">
+            <VolumeX size={16} className="text-amber-400 animate-pulse" aria-hidden="true" />
+            <strong>Trình duyệt đã chặn tự động phát âm thanh.</strong>
+            <span>Bấm kích hoạt để nghe giọng đọc của Hội đồng xét xử và Bên đối lập:</span>
+          </div>
+          <button
+            type="button"
+            className="autoplay-enable-btn"
+            onClick={() => {
+              unlockAndResumeCourtroomSpeech();
+              setAutoplayBlocked(false);
+            }}
+          >
+            <Volume2 size={14} aria-hidden="true" /> Bật âm thanh phiên tòa
+          </button>
+        </aside>
+      )}
+
+      <div className="court-viewport">
+        <div className="court-scene">
+          <img
+            className="court-background"
+            src="/courtsim-courtroom-background-v2.png"
+            alt=""
+            aria-hidden="true"
+            onError={() => setBackgroundFailed(true)}
+          />
+          {backgroundFailed && (
+            <p className="background-error">Chưa tải được nền phòng xử án. Bạn vẫn có thể tiếp tục phiên.</p>
+          )}
+          <Scale className="court-emblem" aria-hidden="true" />
+          <span className="court-versus" aria-hidden="true">
+            VS
+          </span>
+
+          <div className="stage-session-info">
+            <span>PHẦN TRÌNH BÀY CỦA BẠN</span>
+            <strong>
+              {records.filter((item) => item.sender_type === 'user').length}
+              <small> / {session?.max_turns ?? 20} lượt</small>
+            </strong>
+            <progress
+              aria-label="Số lượt đã trình bày"
+              value={records.filter((item) => item.sender_type === 'user').length}
+              max={session?.max_turns ?? 20}
+            />
+          </div>
+
+          <button className="stage-transcript-info" type="button" onClick={onHistory}>
+            <span>BIÊN BẢN PHIÊN</span>
+            <strong>
+              {records.length}
+              <small> phát biểu đã lưu</small>
+            </strong>
+            <span>Mở biên bản →</span>
+          </button>
+
+          <div className="court-turn-badge" role="status">
+            {!session
+              ? 'Chưa tải được phiên'
+              : preparing
+              ? 'Đang chuẩn bị lượt tiếp theo'
+              : invited
+              ? 'Đến lượt bạn trình bày'
+              : session.status === 'completed'
+              ? 'Phiên đã hoàn tất'
+              : 'Đang diễn ra'}
+          </div>
+
+          <Character
+            actor="judge"
+            role={roles.judge}
+            active={activeActor === 'judge'}
+            preparing={preparing === 'judge'}
+            onInspect={() => setInspectedActor('judge')}
+          />
+          <div className="court-desk-layer desk-judge" aria-hidden="true" />
+          <Character
+            actor="opponent"
+            role={roles.opponent}
+            active={activeActor === 'opponent'}
+            preparing={preparing === 'opponent'}
+            onInspect={() => setInspectedActor('opponent')}
+          />
+          <Character
+            actor="learner"
+            role={roles.learner}
+            active={activeActor === 'learner'}
+            invited={invited}
+            onInspect={() => setInspectedActor('learner')}
+          />
+          <div className="court-desk-layer desk-front" aria-hidden="true" />
+
+          {/* KHUNG HỘI THOẠI PHIÊN TÒA: DANH SÁCH BONG BÓNG CHAT VỚI AUTO-SCROLL THÔNG MINH */}
+          <article className="court-speech court-dialogue-stream" aria-label="Khung hội thoại phiên tòa">
+            <div className="dialogue-stream-header">
+              <span className="dialogue-stream-title">
+                <MessageSquare size={13} className="text-sky-400" />
+                HỘI THOẠI PHIÊN TÒA
+              </span>
+              <span className="dialogue-stream-count">
+                {displayRecords.length} lượt phát biểu
+              </span>
+            </div>
+
+            <div
+              ref={chatScrollRef}
+              onScroll={handleChatScroll}
+              className="dialogue-messages-scroll"
+              tabIndex={0}
+              role="log"
+              aria-label="Danh sách tin nhắn phát biểu trong phiên tòa"
+            >
+              {displayRecords.map((rec, idx) => {
+                const speaker = getSpeakerInfo(rec, session);
+                const isRecordSpeaking = speakingRecordId === rec._id && !isPaused;
+                const isRecordPaused = speakingRecordId === rec._id && isPaused;
+                const contentText = dialogueText(
+                  rec.display_content ?? rec.content,
+                  session?.case_id?.evidence_inventory
+                ) || 'Chưa hiển thị được phản hồi này. Hãy tải lại phiên.';
+
+                return (
+                  <div
+                    key={rec._id || idx}
+                    id={`record-${rec._id}`}
+                    className={`dialogue-bubble bubble-${speaker.actor} ${
+                      isRecordSpeaking ? 'is-speaking-bubble' : ''
+                    }`}
+                  >
+                    <div className="bubble-header">
+                      <div className="bubble-speaker-info">
+                        <span className={`bubble-avatar avatar-${speaker.actor}`} aria-hidden="true">
+                          {speaker.actor === 'judge' ? '⚖️' : speaker.actor === 'opponent' ? '🛡️' : '👤'}
+                        </span>
+                        <strong className="bubble-speaker-name">{speaker.name}</strong>
+                        <span className="bubble-role-pill">{speaker.roleTag}</span>
+                      </div>
+                      <div className="bubble-meta">
+                        <span className="bubble-turn-num">#{idx + 1}</span>
+                        {rec.created_at && (
+                          <time className="bubble-time" dateTime={rec.created_at}>
+                            {new Date(rec.created_at).toLocaleTimeString('vi-VN', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </time>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="bubble-body">
+                      <p className="bubble-text">{contentText}</p>
+
+                      {/* Trích dẫn căn cứ pháp luật */}
+                      {Boolean(rec.citations?.length) && (() => {
+                        const validCitations = rec.citations.filter(Boolean);
+                        if (!validCitations.length) return null;
+                        const seen = new Set();
+                        const uniqueCitations = validCitations.filter((c) => {
+                          const key =
+                            typeof c === 'object'
+                              ? `${c.id || ''}:${c.law_number || ''}:${c.article || ''}`
+                              : String(c);
+                          if (seen.has(key)) return false;
+                          seen.add(key);
+                          return true;
+                        });
+                        return (
+                          <div
+                            className="speech-citations-chip"
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => onReadFull(rec)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') onReadFull(rec);
+                            }}
+                            title="Bấm để xem chi tiết căn cứ pháp luật và toàn văn lời thoại"
+                            aria-label="Căn cứ pháp lý trích dẫn"
+                          >
+                            <span className="chip-badge">⚖️ Căn cứ:</span>
+                            <span className="chip-items">
+                              {uniqueCitations.slice(0, 3).map((c, i) => {
+                                const isObj = typeof c === 'object';
+                                const label = isObj
+                                  ? `${c.title || c.law_number || 'Văn bản'}${
+                                      c.article ? ` (Đ.${c.article})` : ''
+                                    }`
+                                  : String(c);
+                                const isExpired = isObj && c.validity_status === 'expired';
+                                const isAmended = isObj && c.validity_status === 'amended';
+                                const tooltip = isObj && c.validity_warning
+                                  ? `${label} — ${c.validity_warning}`
+                                  : isObj ? (c.context_text || c.text || label) : label;
+                                return (
+                                  <span
+                                    key={c.id || i}
+                                    className={`chip-item ${isExpired ? 'chip-expired' : isAmended ? 'chip-amended' : ''}`}
+                                    title={tooltip}
+                                  >
+                                    {label}
+                                    {isExpired && <span className="chip-validity-tag expired">Hết HL</span>}
+                                    {isAmended && <span className="chip-validity-tag amended">Đã sửa</span>}
+                                  </span>
+                                );
+                              })}
+                            </span>
+                          </div>
+                        );
+                      })()}
+                    </div>
+
+                    <div className="bubble-footer">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleSpeechForRecord(rec, speaker.actor, contentText)}
+                        aria-label={
+                          isRecordSpeaking
+                            ? 'Tạm dừng đọc lượt này'
+                            : isRecordPaused
+                            ? 'Tiếp tục đọc lượt này'
+                            : 'Nghe đọc lượt này'
+                        }
+                        title={
+                          isRecordSpeaking
+                            ? 'Bấm để tạm dừng giọng đọc'
+                            : isRecordPaused
+                            ? 'Bấm để tiếp tục nghe'
+                            : 'Nghe phát biểu bằng giọng nói AI tự nhiên'
+                        }
+                        className={`bubble-voice-btn ${
+                          isRecordSpeaking ? 'is-speaking' : isRecordPaused ? 'is-paused' : ''
+                        }`}
+                      >
+                        {isRecordSpeaking ? (
+                          <Pause size={12} className="text-sky-400" />
+                        ) : isRecordPaused ? (
+                          <Play size={12} className="text-amber-400" />
+                        ) : (
+                          <Volume2 size={12} />
+                        )}
+                        <span>{isRecordSpeaking ? 'Đang đọc' : isRecordPaused ? 'Tiếp tục' : 'Nghe đọc'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleReplaySpeechForRecord(rec, speaker.actor, contentText)}
+                        className="bubble-replay-btn"
+                        aria-label="Phát lại lời thoại từ đầu"
+                        title="Phát lại toàn bộ lời thoại này từ đầu"
+                      >
+                        <RotateCcw size={11} />
+                        <span>Phát lại</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => onReadFull(rec)}
+                        className="bubble-expand-btn"
+                        aria-label="Phóng to lời thoại"
+                      >
+                        Phóng to
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Trạng thái đang chuẩn bị lượt tiếp theo */}
+              {preparing && !view?.streaming && (
+                <div className="dialogue-bubble bubble-preparing" role="status">
+                  <span className="preparing-indicator">
+                    {session?.conversation?.next_speaker === 'judge'
+                      ? '⚖️ Thẩm phán (Chủ tọa) đang chuẩn bị câu hỏi xét hỏi…'
+                      : '🛡️ Bên đối lập đang chuẩn bị lập luận…'}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Nút nổi báo có tin mới khi người dùng đang cuộn lên xem tin cũ */}
+            {hasNewMessageWhileScrolledUp && (
+              <button
+                type="button"
+                className="scroll-to-bottom-pill animate-bounce"
+                onClick={scrollToBottom}
+                aria-label="Cuộn xuống lời thoại mới nhất"
+              >
+                <span>↓ Có lời thoại mới</span>
+              </button>
+            )}
+
+            {/* Thanh điều khiển tiếp tục lượt thoại nếu có */}
+            {speechControls && (
+              <div className="dialogue-stream-footer">
+                {speechControls}
+              </div>
+            )}
+          </article>
+        </div>
+      </div>
+
+      {inspectedRole && (
+        <FeedbackModal title={`Vai trò: ${inspectedRole.name}`} onClose={() => setInspectedActor(null)}>
+          <div className="court-role-preview">
+            <img src={`/courtsim-characters/${inspectedRole.asset}-listening.png`} alt={inspectedRole.name} />
+            <div>
+              <h3>{inspectedRole.detail}</h3>
+              {inspectedActor === 'judge' ? (
+                <p>Thẩm phán - Chủ tọa phiên tòa điều hành phiên, xét hỏi và ra phán quyết.</p>
+              ) : (
+                <>
+                  <p>
+                    {inspectedActor === 'learner'
+                      ? 'Bạn bảo vệ quan điểm của phía đã chọn dựa trên tình tiết và chứng cứ trong hồ sơ.'
+                      : 'Bên đối lập do AI đảm nhiệm và phản hồi lập luận của phía bạn.'}
+                  </p>
+                  {session?.case_id?.parties
+                    ?.filter((party) => party.side === inspectedSide)
+                    .map((party, index) => (
+                      <article key={index}>
+                        <h4>{party.name}</h4>
+                        <ul>
+                          {party.claims?.map((claim, i) => (
+                            <li key={i}>{claim}</li>
+                          ))}
+                        </ul>
+                      </article>
+                    ))}
+                </>
+              )}
+              <button className="court-role-close" onClick={() => setInspectedActor(null)}>
+                Quay lại phiên tòa →
+              </button>
+            </div>
+          </div>
+        </FeedbackModal>
+      )}
+    </section>
+  );
 }

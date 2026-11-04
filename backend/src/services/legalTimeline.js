@@ -40,13 +40,13 @@ export function buildLegalPlan(courtCase, fallbackDate, learnerTimeline = []) {
       plans.push({ ...event, id: `${kind}-${index}`, label,
         // Đây là danh sách cần kiểm tra, không phải kết luận luật áp dụng.
         law_numbers: procedural ? [...(land ? [law] : []), '92/2015/QH13'] : [law],
-        reason: `${label}: ${event.description}. Tra cứu riêng theo mốc này, cần đối chiếu điều kiện và chuyển tiếp.` });
+        reason: `${label} (${event.date}${event.date_to && event.date_to !== event.date ? ' – ' + event.date_to : ''}): ${event.description}. Đây là mốc xác định thời điểm áp dụng pháp luật — phải dùng phiên bản luật có hiệu lực TẠI thời điểm này, không dùng luật hiện hành nếu có phiên bản khác trước đó. Cần đối chiếu riêng điều kiện áp dụng, điều khoản chuyển tiếp và loại quan hệ pháp luật (nội dung giao dịch vs. thủ tục tố tụng có thể áp dụng phiên bản khác nhau).` });
     });
   }
   if (!timeline.length && isValidDateOnly(fallbackDate)) {
     plans.push({ id: 'exercise', kind: 'exercise', label: 'Mốc giả định bài tập', date: fallbackDate, date_to: fallbackDate,
       status: 'assumed', law_numbers: land ? [fallbackDate < '2004-07-01' ? 'Luật trước 2004 (chưa xác định phiên bản)' : fallbackDate < '2014-07-01' ? '13/2003/QH11' : fallbackDate < '2024-08-01' ? '45/2013/QH13' : '31/2024/QH15'] : ['91/2015/QH13'],
-      reason: 'Chỉ tham khảo theo ngày bài tập, chưa xác định thời điểm của vấn đề pháp lý.' });
+      reason: 'Mốc giả định từ bài tập (chưa có mốc sự kiện trong hồ sơ). Phiên bản luật được suy ra chỉ để định hướng tra cứu, chưa phải kết luận về thời điểm áp dụng. Khi hồ sơ có mốc thực tế, phải dùng mốc đó để xác định phiên bản luật chính xác.' });
   }
   return plans;
 }

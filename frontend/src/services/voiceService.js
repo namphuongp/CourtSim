@@ -245,13 +245,19 @@ export function cleanTextForSpeech(raw) {
   return raw
     .replace(/\[([^\]]+)\]\([^)]+\)/gu, '$1') // Giữ lại text của link markdown
     .replace(/<[^>]+>/gu, '') // Lược bỏ thẻ HTML
-    .replace(/\[(?:CC|PL):[^\]]+\]/gu, '')
-    .replace(/\[(?:Chứng cứ|Điều luật):[^\]]+\]/gu, '')
+    .replace(/\[(?:CC|PL|BL):[^\]]+\]/gu, '')
+    .replace(/\[(?:Chứng cứ|Điều luật|Căn cứ|Bút lục):[^\]]+\]/gu, '')
     .replace(/https?:\/\/[^\s]+/gu, '')
+    .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+    .replace(/[-=_]{3,}/gu, ' ')
     .replace(/[#*`_~]/gu, '')
     .replace(/\s+/gu, ' ')
     .trim();
 }
+
+export const COURTROOM_SPEECH_RATES = [1.0, 1.25, 1.5];
+export const DEFAULT_COURTROOM_SPEECH_RATE = 1.25;
+const STORAGE_KEY_RATE = 'courtsim_speech_rate';
 
 let activeAudio = null;
 let activeUtterance = null;
@@ -259,16 +265,160 @@ let activeAbortController = null;
 let currentAudioUrl = null;
 let activeSpeechSessionId = 0;
 let currentSpeakingRecordId = null;
+let isPausedState = false;
+let isAutoplayBlockedState = false;
+let pendingBlockedSpeech = null;
 let cachedVoices = [];
 const clientAudioCache = new Map();
 const speechListeners = new Set();
+const speechRateListeners = new Set();
+const autoplayBlockedListeners = new Set();
+
+export function isAutoplayBlockedError(err) {
+  if (!err) return false;
+  const name = err.name || '';
+  const msg = String(err.message || err);
+  return (
+    name === 'NotAllowedError' ||
+    name === 'AutoplayError' ||
+    /notallowed|not-allowed|interact|gesture|autoplay/i.test(name) ||
+    /notallowed|not-allowed|user didn't interact|user gesture|autoplay/i.test(msg)
+  );
+}
+
+function notifyAutoplayBlocked(blocked) {
+  for (const listener of autoplayBlockedListeners) {
+    try {
+      listener(blocked);
+    } catch { /* Bỏ qua */ }
+  }
+}
+
+export function subscribeAutoplayBlocked(listener) {
+  autoplayBlockedListeners.add(listener);
+  return () => autoplayBlockedListeners.delete(listener);
+}
+
+export function isAutoplayBlocked() {
+  return isAutoplayBlockedState;
+}
+
+export function isCourtroomSpeechPaused() {
+  return isPausedState;
+}
+
+export function pauseCourtroomSpeech() {
+  if (!currentSpeakingRecordId) return;
+  isPausedState = true;
+  if (activeAudio && !activeAudio.paused) {
+    try {
+      activeAudio.pause();
+    } catch { /* Bỏ qua */ }
+  }
+  if (typeof window !== 'undefined' && 'speechSynthesis' in window && window.speechSynthesis.speaking) {
+    try {
+      window.speechSynthesis.pause();
+    } catch { /* Bỏ qua */ }
+  }
+  notifySpeechListeners();
+}
+
+export function resumeCourtroomSpeech() {
+  if (!currentSpeakingRecordId || !isPausedState) return;
+  isPausedState = false;
+  if (activeAudio && activeAudio.paused) {
+    try {
+      const playPromise = activeAudio.play();
+      if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch((err) => {
+          if (isAutoplayBlockedError(err)) {
+            isAutoplayBlockedState = true;
+            notifyAutoplayBlocked(true);
+          }
+        });
+      }
+    } catch { /* Bỏ qua */ }
+  }
+  if (typeof window !== 'undefined' && 'speechSynthesis' in window && window.speechSynthesis.paused) {
+    try {
+      window.speechSynthesis.resume();
+    } catch { /* Bỏ qua */ }
+  }
+  notifySpeechListeners();
+}
+
+export function unlockAndResumeCourtroomSpeech() {
+  unlockCourtroomAudio();
+  isAutoplayBlockedState = false;
+  notifyAutoplayBlocked(false);
+  if (pendingBlockedSpeech) {
+    const { text, options } = pendingBlockedSpeech;
+    pendingBlockedSpeech = null;
+    return speakCourtroomText(text, options);
+  }
+  return null;
+}
+
+let currentSpeechRate = (() => {
+  if (typeof window === 'undefined') return DEFAULT_COURTROOM_SPEECH_RATE;
+  try {
+    const saved = parseFloat(localStorage.getItem(STORAGE_KEY_RATE));
+    if (saved && COURTROOM_SPEECH_RATES.includes(saved)) {
+      return saved;
+    }
+  } catch { /* Bỏ qua */ }
+  return DEFAULT_COURTROOM_SPEECH_RATE;
+})();
 
 function notifySpeechListeners() {
   for (const listener of speechListeners) {
     try {
-      listener(currentSpeakingRecordId);
+      listener(currentSpeakingRecordId, {
+        isSpeaking: Boolean(currentSpeakingRecordId),
+        isPaused: isPausedState,
+        recordId: currentSpeakingRecordId,
+      });
     } catch { /* Bỏ qua */ }
   }
+}
+
+function notifyRateListeners() {
+  for (const listener of speechRateListeners) {
+    try {
+      listener(currentSpeechRate);
+    } catch { /* Bỏ qua */ }
+  }
+}
+
+export function subscribeCourtroomSpeechRate(listener) {
+  speechRateListeners.add(listener);
+  return () => speechRateListeners.delete(listener);
+}
+
+export function getCourtroomSpeechRate() {
+  return currentSpeechRate;
+}
+
+export function setCourtroomSpeechRate(rate) {
+  const numRate = Number(rate);
+  if (!COURTROOM_SPEECH_RATES.includes(numRate)) return currentSpeechRate;
+  currentSpeechRate = numRate;
+  try {
+    localStorage.setItem(STORAGE_KEY_RATE, String(numRate));
+  } catch { /* Bỏ qua */ }
+  if (activeAudio) {
+    try {
+      activeAudio.playbackRate = numRate;
+    } catch { /* Bỏ qua */ }
+  }
+  notifyRateListeners();
+  return currentSpeechRate;
+}
+
+export function cycleCourtroomSpeechRate() {
+  const currentIndex = COURTROOM_SPEECH_RATES.indexOf(currentSpeechRate);
+  const nextIndex = (currentIndex + 1) % COURTROOM_SPEECH_RATES.length;
+  return setCourtroomSpeechRate(COURTROOM_SPEECH_RATES[nextIndex]);
 }
 
 export function subscribeCourtroomSpeech(listener) {
@@ -423,7 +573,15 @@ async function fetchSegmentBlob(segmentText, role, signal) {
  * @param {function} [options.onEnd]
  * @param {function} [options.onError]
  */
+let lastSpeakingCall = { recordId: null, timestamp: 0 };
+
 export function speakCourtroomText(text, { role = 'judge', recordId = null, onStart, onEnd, onError } = {}) {
+  const now = Date.now();
+  if (recordId && recordId === lastSpeakingCall.recordId && now - lastSpeakingCall.timestamp < 600) {
+    return () => {};
+  }
+  lastSpeakingCall = { recordId, timestamp: now };
+
   stopCourtroomSpeech();
 
   const clean = cleanTextForSpeech(text);
@@ -434,6 +592,8 @@ export function speakCourtroomText(text, { role = 'judge', recordId = null, onSt
 
   const sessionId = ++activeSpeechSessionId;
   currentSpeakingRecordId = recordId || `speech-${sessionId}`;
+  isPausedState = false;
+  pendingBlockedSpeech = { text, options: { role, recordId, onStart, onEnd, onError } };
   notifySpeechListeners();
 
   const abortController = new AbortController();
@@ -448,6 +608,8 @@ export function speakCourtroomText(text, { role = 'judge', recordId = null, onSt
   function markStarted() {
     if (!started && sessionId === activeSpeechSessionId) {
       started = true;
+      isAutoplayBlockedState = false;
+      notifyAutoplayBlocked(false);
       onStart?.();
     }
   }
@@ -455,6 +617,7 @@ export function speakCourtroomText(text, { role = 'judge', recordId = null, onSt
   function finishSession() {
     if (sessionId !== activeSpeechSessionId) return;
     currentSpeakingRecordId = null;
+    isPausedState = false;
     notifySpeechListeners();
     onEnd?.();
   }
@@ -474,28 +637,38 @@ export function speakCourtroomText(text, { role = 'judge', recordId = null, onSt
       activeUtterance = utterance;
       utterance.voice = viVoice;
       utterance.lang = 'vi-VN';
+      let baseRate;
       if (role === 'judge') {
-        utterance.rate = 0.95;
+        baseRate = 1.05;
         utterance.pitch = 0.95;
       } else if (role === 'opponent') {
-        utterance.rate = 1.0;
+        baseRate = 1.15;
         utterance.pitch = 1.05;
       } else {
-        utterance.rate = 1.0;
+        baseRate = 1.1;
         utterance.pitch = 1.0;
       }
+      utterance.rate = Math.min(Math.max(baseRate * currentSpeechRate, 0.5), 2.5);
       utterance.onstart = () => markStarted();
       utterance.onend = () => {
         if (activeUtterance === utterance) activeUtterance = null;
         resolve(true);
       };
-      utterance.onerror = () => {
+      utterance.onerror = (err) => {
         if (activeUtterance === utterance) activeUtterance = null;
+        if (isAutoplayBlockedError(err)) {
+          isAutoplayBlockedState = true;
+          notifyAutoplayBlocked(true);
+        }
         resolve(false);
       };
       try {
         window.speechSynthesis.speak(utterance);
-      } catch {
+      } catch (synthErr) {
+        if (isAutoplayBlockedError(synthErr)) {
+          isAutoplayBlockedState = true;
+          notifyAutoplayBlocked(true);
+        }
         resolve(false);
       }
     });
@@ -516,9 +689,14 @@ export function speakCourtroomText(text, { role = 'judge', recordId = null, onSt
       const audio = getSharedAudio() || new Audio();
       activeAudio = audio;
       audio.volume = 1;
+      audio.defaultPlaybackRate = currentSpeechRate;
+      audio.playbackRate = currentSpeechRate;
       audio.src = audioUrl;
 
       audio.onplay = () => {
+        try {
+          audio.playbackRate = currentSpeechRate;
+        } catch { /* Bỏ qua */ }
         markStarted();
       };
       audio.onended = () => {
@@ -538,7 +716,13 @@ export function speakCourtroomText(text, { role = 'judge', recordId = null, onSt
 
       const playPromise = audio.play();
       if (playPromise && typeof playPromise.catch === 'function') {
-        playPromise.catch(reject);
+        playPromise.catch((err) => {
+          if (isAutoplayBlockedError(err)) {
+            isAutoplayBlockedState = true;
+            notifyAutoplayBlocked(true);
+          }
+          reject(err);
+        });
       }
     });
   }
@@ -554,11 +738,22 @@ export function speakCourtroomText(text, { role = 'judge', recordId = null, onSt
           await playBlobSegment(blob);
           continue;
         } catch (err) {
+          if (isAutoplayBlockedError(err)) {
+            isAutoplayBlockedState = true;
+            notifyAutoplayBlocked(true);
+            onError?.(err);
+            stopCourtroomSpeech();
+            return;
+          }
           onError?.(err);
         }
       }
       // Dự phòng sang Web Speech API nếu có gói giọng tiếng Việt
-      await playViaWebSpeech(segments[i]);
+      const webOk = await playViaWebSpeech(segments[i]);
+      if (!webOk && isAutoplayBlockedState) {
+        stopCourtroomSpeech();
+        return;
+      }
     }
     finishSession();
   })();
@@ -572,6 +767,11 @@ export function speakCourtroomText(text, { role = 'judge', recordId = null, onSt
 export function stopCourtroomSpeech() {
   activeSpeechSessionId++;
   currentSpeakingRecordId = null;
+  isPausedState = false;
+  lastSpeakingCall = { recordId: null, timestamp: 0 };
+  if (!isAutoplayBlockedState) {
+    pendingBlockedSpeech = null;
+  }
   notifySpeechListeners();
 
   if (activeAbortController) {
@@ -588,6 +788,8 @@ export function stopCourtroomSpeech() {
       activeAudio.onerror = null;
       activeAudio.pause();
       activeAudio.currentTime = 0;
+      activeAudio.removeAttribute('src');
+      activeAudio.load();
     } catch { /* Bỏ qua */ }
   }
 

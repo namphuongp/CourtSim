@@ -48,6 +48,7 @@ export async function withSessionLock(session, action, { leaseMs = LEASE_MS } = 
 export function publicSession(session, user) {
   const value = session.toObject ? session.toObject() : session;
   const { survey_receipt, feedback, feedback_prompted_at, feedback_submitted_at, operation, turns, evaluation, opening, case_snapshot, creation_request_id, access_ready, ...safe } = value;
-  return { ...safe, features: sessionFeatures(value, user), conversation: publicConversation(value, Boolean(operation && new Date(operation.expires_at) > new Date())), ...(case_snapshot ? { case_id: learnerCase(case_snapshot) } : typeof safe.case_id === 'object' && safe.case_id?.title ? { case_id: learnerCase(safe.case_id) } : {}), max_turns: MAX_TURNS,
+  const duration_seconds = safe.duration_seconds ?? (safe.completed_at && safe.created_at ? Math.max(0, Math.round((new Date(safe.completed_at).getTime() - new Date(safe.created_at).getTime()) / 1000)) : 0);
+  return { ...safe, duration_seconds, features: sessionFeatures(value, user), conversation: publicConversation(value, Boolean(operation && new Date(operation.expires_at) > new Date())), ...(case_snapshot ? { case_id: learnerCase(case_snapshot) } : typeof safe.case_id === 'object' && safe.case_id?.title ? { case_id: learnerCase(safe.case_id) } : {}), max_turns: MAX_TURNS,
     processing: Boolean(operation && new Date(operation.expires_at) > new Date()) };
 }

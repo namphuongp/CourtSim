@@ -1,4 +1,6 @@
-.courtroom-page { min-height:100dvh; background:#f6f8fb; color:#183047; padding:16px clamp(12px,1.2vw,24px) 0; }
+html:has(.courtroom-page), body:has(.courtroom-page) { height:100% !important; height:100dvh !important; max-height:100dvh !important; overflow:hidden !important; margin:0 !important; padding:0 !important; }
+body:has(.courtroom-page) .privacy-footer { display:none !important; }
+.courtroom-page { height:100vh; height:100dvh; max-height:100vh; max-height:100dvh; min-height:0; overflow:hidden; display:flex; flex-direction:column; box-sizing:border-box; background:#f6f8fb; color:#183047; padding:6px clamp(10px,1.2vw,18px) 0; }
 .courtroom-page button:focus-visible,.courtroom-page a:focus-visible,.speech-content:focus-visible { outline:3px solid #2563eb; outline-offset:3px; }
 .courtroom-header { max-width:none; margin:auto auto 8px; display:flex; justify-content:space-between; align-items:center; gap:12px; }
 .courtroom-back { font-size:12px; color:#45617a; text-decoration:none; }
@@ -260,6 +262,37 @@
   border: 1px solid #cbd5e1;
   font-weight: 500;
   color: #0f172a;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.speech-citations-chip .chip-item.chip-expired {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #991b1b;
+}
+.speech-citations-chip .chip-item.chip-amended {
+  background: #fffbeb;
+  border-color: #fcd34d;
+  color: #92400e;
+}
+.speech-citations-chip .chip-validity-tag {
+  font-size: 8.5px;
+  padding: 0 4px;
+  border-radius: 3px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+}
+.speech-citations-chip .chip-validity-tag.expired {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+.speech-citations-chip .chip-validity-tag.amended {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
 }
 
 .speech-footer { border-top:1px solid #d5e0eb; padding-top:10px; margin-top:12px; display:flex; flex-direction:column; gap:10px; }
@@ -337,6 +370,79 @@
 .voice-tts-btn:hover {
   background: #f8fafc; border-color: #94a3b8; color: #1e293b;
 }
+
+.speech-rate-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none !important;
+  transition: all 0.15s ease;
+}
+.speech-rate-btn:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
+  color: #1e40af;
+}
+
+.voice-rate-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  min-height: 30px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 550;
+  cursor: pointer;
+  background: #ffffff;
+  border: 1px solid #d0dce7;
+  color: #334e68;
+  transition: all 0.15s ease;
+}
+.voice-rate-btn:hover {
+  background: #f0f7ff;
+  border-color: #93c5fd;
+  color: #1e40af;
+}
+.voice-rate-btn strong {
+  color: #2563eb;
+  font-weight: 700;
+}
+body .speech-rate-btn {
+  background: #1c3270;
+  border: 1px solid #6288df;
+  color: #e0edff;
+}
+body .speech-rate-btn:hover {
+  background: #25469b;
+  border-color: #8db5ff;
+  color: #ffffff;
+}
+body .voice-rate-btn {
+  background: #152c6f;
+  border-color: #5579cc;
+  color: #cddcfc;
+  min-height: 28px;
+  padding: 2px 8px;
+  font-size: 11px;
+}
+body .voice-rate-btn:hover {
+  background: #1f3d99;
+  border-color: #7da5ff;
+  color: #ffffff;
+}
+body .voice-rate-btn strong {
+  color: #d8ff42;
+}
+
 .voice-tts-btn.is-active {
   background: #f0fdf4; border-color: #86efac; color: #166534;
 }
@@ -355,19 +461,19 @@
   border-radius: 8px; font-size: 12px; color: #991b1b;
 }
 /* Arena: characters and speech stay live; the backdrop is built from existing assets and CSS. */
-body .courtroom-page { background:radial-gradient(ellipse at 50% 65%,#123fbc,#08113e 75%); color:#d6e4ff; padding:16px 24px 0; }
-body .courtroom-header { gap:18px; margin-bottom:14px; }
-body .courtroom-header h1 { color:#edf4ff; font-size:18px; font-weight:750; }
+body .courtroom-page { height:100vh !important; height:100dvh !important; max-height:100vh !important; max-height:100dvh !important; min-height:0 !important; overflow:hidden !important; display:flex !important; flex-direction:column !important; box-sizing:border-box !important; background:radial-gradient(ellipse at 50% 65%,#123fbc,#08113e 75%); color:#d6e4ff; padding:6px clamp(10px,1.2vw,18px) 0 !important; }
+body .courtroom-header { gap:10px; margin-bottom:4px; flex-shrink:0; }
+body .courtroom-header h1 { color:#edf4ff; font-size:clamp(14px,1.1vw,17px); font-weight:750; margin:2px 0; }
 body .courtroom-back { color:#a0b9f1; }
 body .courtroom-meta { color:#829fd7; font-size:11px; }
-body .courtroom-controls button,body .courtroom-controls a { background:#1c2c68; color:#c7d6ff; border-color:#6e8bcd55; border-radius:999px; font-size:11px; padding:7px 12px; }
+body .courtroom-controls button,body .courtroom-controls a { background:#1c2c68; color:#c7d6ff; border-color:#6e8bcd55; border-radius:999px; font-size:11px; padding:4px 10px; min-height:28px; }
 body .courtroom-controls button:hover { background:#2b438b; }
 body .courtroom-controls .tool-guide,body .courtroom-controls .tool-case,body .courtroom-controls .tool-law { background:#1c2c68; color:#c7d6ff; border-color:#6e8bcd55; }
 body .courtroom-controls button[aria-expanded=true] { border-color:#d8ff42; color:#d8ff42; }
 body .courtroom-controls .end-session { color:#d8ff42; border-color:#c9ef4d70; }
-body .court-stage-section { border:1px solid #5876ca60; border-radius:18px; background:#0b184e; box-shadow:0 10px 35px #02092560; }
-body .court-stage-toolbar { color:#b8caf4; background:#0a1544; border-bottom:1px solid #405d9e60; min-height:30px; font-size:10px; letter-spacing:.06em; }
-body .court-scene { background:radial-gradient(ellipse at 50% 90%,#1d63f0c0,transparent 60%),linear-gradient(100deg,#1c215e,#071342 50%,#123678); }
+body .courtroom-workspace { flex:1 1 0% !important; min-height:0 !important; max-height:none !important; margin:0 !important; overflow:hidden !important; display:flex !important; flex-direction:column !important; width:100% !important; } body .court-stage-section { height:100% !important; min-height:0 !important; display:flex !important; flex-direction:column !important; overflow:hidden !important; border:1px solid #5876ca60; border-radius:14px; background:#0b184e; box-shadow:0 10px 35px #02092560; }
+body .court-stage-toolbar { color:#b8caf4; background:#0a1544; border-bottom:1px solid #405d9e60; min-height:24px; font-size:10px; letter-spacing:.06em; flex-shrink:0; padding:2px 10px; }
+body .court-viewport { flex:1 1 0% !important; min-height:0 !important; position:relative !important; overflow:hidden !important; width:100% !important; height:100% !important; } body .court-scene { position:relative !important; width:100% !important; height:100% !important; min-height:0 !important; aspect-ratio:auto !important; overflow:hidden !important; background:radial-gradient(ellipse at 50% 90%,#1d63f0c0,transparent 60%),linear-gradient(100deg,#1c215e,#071342 50%,#123678); }
 body .court-scene::before { content:''; position:absolute; inset:0; z-index:0; pointer-events:none; background:repeating-linear-gradient(90deg,transparent 0 6%,#6598ff12 6.2% 8.2%,transparent 8.4% 13%),linear-gradient(0deg,#133ecd80,transparent 65%); }
 body .court-background { filter:grayscale(1) sepia(1) hue-rotate(180deg) saturate(4) brightness(.33); opacity:.32; object-fit:fill; }
 .court-emblem { position:absolute; z-index:1; top:7%; left:calc(50% - 52px); width:104px; height:104px; padding:22px; color:#8ab7ff30; border:1px solid #80adff30; border-radius:50%; }
@@ -391,22 +497,23 @@ body .character-status { color:#d7ff43; font-size:10px; }
 body .is-speaking .character-name,body .is-invited .character-name { border-color:#74c6ff; background:#153b91; box-shadow:0 0 0 2px #65b7ff40,0 0 18px #2177ff40; }
 body .is-preparing .character-name { border-color:#cfe56c; background:#2b396b; }
 body .is-preparing .character-status { color:#dcff74; }
-body .court-speech { background:#f7faff; color:#17346c; border:2px solid #94baff; box-shadow:0 0 0 5px #3459c340,0 12px 25px #020a4d50; border-radius:15px; }
-body .speech-heading strong { color:#2c6be9; }
-body .speech-heading span { color:#7b91b7; }
-body .speech-content { font-size:14px; line-height:1.75; }
+body .court-speech { position:absolute !important; z-index:6 !important; top:25% !important; bottom:6px !important; left:27% !important; width:46% !important; max-height:calc(75% - 8px) !important; display:flex !important; flex-direction:column !important; box-sizing:border-box !important; padding:8px 12px !important; overflow:hidden !important; background:#f7faff !important; color:#17346c !important; border:2px solid #94baff !important; box-shadow:0 0 0 3px rgba(52,89,195,0.25),0 8px 24px rgba(2,10,77,0.4) !important; border-radius:12px !important; }
+body .speech-heading { flex-shrink:0 !important; margin-bottom:3px !important; display:flex !important; justify-content:space-between !important; align-items:baseline !important; }
+body .speech-heading strong { color:#2c6be9 !important; font-size:12.5px !important; }
+body .speech-heading span { color:#7b91b7 !important; font-size:9.5px !important; }
+body .speech-content { flex:1 1 auto !important; min-height:0 !important; max-height:none !important; overflow-y:auto !important; overscroll-behavior:contain !important; scrollbar-width:thin !important; scrollbar-color:#79a8ff #eaf2ff !important; padding-right:5px !important; font-size:clamp(12px,0.95vw,13.5px) !important; line-height:1.5 !important; color:#17346c !important; word-break:break-word !important; white-space:pre-wrap !important; } body .speech-content::-webkit-scrollbar { width:5px; } body .speech-content::-webkit-scrollbar-track { background:#eaf2ff; border-radius:4px; } body .speech-content::-webkit-scrollbar-thumb { background:#79a8ff; border-radius:4px; } body .speech-content::-webkit-scrollbar-thumb:hover { background:#3b7fff; } body .speech-citations-chip { flex-shrink:0 !important; margin-top:3px !important; padding:2px 6px !important; font-size:10px !important; }
 /* Gom công cụ đọc vào một hàng để dành chiều cao cho lời thoại. */
 body .speech-navigation { gap:4px; }
 body .speech-navigation button { width:32px; height:32px; border-radius:8px; }
 body .speech-navigation span { min-width:40px; font-size:11px; }
-body .speech-footer { flex-direction:row; flex-wrap:wrap; align-items:center; justify-content:space-between; margin-top:10px; padding-top:6px; gap:4px 12px; }
+body .speech-footer { flex-shrink:0 !important; flex-direction:row; flex-wrap:wrap; align-items:center; justify-content:space-between; margin-top:4px !important; padding-top:3px !important; gap:3px 8px !important; border-top:1px solid #d5e0eb !important; }
 body .speech-tools { flex-wrap:wrap; gap:4px 12px; }
-body .speech-tools button { min-height:32px; font-size:11px; padding:4px 0; }
+body .speech-tools button { min-height:24px; font-size:10.5px; padding:2px 0; }
 body .speech-controls { flex-basis:auto; gap:4px; }
 body .speech-controls:has(p) { flex-basis:100%; order:1; }
 body .speech-controls p { font-size:12px; line-height:1.5; }
-body .speech-controls .dialogue-next { background:#2d77ff; border-color:#2d77ff; border-radius:8px; font-size:12px; min-height:36px; padding:6px 12px; }
-body .courtroom-composer { margin-top:12px; border:1px solid #5d84df70; border-radius:15px 15px 0 0; padding:14px 18px 10px; background:#102769e8; box-shadow:0 -6px 25px #284c9b40; }
+body .speech-controls .dialogue-next { background:#2d77ff; border-color:#2d77ff; border-radius:8px; font-size:11px; min-height:28px; padding:3px 10px; }
+body .courtroom-composer { flex-shrink:0 !important; margin-top:0 !important; border:1px solid #5d84df70; border-radius:12px 12px 0 0; padding:5px 14px 5px !important; background:#102769e8; box-shadow:0 -4px 16px rgba(40,76,155,0.3); }
 body .composer-heading label { color:#c0d7ff; font-size:12px; }
 .expand-argument { display:flex; align-items:center; gap:6px; margin-left:auto; padding:4px 10px; border:1px solid #8aa8df55; border-radius:999px; background:#ffffff0a; color:#bdd4ff; font-size:10px; }
 .expand-argument:disabled { opacity:.4; }
@@ -426,13 +533,13 @@ body .courtroom-page .feedback-modal:has(.argument-editor) { max-width:880px; }
 @keyframes completion-spin { to { transform:rotate(360deg); } }
 @media(max-width:600px) { .argument-editor { grid-template-columns:1fr; }.argument-editor textarea { min-height:260px; }.argument-editor aside { margin-top:0; } }
 body .composer-fields { gap:10px; }
-body .composer-fields textarea { background:#0e2059; color:#e3edff; border-color:#6888d060; border-radius:10px; min-height:70px; padding:10px 12px; font-size:13px; }
+body .composer-fields textarea { background:#0e2059; color:#e3edff; border-color:#6888d060; border-radius:8px; min-height:40px !important; height:44px !important; max-height:60px !important; resize:none !important; padding:5px 10px !important; font-size:12px !important; line-height:1.4 !important; }
 body .composer-fields textarea::placeholder { color:#718fc5; }
 body .composer-fields textarea:disabled { background:#0c1b4b; color:#7a91bd; }
-body .composer-send { background:#d7ff43; color:#163169; border-radius:999px; min-height:42px; padding:10px 20px; font-size:12px; }
+body .composer-send { background:#d7ff43; color:#163169; border-radius:999px; min-height:40px !important; height:44px !important; padding:0 16px !important; font-size:12px; font-weight:650; }
 body .composer-send:disabled { color:#94a9d3; background:#2d457b; }
-body .composer-foot { color:#728cbd; font-size:10px; margin-top:5px; }
-body .courtroom-notice { color:#7b5c1e; background:#fff8e6; border-color:#ecdba6; }
+body .composer-foot { color:#728cbd; font-size:9.5px; margin-top:2px; }
+body .courtroom-notice { flex-shrink:0 !important; margin:3px 0 !important; padding:4px 10px !important; font-size:11.5px !important; color:#7b5c1e; background:#fff8e6; border-color:#ecdba6; }
 body .courtroom-page .study-panel { max-width:min(720px,58vw); background:#f0f5ff!important; color:#233e71!important; border-color:#738edb; box-shadow:-20px 0 60px #010a3c80!important; }
 body .courtroom-page .study-panel>header { background:linear-gradient(105deg,#0c174f,#19469e); color:white; border:0; padding:20px; }
 body .courtroom-page .study-panel>header h2 { color:white; font-size:20px; }
@@ -449,17 +556,17 @@ body .courtroom-page .guide-progress { color:#3764bd; background:#edf5ff; }
 body .courtroom-page .tour-card { border-radius:12px; border-color:#bdd2ff; box-shadow:0 15px 35px #020a4340; }
 body .courtroom-page .guide-actions button:last-child { border-radius:999px; background:#2d77ff; color:white; border-color:#2d77ff; }
 @media(min-width:851px) {
-  body .courtroom-page { height:auto; min-height:100dvh; }
-  body .court-scene { height:clamp(470px,calc(100dvh - 295px),800px); aspect-ratio:auto; }
-  body .character-judge .character-portrait { top:1%; left:43%; width:14%; height:28%; }
-  body .character-judge .character-name { left:41%; top:38%; width:18%; padding:6px; }
-  body .character-opponent .character-portrait { left:4%; top:28%; height:58%; width:26%; }
-  body .character-learner .character-portrait { right:4%; top:28%; height:58%; width:26%; }
-  body .character-opponent .character-name { left:5%; top:84%; width:24%; }
-  body .character-learner .character-name { right:5%; top:84%; width:24%; }
-  body .desk-judge { top:24%; }
-  body .court-speech { top:40%; left:25%; right:auto; width:50%; max-height:50%; padding:14px 16px; }
-  body .speech-content { max-height:clamp(160px,28dvh,320px); }
+  body .courtroom-page { height:100vh !important; height:100dvh !important; max-height:100vh !important; max-height:100dvh !important; min-height:0 !important; overflow:hidden !important; }
+  body .courtroom-workspace { flex:1 1 0% !important; min-height:0 !important; height:100% !important; } body .court-stage-section { height:100% !important; min-height:0 !important; } body .court-viewport { height:100% !important; min-height:0 !important; } body .court-scene { height:100% !important; min-height:0 !important; aspect-ratio:auto !important; }
+  body .character-judge .character-portrait { top:0% !important; left:43% !important; width:14% !important; height:25% !important; }
+  body .character-judge .character-name { left:41% !important; top:19% !important; width:18% !important; padding:3px 6px !important; }
+  body .character-opponent .character-portrait { left:2% !important; top:16% !important; height:70% !important; width:24% !important; }
+  body .character-learner .character-portrait { right:2% !important; top:16% !important; height:70% !important; width:24% !important; }
+  body .character-opponent .character-name { left:3% !important; top:83% !important; width:22% !important; padding:5px 4px !important; }
+  body .character-learner .character-name { right:3% !important; top:83% !important; width:22% !important; padding:5px 4px !important; }
+  body .desk-judge { top:18% !important; }
+  body .court-speech { top:25% !important; left:27% !important; width:46% !important; bottom:6px !important; max-height:calc(75% - 8px) !important; padding:8px 12px !important; }
+  body .speech-content { max-height:none !important; flex:1 1 auto !important; min-height:0 !important; overflow-y:auto !important; }
   body .courtroom-page:has(.study-panel) .court-stage-section { filter:brightness(.65); }
 }
 @media(max-width:850px) {
@@ -480,3 +587,1508 @@ body .courtroom-page .guide-actions button:last-child { border-radius:999px; bac
   body .composer-fields { grid-template-columns:1fr; }
   body .composer-send { width:100%; }
 }
+
+
+/* Autoplay Banner & Master Controls & Speech Action Buttons */
+.court-autoplay-banner {
+  background: linear-gradient(135deg, #1e1b4b 0%, #311042 100%);
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  padding: 6px 12px;
+  margin: 4px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #fef3c7;
+  font-size: 11.5px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 30;
+}
+.autoplay-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.autoplay-banner-content strong {
+  color: #fbbf24;
+  font-weight: 700;
+}
+.autoplay-banner-content span {
+  color: #e2e8f0;
+}
+.autoplay-enable-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #1e1b4b;
+  font-weight: 700;
+  font-size: 11.5px;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.15s, filter 0.15s;
+}
+.autoplay-enable-btn:hover {
+  filter: brightness(1.1);
+  transform: scale(1.02);
+}
+
+.stage-audio-master-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+body .stage-master-sound-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: #cbd5e1 !important;
+  border-radius: 6px !important;
+  padding: 2px 7px !important;
+  font-size: 10.5px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+body .stage-master-sound-btn:hover {
+  background: rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
+}
+body .stage-master-sound-btn.is-active {
+  background: rgba(16, 185, 129, 0.18) !important;
+  border-color: rgba(16, 185, 129, 0.45) !important;
+  color: #a7f3d0 !important;
+}
+body .stage-master-rate-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: #93c5fd !important;
+  border-radius: 6px !important;
+  padding: 2px 6px !important;
+  font-size: 10.5px !important;
+  cursor: pointer !important;
+}
+body .stage-master-rate-btn:hover {
+  background: rgba(56, 189, 248, 0.2) !important;
+  border-color: rgba(56, 189, 248, 0.5) !important;
+}
+
+.speech-tools .speech-voice-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.speech-tools .speech-voice-btn.is-speaking {
+  color: #0284c7;
+}
+.speech-tools .speech-voice-btn.is-paused {
+  color: #d97706;
+}
+.speech-tools .speech-replay-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #475569;
+  text-decoration: none;
+  font-weight: 600;
+}
+.speech-tools .speech-replay-btn:hover {
+  color: #0284c7;
+  text-decoration: underline;
+}
+
+
+/* Khung điều khiển & Soạn thảo phiên tòa cố định ở đáy (Fixed Bottom Console) */
+.courtroom-bottom-console {
+  flex-shrink: 0 !important;
+  margin-top: 0 !important;
+  background: linear-gradient(180deg, #0d1b46f5 0%, #07102df8 100%) !important;
+  border-top: 1px solid #3b5aa680 !important;
+  box-shadow: 0 -4px 20px rgba(2, 8, 38, 0.5) !important;
+  padding: 6px 14px 6px !important;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+/* Thanh công cụ hành động tích hợp */
+.console-action-deck {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.deck-group-primary, .deck-group-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.deck-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  min-height: 28px;
+  border-radius: 7px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+  color: #dce7ff;
+  background: rgba(255, 255, 255, 0.08);
+  white-space: nowrap;
+}
+
+.deck-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.15);
+}
+
+.deck-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Nút Xem chứng cứ */
+.deck-evidence-btn {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
+  border: 1px solid #60a5fa !important;
+  color: #eff6ff !important;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+}
+.deck-evidence-btn.is-active, .deck-evidence-btn:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  border-color: #93c5fd !important;
+}
+
+/* Nút Trợ lý Luật */
+.deck-law-btn {
+  background: linear-gradient(135deg, #6d28d9 0%, #5b21b6 100%) !important;
+  border: 1px solid #a78bfa !important;
+  color: #f5f3ff !important;
+  box-shadow: 0 2px 6px rgba(109, 40, 217, 0.3);
+}
+.deck-law-btn.is-active, .deck-law-btn:hover {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%) !important;
+  border-color: #c4b5fd !important;
+}
+
+/* Nút Sổ tay */
+.deck-notebook-btn {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #cbd5e1;
+}
+.deck-notebook-btn.is-active {
+  background: rgba(56, 189, 248, 0.18);
+  border-color: rgba(56, 189, 248, 0.5);
+  color: #e0f2fe;
+}
+
+/* Nút Phản bác, Đặt câu hỏi, Tóm tắt */
+.deck-quick-btn {
+  background: rgba(30, 58, 138, 0.35);
+  border: 1px solid rgba(96, 165, 250, 0.25);
+  color: #bfdbfe;
+  font-size: 11px;
+}
+.deck-quick-btn:hover:not(:disabled) {
+  border-color: #93c5fd;
+  color: #ffffff;
+}
+
+/* Vạch phân cách */
+.deck-separator {
+  width: 1px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.15);
+  margin: 0 2px;
+}
+
+/* Nút Tiếp tục */
+.deck-continue-btn {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+  border: 1px solid #38bdf8 !important;
+  color: #ffffff !important;
+  font-weight: 700;
+}
+
+/* Nút Thử lại */
+.deck-retry-btn {
+  background: rgba(225, 29, 72, 0.25) !important;
+  border: 1px solid rgba(244, 63, 94, 0.5) !important;
+  color: #ffe4e6 !important;
+  font-weight: 600;
+}
+
+/* Nút Nghị án & Chấm điểm */
+.deck-complete-btn {
+  background: rgba(217, 119, 6, 0.25);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  color: #fef3c7;
+}
+.deck-complete-btn.is-highlight {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+  border: 1px solid #fde68a !important;
+  color: #1e1b4b !important;
+  font-weight: 700;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
+}
+
+/* Nút Kết quả */
+.deck-result-btn {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+  border: 1px solid #6ee7b7 !important;
+  color: #ffffff !important;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+/* Nút Toàn văn Biên bản */
+.deck-transcript-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #94a3b8;
+  font-size: 11px;
+}
+.deck-transcript-btn:hover {
+  color: #f1f5f9;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Form Soạn thảo trong Bottom Console */
+.courtroom-composer-form {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.composer-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.composer-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  color: #a7f3d0;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.composer-status-badge .status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #34d399;
+}
+
+.quick-template-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: 11px;
+  padding: 0;
+  transition: opacity 0.15s;
+}
+.quick-template-btn:hover {
+  opacity: 0.85;
+}
+
+/* =========================================================
+   COURTROOM HEADER 2 TẦNG: CASE SUMMARY & 4-STAGE STEPPER
+   ========================================================= */
+
+body .courtroom-header {
+  width: 100%;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 5px !important;
+  margin: 0 0 6px !important;
+  padding: 6px 12px !important;
+  background: linear-gradient(135deg, rgba(14, 28, 77, 0.88) 0%, rgba(9, 19, 58, 0.96) 100%) !important;
+  border: 1px solid rgba(88, 118, 202, 0.35) !important;
+  border-radius: 13px !important;
+  box-shadow: 0 4px 18px rgba(2, 9, 37, 0.45) !important;
+  backdrop-filter: blur(8px) !important;
+  flex-shrink: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.courtroom-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 28px;
+}
+
+.courtroom-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.courtroom-back-btn {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: #bfdbfe !important;
+  text-decoration: none !important;
+  background: rgba(30, 58, 138, 0.45) !important;
+  border: 1px solid rgba(96, 165, 250, 0.35) !important;
+  border-radius: 7px !important;
+  padding: 3px 8px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  transition: all 0.15s ease !important;
+  display: inline-flex;
+  align-items: center;
+}
+.courtroom-back-btn:hover {
+  background: rgba(37, 99, 235, 0.5) !important;
+  border-color: #60a5fa !important;
+  color: #ffffff !important;
+}
+
+.case-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: nowrap;
+}
+
+.case-main-title {
+  font-size: clamp(13px, 1.05vw, 15px) !important;
+  font-weight: 750 !important;
+  color: #f8fafc !important;
+  margin: 0 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  max-width: clamp(160px, 24vw, 360px) !important;
+  line-height: 1.25 !important;
+}
+
+.case-badges-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.case-badges-row::-webkit-scrollbar {
+  display: none;
+}
+
+.case-category-badge {
+  font-size: 10px;
+  font-weight: 750;
+  text-transform: uppercase;
+  color: #93c5fd;
+  background: rgba(30, 58, 138, 0.35);
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  border-radius: 5px;
+  padding: 1.5px 6px;
+  white-space: nowrap;
+  letter-spacing: 0.03em;
+}
+
+.case-parties-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 5px;
+  padding: 1.5px 7px;
+  white-space: nowrap;
+  color: #cbd5e1;
+}
+.case-parties-badge .party-p {
+  color: #60a5fa;
+  font-weight: 600;
+}
+.case-parties-badge .party-vs {
+  font-size: 9px;
+  font-weight: 800;
+  color: #64748b;
+  padding: 0 1px;
+}
+.case-parties-badge .party-d {
+  color: #f87171;
+  font-weight: 600;
+}
+
+.case-user-role-badge {
+  font-size: 10.5px;
+  color: #fed7aa;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 5px;
+  padding: 1.5px 7px;
+  white-space: nowrap;
+}
+.case-user-role-badge strong {
+  color: #fde68a;
+  font-weight: 700;
+}
+
+.case-summary-trigger-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #e0f2fe;
+  background: linear-gradient(135deg, rgba(2, 132, 199, 0.35) 0%, rgba(3, 105, 161, 0.45) 100%);
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  border-radius: 5px;
+  padding: 2.5px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+.case-summary-trigger-btn:hover {
+  background: linear-gradient(135deg, rgba(2, 132, 199, 0.55) 0%, rgba(3, 105, 161, 0.65) 100%);
+  border-color: #38bdf8;
+  color: #ffffff;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.3);
+}
+
+.result-link-btn {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+  border: 1px solid #6ee7b7 !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  text-decoration: none !important;
+  border-radius: 999px !important;
+  padding: 4px 10px !important;
+  font-size: 11px !important;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* =========================================================
+   TẦNG 2: THANH TIẾN TRÌNH 4 GIAI ĐOẠN TỐ TỤNG (STEPPER)
+   ========================================================= */
+
+.courtroom-header-stepper-row {
+  border-top: 1px solid rgba(88, 118, 202, 0.22);
+  padding-top: 4px;
+}
+
+.trial-stepper-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 24px;
+}
+
+.trial-stepper-track {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex: 1;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.trial-stepper-track::-webkit-scrollbar {
+  display: none;
+}
+
+.trial-stepper-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.step-indicator {
+  position: relative;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 750;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.trial-stepper-step.is-done .step-indicator {
+  background: #059669;
+  color: #ffffff;
+  border: 1px solid #34d399;
+  box-shadow: 0 0 6px rgba(52, 211, 153, 0.35);
+}
+.step-icon-done {
+  stroke-width: 3.2;
+}
+
+.trial-stepper-step.is-current .step-indicator {
+  background: #2563eb;
+  color: #ffffff;
+  border: 1px solid #60a5fa;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.6);
+}
+.step-pulse-ring {
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 2px solid #60a5fa;
+  animation: pulse-ring 1.8s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+}
+@keyframes pulse-ring {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.35); opacity: 0; }
+  100% { transform: scale(1.45); opacity: 0; }
+}
+
+.trial-stepper-step.is-future .step-indicator {
+  background: rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.step-content {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+  padding-right: 2px;
+}
+
+.step-header-text {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.step-title {
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.trial-stepper-step.is-done .step-title {
+  color: #6ee7b7;
+}
+.trial-stepper-step.is-current .step-title {
+  color: #93c5fd;
+  text-shadow: 0 0 8px rgba(147, 197, 253, 0.4);
+}
+.trial-stepper-step.is-future .step-title {
+  color: #94a3b8;
+  font-weight: 550;
+}
+
+.step-live-pill {
+  font-size: 8.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  background: rgba(37, 99, 235, 0.35);
+  color: #bfdbfe;
+  border: 1px solid #60a5fa;
+  border-radius: 4px;
+  padding: 0.5px 4px;
+  letter-spacing: 0.02em;
+}
+
+.step-sublabel {
+  font-size: 9px;
+  color: #64748b;
+  white-space: nowrap;
+}
+.trial-stepper-step.is-current .step-sublabel {
+  color: #60a5fa;
+  font-weight: 500;
+}
+.trial-stepper-step.is-done .step-sublabel {
+  color: #34d399;
+  opacity: 0.8;
+}
+
+.trial-stepper-connector {
+  width: clamp(14px, 2.2vw, 32px);
+  height: 2px;
+  background: rgba(255, 255, 255, 0.12);
+  margin: 0 5px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  transition: background 0.2s ease;
+}
+.trial-stepper-connector.is-done {
+  background: #10b981;
+}
+
+.trial-stepper-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.stepper-issue-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 5px;
+  padding: 1.5px 7px;
+  color: #fde68a;
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.stepper-issue-tag .issue-label {
+  font-weight: 500;
+  color: #fbbf24;
+}
+.stepper-issue-tag .issue-name {
+  font-weight: 700;
+  color: #fef3c7;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stepper-turns-gauge {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 78px;
+}
+.turns-label-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  font-size: 10px;
+  line-height: 1;
+}
+.turns-text {
+  color: #94a3b8;
+}
+.turns-value {
+  font-weight: 700;
+  color: #f1f5f9;
+}
+.mini-progress-bar {
+  width: 100%;
+  height: 3.5px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.mini-progress-fill {
+  height: 100%;
+  background: #3b82f6;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+.mini-progress-fill.is-warning {
+  background: #f59e0b;
+}
+
+/* =========================================================
+   CASE QUICK SUMMARY MODAL (POPOVER)
+   ========================================================= */
+
+.case-summary-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.72);
+  backdrop-filter: blur(5px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+}
+
+.case-summary-modal-card {
+  background: #ffffff;
+  color: #0f172a;
+  border-radius: 16px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35);
+  width: 100%;
+  max-width: 760px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: summary-modal-fade-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes summary-modal-fade-in {
+  from { opacity: 0; transform: scale(0.97) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.case-summary-modal-header {
+  padding: 12px 18px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f8fafc;
+}
+.summary-header-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #eff6ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.summary-modal-title {
+  font-size: 15px;
+  font-weight: 750;
+  color: #0f172a;
+  margin: 0;
+}
+.summary-modal-subtitle {
+  font-size: 11px;
+  color: #64748b;
+  margin: 0;
+}
+.summary-close-btn {
+  background: transparent;
+  border: 0;
+  color: #64748b;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+.summary-close-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.case-summary-modal-body {
+  padding: 14px 18px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  scrollbar-width: thin;
+}
+
+.summary-case-header-block {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+.summary-case-title {
+  font-size: 14.5px;
+  font-weight: 750;
+  color: #1e3a8a;
+  margin: 0 0 6px;
+  line-height: 1.35;
+}
+.summary-badges-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.summary-badge {
+  font-size: 11px;
+  padding: 2.5px 8px;
+  border-radius: 6px;
+}
+.summary-badge-category {
+  background: #dbeafe;
+  color: #1e40af;
+  font-weight: 700;
+}
+.summary-badge-date {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+.summary-badge-role {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.summary-parties-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.party-card {
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.party-plaintiff {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+.party-defendant {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+}
+.party-card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.party-role-tag {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+.plaintiff-tag {
+  color: #15803d;
+}
+.defendant-tag {
+  color: #b91c1c;
+}
+.party-name {
+  font-size: 13px;
+  color: #0f172a;
+}
+.party-claims-list {
+  font-size: 11px;
+  color: #334155;
+  line-height: 1.45;
+}
+.claims-heading {
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748b;
+  display: block;
+  margin-bottom: 2px;
+}
+.party-claims-list ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.party-claims-list li {
+  margin-bottom: 2px;
+}
+
+.summary-section {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.summary-section-heading {
+  font-size: 12px;
+  font-weight: 750;
+  color: #1e293b;
+  margin: 0;
+}
+.summary-content-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 11.5px;
+  color: #334155;
+  line-height: 1.5;
+}
+.summary-content-box p {
+  margin: 0;
+}
+
+.summary-evidence-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.summary-evidence-item {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 7px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.evidence-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 4px;
+}
+.evidence-name {
+  font-size: 11px;
+  color: #0f172a;
+  font-weight: 600;
+}
+.evidence-provider {
+  font-size: 9px;
+  color: #64748b;
+}
+.evidence-summary-text {
+  font-size: 10px;
+  color: #475569;
+  line-height: 1.35;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.view-all-dossier-link {
+  background: transparent;
+  border: 0;
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.case-summary-modal-footer {
+  padding: 10px 18px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.summary-btn-dossier {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  font-size: 11.5px;
+  font-weight: 600;
+  border-radius: 7px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.summary-btn-dossier:hover {
+  background: #dbeafe;
+}
+.summary-btn-close {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  font-size: 11.5px;
+  font-weight: 600;
+  border-radius: 7px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.summary-btn-close:hover {
+  background: #f1f5f9;
+}
+
+/* =========================================================
+   KHUNG HỘI THOẠI PHIÊN TÒA: BUBBLE CHAT STREAM & AUTO-SCROLL
+   ========================================================= */
+
+body .court-speech.court-dialogue-stream {
+  position: absolute !important;
+  z-index: 6 !important;
+  top: 23% !important;
+  left: 25% !important;
+  width: 50% !important;
+  bottom: 8px !important;
+  max-height: calc(77% - 8px) !important;
+  padding: 0 !important;
+  border-radius: 14px !important;
+  border: 1px solid rgba(88, 118, 202, 0.45) !important;
+  background: linear-gradient(180deg, rgba(10, 20, 56, 0.95) 0%, rgba(7, 14, 40, 0.98) 100%) !important;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: blur(10px) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.dialogue-stream-header {
+  padding: 6px 12px;
+  background: rgba(14, 28, 77, 0.85);
+  border-bottom: 1px solid rgba(88, 118, 202, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.dialogue-stream-title {
+  font-size: 11px;
+  font-weight: 750;
+  color: #bfdbfe;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: 0.04em;
+}
+.dialogue-stream-count {
+  font-size: 10px;
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+
+/* Vùng cuộn danh sách tin nhắn */
+.dialogue-messages-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(96, 165, 250, 0.35) transparent;
+}
+.dialogue-messages-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+.dialogue-messages-scroll::-webkit-scrollbar-thumb {
+  background: rgba(96, 165, 250, 0.35);
+  border-radius: 4px;
+}
+
+/* Bong bóng chat từng lượt phát biểu */
+.dialogue-bubble {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-radius: 12px;
+  padding: 8px 11px;
+  font-size: 12px;
+  line-height: 1.55;
+  transition: all 0.15s ease;
+  position: relative;
+  max-width: 94%;
+}
+
+/* Phía Thẩm phán (Chủ tọa) */
+.dialogue-bubble.bubble-judge {
+  align-self: center;
+  width: 98%;
+  background: linear-gradient(135deg, rgba(28, 55, 138, 0.45) 0%, rgba(16, 32, 85, 0.6) 100%);
+  border: 1px solid rgba(96, 165, 250, 0.4);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+/* Phía Bên đối lập (Kiểm sát viên / Luật sư đối lập / Bị cáo) */
+.dialogue-bubble.bubble-opponent {
+  align-self: flex-start;
+  width: 90%;
+  background: linear-gradient(135deg, rgba(88, 28, 38, 0.38) 0%, rgba(55, 18, 28, 0.55) 100%);
+  border: 1px solid rgba(244, 63, 94, 0.35);
+}
+
+/* Phía Bạn (Luật sư bào chữa / Luật sư bảo vệ) */
+.dialogue-bubble.bubble-learner {
+  align-self: flex-end;
+  width: 90%;
+  background: linear-gradient(135deg, rgba(6, 78, 59, 0.4) 0%, rgba(4, 50, 38, 0.55) 100%);
+  border: 1px solid rgba(52, 211, 153, 0.35);
+}
+
+/* Trạng thái đang phát âm thanh */
+.dialogue-bubble.is-speaking-bubble {
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.4) !important;
+}
+
+/* Header của bong bóng */
+.bubble-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+.bubble-speaker-info {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.bubble-avatar {
+  font-size: 12px;
+}
+.bubble-speaker-name {
+  font-size: 11.5px;
+  font-weight: 750;
+  color: #f1f5f9;
+}
+.bubble-role-pill {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+.bubble-judge .bubble-role-pill {
+  background: rgba(59, 130, 246, 0.25);
+  color: #93c5fd;
+  border: 1px solid rgba(96, 165, 250, 0.35);
+}
+.bubble-opponent .bubble-role-pill {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+}
+.bubble-learner .bubble-role-pill {
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+  border: 1px solid rgba(52, 211, 153, 0.3);
+}
+
+.bubble-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9.5px;
+  color: #94a3b8;
+}
+.bubble-turn-num {
+  font-weight: 700;
+  color: #64748b;
+}
+.bubble-time {
+  color: #64748b;
+}
+
+/* Nội dung văn bản bong bóng */
+.bubble-body {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.bubble-text {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #e2e8f0;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+/* Footer công cụ của từng bong bóng */
+.bubble-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 3px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.bubble-voice-btn, .bubble-replay-btn, .bubble-expand-btn {
+  background: transparent;
+  border: 0;
+  color: #93c5fd;
+  font-size: 10px;
+  padding: 2px 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+.bubble-voice-btn:hover, .bubble-replay-btn:hover, .bubble-expand-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+.bubble-voice-btn.is-speaking {
+  color: #38bdf8;
+  font-weight: 700;
+}
+.bubble-voice-btn.is-paused {
+  color: #fbbf24;
+}
+
+/* Bong bóng đang chuẩn bị */
+.dialogue-bubble.bubble-preparing {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px dashed rgba(245, 158, 11, 0.4);
+  color: #fde68a;
+  font-size: 11px;
+  padding: 6px 12px;
+  align-self: center;
+}
+.preparing-indicator {
+  animation: dialogue-pulse 1.3s ease-in-out infinite;
+}
+
+/* Footer thanh điều khiển bên trong khung chat */
+.dialogue-stream-footer {
+  border-top: 1px solid rgba(88, 118, 202, 0.25);
+  padding: 4px 10px;
+  background: rgba(14, 28, 77, 0.85);
+  flex-shrink: 0;
+}
+
+/* NÚT NỔI CUỘN XUỐNG ĐÁY */
+.scroll-to-bottom-pill {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 15;
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  color: #ffffff;
+  border: 1px solid #38bdf8;
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 10.5px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.5);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+.scroll-to-bottom-pill:hover {
+  background: linear-gradient(135deg, #0369a1 0%, #0284c7 100%);
+  box-shadow: 0 6px 18px rgba(2, 132, 199, 0.65);
+}
+
+/* =========================================================
+   ĐỒNG HỒ ĐẾM GIỜ PHIÊN TÒA (SESSION TIMER)
+   ========================================================= */
+
+.trial-timer-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  border-radius: 999px;
+  padding: 3.5px 10px;
+  color: #e2e8f0;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  user-select: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.trial-timer-badge.is-running {
+  border-color: rgba(59, 130, 246, 0.45);
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(30, 58, 138, 0.35) 100%);
+}
+
+.trial-timer-badge.is-completed {
+  border-color: rgba(16, 185, 129, 0.4);
+  background: linear-gradient(135deg, rgba(6, 78, 59, 0.3) 0%, rgba(15, 23, 42, 0.75) 100%);
+  color: #a7f3d0;
+}
+
+.trial-timer-icon {
+  color: #60a5fa;
+  flex-shrink: 0;
+}
+
+.trial-timer-badge.is-completed .trial-timer-icon {
+  color: #34d399;
+}
+
+.trial-timer-label {
+  color: #94a3b8;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+@media (max-width: 640px) {
+  .trial-timer-label {
+    display: none;
+  }
+}
+
+.trial-timer-digits {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+  color: #ffffff;
+}
+
+.trial-timer-badge.is-completed .trial-timer-digits {
+  color: #6ee7b7;
+}
+
+/* Chấm nhấp nháy thời gian thực */
+.trial-timer-pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  animation: timerPulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  flex-shrink: 0;
+}
+
+@keyframes timerPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(0.85);
+  }
+}
+
+.trial-timer-stopped-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #34d399;
+  flex-shrink: 0;
+}
+
+/* =========================================================
+   BANNER KẾT LUẬN TRANH TỤNG (CONCLUDED HEARING BANNER)
+   ========================================================= */
+
+.courtroom-concluded-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 58, 138, 0.4) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.45);
+  border-radius: 12px;
+  padding: 10px 18px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  flex-shrink: 0;
+}
+
+.concluded-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.concluded-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #38bdf8;
+  letter-spacing: 0.05em;
+}
+
+.concluded-text {
+  font-size: 13px;
+  color: #e2e8f0;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.concluded-countdown {
+  color: #fbbf24;
+  font-weight: 600;
+  font-style: italic;
+}
+
+.concluded-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.concluded-action-btn {
+  background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  border: 1px solid #60a5fa !important;
+  border-radius: 9px !important;
+  padding: 8px 16px !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4) !important;
+  transition: all 0.2s ease !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.concluded-action-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0369a1 0%, #1d4ed8 100%) !important;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.6) !important;
+  transform: translateY(-1px);
+}
+
+.concluded-action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.concluded-pause-btn {
+  background: rgba(30, 41, 59, 0.8) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+  border-radius: 8px !important;
+  padding: 6px 12px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.concluded-pause-btn:hover {
+  background: rgba(51, 65, 85, 0.9) !important;
+  color: #ffffff !important;
+  border-color: #94a3b8 !important;
+}
+
+
+
+
+
