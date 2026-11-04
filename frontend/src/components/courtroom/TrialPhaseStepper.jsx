@@ -1,8 +1,6 @@
 import { Check } from 'lucide-react';
 import { TRIAL_STAGES, getTrialStageIndex } from '../../services/courtroom.js';
 
-export { TRIAL_STAGES, getTrialStageIndex };
-
 export default function TrialPhaseStepper({ session, records = [], userTurns = 0, maxTurns = 20 }) {
   const currentStageIndex = getTrialStageIndex(session, records);
   const currentStage = TRIAL_STAGES[currentStageIndex] || TRIAL_STAGES[0];

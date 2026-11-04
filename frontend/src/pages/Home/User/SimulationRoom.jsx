@@ -471,6 +471,7 @@ function Room({ sessionId }) {
     const speechRole = actorFor(record);
     const textToSpeak = dialogueText(record.display_content || record.content, session?.case_id?.evidence_inventory);
     speakCourtroomText(textToSpeak, { role: speechRole, recordId: record._id });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     ttsEnabled,
     view?.record?._id, // CHỈ PHỤ THUỘC VÀO ID CỦA RECORD THAY VÌ TOÀN BỘ OBJECT VIEW/RECORD
@@ -524,6 +525,7 @@ function Room({ sessionId }) {
       });
     }, 1000);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isConcluded, completed, state.ending, countdownStopped]);
   const currentPhase = conversation?.phase ?? (userTurns === 0 ? 'opening' : 'debate');
   const argumentPlaceholder = isReadyToClose || currentPhase === 'summary'

@@ -35,21 +35,17 @@ export default function PdfExportModal({
     setDocType(initialType);
   }
 
-  const [session, setSession] = useState(propSession);
-  const [result, setResult] = useState(propResult);
-  const [records, setRecords] = useState(propRecords || []);
+  const [fetchedSession, setFetchedSession] = useState(null);
+  const [fetchedResult, setFetchedResult] = useState(null);
+  const [fetchedRecords, setFetchedRecords] = useState([]);
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // Luôn đồng bộ dữ liệu phiên và biên bản mới nhất từ props khi mở modal
-  useEffect(() => {
-    if (open) {
-      if (propSession) setSession(propSession);
-      if (propResult) setResult(propResult);
-      if (propRecords && propRecords.length > 0) setRecords(propRecords);
-    }
-  }, [open, propSession, propResult, propRecords]);
+  // Dữ liệu luôn đồng bộ và ưu tiên prop mới nhất từ component cha
+  const session = propSession ?? fetchedSession;
+  const result = propResult ?? fetchedResult;
+  const records = propRecords && propRecords.length > 0 ? propRecords : fetchedRecords;
 
   // Tự động tải dữ liệu nếu chưa có sẵn
   useEffect(() => {
@@ -89,9 +85,9 @@ export default function PdfExportModal({
       .then(responses => {
         if (!active) return;
         responses.forEach(item => {
-          if (item.type === 'session') setSession(item.data);
-          if (item.type === 'result') setResult(item.data);
-          if (item.type === 'records') setRecords(item.data);
+          if (item.type === 'session') setFetchedSession(item.data);
+          if (item.type === 'result') setFetchedResult(item.data);
+          if (item.type === 'records') setFetchedRecords(item.data);
         });
       })
       .finally(() => {

@@ -3,7 +3,7 @@ import LearnerFeedback from '../../../components/feedback/LearnerFeedback';
 import { LegalCitations, LegalResearchResult } from '../../../components/LegalBasis';
 import { useEffect, useState } from 'react';
 import { Home, FileDown, Sparkles, CheckCircle2, Info, Clock } from 'lucide-react';
-import { formatDuration, formatDurationLong } from '../../../components/courtroom/SessionTimer';
+import { formatDuration, formatDurationLong } from '../../../services/courtroom';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import api, { getApiError } from '../../../services/api';
 import './simulationResult.css';

@@ -1,4 +1,5 @@
 import { roleLabel } from './simulation.js';
+export { formatDuration, formatDurationLong } from '../../../shared/durationFormat.mjs';
 
 export const actorFor = (record) => {
   if (!record) return 'judge';

@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Clock } from 'lucide-react';
 import { learningHighlights, scoreSummary } from '../../../shared/scorePresentation.mjs';
-import { formatDuration, formatDurationLong } from './courtroom/SessionTimer';
+import { formatDuration, formatDurationLong } from '../services/courtroom';
 
 const groupNames = {
   issue_identification: 'Vấn đề và mục tiêu',

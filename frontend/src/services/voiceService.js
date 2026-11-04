@@ -637,7 +637,7 @@ export function speakCourtroomText(text, { role = 'judge', recordId = null, onSt
       activeUtterance = utterance;
       utterance.voice = viVoice;
       utterance.lang = 'vi-VN';
-      let baseRate = 1.1;
+      let baseRate;
       if (role === 'judge') {
         baseRate = 1.05;
         utterance.pitch = 0.95;

@@ -1,8 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Clock } from 'lucide-react';
 import { formatDuration, formatDurationLong } from '../../../../shared/durationFormat.mjs';
-
-export { formatDuration, formatDurationLong };
 
 /**
  * Component Đồng hồ đếm giờ theo dõi thời lượng diễn ra phiên tòa:
@@ -29,18 +27,7 @@ export default function SessionTimer({ session, completed = false }) {
   });
 
   useEffect(() => {
-    // Nếu phiên đã kết thúc, cố định thời lượng và không đặt interval đếm giờ
-    if (isCompleted) {
-      const finalSecs = session?.duration_seconds > 0
-        ? session.duration_seconds
-        : (session?.completed_at && session?.created_at
-            ? Math.max(0, Math.floor((new Date(session.completed_at).getTime() - new Date(session.created_at).getTime()) / 1000))
-            : elapsed);
-      setElapsed(finalSecs);
-      return;
-    }
-
-    if (!session?.created_at) return;
+    if (isCompleted || !session?.created_at) return;
 
     const startMs = new Date(session.created_at).getTime();
     const tick = () => {
@@ -51,10 +38,18 @@ export default function SessionTimer({ session, completed = false }) {
     const timerId = setInterval(tick, 1000);
 
     return () => clearInterval(timerId);
-  }, [isCompleted, session?.created_at, session?.completed_at, session?.duration_seconds]);
+  }, [isCompleted, session?.created_at]);
 
-  const formatted = formatDuration(elapsed);
-  const readable = formatDurationLong(elapsed);
+  const finalDuration = isCompleted
+    ? (session?.duration_seconds > 0
+        ? session.duration_seconds
+        : (session?.completed_at && session?.created_at
+            ? Math.max(0, Math.floor((new Date(session.completed_at).getTime() - new Date(session.created_at).getTime()) / 1000))
+            : elapsed))
+    : elapsed;
+
+  const formatted = formatDuration(finalDuration);
+  const readable = formatDurationLong(finalDuration);
 
   return (
     <div
