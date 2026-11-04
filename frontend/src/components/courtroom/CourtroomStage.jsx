@@ -242,6 +242,7 @@ export default function CourtroomStage({
       speakCourtroomText(text, {
         role,
         recordId: rec._id,
+        isManual: true,
         onStart: () => {
           setSpeakingRecordId(rec._id);
           setIsPaused(false);
@@ -267,6 +268,7 @@ export default function CourtroomStage({
     speakCourtroomText(text, {
       role,
       recordId: rec._id,
+      isManual: true,
       onStart: () => {
         setSpeakingRecordId(rec._id);
         setIsPaused(false);
@@ -501,6 +503,16 @@ export default function CourtroomStage({
                         <span className="bubble-role-pill">{speaker.roleTag}</span>
                       </div>
                       <div className="bubble-meta">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleSpeechForRecord(rec, speaker.actor, contentText)}
+                          className={`bubble-header-voice-btn ${isRecordSpeaking ? 'is-speaking' : isRecordPaused ? 'is-paused' : ''}`}
+                          title={isRecordSpeaking ? 'Tạm dừng đọc' : 'Bấm để nghe phát biểu này'}
+                          aria-label={isRecordSpeaking ? 'Tạm dừng' : 'Nghe phát biểu này'}
+                        >
+                          {isRecordSpeaking ? <Pause size={10} /> : isRecordPaused ? <Play size={10} /> : <Volume2 size={10} />}
+                          <span>{isRecordSpeaking ? 'Đang đọc' : isRecordPaused ? 'Tiếp tục' : 'Nghe đọc'}</span>
+                        </button>
                         <span className="bubble-turn-num">#{idx + 1}</span>
                         {rec.created_at && (
                           <time className="bubble-time" dateTime={rec.created_at}>

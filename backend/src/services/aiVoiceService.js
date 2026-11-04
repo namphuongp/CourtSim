@@ -6,10 +6,12 @@ import { AppError } from '../utils/AppError.js';
 export const ROLE_VOICE_MAP = Object.freeze({
   judge: { voice: 'onyx', speed: 0.95, roleName: 'Chủ tọa phiên tòa' },
   ai_judge: { voice: 'onyx', speed: 0.95, roleName: 'Chủ tọa phiên tòa' },
-  opponent: { voice: 'alloy', speed: 1.0, roleName: 'Bên đối lập' },
-  ai_prosecutor: { voice: 'alloy', speed: 1.0, roleName: 'Bên đối lập' },
-  prosecutor_lawyer: { voice: 'alloy', speed: 1.0, roleName: 'Kiểm sát viên / Luật sư' },
-  defense_lawyer: { voice: 'alloy', speed: 1.0, roleName: 'Luật sư bào chữa' },
+  opponent: { voice: 'echo', speed: 1.0, roleName: 'Bên đối lập' },
+  ai_prosecutor: { voice: 'echo', speed: 1.0, roleName: 'Bên đối lập' },
+  prosecutor_lawyer: { voice: 'echo', speed: 1.0, roleName: 'Kiểm sát viên / Luật sư' },
+  defense_lawyer: { voice: 'echo', speed: 1.0, roleName: 'Luật sư bào chữa' },
+  learner: { voice: 'nova', speed: 1.02, roleName: 'Người học (Luật sư)' },
+  user: { voice: 'nova', speed: 1.02, roleName: 'Người học (Luật sư)' },
   default: { voice: 'alloy', speed: 1.0, roleName: 'Người tham gia phiên tòa' }
 });
 

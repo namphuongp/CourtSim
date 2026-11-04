@@ -623,13 +623,14 @@ body .courtroom-page .guide-actions button:last-child { border-radius:999px; bac
 @media(min-width:851px) {
   body .courtroom-page { height:100vh !important; height:100dvh !important; max-height:100vh !important; max-height:100dvh !important; min-height:0 !important; overflow:hidden !important; }
   body .courtroom-workspace { flex:1 1 0% !important; min-height:0 !important; height:100% !important; } body .court-stage-section { height:100% !important; min-height:0 !important; } body .court-viewport { height:100% !important; min-height:0 !important; } body .court-scene { height:100% !important; min-height:0 !important; aspect-ratio:auto !important; }
-  body .character-judge .character-portrait { top:0% !important; left:42% !important; width:16% !important; height:25% !important; }
-  body .character-judge .character-name { left:41% !important; top:19% !important; width:18% !important; padding:3px 6px !important; }
+  body .character-judge .character-portrait { top:0.5% !important; left:41.5% !important; width:17% !important; height:22.5% !important; z-index:2 !important; }
+  body .desk-judge { inset:auto !important; left:39.5% !important; top:19% !important; width:21% !important; height:7% !important; z-index:3 !important; }
+  body .character-judge .character-name { left:40.5% !important; top:20.5% !important; width:19% !important; padding:3px 6px !important; z-index:4 !important; }
   body .character-opponent .character-portrait { left:3% !important; top:16% !important; height:68% !important; width:22% !important; }
   body .character-learner .character-portrait { right:3% !important; top:16% !important; height:68% !important; width:22% !important; }
   body .character-opponent .character-name { left:3% !important; top:84% !important; width:22% !important; padding:5px 4px !important; }
   body .character-learner .character-name { right:3% !important; top:84% !important; width:22% !important; padding:5px 4px !important; }
-  body .court-speech { top:24% !important; left:26% !important; width:48% !important; bottom:6px !important; max-height:calc(76% - 8px) !important; padding:8px 12px !important; }
+  body .court-speech { top:27.5% !important; left:25.5% !important; width:49% !important; bottom:8px !important; max-height:calc(72.5% - 8px) !important; padding:8px 12px !important; }
   body .speech-content { max-height:none !important; flex:1 1 auto !important; min-height:0 !important; overflow-y:auto !important; }
   body .courtroom-page:has(.study-panel) .court-stage-section { filter:brightness(.65); }
 }
@@ -1777,11 +1778,11 @@ body .courtroom-header {
 body .court-speech.court-dialogue-stream {
   position: absolute !important;
   z-index: 6 !important;
-  top: 23% !important;
-  left: 24% !important;
-  width: 52% !important;
+  top: 27.5% !important;
+  left: 25.5% !important;
+  width: 49% !important;
   bottom: 8px !important;
-  max-height: calc(77% - 8px) !important;
+  max-height: calc(72.5% - 8px) !important;
   padding: 0 !important;
   border-radius: 16px !important;
   border: 1px solid rgba(147, 197, 253, 0.35) !important;
@@ -2377,4 +2378,41 @@ body .courtroom-page .voice-rate-btn:hover {
 body .courtroom-page .voice-rate-btn strong {
   color: #38bdf8 !important;
   font-weight: 750 !important;
+}
+
+.bubble-meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.bubble-header-voice-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #7dd3fc;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1.2;
+}
+.bubble-header-voice-btn:hover {
+  background: rgba(56, 189, 248, 0.3);
+  border-color: #38bdf8;
+  color: #ffffff;
+}
+.bubble-header-voice-btn.is-speaking {
+  background: rgba(16, 185, 129, 0.25);
+  border-color: #34d399;
+  color: #6ee7b7;
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.3);
+}
+.bubble-header-voice-btn.is-paused {
+  background: rgba(245, 158, 11, 0.22);
+  border-color: #f59e0b;
+  color: #fcd34d;
 }

@@ -1,5 +1,14 @@
-import { useState } from 'react';
-import { FileDown, Search } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { FileDown, Pause, Play, Search, Volume2 } from 'lucide-react';
+import {
+  getSpeakingRecordId,
+  isCourtroomSpeechPaused,
+  pauseCourtroomSpeech,
+  resumeCourtroomSpeech,
+  speakCourtroomText,
+  subscribeCourtroomSpeech,
+  unlockCourtroomAudio,
+} from '../../services/voiceService';
 import { dialogueText } from '../../../../shared/dialogueText.mjs';
 import { actorFor, courtroomRoles, getSpeakerInfo } from '../../services/courtroom';
 import { LegalCitations } from '../LegalBasis';
@@ -15,6 +24,32 @@ export default function Transcript({ session, records = [], selected, onSelect, 
   const [pdfModalOpen, setPdfModalOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [speaker, setSpeaker] = useState('all');
+  const [speakingId, setSpeakingId] = useState(() => getSpeakingRecordId());
+  const [isPaused, setIsPaused] = useState(() => isCourtroomSpeechPaused());
+
+  useEffect(() => {
+    return subscribeCourtroomSpeech((id, state) => {
+      setSpeakingId(id);
+      setIsPaused(Boolean(state?.isPaused));
+    });
+  }, []);
+
+  function handleTogglePlay(record) {
+    if (!record?._id) return;
+    const isThisSpeaking = speakingId === record._id && !isPaused;
+    const isThisPaused = speakingId === record._id && isPaused;
+
+    if (isThisSpeaking) {
+      pauseCourtroomSpeech();
+    } else if (isThisPaused) {
+      resumeCourtroomSpeech();
+    } else {
+      unlockCourtroomAudio();
+      const text = dialogueText(record.display_content ?? record.content, session?.case_id?.evidence_inventory);
+      const role = actorFor(record);
+      speakCourtroomText(text, { role, recordId: record._id, isManual: true });
+    }
+  }
 
   if (fullRecord) {
     return (
@@ -110,9 +145,20 @@ export default function Transcript({ session, records = [], selected, onSelect, 
                   )}
                 </h3>
                 <RecordContent record={record} session={session} />
-                <button type="button" onClick={() => onSelect(record._id)} aria-label={`Xem tại phiên tòa: ${label}`}>
-                  Xem tại phiên tòa
-                </button>
+                <div className="transcript-entry-actions flex items-center gap-2 mt-2">
+                  <button
+                    type="button"
+                    onClick={() => handleTogglePlay(record)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-md bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200 transition-colors cursor-pointer"
+                    aria-label={speakingId === record._id && !isPaused ? 'Tạm dừng đọc' : 'Nghe đọc lượt này'}
+                  >
+                    {speakingId === record._id && !isPaused ? <Pause size={12} /> : speakingId === record._id && isPaused ? <Play size={12} /> : <Volume2 size={12} />}
+                    <span>{speakingId === record._id && !isPaused ? 'Đang đọc' : speakingId === record._id && isPaused ? 'Tiếp tục' : 'Nghe đọc'}</span>
+                  </button>
+                  <button type="button" onClick={() => onSelect(record._id)} aria-label={`Xem tại phiên tòa: ${label}`}>
+                    Xem tại phiên tòa
+                  </button>
+                </div>
               </article>
             );
           })}

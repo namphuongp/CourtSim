@@ -30,7 +30,8 @@ test('aiVoiceService: sanitizeTextForTts làm sạch văn bản tố tụng chu�
 test('aiVoiceService: vai trò tòa án có cấu hình giọng đọc tự nhiên riêng biệt', () => {
   assert.equal(ROLE_VOICE_MAP.judge.voice, 'onyx', 'Chủ tọa dùng giọng Onyx trầm uy nghiêm');
   assert.equal(ROLE_VOICE_MAP.judge.speed, 0.95, 'Chủ tọa đọc tốc độ điềm tĩnh 0.95');
-  assert.equal(ROLE_VOICE_MAP.opponent.voice, 'alloy', 'Bên đối lập dùng giọng Alloy sắc bén');
+  assert.equal(ROLE_VOICE_MAP.opponent.voice, 'echo', 'Bên đối lập dùng giọng Echo sắc bén');
+  assert.equal(ROLE_VOICE_MAP.learner.voice, 'nova', 'Người học dùng giọng Nova nữ sắc sảo');
   assert.equal(ROLE_VOICE_MAP.opponent.speed, 1.0, 'Bên đối lập đọc tốc độ chuẩn 1.0');
 });
 

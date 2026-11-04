@@ -19,7 +19,7 @@ import { roleLabel } from '../../../services/simulation';
 import { draftKey, readDraft, saveDraft } from '../../../services/auth';
 import UpgradeNotice from '../../../components/membership/UpgradeNotice';
 import VoiceDebateControls from '../../../components/courtroom/VoiceDebateControls';
-import { speakCourtroomText, stopCourtroomSpeech, unlockCourtroomAudio } from '../../../services/voiceService';
+import { isManualSpeaking, speakCourtroomText, stopCourtroomSpeech, unlockCourtroomAudio } from '../../../services/voiceService';
 import PdfExportModal from '../../../components/courtroom/PdfExportModal';
 import FeedbackModal from '../../../components/feedback/FeedbackModal';
 import TrialPhaseStepper from '../../../components/courtroom/TrialPhaseStepper';
@@ -447,8 +447,9 @@ function Room({ sessionId }) {
       return;
     }
 
-    // Chặn gọi lại khi đang gửi, đang xử lý, đang stream, đang xem lại lượt cũ hoặc phiên kết thúc
-    if (state.sending || session?.processing || view.streaming || selectedId || completed) {
+    // Chặn gọi lại khi đang gửi, đang xử lý, đang stream, đang xem lại lượt cũ, phiên kết thúc,
+    // hoặc người dùng đang chủ động nghe đọc một tin nhắn bất kỳ (isManualSpeaking)
+    if (state.sending || session?.processing || view.streaming || selectedId || completed || isManualSpeaking()) {
       return;
     }
 
@@ -670,7 +671,9 @@ function Room({ sessionId }) {
         onHistory={() => setPanel('history')}
         onReadFull={(record) => { setFullRecord(record); setPanel('speech'); }}
         onEnableTts={(recordId) => {
-          if (recordId) autoSpokenRecordIdsRef.current.add(recordId);
+          if (recordId) autoSpokenRecordIdsRef.current.add(String(recordId));
+          const latestId = records.at(-1)?._id;
+          if (latestId) autoSpokenRecordIdsRef.current.add(String(latestId));
           setTtsEnabled(true);
           try { localStorage.setItem('courtsim_tts_enabled', 'true'); } catch { /* Bỏ qua */ }
         }}

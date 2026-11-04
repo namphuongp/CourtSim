@@ -575,7 +575,13 @@ async function fetchSegmentBlob(segmentText, role, signal) {
  */
 let lastSpeakingCall = { key: '', recordId: null, timestamp: 0 };
 
-export function speakCourtroomText(text, { role = 'judge', recordId = null, onStart, onEnd, onError } = {}) {
+let manualSpeakingActive = false;
+
+export function isManualSpeaking() {
+  return manualSpeakingActive;
+}
+
+export function speakCourtroomText(text, { role = 'judge', recordId = null, isManual = false, onStart, onEnd, onError } = {}) {
   const clean = cleanTextForSpeech(text);
   if (!clean) return () => {};
 
@@ -595,6 +601,9 @@ export function speakCourtroomText(text, { role = 'judge', recordId = null, onSt
   const sessionId = ++activeSpeechSessionId;
   currentSpeakingRecordId = recordId || `speech-${sessionId}`;
   isPausedState = false;
+  if (isManual) {
+    manualSpeakingActive = true;
+  }
   pendingBlockedSpeech = { text, options: { role, recordId, onStart, onEnd, onError } };
   notifySpeechListeners();
 
@@ -620,6 +629,7 @@ export function speakCourtroomText(text, { role = 'judge', recordId = null, onSt
     if (sessionId !== activeSpeechSessionId) return;
     currentSpeakingRecordId = null;
     isPausedState = false;
+    manualSpeakingActive = false;
     notifySpeechListeners();
     onEnd?.();
   }
@@ -640,15 +650,15 @@ export function speakCourtroomText(text, { role = 'judge', recordId = null, onSt
       utterance.voice = viVoice;
       utterance.lang = 'vi-VN';
       let baseRate;
-      if (role === 'judge') {
-        baseRate = 1.05;
-        utterance.pitch = 0.95;
-      } else if (role === 'opponent') {
-        baseRate = 1.15;
-        utterance.pitch = 1.05;
+      if (role === 'judge' || role === 'ai_judge') {
+        baseRate = 0.98;
+        utterance.pitch = 0.82; // Giọng nam trầm, trang nghiêm của Thẩm phán
+      } else if (role === 'opponent' || role === 'ai_prosecutor') {
+        baseRate = 1.12;
+        utterance.pitch = 1.25; // Giọng sắc sảo, đanh thép của Bên đối lập
       } else {
-        baseRate = 1.1;
-        utterance.pitch = 1.0;
+        baseRate = 1.05;
+        utterance.pitch = 1.02; // Giọng tự nhiên của Luật sư người học
       }
       utterance.rate = Math.min(Math.max(baseRate * currentSpeechRate, 0.5), 2.5);
       utterance.onstart = () => markStarted();
@@ -783,6 +793,7 @@ export function stopCourtroomSpeech() {
   activeSpeechSessionId++;
   currentSpeakingRecordId = null;
   isPausedState = false;
+  manualSpeakingActive = false;
   lastSpeakingCall = { key: '', recordId: null, timestamp: 0 };
   if (!isAutoplayBlockedState) {
     pendingBlockedSpeech = null;
