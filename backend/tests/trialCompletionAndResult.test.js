@@ -142,3 +142,4 @@ test('Trial Stages: 4 giai đoạn phiên xử được ánh xạ chính xác tr
   assert.equal(getTrialStageIndex({ status: 'completed' }), 3);
   assert.equal(getTrialStageIndex({ conversation: { concluded: true } }), 3);
 });
+
