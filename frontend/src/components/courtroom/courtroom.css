@@ -533,13 +533,77 @@ body .courtroom-page .feedback-modal:has(.argument-editor) { max-width:880px; }
 .end-dialog-icon.is-pending svg { animation:completion-spin 1s linear infinite; }
 @keyframes completion-spin { to { transform:rotate(360deg); } }
 @media(max-width:600px) { .argument-editor { grid-template-columns:1fr; }.argument-editor textarea { min-height:260px; }.argument-editor aside { margin-top:0; } }
-body .composer-fields { gap:10px; }
-body .composer-fields textarea { background:#0e2059; color:#e3edff; border-color:#6888d060; border-radius:8px; min-height:40px !important; height:44px !important; max-height:60px !important; resize:none !important; padding:5px 10px !important; font-size:12px !important; line-height:1.4 !important; }
-body .composer-fields textarea::placeholder { color:#718fc5; }
-body .composer-fields textarea:disabled { background:#0c1b4b; color:#7a91bd; }
-body .composer-send { background:#d7ff43; color:#163169; border-radius:999px; min-height:40px !important; height:44px !important; padding:0 16px !important; font-size:12px; font-weight:650; }
-body .composer-send:disabled { color:#94a9d3; background:#2d457b; }
-body .composer-foot { color:#728cbd; font-size:9.5px; margin-top:2px; }
+body .composer-fields { gap: 12px; }
+body .composer-fields textarea {
+  background: linear-gradient(180deg, rgba(14, 27, 72, 0.92) 0%, rgba(9, 18, 52, 0.96) 100%) !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(96, 165, 250, 0.35) !important;
+  border-radius: 12px !important;
+  min-height: 52px !important;
+  height: 56px !important;
+  max-height: 90px !important;
+  resize: none !important;
+  padding: 8px 14px !important;
+  font-size: 13px !important;
+  line-height: 1.55 !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+  transition: all 0.2s ease !important;
+}
+body .composer-fields textarea:focus {
+  border-color: #60a5fa !important;
+  box-shadow: 0 0 16px rgba(96, 165, 250, 0.3), inset 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+  background: rgba(16, 32, 85, 0.98) !important;
+  outline: none !important;
+}
+body .composer-fields textarea::placeholder {
+  color: #94a3b8 !important;
+  font-style: italic;
+  font-size: 12px !important;
+}
+body .composer-fields textarea:disabled {
+  background: rgba(10, 18, 48, 0.6) !important;
+  color: #64748b !important;
+  border-color: rgba(51, 65, 85, 0.4) !important;
+}
+body .composer-send {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  border: 1px solid #60a5fa !important;
+  color: #ffffff !important;
+  border-radius: 12px !important;
+  min-height: 52px !important;
+  height: 56px !important;
+  padding: 0 22px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.02em !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.45) !important;
+  transition: all 0.18s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+}
+body .composer-send:hover:not(:disabled) {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+  border-color: #93c5fd !important;
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6) !important;
+  transform: translateY(-1px) !important;
+}
+body .composer-send:disabled {
+  background: rgba(30, 48, 98, 0.45) !important;
+  border-color: rgba(71, 95, 155, 0.3) !important;
+  color: #64748b !important;
+  box-shadow: none !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+body .composer-foot {
+  color: #94a3b8 !important;
+  font-size: 11px !important;
+  margin-top: 4px !important;
+}
 body .courtroom-notice { flex-shrink:0 !important; margin:3px 0 !important; padding:4px 10px !important; font-size:11.5px !important; color:#7b5c1e; background:#fff8e6; border-color:#ecdba6; }
 body .courtroom-page .study-panel { max-width:min(720px,58vw); background:#f0f5ff!important; color:#233e71!important; border-color:#738edb; box-shadow:-20px 0 60px #010a3c80!important; }
 body .courtroom-page .study-panel>header { background:linear-gradient(105deg,#0c174f,#19469e); color:white; border:0; padding:20px; }
@@ -713,17 +777,18 @@ body .stage-master-rate-btn:hover {
 .courtroom-bottom-console {
   flex-shrink: 0 !important;
   margin-top: 0 !important;
-  background: linear-gradient(180deg, #0d1b46f5 0%, #07102df8 100%) !important;
-  border-top: 1px solid #3b5aa680 !important;
-  box-shadow: 0 -4px 20px rgba(2, 8, 38, 0.5) !important;
-  padding: 6px 14px 6px !important;
+  background: linear-gradient(180deg, rgba(12, 23, 64, 0.96) 0%, rgba(6, 13, 38, 0.99) 100%) !important;
+  border-top: 1px solid rgba(96, 165, 250, 0.3) !important;
+  box-shadow: 0 -8px 30px rgba(2, 6, 23, 0.75) !important;
+  padding: 7px 16px 7px !important;
   z-index: 10;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
   max-width: 100vw !important;
   box-sizing: border-box !important;
   overflow: hidden !important;
+  backdrop-filter: blur(14px) !important;
 }
 
 /* Thanh công cụ hành động tích hợp */
@@ -745,29 +810,31 @@ body .stage-master-rate-btn:hover {
   display: flex;
   align-items: center;
   gap: 6px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .deck-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 10px;
-  min-height: 28px;
-  border-radius: 7px;
+  gap: 6px;
+  padding: 5px 11px;
+  min-height: 31px;
+  border-radius: 8px;
   font-size: 11.5px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.16s ease;
   border: 1px solid transparent;
-  color: #dce7ff;
+  color: #e2e8f0;
   background: rgba(255, 255, 255, 0.08);
   white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .deck-btn:hover:not(:disabled) {
   transform: translateY(-1px);
   filter: brightness(1.15);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
 }
 
 .deck-btn:disabled {
@@ -778,58 +845,64 @@ body .stage-master-rate-btn:hover {
 
 /* Nút Xem chứng cứ */
 .deck-evidence-btn {
-  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
-  border: 1px solid #60a5fa !important;
-  color: #eff6ff !important;
-  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+  background: linear-gradient(135deg, #1e40af 0%, #1d4ed8 100%) !important;
+  border: 1px solid rgba(147, 197, 253, 0.5) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(30, 64, 175, 0.4) !important;
 }
-.deck-evidence-btn.is-active, .deck-evidence-btn:hover {
+.deck-evidence-btn.is-active, .deck-evidence-btn:hover:not(:disabled) {
   background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
-  border-color: #93c5fd !important;
+  border-color: #bfdbfe !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.55) !important;
 }
 
 /* Nút Trợ lý Luật */
 .deck-law-btn {
-  background: linear-gradient(135deg, #6d28d9 0%, #5b21b6 100%) !important;
-  border: 1px solid #a78bfa !important;
-  color: #f5f3ff !important;
-  box-shadow: 0 2px 6px rgba(109, 40, 217, 0.3);
+  background: linear-gradient(135deg, #6b21a8 0%, #7e22ce 100%) !important;
+  border: 1px solid rgba(196, 181, 253, 0.5) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(107, 33, 168, 0.4) !important;
 }
-.deck-law-btn.is-active, .deck-law-btn:hover {
-  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%) !important;
-  border-color: #c4b5fd !important;
+.deck-law-btn.is-active, .deck-law-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #7e22ce 0%, #9333ea 100%) !important;
+  border-color: #ddd6fe !important;
+  box-shadow: 0 4px 12px rgba(126, 34, 206, 0.55) !important;
 }
 
 /* Nút Sổ tay */
 .deck-notebook-btn {
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: #cbd5e1;
+  background: rgba(30, 41, 59, 0.65) !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+  color: #cbd5e1 !important;
 }
-.deck-notebook-btn.is-active {
-  background: rgba(56, 189, 248, 0.18);
-  border-color: rgba(56, 189, 248, 0.5);
-  color: #e0f2fe;
+.deck-notebook-btn.is-active, .deck-notebook-btn:hover:not(:disabled) {
+  background: rgba(30, 58, 138, 0.45) !important;
+  border-color: rgba(96, 165, 250, 0.5) !important;
+  color: #ffffff !important;
 }
 
 /* Nút Phản bác, Đặt câu hỏi, Tóm tắt */
 .deck-quick-btn {
-  background: rgba(30, 58, 138, 0.35);
-  border: 1px solid rgba(96, 165, 250, 0.25);
-  color: #bfdbfe;
-  font-size: 11px;
+  background: rgba(30, 58, 138, 0.32) !important;
+  border: 1px solid rgba(96, 165, 250, 0.3) !important;
+  color: #bfdbfe !important;
+  font-size: 11.5px !important;
+  border-radius: 8px !important;
 }
 .deck-quick-btn:hover:not(:disabled) {
-  border-color: #93c5fd;
-  color: #ffffff;
+  background: rgba(37, 99, 235, 0.35) !important;
+  border-color: #93c5fd !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 10px rgba(96, 165, 250, 0.3) !important;
 }
 
 /* Vạch phân cách */
 .deck-separator {
   width: 1px;
-  height: 18px;
-  background: rgba(255, 255, 255, 0.15);
-  margin: 0 2px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.16);
+  margin: 0 3px;
+  flex-shrink: 0;
 }
 
 /* Nút Tiếp tục */
@@ -837,7 +910,8 @@ body .stage-master-rate-btn:hover {
   background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
   border: 1px solid #38bdf8 !important;
   color: #ffffff !important;
-  font-weight: 700;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 10px rgba(2, 132, 199, 0.45) !important;
 }
 
 /* Nút Thử lại */
@@ -845,21 +919,22 @@ body .stage-master-rate-btn:hover {
   background: rgba(225, 29, 72, 0.25) !important;
   border: 1px solid rgba(244, 63, 94, 0.5) !important;
   color: #ffe4e6 !important;
-  font-weight: 600;
+  font-weight: 600 !important;
 }
 
 /* Nút Nghị án & Chấm điểm */
 .deck-complete-btn {
-  background: rgba(217, 119, 6, 0.25);
-  border: 1px solid rgba(245, 158, 11, 0.4);
-  color: #fef3c7;
+  background: rgba(180, 83, 9, 0.28) !important;
+  border: 1px solid rgba(245, 158, 11, 0.45) !important;
+  color: #fde68a !important;
+  font-weight: 650 !important;
 }
-.deck-complete-btn.is-highlight {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+.deck-complete-btn.is-highlight, .deck-complete-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%) !important;
   border: 1px solid #fde68a !important;
-  color: #1e1b4b !important;
-  font-weight: 700;
-  box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
+  color: #ffffff !important;
+  font-weight: 750 !important;
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.5) !important;
 }
 
 /* Nút Kết quả */
@@ -867,27 +942,29 @@ body .stage-master-rate-btn:hover {
   background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
   border: 1px solid #6ee7b7 !important;
   color: #ffffff !important;
-  font-weight: 700;
-  text-decoration: none;
+  font-weight: 700 !important;
+  text-decoration: none !important;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.4) !important;
 }
 
 /* Nút Toàn văn Biên bản */
 .deck-transcript-btn {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: #94a3b8;
-  font-size: 11px;
+  background: rgba(30, 41, 59, 0.5) !important;
+  border: 1px solid rgba(148, 163, 184, 0.25) !important;
+  color: #cbd5e1 !important;
+  font-size: 11px !important;
 }
 .deck-transcript-btn:hover {
-  color: #f1f5f9;
-  border-color: rgba(255, 255, 255, 0.3);
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  background: rgba(51, 65, 85, 0.6) !important;
 }
 
 /* Form Soạn thảo trong Bottom Console */
 .courtroom-composer-form {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 
 .composer-row-top {
@@ -896,38 +973,68 @@ body .stage-master-rate-btn:hover {
   justify-content: space-between;
   gap: 8px;
   flex-wrap: wrap;
+  min-height: 28px;
 }
 
 .composer-status-badge {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 10.5px;
-  color: #a7f3d0;
-  background: rgba(16, 185, 129, 0.12);
-  border: 1px solid rgba(16, 185, 129, 0.25);
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6ee7b7;
+  background: rgba(16, 185, 129, 0.16);
+  border: 1px solid rgba(52, 211, 153, 0.35);
   border-radius: 999px;
-  padding: 2px 8px;
+  padding: 2.5px 9px;
+  letter-spacing: 0.02em;
 }
 
 .composer-status-badge .status-dot {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: #34d399;
+  box-shadow: 0 0 6px #34d399;
+}
+
+.expand-argument {
+  background: rgba(30, 41, 59, 0.5) !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+  color: #bfdbfe !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  border-radius: 7px !important;
+  padding: 3px 8px !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  transition: all 0.15s ease !important;
+}
+.expand-argument:hover:not(:disabled) {
+  background: rgba(30, 58, 138, 0.45) !important;
+  border-color: #60a5fa !important;
+  color: #ffffff !important;
 }
 
 .quick-template-btn {
-  background: none;
-  border: none;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 6px;
+  padding: 2px 8px;
   cursor: pointer;
-  text-decoration: underline;
   font-size: 11px;
-  padding: 0;
-  transition: opacity 0.15s;
+  font-weight: 600;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 .quick-template-btn:hover {
-  opacity: 0.85;
+  background: rgba(245, 158, 11, 0.22);
+  border-color: #fde68a;
+  transform: translateY(-0.5px);
 }
 
 /* =========================================================
@@ -1670,45 +1777,48 @@ body .courtroom-header {
 body .court-speech.court-dialogue-stream {
   position: absolute !important;
   z-index: 6 !important;
-  top: 24% !important;
-  left: 26% !important;
-  width: 48% !important;
+  top: 23% !important;
+  left: 24% !important;
+  width: 52% !important;
   bottom: 8px !important;
-  max-height: calc(76% - 8px) !important;
+  max-height: calc(77% - 8px) !important;
   padding: 0 !important;
-  border-radius: 14px !important;
-  border: 1px solid rgba(88, 118, 202, 0.45) !important;
-  background: linear-gradient(180deg, rgba(10, 20, 56, 0.95) 0%, rgba(7, 14, 40, 0.98) 100%) !important;
-  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5) !important;
-  backdrop-filter: blur(10px) !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(147, 197, 253, 0.35) !important;
+  background: linear-gradient(180deg, rgba(10, 20, 58, 0.96) 0%, rgba(6, 12, 38, 0.99) 100%) !important;
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.06) inset !important;
+  backdrop-filter: blur(16px) !important;
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
 }
 
 .dialogue-stream-header {
-  padding: 6px 12px;
-  background: rgba(14, 28, 77, 0.85);
-  border-bottom: 1px solid rgba(88, 118, 202, 0.3);
+  padding: 8px 14px;
+  background: linear-gradient(90deg, rgba(18, 36, 92, 0.92) 0%, rgba(10, 22, 64, 0.96) 100%);
+  border-bottom: 1px solid rgba(96, 165, 250, 0.28);
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
 }
 .dialogue-stream-title {
-  font-size: 11px;
-  font-weight: 750;
-  color: #bfdbfe;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #e0f2fe;
   display: flex;
   align-items: center;
-  gap: 6px;
-  letter-spacing: 0.04em;
+  gap: 7px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 .dialogue-stream-count {
-  font-size: 10px;
-  color: #94a3b8;
-  background: rgba(255, 255, 255, 0.08);
-  padding: 1px 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #bfdbfe;
+  background: rgba(30, 58, 138, 0.45);
+  border: 1px solid rgba(96, 165, 250, 0.35);
+  padding: 2px 9px;
   border-radius: 999px;
 }
 
@@ -1718,10 +1828,10 @@ body .court-speech.court-dialogue-stream {
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 8px 10px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   scrollbar-width: thin;
   scrollbar-color: rgba(96, 165, 250, 0.35) transparent;
 }
@@ -1737,45 +1847,48 @@ body .court-speech.court-dialogue-stream {
 .dialogue-bubble {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  border-radius: 12px;
-  padding: 8px 11px;
-  font-size: 12px;
-  line-height: 1.55;
-  transition: all 0.15s ease;
+  gap: 5px;
+  border-radius: 14px;
+  padding: 11px 15px;
+  font-size: 12.5px;
+  line-height: 1.62;
+  transition: all 0.18s ease;
   position: relative;
-  max-width: 94%;
+  max-width: 95%;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
 }
 
-/* Phía Thẩm phán (Chủ tọa) */
+/* Phía Thẩm phán (Chủ tọa phiên tòa) */
 .dialogue-bubble.bubble-judge {
   align-self: center;
   width: 98%;
-  background: linear-gradient(135deg, rgba(28, 55, 138, 0.45) 0%, rgba(16, 32, 85, 0.6) 100%);
-  border: 1px solid rgba(96, 165, 250, 0.4);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  background: linear-gradient(145deg, rgba(23, 49, 120, 0.72) 0%, rgba(11, 26, 72, 0.88) 100%);
+  border: 1px solid rgba(147, 197, 253, 0.45);
+  box-shadow: 0 6px 20px rgba(10, 25, 70, 0.4), inset 0 0 0 1px rgba(191, 219, 254, 0.1);
 }
 
-/* Phía Bên đối lập (Kiểm sát viên / Luật sư đối lập / Bị cáo) */
+/* Phía Bên đối lập (Luật sư đối lập / Kiểm sát viên) */
 .dialogue-bubble.bubble-opponent {
   align-self: flex-start;
-  width: 90%;
-  background: linear-gradient(135deg, rgba(88, 28, 38, 0.38) 0%, rgba(55, 18, 28, 0.55) 100%);
-  border: 1px solid rgba(244, 63, 94, 0.35);
+  width: 92%;
+  background: linear-gradient(145deg, rgba(82, 20, 34, 0.7) 0%, rgba(46, 11, 20, 0.88) 100%);
+  border: 1px solid rgba(251, 113, 133, 0.42);
+  box-shadow: 0 6px 20px rgba(50, 10, 20, 0.4), inset 0 0 0 1px rgba(254, 205, 211, 0.08);
 }
 
-/* Phía Bạn (Luật sư bào chữa / Luật sư bảo vệ) */
+/* Phía Bạn (Luật sư bảo vệ quyền lợi) */
 .dialogue-bubble.bubble-learner {
   align-self: flex-end;
-  width: 90%;
-  background: linear-gradient(135deg, rgba(6, 78, 59, 0.4) 0%, rgba(4, 50, 38, 0.55) 100%);
-  border: 1px solid rgba(52, 211, 153, 0.35);
+  width: 92%;
+  background: linear-gradient(145deg, rgba(14, 55, 82, 0.72) 0%, rgba(8, 32, 50, 0.88) 100%);
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  box-shadow: 0 6px 20px rgba(8, 30, 50, 0.4), inset 0 0 0 1px rgba(186, 230, 253, 0.08);
 }
 
 /* Trạng thái đang phát âm thanh */
 .dialogue-bubble.is-speaking-bubble {
   border-color: #38bdf8 !important;
-  box-shadow: 0 0 12px rgba(56, 189, 248, 0.4) !important;
+  box-shadow: 0 0 22px rgba(56, 189, 248, 0.45), inset 0 0 12px rgba(56, 189, 248, 0.15) !important;
 }
 
 /* Header của bong bóng */
@@ -1783,54 +1896,60 @@ body .court-speech.court-dialogue-stream {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
-  margin-bottom: 2px;
+  gap: 8px;
+  margin-bottom: 4px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 .bubble-speaker-info {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
 }
 .bubble-avatar {
-  font-size: 12px;
+  font-size: 13px;
 }
 .bubble-speaker-name {
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 750;
-  color: #f1f5f9;
+  color: #f8fafc;
 }
 .bubble-role-pill {
-  font-size: 9px;
+  font-size: 9.5px;
   font-weight: 700;
-  padding: 1px 5px;
-  border-radius: 4px;
+  padding: 2px 7px;
+  border-radius: 5px;
+  letter-spacing: 0.02em;
 }
 .bubble-judge .bubble-role-pill {
-  background: rgba(59, 130, 246, 0.25);
-  color: #93c5fd;
-  border: 1px solid rgba(96, 165, 250, 0.35);
+  background: rgba(59, 130, 246, 0.28);
+  color: #bfdbfe;
+  border: 1px solid rgba(96, 165, 250, 0.45);
 }
 .bubble-opponent .bubble-role-pill {
-  background: rgba(239, 68, 68, 0.2);
-  color: #fca5a5;
-  border: 1px solid rgba(248, 113, 113, 0.3);
+  background: rgba(239, 68, 68, 0.22);
+  color: #fecdd3;
+  border: 1px solid rgba(248, 113, 113, 0.4);
 }
 .bubble-learner .bubble-role-pill {
-  background: rgba(16, 185, 129, 0.2);
-  color: #6ee7b7;
-  border: 1px solid rgba(52, 211, 153, 0.3);
+  background: rgba(14, 165, 233, 0.22);
+  color: #bae6fd;
+  border: 1px solid rgba(56, 189, 248, 0.4);
 }
 
 .bubble-meta {
   display: flex;
   align-items: center;
-  gap: 5px;
-  font-size: 9.5px;
+  gap: 6px;
+  font-size: 10px;
   color: #94a3b8;
 }
 .bubble-turn-num {
-  font-weight: 700;
-  color: #64748b;
+  font-weight: 750;
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 1px 5px;
+  border-radius: 4px;
 }
 .bubble-time {
   color: #64748b;
@@ -1840,15 +1959,16 @@ body .court-speech.court-dialogue-stream {
 .bubble-body {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
 }
 .bubble-text {
   margin: 0;
   white-space: pre-wrap;
   word-break: break-word;
-  color: #e2e8f0;
-  font-size: 12px;
-  line-height: 1.55;
+  color: #f8fafc;
+  font-size: 12.5px;
+  line-height: 1.62;
+  letter-spacing: 0.01em;
 }
 
 /* Footer công cụ của từng bong bóng */
@@ -1856,34 +1976,65 @@ body .court-speech.court-dialogue-stream {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
-  margin-top: 4px;
-  padding-top: 3px;
+  gap: 6px;
+  margin-top: 6px;
+  padding-top: 5px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 .bubble-voice-btn, .bubble-replay-btn, .bubble-expand-btn {
-  background: transparent;
-  border: 0;
-  color: #93c5fd;
-  font-size: 10px;
-  padding: 2px 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 3px 8px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  border-radius: 4px;
-  transition: all 0.15s;
+  gap: 4px;
+  border-radius: 6px;
+  transition: all 0.16s ease;
+  white-space: nowrap;
 }
-.bubble-voice-btn:hover, .bubble-replay-btn:hover, .bubble-expand-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
+.bubble-voice-btn {
+  background: rgba(30, 58, 138, 0.35);
+  border: 1px solid rgba(96, 165, 250, 0.35);
+  color: #bfdbfe;
+}
+.bubble-voice-btn:hover {
+  background: rgba(37, 99, 235, 0.5);
+  border-color: #93c5fd;
   color: #ffffff;
+  box-shadow: 0 0 8px rgba(96, 165, 250, 0.35);
 }
 .bubble-voice-btn.is-speaking {
-  color: #38bdf8;
+  background: rgba(2, 132, 199, 0.45);
+  border-color: #38bdf8;
+  color: #ffffff;
   font-weight: 700;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
 }
 .bubble-voice-btn.is-paused {
-  color: #fbbf24;
+  background: rgba(217, 119, 6, 0.35);
+  border-color: #fde68a;
+  color: #fde68a;
+}
+.bubble-replay-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #cbd5e1;
+}
+.bubble-replay-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+}
+.bubble-expand-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #cbd5e1;
+}
+.bubble-expand-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #ffffff;
 }
 
 /* Bong bóng đang chuẩn bị */
@@ -2146,3 +2297,84 @@ body .court-speech.court-dialogue-stream {
 
 
 
+
+/* Thiết kế sang trọng đồng bộ cho cụm công cụ giọng nói trong phòng xử án ảo */
+body .courtroom-page .voice-mic-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 4px 10px !important;
+  min-height: 28px !important;
+  border-radius: 8px !important;
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  background: linear-gradient(135deg, rgba(30, 58, 138, 0.45) 0%, rgba(29, 78, 216, 0.4) 100%) !important;
+  border: 1px solid rgba(96, 165, 250, 0.45) !important;
+  color: #e0f2fe !important;
+  transition: all 0.18s ease !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2) !important;
+}
+body .courtroom-page .voice-mic-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.55) 0%, rgba(29, 78, 216, 0.5) 100%) !important;
+  border-color: #60a5fa !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 12px rgba(96, 165, 250, 0.4) !important;
+  transform: translateY(-1px) !important;
+}
+body .courtroom-page .voice-mic-btn.is-active {
+  background: linear-gradient(135deg, rgba(225, 29, 72, 0.35) 0%, rgba(190, 18, 60, 0.45) 100%) !important;
+  border-color: #f43f5e !important;
+  color: #ffe4e6 !important;
+  box-shadow: 0 0 14px rgba(244, 63, 94, 0.45) !important;
+}
+body .courtroom-page .voice-tts-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  padding: 4px 9px !important;
+  min-height: 28px !important;
+  border-radius: 8px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  background: rgba(30, 41, 59, 0.55) !important;
+  border: 1px solid rgba(148, 163, 184, 0.28) !important;
+  color: #cbd5e1 !important;
+  transition: all 0.18s ease !important;
+}
+body .courtroom-page .voice-tts-btn:hover {
+  background: rgba(51, 65, 85, 0.65) !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  color: #ffffff !important;
+}
+body .courtroom-page .voice-tts-btn.is-active {
+  background: rgba(16, 185, 129, 0.18) !important;
+  border-color: rgba(52, 211, 153, 0.45) !important;
+  color: #6ee7b7 !important;
+  font-weight: 650 !important;
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.25) !important;
+}
+body .courtroom-page .voice-rate-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  padding: 4px 9px !important;
+  min-height: 28px !important;
+  border-radius: 8px !important;
+  font-size: 11px !important;
+  cursor: pointer !important;
+  background: rgba(30, 41, 59, 0.55) !important;
+  border: 1px solid rgba(148, 163, 184, 0.28) !important;
+  color: #cbd5e1 !important;
+  transition: all 0.18s ease !important;
+}
+body .courtroom-page .voice-rate-btn:hover {
+  background: rgba(51, 65, 85, 0.65) !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  color: #ffffff !important;
+}
+body .courtroom-page .voice-rate-btn strong {
+  color: #38bdf8 !important;
+  font-weight: 750 !important;
+}
