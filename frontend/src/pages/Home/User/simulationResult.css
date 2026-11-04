@@ -324,7 +324,7 @@
 .result-feedback-layout dialog.feedback-sheet { position:static; display:block; width:100%; max-width:none; max-height:none; margin:0; border:1px solid #dce7fa; border-radius:12px; padding:26px; box-shadow:0 5px 14px #173b7710; }
 .result-feedback-layout .feedback-modal-heading h2 { color:#2a477e; font-size:19px; }
 .result-feedback-layout .feedback-sheet>p { font-size:12px; color:#8092ad; }
-.result-feedback-layout .feedback-survey-actions a,.result-feedback-layout .feedback-survey-actions button { font-size:12px; min-height:38px; border-radius:999px; }
+.result-feedback-layout .feedback-submit-actions button { font-size:14px; min-height:44px; border-radius:999px; }
 .result-feedback-layout .result-card h2 { font-size:16px; }
 .result-feedback-layout ol { display:grid; gap:18px; margin:22px 0; }
 .result-feedback-layout strong { color:#3d67a5; font-size:12px; }

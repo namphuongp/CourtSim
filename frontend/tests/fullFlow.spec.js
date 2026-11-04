@@ -10,11 +10,7 @@ test('trình duyệt → API thật → MongoDB riêng: tài khoản, hồ sơ, 
   let expectedFailures = 0;
   page.on('console', message => { if (message.type() === 'error' && !message.text().startsWith('Failed to load resource:')) browserErrors.push(message.text()); });
   page.on('pageerror', error => browserErrors.push(error.message));
-  page.on('response', async response => {
-    if (response.status() === 403 && response.url().endsWith('/result')) {
-      const payload = await response.json().catch(() => null);
-      if (payload?.error?.code === 'SURVEY_REQUIRED') return;
-    }
+  page.on('response', response => {
     if (response.url().endsWith('/dialogue') && response.status() === 502 && expectedFailures) { expectedFailures--; return; }
     if ((response.url().endsWith('/complete') || response.url().endsWith('/feedback')) && response.status() >= 500 && expectedFailures) { expectedFailures--; return; }
     if (response.url().includes('/api/') && response.status() >= 400 && !(response.url().endsWith('/auth/me') && response.status() === 401)) browserErrors.push(`HTTP ${response.status()} ${new URL(response.url()).pathname}`);
@@ -152,16 +148,13 @@ test('trình duyệt → API thật → MongoDB riêng: tài khoản, hồ sơ, 
   expect(failedCompletion.data.processing).toBe(false);
   await page.getByRole('button', { name: 'Kết thúc và chấm điểm', exact: true }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Xác nhận kết thúc', exact: true }).click();
-  await expect(page.getByRole('dialog')).toContainText('khảo sát Google Forms');
-  await expect(page.getByRole('dialog').locator('textarea')).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Bỏ qua và xem kết quả' })).toHaveCount(0);
-  const survey = page.getByRole('link', { name: /Điền khảo sát Google Forms/ });
-  await expect(survey).toBeVisible();
-  const gated = await page.request.get(`http://127.0.0.1:5019/api/v1/sessions/${sessionId}/result`);
-  expect(gated.status()).toBe(403);
-  expect((await gated.json()).error.code).toBe('SURVEY_REQUIRED');
-  await harness.submitSurvey(await survey.getAttribute('href'));
-  await page.getByRole('button', { name: 'Mình đã gửi xong', exact: true }).click();
+  await expect(page.getByRole('dialog').locator('textarea')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Bỏ qua và xem kết quả' })).toBeVisible();
+  expect((await page.request.get(`http://127.0.0.1:5019/api/v1/sessions/${sessionId}/result`)).status()).toBe(200);
+  await page.getByLabel('Góp ý của bạn').fill('Tôi muốn phần nhận xét chứng cứ rõ hơn.');
+  const feedbackSaved = page.waitForResponse(response => response.url().endsWith(`/sessions/${sessionId}/feedback`) && response.request().method() === 'POST');
+  await page.getByRole('button', { name: 'Gửi góp ý và xem kết quả', exact: true }).click();
+  expect((await feedbackSaved).status()).toBe(201);
   await expect(page.getByRole('heading', { name: 'Kết quả luyện tập' })).toBeVisible();
   const completedCalls = harness.calls();
   const getResult = () => page.request.get(`http://127.0.0.1:5019/api/v1/sessions/${sessionId}/result`).then(r => r.json());

@@ -64,15 +64,48 @@ test('API thành viên: hạn lượt, chống giả gói, quyền API và tạo
   }
   const setup = (request_id = randomUUID()) => ({ request_id, case_id: String(courtCase._id), user_court_role: 'defense_lawyer', case_event_date: '2023-01-01', tier: 'pro', subscription_type: 'pro', features: { legalAssistant: true }, case_credits: 999 });
 
-  await t.test('khảo sát và quyền gói cùng được thực thi: chưa xác minh không lộ điểm', async () => {
-    const denied = await request(`/v1/sessions/${completed.free._id}/result`);
-    assert.equal(denied.status, 403);
-    assert.equal(denied.body.error.code, 'SURVEY_REQUIRED');
+  await t.test('không cần khảo sát hoặc góp ý để xem kết quả, lịch sử và kỹ năng', async () => {
+    const result = await request(`/v1/sessions/${completed.free._id}/result`);
+    assert.equal(result.status, 200);
+    assert.equal(result.body.data.earned_score, 75);
     const finished = await request(`/v1/sessions/${completed.free._id}/complete`, 'free', 'POST', {});
-    assert.deepEqual(finished.body.data, { status: 'completed', survey_required: true });
-    assert.ok((await request('/v1/sessions')).body.data.every(session => session.result === null));
-    // The following cases test membership independently after the required survey is verified.
-    await User.updateMany({ _id: { $in: Object.values(users).map(user => user._id) } }, { $set: { survey_verified_at: new Date() } });
+    assert.equal(finished.status, 200);
+    assert.equal(finished.body.data.earned_score, 75);
+    assert.equal((await request('/v1/sessions')).body.data[0].result.earned_score, 75);
+    assert.ok((await request('/v1/sessions?include=skills', 'pro')).body.data[0].result.skill_insights);
+  });
+
+  await t.test('góp ý tùy chọn: hỏi một lần, kiểm tra đầu vào, retry không nhân đôi và bảo vệ phiên', async () => {
+    const path = `/v1/sessions/${completed.free._id}/feedback`;
+    const prompts = await Promise.all([request(`${path}/prompt`, 'free', 'POST', {}), request(`${path}/prompt`, 'free', 'POST', {})]);
+    assert.ok(prompts.every(response => response.status === 200));
+    assert.equal(prompts.filter(response => response.body.data.show).length, 1);
+    assert.equal((await request(`/v1/sessions/${completed.free._id}/result`)).status, 200);
+    assert.equal((await SimulationSession.findById(completed.free._id)).feedback_submitted_at, null);
+    for (const content of ['', '   ', 'x'.repeat(2001), { $ne: null }]) {
+      assert.equal((await request(path, 'free', 'POST', { content })).status, 400);
+    }
+    const content = 'Cần làm rõ phần nhận xét chứng cứ.';
+    assert.equal((await request(path, 'pro', 'POST', { content })).status, 404);
+    assert.equal((await request(`${path}/prompt`, 'pro', 'POST', {})).status, 404);
+    assert.equal((await request(`/v1/sessions/${completed.free._id}/result`, 'pro')).status, 404);
+    assert.equal((await request(path, 'free', 'POST', { content: `  ${content}  ` })).status, 201);
+    assert.equal((await request(path, 'free', 'POST', { content })).status, 200);
+    assert.equal((await request(path, 'free', 'POST', { content: 'Nội dung khác' })).status, 409);
+    const saved = await SimulationSession.findById(completed.free._id).lean();
+    assert.equal(saved.feedback.content, content);
+    assert.equal(saved.feedback.status, 'new');
+    assert.ok(saved.feedback_submitted_at);
+    assert.equal((await request(`${path}/prompt`, 'free', 'POST', {})).body.data.show, false);
+    assert.equal((await request('/v1/admin/feedback')).status, 403);
+    await User.updateOne({ _id: users.pro._id }, { $set: { system_role: 'admin' } });
+    try {
+      const items = await request('/v1/admin/feedback', 'pro');
+      assert.equal(items.status, 200);
+      assert.equal(items.body.data[0].content, content);
+    } finally {
+      await User.updateOne({ _id: users.pro._id }, { $set: { system_role: 'user' } });
+    }
   });
 
   await t.test('Freemium: đúng 2 lượt, không thể giả gói; vẫn đọc phiên và kết quả tổng quan', async () => {

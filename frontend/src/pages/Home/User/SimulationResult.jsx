@@ -21,7 +21,6 @@ export default function SimulationResult() {
 function SessionResult({ sessionId }) {
   const navigate = useNavigate();
   const [feedbackOpen, setFeedbackOpen] = useState(false);
-  const [optionalFeedback, setOptionalFeedback] = useState(null);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [reload, setReload] = useState(0);
@@ -33,26 +32,21 @@ function SessionResult({ sessionId }) {
     let active = true;
     api.get(`/v1/sessions/${sessionId}/result`).then(async ({ data }) => {
       if (!active) return;
-      let invitation = null;
+      let showFeedback = false;
       try {
         const response = await api.post(`/v1/sessions/${sessionId}/feedback/prompt`, {}, { timeout: 5000 });
-        if (response.data.data?.show === true) invitation = response.data.data;
-      } catch { /* Tài khoản đã xác minh; lỗi lời mời góp ý không khóa kết quả. */ }
-      if (active) { setOptionalFeedback(invitation); setFeedbackOpen(false); setResult(data.data); setError(''); }
+        showFeedback = response.data.data?.show === true;
+      } catch { /* Góp ý là tùy chọn; lỗi tải lời mời không chặn kết quả. */ }
+      if (active) { setFeedbackOpen(showFeedback); setResult(data.data); setError(''); }
     }).catch((requestError) => {
       if (!active) return;
-      if (requestError.response?.data?.error?.code === 'SURVEY_REQUIRED') setFeedbackOpen(true);
-      else setError(getApiError(requestError, 'Chưa tải được kết quả. Vui lòng thử lại hoặc trở về phiên.'));
+      setError(getApiError(requestError, 'Chưa tải được kết quả. Vui lòng thử lại hoặc trở về phiên.'));
     });
     return () => { active = false; };
   }, [sessionId, reload]);
 
   if (error) return <main className="result-page result-state"><section className="result-card"><p role="alert">{error}</p><button onClick={() => { setError(''); setReload((n) => n + 1); }}>Thử lại</button><Link to={`/simulation/${sessionId}`}>Trở lại phiên</Link></section></main>;
-  const finishFeedback = () => {
-    setFeedbackOpen(false);
-    setReload(n => n + 1);
-  };
-  if (feedbackOpen || optionalFeedback) return <main className="result-page result-feedback"><div className="result-container"><header className="result-hero"><p>HOÀN THÀNH PHIÊN LUYỆN TẬP</p><h1>Phản hồi trước khi xem kết quả</h1><p>Kết quả đã được lưu. Hoàn tất bước phản hồi để tiếp tục.</p></header><div className="result-feedback-layout"><LearnerFeedback embedded sessionId={sessionId} required={feedbackOpen} initialFormUrl={optionalFeedback?.form_url} onDone={feedbackOpen ? finishFeedback : () => setOptionalFeedback(null)}/><aside className="result-card"><h2>Các bước tiếp theo</h2><ol><li><strong>01 · Kết thúc phiên</strong><p>Các lượt trình bày đã được lưu.</p></li><li><strong>02 · Gửi phản hồi</strong><p>{feedbackOpen ? 'Máy chủ kiểm tra xác nhận từ Google Forms.' : 'Bạn có thể góp ý thêm hoặc bỏ qua.'}</p></li><li><strong>03 · Xem kết quả</strong><p>Đọc nhận xét và chọn kỹ năng luyện tập tiếp.</p></li></ol><Link to="/dashboard/history">Về lịch sử luyện tập →</Link></aside></div></div></main>;
+  if (feedbackOpen) return <main className="result-page result-feedback"><div className="result-container"><header className="result-hero"><p>HOÀN THÀNH PHIÊN LUYỆN TẬP</p><h1>Góp ý cho CourtSim</h1><p>Kết quả đã được lưu. Bạn có thể gửi góp ý hoặc bỏ qua để xem ngay.</p></header><div className="result-feedback-layout"><LearnerFeedback embedded sessionId={sessionId} onDone={() => setFeedbackOpen(false)}/><aside className="result-card"><h2>Các bước tiếp theo</h2><ol><li><strong>01 · Kết thúc phiên</strong><p>Các lượt trình bày đã được lưu.</p></li><li><strong>02 · Góp ý tùy chọn</strong><p>Chia sẻ trải nghiệm hoặc bỏ qua để xem kết quả.</p></li><li><strong>03 · Xem kết quả</strong><p>Đọc nhận xét và chọn kỹ năng luyện tập tiếp.</p></li></ol><Link to="/dashboard/history">Về lịch sử luyện tập →</Link></aside></div></div></main>;
   if (!result) return <main className="result-page result-state"><LoadingState>Đang tải kết quả...</LoadingState></main>;
   return (
     <main className="result-page"><div className="result-container space-y-6">
