@@ -26,7 +26,7 @@ export function isExplicitEndByChat(content) {
   if (trimmed.length > 280 || trimmed.includes('[PL:') || trimmed.includes('[Chứng cứ:')) return false;
 
   // 4. Mệnh lệnh thủ tục độc lập xin dừng tranh luận / đề nghị nghị án
-  return /(?:(?:tôi|chúng tôi|phía chúng tôi|luật sư)\s+)?(?:muốn|xin(?:\s+phép)?|đề nghị|yêu cầu|kính đề nghị)?\s*(?:hội đồng xét xử\s+|hđxx\s+|tòa án\s+|tòa\s+|chủ tọa\s+)?(?:cho\s+)?(?:kết thúc|dừng|khép lại)\s+(?:phiên(?:\s+tòa|\s+xử|\s+tranh tụng|\s+họp)?|phần\s+(?:tranh luận|tranh tụng|trình bày|xét hỏi)|tại đây)|(?:đề nghị|xin|kính đề nghị|mời|yêu cầu)\s+(?:hội đồng xét xử|hđxx|tòa án|tòa|chủ tọa)\s+(?:chuyển sang\s+|bước vào\s+|tiến hành\s+|vào\s+)?(?:phần\s+)?(?:nghị án|chấm điểm|đánh giá|phán quyết)|(?:tôi|chúng tôi|phía chúng tôi)\s+(?:đã\s+trình bày\s+xong|không còn\s+(?:ý kiến|câu hỏi|luận điểm)(?:\s+nào|\s+gì)?(?:\s+thêm|\s+khác)?|xin\s+dừng\s+tranh\s+luận|xin\s+kết\s+thúc)|^(?:xin\s+)?(?:kết thúc(?:\s+phiên(?:\s+tòa)?)?|nghị án(?:\s+và\s+chấm\s+điểm)?|chấm điểm(?:\s+kết\s+quả)?|kết thúc và chấm điểm)[.!?\s]*$/iu.test(trimmed);
+  return /(?:(?:tôi|chúng tôi|phía chúng tôi|phía nguyên đơn|phía bị đơn|nguyên đơn|bị đơn|luật sư)\s+)?(?:muốn|xin(?:\s+phép)?|đề nghị|yêu cầu|kính đề nghị)?\s*(?:hội đồng xét xử\s+|hđxx\s+|tòa án\s+|tòa\s+|chủ tọa\s+)?(?:cho\s+)?(?:kết thúc|dừng|khép lại)\s+(?:phiên(?:\s+tòa|\s+xử|\s+tranh tụng|\s+họp)?|phần\s+(?:tranh luận|tranh tụng|trình bày|xét hỏi)|tại đây)|(?:đề nghị|xin|kính đề nghị|mời|yêu cầu)\s+(?:hội đồng xét xử|hđxx|tòa án|tòa|chủ tọa)\s+(?:chuyển sang\s+|bước vào\s+|tiến hành\s+|vào\s+)?(?:phần\s+)?(?:nghị án|chấm điểm|đánh giá|phán quyết)|(?:(?:tôi|chúng tôi|phía chúng tôi|phía nguyên đơn|phía bị đơn|nguyên đơn|bị đơn|luật sư)\s+)?(?:đã\s+trình bày\s+xong|không còn\s+(?:ý kiến|câu hỏi|luận điểm)(?:\s+nào|\s+gì)?(?:\s+thêm|\s+khác)?|xin\s+dừng\s+tranh\s+luận|xin\s+kết\s+thúc)|^(?:xin\s+)?(?:kết thúc(?:\s+phiên(?:\s+tòa)?)?|nghị án(?:\s+và\s+chấm\s+điểm)?|chấm điểm(?:\s+kết\s+quả)?|kết thúc và chấm điểm)[.!?\s]*$/iu.test(trimmed);
 }
 
 /**
@@ -48,7 +48,7 @@ export function isClosingIntent(content, turnCount = 0, options = {}) {
 
   // Câu chốt quan điểm độc lập sau khi đã có tranh luận (phải kết hợp rõ việc giữ nguyên yêu cầu/kết luận hoặc không còn ý kiến)
   const summaryStatement = /(?:^|[.!?\n]\s*)(?:tóm lại|tổng kết lại|kết luận lại|lời nói sau cùng)(?:[,:]|\s).*?(?:giữ nguyên\s+(?:yêu cầu|quan điểm|kháng cáo)|không còn\s+(?:ý kiến|tranh luận|luận điểm)|xin\s+(?:kết luận|tổng kết|nghị án|kết thúc))/iu.test(trimmed)
-    || /(?:^|[.!?\n]\s*)(?:(?:tôi|chúng tôi|phía chúng tôi)\s+)(?:xin\s+)?(?:giữ nguyên\s+(?:yêu cầu|quan điểm|kháng cáo)|không còn ý kiến|kết thúc)(?:\s|[.,:!?]|$)/iu.test(trimmed);
+    || /(?:^|[.!?\n]\s*)(?:(?:tôi|chúng tôi|phía chúng tôi|phía nguyên đơn|phía bị đơn|nguyên đơn|bị đơn|luật sư)\s+)?(?:xin\s+)?(?:giữ nguyên\s+(?:yêu cầu|quan điểm|kháng cáo)|không còn\s+(?:ý kiến|câu hỏi|quan điểm)|kết thúc)(?:\s|[.,:!?]|$)/iu.test(trimmed);
   return Boolean(summaryStatement && turnCount > 0);
 }
 
