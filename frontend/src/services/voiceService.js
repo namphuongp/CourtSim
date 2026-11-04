@@ -497,7 +497,7 @@ export function getVietnameseVoice() {
  * Chia văn bản dài thành danh sách các câu/đoạn ngắn tự nhiên (<= 240 ký tự)
  * để đọc lần lượt hết toàn bộ phát biểu từ câu đầu đến câu cuối, không bao giờ bị ngắt giữa chừng.
  */
-export function splitTextIntoSentences(cleanText, maxSegmentLength = 240) {
+export function splitTextIntoSentences(cleanText, maxSegmentLength = 1200) {
   if (!cleanText) return [];
   const rawSentences = cleanText.match(/[^.!?;\n]+[.!?;\n]*|\S+/gu) || [cleanText];
   const segments = [];
@@ -573,21 +573,23 @@ async function fetchSegmentBlob(segmentText, role, signal) {
  * @param {function} [options.onEnd]
  * @param {function} [options.onError]
  */
-let lastSpeakingCall = { recordId: null, timestamp: 0 };
+let lastSpeakingCall = { key: '', recordId: null, timestamp: 0 };
 
 export function speakCourtroomText(text, { role = 'judge', recordId = null, onStart, onEnd, onError } = {}) {
-  const now = Date.now();
-  if (recordId && recordId === lastSpeakingCall.recordId && now - lastSpeakingCall.timestamp < 600) {
-    return () => {};
-  }
-  lastSpeakingCall = { recordId, timestamp: now };
-
-  stopCourtroomSpeech();
-
   const clean = cleanTextForSpeech(text);
   if (!clean) return () => {};
 
-  const segments = splitTextIntoSentences(clean, 240);
+  const now = Date.now();
+  const callKey = `${role}:${recordId || clean.slice(0, 100)}`;
+  // Deduplication: Chặn gọi lại cùng một câu/bản ghi trong vòng 1.2 giây
+  if (lastSpeakingCall.key === callKey && now - lastSpeakingCall.timestamp < 1200) {
+    return () => {};
+  }
+  lastSpeakingCall = { key: callKey, recordId, timestamp: now };
+
+  stopCourtroomSpeech();
+
+  const segments = splitTextIntoSentences(clean, 1200);
   if (!segments.length) return () => {};
 
   const sessionId = ++activeSpeechSessionId;
@@ -693,6 +695,24 @@ export function speakCourtroomText(text, { role = 'judge', recordId = null, onSt
       audio.playbackRate = currentSpeechRate;
       audio.src = audioUrl;
 
+      const cleanup = () => {
+        abortController.signal.removeEventListener('abort', onAbort);
+        if (currentAudioUrl === audioUrl) {
+          URL.revokeObjectURL(audioUrl);
+          currentAudioUrl = null;
+        }
+      };
+
+      const onAbort = () => {
+        cleanup();
+        try {
+          audio.pause();
+          audio.currentTime = 0;
+        } catch { /* Bỏ qua */ }
+        resolve();
+      };
+      abortController.signal.addEventListener('abort', onAbort, { once: true });
+
       audio.onplay = () => {
         try {
           audio.playbackRate = currentSpeechRate;
@@ -700,23 +720,18 @@ export function speakCourtroomText(text, { role = 'judge', recordId = null, onSt
         markStarted();
       };
       audio.onended = () => {
-        if (currentAudioUrl === audioUrl) {
-          URL.revokeObjectURL(audioUrl);
-          currentAudioUrl = null;
-        }
+        cleanup();
         resolve();
       };
       audio.onerror = (err) => {
-        if (currentAudioUrl === audioUrl) {
-          URL.revokeObjectURL(audioUrl);
-          currentAudioUrl = null;
-        }
+        cleanup();
         reject(err);
       };
 
       const playPromise = audio.play();
       if (playPromise && typeof playPromise.catch === 'function') {
         playPromise.catch((err) => {
+          cleanup();
           if (isAutoplayBlockedError(err)) {
             isAutoplayBlockedState = true;
             notifyAutoplayBlocked(true);
@@ -768,7 +783,7 @@ export function stopCourtroomSpeech() {
   activeSpeechSessionId++;
   currentSpeakingRecordId = null;
   isPausedState = false;
-  lastSpeakingCall = { recordId: null, timestamp: 0 };
+  lastSpeakingCall = { key: '', recordId: null, timestamp: 0 };
   if (!isAutoplayBlockedState) {
     pendingBlockedSpeech = null;
   }

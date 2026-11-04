@@ -107,11 +107,11 @@ function Room({ sessionId }) {
       }
       if (readDraft(completionKey) && !a.data.data.processing && a.data.data.status === 'ongoing') saveDraft(completionKey, null);
       const incomingRecords = b.data.data || [];
-      // Nếu là lần đầu tải phiên đã có nhiều bản ghi cũ (lịch sử):
-      // Đánh dấu tất cả vào Set để tuyệt đối không tự động đọc lại các bản ghi quá khứ!
-      if (!isInitialLoadedRef.current && incomingRecords.length > 1) {
+      // Nếu là lần đầu tải phiên (kể cả có 1 hay nhiều bản ghi lịch sử):
+      // Đánh dấu tất cả vào Set để tuyệt đối không tự động đọc lại các bản ghi đã có trước đó!
+      if (!isInitialLoadedRef.current && incomingRecords.length > 0) {
         incomingRecords.forEach((r) => {
-          if (r._id) autoSpokenRecordIdsRef.current.add(r._id);
+          if (r?._id) autoSpokenRecordIdsRef.current.add(String(r._id));
         });
       }
       isInitialLoadedRef.current = true;
@@ -434,10 +434,10 @@ function Room({ sessionId }) {
     requestAnimationFrame(() => document.querySelector('.speech-content, .dialogue-messages-scroll')?.focus({ preventScroll: true }));
   }
   const view = streamedSpeech?.content && state.sending ? { record: { _id: 'streaming', content: streamedSpeech.content, sender_type: streamedSpeech.role === 'judge' ? 'ai_judge' : 'ai_prosecutor' }, actor: streamedSpeech.role, streaming: true }
-    : courtroomView({ records, selectedId: selectedId ?? conversation?.current_record_id, sending: state.sending && Boolean(submittedContent) && !session?.processing, pendingContent: submittedContent, processing: session?.processing, ending: state.ending });
+    : courtroomView({ records, selectedId, sending: state.sending && Boolean(submittedContent) && !session?.processing, pendingContent: submittedContent, processing: session?.processing, ending: state.ending });
   // Tự động phát âm thanh lời thoại AI:
   // Đảm bảo mỗi lượt thoại mới sinh ra chỉ được tự động kích hoạt phát âm thanh đúng 1 lần duy nhất.
-  // Chặn hoàn toàn việc gọi lại khi component re-render, cập nhật state hoặc chuyển lượt nói.
+  // Chặn hoàn toàn việc gọi lại khi component re-render, cập nhật state hoặc polling.
   // Trước khi phát âm thanh của lượt thoại mới, dừng ngay lập tức luồng âm thanh trước đó.
   useEffect(() => {
     const wasEnabled = prevTtsEnabledRef.current;
@@ -452,34 +452,39 @@ function Room({ sessionId }) {
       return;
     }
 
-    const record = view?.record;
-    if (!record || !record._id || record._id === 'streaming' || record._id === 'pending' || record.sender_type === 'user') {
+    // Lấy bản ghi AI mới nhất thực sự ở cuối danh sách records
+    const latestRecord = records.at(-1);
+    if (!latestRecord || !latestRecord._id || latestRecord.sender_type === 'user') {
       return;
     }
 
+    const recordIdStr = String(latestRecord._id);
+
     // Đã được tự động đọc trước đó chưa? Nếu có => BỎ QUA NGAY LẬP TỨC
-    if (autoSpokenRecordIdsRef.current.has(record._id)) {
+    if (autoSpokenRecordIdsRef.current.has(recordIdStr)) {
       return;
     }
 
     // Đánh dấu ngay ID vào Set để khóa vĩnh viễn việc tự động phát lại
-    autoSpokenRecordIdsRef.current.add(record._id);
+    autoSpokenRecordIdsRef.current.add(recordIdStr);
 
     // Trước khi phát âm thanh của lượt thoại mới, DỪNG / HỦY NGAY LẬP TỨC luồng âm thanh trước đó
     stopCourtroomSpeech();
 
-    const speechRole = actorFor(record);
-    const textToSpeak = dialogueText(record.display_content || record.content, session?.case_id?.evidence_inventory);
-    speakCourtroomText(textToSpeak, { role: speechRole, recordId: record._id });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const speechRole = actorFor(latestRecord);
+    const textToSpeak = dialogueText(latestRecord.display_content || latestRecord.content, session?.case_id?.evidence_inventory);
+    if (textToSpeak) {
+      speakCourtroomText(textToSpeak, { role: speechRole, recordId: recordIdStr });
+    }
   }, [
     ttsEnabled,
-    view?.record?._id, // CHỈ PHỤ THUỘC VÀO ID CỦA RECORD THAY VÌ TOÀN BỘ OBJECT VIEW/RECORD
+    records,
     view?.streaming,
     state.sending,
     session?.processing,
     selectedId,
     completed,
+    session?.case_id?.evidence_inventory,
   ]);
   const panelTitles = { notebook: 'Sổ tay phiên', guide: 'Hướng dẫn phiên tòa', case: 'Hồ sơ phiên tòa', assistant: 'Trợ lý luật', history: 'Hồ sơ phiên tòa', speech: 'Lời trình bày đầy đủ' };
   const courtCase = session?.case_id;

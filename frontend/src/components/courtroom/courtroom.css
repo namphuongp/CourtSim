@@ -6,7 +6,8 @@ body:has(.courtroom-page) .privacy-footer { display:none !important; }
 .courtroom-back { font-size:12px; color:#45617a; text-decoration:none; }
 .courtroom-header h1 { font-size:clamp(17px,1.3vw,22px); max-width:1100px; margin:4px 0; }
 .courtroom-meta { font-size:12px; color:#526477; display:flex; flex-wrap:wrap; gap:8px; }
-.courtroom-controls { display:flex; gap:8px; flex-wrap:wrap; flex-shrink:0; }
+.courtroom-controls { display:flex; gap:8px; align-items:center; flex-wrap:nowrap; flex-shrink:0; margin-left:auto !important; }
+.courtroom-controls button, .courtroom-controls a { white-space:nowrap !important; flex-shrink:0 !important; }
 .courtroom-controls button,.courtroom-controls a,.court-stage-toolbar button { background:white; border:1px solid #c9d5e1; border-radius:10px; padding:7px 11px; color:#234362; font-size:13px; text-decoration:none; }
 .courtroom-controls .end-session { color:#92364c; border-color:#e5cbd2; }
 .courtroom-controls button:disabled { opacity:.45; }
@@ -954,9 +955,10 @@ body .courtroom-header {
 .courtroom-header-top {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 10px;
   min-height: 28px;
+  width: 100%;
   max-width: 100%;
   min-width: 0;
   overflow: hidden;
@@ -967,7 +969,6 @@ body .courtroom-header {
   align-items: center;
   gap: 8px;
   min-width: 0;
-  max-width: 100%;
   flex: 1 1 auto;
   overflow: hidden;
 }
@@ -1011,7 +1012,7 @@ body .courtroom-header {
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
-  max-width: clamp(120px, 18vw, 260px) !important;
+  max-width: clamp(100px, 14vw, 210px) !important;
   line-height: 1.25 !important;
   flex-shrink: 0 !important;
 }
@@ -1052,7 +1053,7 @@ body .courtroom-header {
   padding: 1.5px 7px;
   white-space: nowrap;
   color: #cbd5e1;
-  max-width: clamp(140px, 22vw, 300px);
+  max-width: clamp(110px, 16vw, 220px);
   overflow: hidden;
   text-overflow: ellipsis;
   flex-shrink: 1;
@@ -1063,7 +1064,7 @@ body .courtroom-header {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 130px;
+  max-width: 90px;
   display: inline-block;
   vertical-align: middle;
 }
@@ -1080,7 +1081,7 @@ body .courtroom-header {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 140px;
+  max-width: 95px;
   display: inline-block;
   vertical-align: middle;
 }

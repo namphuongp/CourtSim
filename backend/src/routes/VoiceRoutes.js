@@ -30,7 +30,7 @@ router.post('/tts', asyncHandler(async (request, response) => {
   // 2. Chống spam gọi TTS liên tục theo user và theo IP
   await consumeAiLimit(
     `voice:tts:user:${request.auth.userId}`,
-    25,
+    60,
     3 * 60000,
     'Bạn đã sử dụng giọng đọc quá nhiều lần trong thời gian ngắn. Vui lòng chờ 3 phút trước khi tiếp tục.'
   );

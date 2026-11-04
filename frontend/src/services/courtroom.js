@@ -118,7 +118,7 @@ export function getSpeakerInfo(record, session) {
 // Chọn lời đang đọc; người đang chuẩn bị do trạng thái backend quyết định ở Stage.
 export function courtroomView({ records, selectedId, sending, pendingContent, processing, ending }) {
   if (sending) return { record: { _id: 'pending', sender_type: 'user', content: pendingContent }, actor: 'learner', pending: true };
-  const record = records.find((r) => r._id === selectedId) ?? records.at(-1);
+  const record = (selectedId ? records.find((r) => r._id === selectedId) : null) ?? records.at(-1);
   return { record, actor: processing || ending || !record ? null : actorFor(record), pending: false };
 }
 
