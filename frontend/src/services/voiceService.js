@@ -254,15 +254,15 @@ export function normalizeVietnameseLegalSpeech(raw) {
   res = res.replace(/[’'']/gu, "'");
 
   // 2. Chuyển đổi ngày tháng dạng dd/mm/yyyy hoặc d/m/yyyy sang lời nói tự nhiên
-  res = res.replace(/(?:ngày\s+)?\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/giu, (match, d, m, y) => {
+  res = res.replace(/(?:ngày\s+)?(?<![\p{L}\p{N}])(\d{1,2})\/(\d{1,2})\/(\d{4})(?![\p{L}\p{N}])/giu, (match, d, m, y) => {
     return `ngày ${parseInt(d, 10)} tháng ${parseInt(m, 10)} năm ${y}`;
   });
-  res = res.replace(/(?:tháng\s+)?\b(\d{1,2})\/(\d{4})\b/giu, (match, m, y) => {
+  res = res.replace(/(?:tháng\s+)?(?<![\p{L}\p{N}])(\d{1,2})\/(\d{4})(?![\p{L}\p{N}])/giu, (match, m, y) => {
     return `tháng ${parseInt(m, 10)} năm ${y}`;
   });
 
   // 3. Chuẩn hóa số tiền có phân cách hàng nghìn (1.600.000.000 đồng, 500.000 VNĐ, 20.000.000 đ)
-  res = res.replace(/\b(\d{1,3}(?:\.\d{3})+)\s*(?:đồng|đ|vnd|vnđ)\b/giu, (match, numStr) => {
+  res = res.replace(/(?<![\p{L}\p{N}])(\d{1,3}(?:\.\d{3})+)\s*(?:đồng|đ|vnd|vnđ)(?![\p{L}\p{N}])/giu, (match, numStr) => {
     const rawNum = parseInt(numStr.replace(/\./g, ''), 10);
     if (isNaN(rawNum)) return match;
     if (rawNum >= 1e9) {
@@ -289,42 +289,44 @@ export function normalizeVietnameseLegalSpeech(raw) {
   });
 
   // 4. Chuẩn hóa phần trăm: 2% -> 2 phần trăm, 15,5% -> 15 phẩy 5 phần trăm
-  res = res.replace(/(\d+(?:[.,]\d+)?)\s*%/gu, (match, n) => {
+  res = res.replace(/(?<![\p{L}\p{N}])(\d+(?:[.,]\d+)?)\s*%/gu, (match, n) => {
     return `${n.replace('.', ' phẩy ').replace(',', ' phẩy ')} phần trăm`;
   });
 
   // 5. Chuẩn hóa tên tắt như 'ông Đ.', 'bà N.', 'anh T.' -> bỏ dấu chấm để tránh ngắt câu vô lý
-  res = res.replace(/\b(ông|bà|anh|chị|cụ)\s+([A-ZĐ])\./giu, '$1 $2');
+  res = res.replace(/(?<![\p{L}\p{N}])(ông|bà|anh|chị|cụ)\s+([\p{Lu}])\.(?!\p{L})/giu, (match, title, letter) => `${title} ${letter}`);
 
   // 6. Mở rộng từ viết tắt tố tụng phổ biến
   const legalAbbreviations = [
-    [/\bHĐXX\b/gu, 'Hội đồng xét xử'],
-    [/\bVKSNDTC\b/gu, 'Viện kiểm sát nhân dân tối cao'],
-    [/\bVKSND\b/gu, 'Viện kiểm sát nhân dân'],
-    [/\bVKS\b/gu, 'Viện kiểm sát'],
-    [/\bKSV\b/gu, 'Kiểm sát viên'],
-    [/\bTANDTC\b/gu, 'Tòa án nhân dân tối cao'],
-    [/\bTANDCC\b/gu, 'Tòa án nhân dân cấp cao'],
-    [/\bTAND\b/gu, 'Tòa án nhân dân'],
-    [/\bBLTTDS\b/gu, 'Bộ luật Tố tụng Dân sự'],
-    [/\bBLTTHS\b/gu, 'Bộ luật Tố tụng Hình sự'],
-    [/\bBLDS\b/gu, 'Bộ luật Dân sự'],
-    [/\bBLHS\b/gu, 'Bộ luật Hình sự'],
-    [/\bNĐ-CP\b/giu, 'Nghị định Chính phủ'],
-    [/\bTT-BTP\b/giu, 'Thông tư Bộ Tư pháp'],
-    [/\bUBND\b/gu, 'Ủy ban nhân dân'],
-    [/\bCCCD\b/gu, 'Căn cước công dân'],
-    [/\bCMND\b/gu, 'Chứng minh nhân dân'],
-    [/\bGCNQSDĐ\b/giu, 'Giấy chứng nhận quyền sử dụng đất'],
-    [/\bQSDĐ\b/giu, 'quyền sử dụng đất'],
-    [/\bK1\b/gu, 'Khoản 1'],
-    [/\bK2\b/gu, 'Khoản 2'],
-    [/\bK3\b/gu, 'Khoản 3'],
-    [/\bK4\b/gu, 'Khoản 4'],
-    [/\bK5\b/gu, 'Khoản 5'],
-    [/\bĐ1\b/gu, 'Điều 1'],
-    [/\bĐ2\b/gu, 'Điều 2'],
-    [/\bĐ3\b/gu, 'Điều 3'],
+    [/(?<![\p{L}\p{N}])HĐXX(?![\p{L}\p{N}])/gu, 'Hội đồng xét xử'],
+    [/(?<![\p{L}\p{N}])VKSNDTC(?![\p{L}\p{N}])/gu, 'Viện kiểm sát nhân dân tối cao'],
+    [/(?<![\p{L}\p{N}])VKSND(?![\p{L}\p{N}])/gu, 'Viện kiểm sát nhân dân'],
+    [/(?<![\p{L}\p{N}])VKS(?![\p{L}\p{N}])/gu, 'Viện kiểm sát'],
+    [/(?<![\p{L}\p{N}])KSV(?![\p{L}\p{N}])/gu, 'Kiểm sát viên'],
+    [/(?<![\p{L}\p{N}])TANDTC(?![\p{L}\p{N}])/gu, 'Tòa án nhân dân tối cao'],
+    [/(?<![\p{L}\p{N}])TANDCC(?![\p{L}\p{N}])/gu, 'Tòa án nhân dân cấp cao'],
+    [/(?<![\p{L}\p{N}])TAND(?![\p{L}\p{N}])/gu, 'Tòa án nhân dân'],
+    [/(?<![\p{L}\p{N}])BLTTDS(?![\p{L}\p{N}])/gu, 'Bộ luật Tố tụng Dân sự'],
+    [/(?<![\p{L}\p{N}])BLTTHS(?![\p{L}\p{N}])/gu, 'Bộ luật Tố tụng Hình sự'],
+    [/(?<![\p{L}\p{N}])BLDS(?![\p{L}\p{N}])/gu, 'Bộ luật Dân sự'],
+    [/(?<![\p{L}\p{N}])BLHS(?![\p{L}\p{N}])/gu, 'Bộ luật Hình sự'],
+    [/(?<![\p{L}\p{N}])NQ-HĐTP(?![\p{L}\p{N}])/giu, 'Nghị quyết Hội đồng Thẩm phán'],
+    [/(?<![\p{L}\p{N}])HĐTP(?![\p{L}\p{N}])/giu, 'Hội đồng Thẩm phán'],
+    [/(?<![\p{L}\p{N}])NĐ-CP(?![\p{L}\p{N}])/giu, 'Nghị định Chính phủ'],
+    [/(?<![\p{L}\p{N}])TT-BTP(?![\p{L}\p{N}])/giu, 'Thông tư Bộ Tư pháp'],
+    [/(?<![\p{L}\p{N}])UBND(?![\p{L}\p{N}])/gu, 'Ủy ban nhân dân'],
+    [/(?<![\p{L}\p{N}])CCCD(?![\p{L}\p{N}])/gu, 'Căn cước công dân'],
+    [/(?<![\p{L}\p{N}])CMND(?![\p{L}\p{N}])/gu, 'Chứng minh nhân dân'],
+    [/(?<![\p{L}\p{N}])GCNQSDĐ(?![\p{L}\p{N}])/giu, 'Giấy chứng nhận quyền sử dụng đất'],
+    [/(?<![\p{L}\p{N}])QSDĐ(?![\p{L}\p{N}])/giu, 'quyền sử dụng đất'],
+    [/(?<![\p{L}\p{N}])K1(?![\p{L}\p{N}])/gu, 'Khoản 1'],
+    [/(?<![\p{L}\p{N}])K2(?![\p{L}\p{N}])/gu, 'Khoản 2'],
+    [/(?<![\p{L}\p{N}])K3(?![\p{L}\p{N}])/gu, 'Khoản 3'],
+    [/(?<![\p{L}\p{N}])K4(?![\p{L}\p{N}])/gu, 'Khoản 4'],
+    [/(?<![\p{L}\p{N}])K5(?![\p{L}\p{N}])/gu, 'Khoản 5'],
+    [/(?<![\p{L}\p{N}])Đ1(?![\p{L}\p{N}])/gu, 'Điều 1'],
+    [/(?<![\p{L}\p{N}])Đ2(?![\p{L}\p{N}])/gu, 'Điều 2'],
+    [/(?<![\p{L}\p{N}])Đ3(?![\p{L}\p{N}])/gu, 'Điều 3'],
   ];
 
   for (const [pattern, replacement] of legalAbbreviations) {
