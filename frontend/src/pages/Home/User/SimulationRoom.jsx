@@ -19,7 +19,7 @@ import { roleLabel } from '../../../services/simulation';
 import { draftKey, readDraft, saveDraft } from '../../../services/auth';
 import UpgradeNotice from '../../../components/membership/UpgradeNotice';
 import VoiceDebateControls from '../../../components/courtroom/VoiceDebateControls';
-import { isManualSpeaking, speakCourtroomText, stopCourtroomSpeech, subscribeCourtroomSpeech, unlockCourtroomAudio } from '../../../services/voiceService';
+import { isManualSpeaking, speakCourtroomText, stopCourtroomSpeech, unlockCourtroomAudio } from '../../../services/voiceService';
 import PdfExportModal from '../../../components/courtroom/PdfExportModal';
 import FeedbackModal from '../../../components/feedback/FeedbackModal';
 import TrialPhaseStepper from '../../../components/courtroom/TrialPhaseStepper';
@@ -75,12 +75,6 @@ function Room({ sessionId }) {
   const [countdownStopped, setCountdownStopped] = useState(false);
   // Lời thoại người dùng vừa nhấn vào trong khung hội thoại (dùng khi bấm nút bật giọng đọc)
   const [focusedRecordId, setFocusedRecordId] = useState(null);
-  // Tăng mỗi khi giọng đọc dừng hẳn, để lời thoại mới đến trong lúc đang nghe được đọc tiếp sau đó
-  const [speechIdleTick, setSpeechIdleTick] = useState(0);
-
-  useEffect(() => subscribeCourtroomSpeech((id) => {
-    if (!id) setSpeechIdleTick((tick) => tick + 1);
-  }), []);
 
   // Phát đúng một lời thoại cụ thể và ghi nhận đã đọc để chế độ tự động không đọc lặp lại.
   function speakRecord(record, { manual }) {
@@ -131,16 +125,11 @@ function Room({ sessionId }) {
       }
       if (readDraft(completionKey) && !a.data.data.processing && a.data.data.status === 'ongoing') saveDraft(completionKey, null);
       const incomingRecords = b.data.data || [];
-      // Nếu là lần đầu tải phiên (kể cả có 1 hay nhiều bản ghi lịch sử):
-      // Đánh dấu tất cả vào Set để tuyệt đối không tự động đọc lại các bản ghi đã có trước đó!
+      // Nếu là lần đầu tải phiên:
+      // Đánh dấu tất cả bản ghi hiện có vào Set để tuyệt đối không tự động phát các bản ghi cũ từ trước!
       if (!isInitialLoadedRef.current && incomingRecords.length > 0) {
-        const aiRecords = incomingRecords.filter((r) => r && r._id && r.sender_type !== 'user');
-        const latestAi = aiRecords.at(-1);
         incomingRecords.forEach((r) => {
-          // Chỉ đưa các bản ghi lịch sử cũ vào Set, chừa lại bản ghi AI mới nhất để có thể tự động đọc khi TTS bật
-          if (r?._id && String(r._id) !== String(latestAi?._id)) {
-            autoSpokenRecordIdsRef.current.add(String(r._id));
-          }
+          if (r?._id) autoSpokenRecordIdsRef.current.add(String(r._id));
         });
       }
       isInitialLoadedRef.current = true;
@@ -479,24 +468,13 @@ function Room({ sessionId }) {
       return;
     }
 
-    // Tìm bản ghi AI mới nhất cần đọc:
-    // 1. Ưu tiên record theo current_record_id mà backend chỉ định
-    // 2. Hoặc record AI (khác 'user') nằm ở cuối danh sách records
-    const currentId = session?.conversation?.current_record_id;
-    let targetRecord = currentId
-      ? records.find((r) => String(r._id) === String(currentId) && r.sender_type !== 'user')
-      : null;
-
-    if (!targetRecord) {
-      const aiRecords = records.filter((r) => r && r._id && r.sender_type !== 'user');
-      targetRecord = aiRecords.at(-1);
-    }
-
-    if (!targetRecord || !targetRecord._id) {
+    // Chỉ tự động đọc tin nhắn AI mới nhất ở cuối danh sách records
+    const latestAiRecord = records.filter((r) => r && r._id && r.sender_type !== 'user').at(-1);
+    if (!latestAiRecord || !latestAiRecord._id) {
       return;
     }
 
-    const recordIdStr = String(targetRecord._id);
+    const recordIdStr = String(latestAiRecord._id);
 
     // Nếu bản ghi này đã được tự động đọc rồi => không đọc lặp
     if (autoSpokenRecordIdsRef.current.has(recordIdStr)) {
@@ -509,9 +487,9 @@ function Room({ sessionId }) {
     // Dừng âm thanh trước đó (nếu có) trước khi đọc lượt mới
     stopCourtroomSpeech();
 
-    const speechRole = actorFor(targetRecord);
+    const speechRole = actorFor(latestAiRecord);
     const textToSpeak = dialogueText(
-      targetRecord.display_content || targetRecord.content,
+      latestAiRecord.display_content || latestAiRecord.content,
       session?.case_id?.evidence_inventory
     );
 
@@ -524,10 +502,8 @@ function Room({ sessionId }) {
     view?.streaming,
     state.sending,
     session?.processing,
-    session?.conversation?.current_record_id,
     session?.case_id?.evidence_inventory,
     completed,
-    speechIdleTick,
   ]);
   const panelTitles = { notebook: 'Sổ tay phiên', guide: 'Hướng dẫn phiên tòa', case: 'Hồ sơ phiên tòa', assistant: 'Trợ lý luật', history: 'Hồ sơ phiên tòa', speech: 'Lời trình bày đầy đủ' };
   const courtCase = session?.case_id;

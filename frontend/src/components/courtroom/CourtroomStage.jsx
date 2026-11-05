@@ -232,7 +232,6 @@ export default function CourtroomStage({
 
   function handleToggleSpeechForRecord(rec, role, text) {
     if (!rec?._id) return;
-    onSelectRecord?.(rec._id);
     const isThisSpeaking = Boolean(speakingRecordId === rec._id && !isPaused);
     const isThisPaused = Boolean(speakingRecordId === rec._id && isPaused);
 
@@ -267,7 +266,6 @@ export default function CourtroomStage({
 
   function handleReplaySpeechForRecord(rec, role, text) {
     if (!rec?._id) return;
-    onSelectRecord?.(rec._id);
     unlockCourtroomAudio();
     stopCourtroomSpeech();
     setSpeakingRecordId(rec._id);

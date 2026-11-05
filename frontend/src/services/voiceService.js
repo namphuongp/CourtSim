@@ -711,10 +711,16 @@ export function speakCourtroomText(text, { role = 'judge', recordId = null, isMa
   }
   lastSpeakingCall = { key: callKey, recordId, timestamp: now };
 
-  stopCourtroomSpeech();
+  if (isManual) {
+    manualSpeakingActive = true;
+  }
+  stopCourtroomSpeech({ keepManual: isManual });
 
   const segments = splitTextIntoSentences(clean, 1200);
-  if (!segments.length) return () => {};
+  if (!segments.length) {
+    if (isManual) manualSpeakingActive = false;
+    return () => {};
+  }
 
   const sessionId = ++activeSpeechSessionId;
   currentSpeakingRecordId = recordId || `speech-${sessionId}`;
@@ -907,11 +913,13 @@ export function speakCourtroomText(text, { role = 'judge', recordId = null, isMa
 /**
  * Dừng phát âm thanh hiện tại (cả AI Audio Player và Web Speech API).
  */
-export function stopCourtroomSpeech() {
+export function stopCourtroomSpeech({ keepManual = false } = {}) {
   activeSpeechSessionId++;
   currentSpeakingRecordId = null;
   isPausedState = false;
-  manualSpeakingActive = false;
+  if (!keepManual) {
+    manualSpeakingActive = false;
+  }
   lastSpeakingCall = { key: '', recordId: null, timestamp: 0 };
   if (!isAutoplayBlockedState) {
     pendingBlockedSpeech = null;
