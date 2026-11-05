@@ -238,11 +238,122 @@ export function createSpeechRecognizer({
 }
 
 /**
+ * Chuẩn hóa văn phong tố tụng tiếng Việt tự nhiên nhất cho giọng đọc Text-to-Speech:
+ * - Mở rộng viết tắt pháp lý (HĐXX -> Hội đồng xét xử, BLDS -> Bộ luật Dân sự...)
+ * - Đọc tự nhiên ngày tháng năm (18/12/2015 -> ngày 18 tháng 12 năm 2015)
+ * - Đọc số tiền, tiền tệ lớn (1.600.000.000 đồng -> 1 tỷ 600 triệu đồng)
+ * - Đọc phần trăm (2% -> 2 phần trăm)
+ * - Xử lý tên tắt có dấu chấm (ông Đ. -> ông Đ) để không ngắt câu giật cục
+ */
+export function normalizeVietnameseLegalSpeech(raw) {
+  if (!raw || typeof raw !== 'string') return '';
+  let res = raw;
+
+  // 1. Chuẩn hóa dấu ngoặc kép và dấu nháy
+  res = res.replace(/[„“""«»]/gu, '"');
+  res = res.replace(/[’'']/gu, "'");
+
+  // 2. Chuyển đổi ngày tháng dạng dd/mm/yyyy hoặc d/m/yyyy sang lời nói tự nhiên
+  res = res.replace(/(?:ngày\s+)?\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/giu, (match, d, m, y) => {
+    return `ngày ${parseInt(d, 10)} tháng ${parseInt(m, 10)} năm ${y}`;
+  });
+  res = res.replace(/(?:tháng\s+)?\b(\d{1,2})\/(\d{4})\b/giu, (match, m, y) => {
+    return `tháng ${parseInt(m, 10)} năm ${y}`;
+  });
+
+  // 3. Chuẩn hóa số tiền có phân cách hàng nghìn (1.600.000.000 đồng, 500.000 VNĐ, 20.000.000 đ)
+  res = res.replace(/\b(\d{1,3}(?:\.\d{3})+)\s*(?:đồng|đ|vnd|vnđ)\b/giu, (match, numStr) => {
+    const rawNum = parseInt(numStr.replace(/\./g, ''), 10);
+    if (isNaN(rawNum)) return match;
+    if (rawNum >= 1e9) {
+      const ty = Math.floor(rawNum / 1e9);
+      const remainder = rawNum % 1e9;
+      const trieu = Math.floor(remainder / 1e6);
+      if (trieu > 0) return `${ty} tỷ ${trieu} triệu đồng`;
+      return `${ty} tỷ đồng`;
+    }
+    if (rawNum >= 1e6) {
+      const trieu = Math.floor(rawNum / 1e6);
+      const remainder = rawNum % 1e6;
+      const nghin = Math.floor(remainder / 1e3);
+      if (nghin > 0) return `${trieu} triệu ${nghin} nghìn đồng`;
+      return `${trieu} triệu đồng`;
+    }
+    if (rawNum >= 1e3) {
+      const nghin = Math.floor(rawNum / 1e3);
+      const remainder = rawNum % 1e3;
+      if (remainder > 0) return `${nghin} nghìn ${remainder} đồng`;
+      return `${nghin} nghìn đồng`;
+    }
+    return `${rawNum} đồng`;
+  });
+
+  // 4. Chuẩn hóa phần trăm: 2% -> 2 phần trăm, 15,5% -> 15 phẩy 5 phần trăm
+  res = res.replace(/(\d+(?:[.,]\d+)?)\s*%/gu, (match, n) => {
+    return `${n.replace('.', ' phẩy ').replace(',', ' phẩy ')} phần trăm`;
+  });
+
+  // 5. Chuẩn hóa tên tắt như 'ông Đ.', 'bà N.', 'anh T.' -> bỏ dấu chấm để tránh ngắt câu vô lý
+  res = res.replace(/\b(ông|bà|anh|chị|cụ)\s+([A-ZĐ])\./giu, '$1 $2');
+
+  // 6. Mở rộng từ viết tắt tố tụng phổ biến
+  const legalAbbreviations = [
+    [/\bHĐXX\b/gu, 'Hội đồng xét xử'],
+    [/\bVKSNDTC\b/gu, 'Viện kiểm sát nhân dân tối cao'],
+    [/\bVKSND\b/gu, 'Viện kiểm sát nhân dân'],
+    [/\bVKS\b/gu, 'Viện kiểm sát'],
+    [/\bKSV\b/gu, 'Kiểm sát viên'],
+    [/\bTANDTC\b/gu, 'Tòa án nhân dân tối cao'],
+    [/\bTANDCC\b/gu, 'Tòa án nhân dân cấp cao'],
+    [/\bTAND\b/gu, 'Tòa án nhân dân'],
+    [/\bBLTTDS\b/gu, 'Bộ luật Tố tụng Dân sự'],
+    [/\bBLTTHS\b/gu, 'Bộ luật Tố tụng Hình sự'],
+    [/\bBLDS\b/gu, 'Bộ luật Dân sự'],
+    [/\bBLHS\b/gu, 'Bộ luật Hình sự'],
+    [/\bNĐ-CP\b/giu, 'Nghị định Chính phủ'],
+    [/\bTT-BTP\b/giu, 'Thông tư Bộ Tư pháp'],
+    [/\bUBND\b/gu, 'Ủy ban nhân dân'],
+    [/\bCCCD\b/gu, 'Căn cước công dân'],
+    [/\bCMND\b/gu, 'Chứng minh nhân dân'],
+    [/\bGCNQSDĐ\b/giu, 'Giấy chứng nhận quyền sử dụng đất'],
+    [/\bQSDĐ\b/giu, 'quyền sử dụng đất'],
+    [/\bK1\b/gu, 'Khoản 1'],
+    [/\bK2\b/gu, 'Khoản 2'],
+    [/\bK3\b/gu, 'Khoản 3'],
+    [/\bK4\b/gu, 'Khoản 4'],
+    [/\bK5\b/gu, 'Khoản 5'],
+    [/\bĐ1\b/gu, 'Điều 1'],
+    [/\bĐ2\b/gu, 'Điều 2'],
+    [/\bĐ3\b/gu, 'Điều 3'],
+  ];
+
+  for (const [pattern, replacement] of legalAbbreviations) {
+    res = res.replace(pattern, replacement);
+  }
+
+  // 7. Thêm khoảng nghỉ tự nhiên sau số điều luật
+  res = res.replace(/Điều\s+(\d+)\s+(Bộ luật|Luật)/giu, 'Điều $1, $2');
+
+  // 8. Chuyển các dấu ngoặc đơn giải thích thành dấu phẩy để câu nói liền mạch
+  res = res.replace(/\(([^)]+)\)/gu, ', $1,');
+
+  // 9. Dọn dẹp khoảng trắng và dấu phẩy thừa
+  res = res
+    .replace(/,\s*,/gu, ',')
+    .replace(/\s*,\s*/gu, ', ')
+    .replace(/\s+/gu, ' ')
+    .trim();
+
+  return res;
+}
+
+/**
  * Làm sạch văn bản trước khi đưa vào Text-To-Speech (bỏ trích dẫn, mã [CC:], URL)
+ * và chuẩn hóa ngữ âm tiếng Việt tự nhiên nhất
  */
 export function cleanTextForSpeech(raw) {
   if (!raw) return '';
-  return raw
+  const cleaned = raw
     .replace(/\[([^\]]+)\]\([^)]+\)/gu, '$1') // Giữ lại text của link markdown
     .replace(/<[^>]+>/gu, '') // Lược bỏ thẻ HTML
     .replace(/\[(?:CC|PL|BL):[^\]]+\]/gu, '')
@@ -253,10 +364,12 @@ export function cleanTextForSpeech(raw) {
     .replace(/[#*`_~]/gu, '')
     .replace(/\s+/gu, ' ')
     .trim();
+
+  return normalizeVietnameseLegalSpeech(cleaned);
 }
 
 export const COURTROOM_SPEECH_RATES = [1.0, 1.25, 1.5];
-export const DEFAULT_COURTROOM_SPEECH_RATE = 1.25;
+export const DEFAULT_COURTROOM_SPEECH_RATE = 1.0;
 const STORAGE_KEY_RATE = 'courtsim_speech_rate';
 
 let activeAudio = null;
@@ -494,24 +607,29 @@ export function getVietnameseVoice() {
 }
 
 /**
- * Chia văn bản dài thành danh sách các câu/đoạn ngắn tự nhiên (<= 240 ký tự)
- * để đọc lần lượt hết toàn bộ phát biểu từ câu đầu đến câu cuối, không bao giờ bị ngắt giữa chừng.
+ * Chia văn bản thành các phân đoạn lời nói tự nhiên theo ranh giới câu thực sự:
+ * - Không bao giờ cắt giữa chừng số liệu hay tên viết tắt
+ * - Gom các câu liên tiếp trong một lượt nói (tối đa 1.200 ký tự) để giọng đọc phát liền mạch,
+ *   giữ trọn vẹn ngữ điệu, nhịp thở và cảm xúc như người thật phát biểu trước tòa
  */
 export function splitTextIntoSentences(cleanText, maxSegmentLength = 1200) {
   if (!cleanText) return [];
-  const rawSentences = cleanText.match(/[^.!?;\n]+[.!?;\n]*|\S+/gu) || [cleanText];
+  const rawSentences = cleanText
+    .split(/(?<=[.!?;\n])\s+/u)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  if (!rawSentences.length) return [cleanText];
   const segments = [];
   let current = '';
 
   for (const s of rawSentences) {
-    const trimmed = s.trim();
-    if (!trimmed) continue;
-    if (trimmed.length > maxSegmentLength) {
+    if (s.length > maxSegmentLength) {
       if (current) {
         segments.push(current);
         current = '';
       }
-      const clauses = trimmed.split(/(?<=,)\s+/u);
+      const clauses = s.split(/(?<=,)\s+/u);
       let sub = '';
       for (const clause of clauses) {
         if ((sub + ' ' + clause).trim().length <= maxSegmentLength) {
@@ -522,11 +640,11 @@ export function splitTextIntoSentences(cleanText, maxSegmentLength = 1200) {
         }
       }
       if (sub) current = sub;
-    } else if ((current + ' ' + trimmed).trim().length <= maxSegmentLength) {
-      current = (current + ' ' + trimmed).trim();
+    } else if ((current + ' ' + s).trim().length <= maxSegmentLength) {
+      current = (current + ' ' + s).trim();
     } else {
       if (current) segments.push(current);
-      current = trimmed;
+      current = s;
     }
   }
   if (current) segments.push(current);

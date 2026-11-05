@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 
 const {
   sanitizeTextForTts,
+  normalizeVietnameseSpeechForTts,
   ROLE_VOICE_MAP,
   generateCourtroomSpeech,
   fetchGoogleVietnameseSpeech,
@@ -68,4 +69,17 @@ test('aiVoiceService: hỗ trợ đầy đủ các vai tố tụng (Chủ tọa,
     assert.ok(res.buffer instanceof Buffer, `Âm thanh cho vai ${role} phải là Buffer`);
     assert.ok(res.buffer.length > 2000, `Kích thước âm thanh cho vai ${role} phải hợp lệ`);
   }
+});
+
+test('aiVoiceService: normalizeVietnameseSpeechForTts chuẩn hóa ngữ âm tiếng Việt tự nhiên', () => {
+  const input = "Kính thưa HĐXX, căn cứ ngày 18/12/2015 do ông Đ. viện dẫn với số tiền 1.600.000.000 đồng, lãi 2% theo Điều 463 BLDS tại TAND tỉnh.";
+  const normalized = normalizeVietnameseSpeechForTts(input);
+
+  assert.ok(normalized.includes('Hội đồng xét xử'), 'Mở rộng HĐXX thành Hội đồng xét xử');
+  assert.ok(normalized.includes('ngày 18 tháng 12 năm 2015'), 'Đọc ngày tháng tự nhiên');
+  assert.ok(normalized.includes('1 tỷ 600 triệu đồng'), 'Đọc số tiền lớn tự nhiên');
+  assert.ok(normalized.includes('2 phần trăm'), 'Đọc phần trăm tự nhiên');
+  assert.ok(normalized.includes('Bộ luật Dân sự'), 'Mở rộng BLDS');
+  assert.ok(normalized.includes('Tòa án nhân dân'), 'Mở rộng TAND');
+  assert.ok(normalized.includes('ông Đ'), 'Không ngắt dấu chấm sau tên viết tắt');
 });
