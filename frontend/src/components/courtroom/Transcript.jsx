@@ -6,6 +6,7 @@ import {
   pauseCourtroomSpeech,
   resumeCourtroomSpeech,
   speakCourtroomText,
+  stopCourtroomSpeech,
   subscribeCourtroomSpeech,
   unlockCourtroomAudio,
 } from '../../services/voiceService';
@@ -45,6 +46,7 @@ export default function Transcript({ session, records = [], selected, onSelect, 
       resumeCourtroomSpeech();
     } else {
       unlockCourtroomAudio();
+      stopCourtroomSpeech();
       const text = dialogueText(record.display_content ?? record.content, session?.case_id?.evidence_inventory);
       const role = actorFor(record);
       speakCourtroomText(text, { role, recordId: record._id, isManual: true });

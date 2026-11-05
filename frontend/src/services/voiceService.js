@@ -551,7 +551,7 @@ async function fetchSegmentBlob(segmentText, role, signal) {
     timeout: 15_000,
   });
   const blob = response.data;
-  if (!blob || !(blob instanceof Blob)) {
+  if (!blob || !(blob instanceof Blob) || (blob.type && blob.type.includes('json'))) {
     throw new Error('Dữ liệu âm thanh từ máy chủ không hợp lệ.');
   }
   if (clientAudioCache.size >= 150) {
@@ -587,8 +587,8 @@ export function speakCourtroomText(text, { role = 'judge', recordId = null, isMa
 
   const now = Date.now();
   const callKey = `${role}:${recordId || clean.slice(0, 100)}`;
-  // Deduplication: Chặn gọi lại cùng một câu/bản ghi trong vòng 1.2 giây
-  if (lastSpeakingCall.key === callKey && now - lastSpeakingCall.timestamp < 1200) {
+  // Deduplication: Chặn gọi lại cùng một câu/bản ghi trong vòng 1.2 giây (chỉ áp dụng cho tự động đọc)
+  if (!isManual && lastSpeakingCall.key === callKey && now - lastSpeakingCall.timestamp < 1200) {
     return () => {};
   }
   lastSpeakingCall = { key: callKey, recordId, timestamp: now };

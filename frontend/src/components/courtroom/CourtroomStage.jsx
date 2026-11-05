@@ -101,7 +101,6 @@ export default function CourtroomStage({
   preparationStalled = false,
   pendingSpeaker = null,
   speechControls,
-  onEnableTts,
   ttsEnabled = false,
   onToggleTts,
 }) {
@@ -233,6 +232,7 @@ export default function CourtroomStage({
 
   function handleToggleSpeechForRecord(rec, role, text) {
     if (!rec?._id) return;
+    onSelectRecord?.(rec._id);
     const isThisSpeaking = Boolean(speakingRecordId === rec._id && !isPaused);
     const isThisPaused = Boolean(speakingRecordId === rec._id && isPaused);
 
@@ -242,7 +242,7 @@ export default function CourtroomStage({
       resumeCourtroomSpeech();
     } else {
       unlockCourtroomAudio();
-      onEnableTts?.(rec._id);
+      stopCourtroomSpeech();
       setSpeakingRecordId(rec._id);
       setIsPaused(false);
       speakCourtroomText(text, {
@@ -267,8 +267,9 @@ export default function CourtroomStage({
 
   function handleReplaySpeechForRecord(rec, role, text) {
     if (!rec?._id) return;
+    onSelectRecord?.(rec._id);
     unlockCourtroomAudio();
-    onEnableTts?.(rec._id);
+    stopCourtroomSpeech();
     setSpeakingRecordId(rec._id);
     setIsPaused(false);
     speakCourtroomText(text, {
@@ -509,7 +510,8 @@ export default function CourtroomStage({
                     id={`record-${rec._id}`}
                     className={`dialogue-bubble bubble-${speaker.actor} ${
                       isRecordSpeaking ? 'is-speaking-bubble' : ''
-                    }`}
+                    } ${view?.record?._id === rec._id ? 'is-selected-bubble' : ''}`}
+                    onClick={() => onSelectRecord?.(rec._id)}
                   >
                     <div className="bubble-header">
                       <div className="bubble-speaker-info">

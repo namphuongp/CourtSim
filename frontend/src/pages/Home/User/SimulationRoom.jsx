@@ -19,7 +19,7 @@ import { roleLabel } from '../../../services/simulation';
 import { draftKey, readDraft, saveDraft } from '../../../services/auth';
 import UpgradeNotice from '../../../components/membership/UpgradeNotice';
 import VoiceDebateControls from '../../../components/courtroom/VoiceDebateControls';
-import { isManualSpeaking, speakCourtroomText, stopCourtroomSpeech, unlockCourtroomAudio } from '../../../services/voiceService';
+import { isManualSpeaking, speakCourtroomText, stopCourtroomSpeech, subscribeCourtroomSpeech, unlockCourtroomAudio } from '../../../services/voiceService';
 import PdfExportModal from '../../../components/courtroom/PdfExportModal';
 import FeedbackModal from '../../../components/feedback/FeedbackModal';
 import TrialPhaseStepper from '../../../components/courtroom/TrialPhaseStepper';
@@ -71,22 +71,46 @@ function Room({ sessionId }) {
   const [caseSummaryOpen, setCaseSummaryOpen] = useState(false);
   const autoSpokenRecordIdsRef = useRef(new Set());
   const isInitialLoadedRef = useRef(false);
-  const prevTtsEnabledRef = useRef(false);
   const [autoCloseCountdown, setAutoCloseCountdown] = useState(null);
   const [countdownStopped, setCountdownStopped] = useState(false);
+  // Lời thoại người dùng vừa nhấn vào trong khung hội thoại (dùng khi bấm nút bật giọng đọc)
+  const [focusedRecordId, setFocusedRecordId] = useState(null);
+  // Tăng mỗi khi giọng đọc dừng hẳn, để lời thoại mới đến trong lúc đang nghe được đọc tiếp sau đó
+  const [speechIdleTick, setSpeechIdleTick] = useState(0);
+
+  useEffect(() => subscribeCourtroomSpeech((id) => {
+    if (!id) setSpeechIdleTick((tick) => tick + 1);
+  }), []);
+
+  // Phát đúng một lời thoại cụ thể và ghi nhận đã đọc để chế độ tự động không đọc lặp lại.
+  function speakRecord(record, { manual }) {
+    if (!record?._id) return;
+    const text = dialogueText(record.display_content || record.content, session?.case_id?.evidence_inventory);
+    if (!text) return;
+    const recordId = String(record._id);
+    autoSpokenRecordIdsRef.current.add(recordId);
+    speakCourtroomText(text, { role: actorFor(record), recordId, isManual: manual });
+  }
 
   function handleToggleTts() {
     unlockCourtroomAudio();
-    setTtsEnabled((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem('courtsim_tts_enabled', String(next));
-      } catch { /* Bỏ qua */ }
-      if (!next) {
-        stopCourtroomSpeech();
-      }
-      return next;
-    });
+    const next = !ttsEnabled;
+    setTtsEnabled(next);
+    try {
+      localStorage.setItem('courtsim_tts_enabled', String(next));
+    } catch { /* Bỏ qua */ }
+    if (!next) {
+      stopCourtroomSpeech();
+      return;
+    }
+    // Bật giọng đọc: đọc ngay lời thoại người dùng vừa nhấn chọn; chưa chọn thì đọc lời AI mới nhất.
+    const preferId = focusedRecordId ?? selectedId;
+    const target = (preferId && records.find((r) => String(r._id) === String(preferId)))
+      || records.filter((r) => r?._id && r.sender_type !== 'user').at(-1);
+    if (target) {
+      stopCourtroomSpeech();
+      speakRecord(target, { manual: true });
+    }
   }
   useEffect(() => { saveDraft(storageKey, draft); }, [storageKey, draft]);
   useEffect(() => {
@@ -110,8 +134,13 @@ function Room({ sessionId }) {
       // Nếu là lần đầu tải phiên (kể cả có 1 hay nhiều bản ghi lịch sử):
       // Đánh dấu tất cả vào Set để tuyệt đối không tự động đọc lại các bản ghi đã có trước đó!
       if (!isInitialLoadedRef.current && incomingRecords.length > 0) {
+        const aiRecords = incomingRecords.filter((r) => r && r._id && r.sender_type !== 'user');
+        const latestAi = aiRecords.at(-1);
         incomingRecords.forEach((r) => {
-          if (r?._id) autoSpokenRecordIdsRef.current.add(String(r._id));
+          // Chỉ đưa các bản ghi lịch sử cũ vào Set, chừa lại bản ghi AI mới nhất để có thể tự động đọc khi TTS bật
+          if (r?._id && String(r._id) !== String(latestAi?._id)) {
+            autoSpokenRecordIdsRef.current.add(String(r._id));
+          }
         });
       }
       isInitialLoadedRef.current = true;
@@ -426,6 +455,7 @@ function Room({ sessionId }) {
 
   function selectRecord(id) {
     // Chỉ đổi lời đang xem; không tiến cursor hoặc gọi model khi duyệt biên bản.
+    setFocusedRecordId(id);
     setSelectedId(id === conversation?.current_record_id ? null : id);
     setPanel(null);
   }
@@ -435,45 +465,56 @@ function Room({ sessionId }) {
   }
   const view = streamedSpeech?.content && state.sending ? { record: { _id: 'streaming', content: streamedSpeech.content, sender_type: streamedSpeech.role === 'judge' ? 'ai_judge' : 'ai_prosecutor' }, actor: streamedSpeech.role, streaming: true }
     : courtroomView({ records, selectedId, sending: state.sending && Boolean(submittedContent) && !session?.processing, pendingContent: submittedContent, processing: session?.processing, ending: state.ending });
-  // Tự động phát âm thanh lời thoại AI:
-  // Đảm bảo mỗi lượt thoại mới sinh ra chỉ được tự động kích hoạt phát âm thanh đúng 1 lần duy nhất.
-  // Chặn hoàn toàn việc gọi lại khi component re-render, cập nhật state hoặc polling.
-  // Trước khi phát âm thanh của lượt thoại mới, dừng ngay lập tức luồng âm thanh trước đó.
+  // Tự động phát âm thanh lời thoại AI khi có lượt mới (nếu TTS đang bật).
+  // Tuyệt đối không can thiệp hoặc đè lên khi người dùng đang chủ động bấm nghe (isManualSpeaking).
   useEffect(() => {
-    const wasEnabled = prevTtsEnabledRef.current;
-    prevTtsEnabledRef.current = ttsEnabled;
-    if (!ttsEnabled) {
-      if (wasEnabled) stopCourtroomSpeech();
+    if (!ttsEnabled) return;
+
+    // Chặn tự động đọc khi:
+    // - Đang gửi bài (sending) hoặc backend đang xử lý (processing)
+    // - AI đang stream chữ trên màn hình (streaming)
+    // - Phiên đã hoàn tất (completed)
+    // - Người dùng đang chủ động bấm nghe một tin nhắn cụ thể (isManualSpeaking)
+    if (state.sending || session?.processing || view?.streaming || completed || isManualSpeaking()) {
       return;
     }
 
-    // Chặn gọi lại khi đang gửi, đang xử lý, đang stream, đang xem lại lượt cũ, phiên kết thúc,
-    // hoặc người dùng đang chủ động nghe đọc một tin nhắn bất kỳ (isManualSpeaking)
-    if (state.sending || session?.processing || view.streaming || selectedId || completed || isManualSpeaking()) {
+    // Tìm bản ghi AI mới nhất cần đọc:
+    // 1. Ưu tiên record theo current_record_id mà backend chỉ định
+    // 2. Hoặc record AI (khác 'user') nằm ở cuối danh sách records
+    const currentId = session?.conversation?.current_record_id;
+    let targetRecord = currentId
+      ? records.find((r) => String(r._id) === String(currentId) && r.sender_type !== 'user')
+      : null;
+
+    if (!targetRecord) {
+      const aiRecords = records.filter((r) => r && r._id && r.sender_type !== 'user');
+      targetRecord = aiRecords.at(-1);
+    }
+
+    if (!targetRecord || !targetRecord._id) {
       return;
     }
 
-    // Lấy bản ghi AI mới nhất thực sự ở cuối danh sách records
-    const latestRecord = records.at(-1);
-    if (!latestRecord || !latestRecord._id || latestRecord.sender_type === 'user') {
-      return;
-    }
+    const recordIdStr = String(targetRecord._id);
 
-    const recordIdStr = String(latestRecord._id);
-
-    // Đã được tự động đọc trước đó chưa? Nếu có => BỎ QUA NGAY LẬP TỨC
+    // Nếu bản ghi này đã được tự động đọc rồi => không đọc lặp
     if (autoSpokenRecordIdsRef.current.has(recordIdStr)) {
       return;
     }
 
-    // Đánh dấu ngay ID vào Set để khóa vĩnh viễn việc tự động phát lại
+    // Đánh dấu bản ghi này đã được tự động đọc
     autoSpokenRecordIdsRef.current.add(recordIdStr);
 
-    // Trước khi phát âm thanh của lượt thoại mới, DỪNG / HỦY NGAY LẬP TỨC luồng âm thanh trước đó
+    // Dừng âm thanh trước đó (nếu có) trước khi đọc lượt mới
     stopCourtroomSpeech();
 
-    const speechRole = actorFor(latestRecord);
-    const textToSpeak = dialogueText(latestRecord.display_content || latestRecord.content, session?.case_id?.evidence_inventory);
+    const speechRole = actorFor(targetRecord);
+    const textToSpeak = dialogueText(
+      targetRecord.display_content || targetRecord.content,
+      session?.case_id?.evidence_inventory
+    );
+
     if (textToSpeak) {
       speakCourtroomText(textToSpeak, { role: speechRole, recordId: recordIdStr });
     }
@@ -483,9 +524,10 @@ function Room({ sessionId }) {
     view?.streaming,
     state.sending,
     session?.processing,
-    selectedId,
-    completed,
+    session?.conversation?.current_record_id,
     session?.case_id?.evidence_inventory,
+    completed,
+    speechIdleTick,
   ]);
   const panelTitles = { notebook: 'Sổ tay phiên', guide: 'Hướng dẫn phiên tòa', case: 'Hồ sơ phiên tòa', assistant: 'Trợ lý luật', history: 'Hồ sơ phiên tòa', speech: 'Lời trình bày đầy đủ' };
   const courtCase = session?.case_id;
@@ -676,13 +718,6 @@ function Room({ sessionId }) {
         navigationDisabled={state.sending || state.ending || session?.processing}
         onHistory={() => setPanel('history')}
         onReadFull={(record) => { setFullRecord(record); setPanel('speech'); }}
-        onEnableTts={(recordId) => {
-          if (recordId) autoSpokenRecordIdsRef.current.add(String(recordId));
-          const latestId = records.at(-1)?._id;
-          if (latestId) autoSpokenRecordIdsRef.current.add(String(latestId));
-          setTtsEnabled(true);
-          try { localStorage.setItem('courtsim_tts_enabled', 'true'); } catch { /* Bỏ qua */ }
-        }}
         ttsEnabled={ttsEnabled}
         onToggleTts={handleToggleTts}
       />
