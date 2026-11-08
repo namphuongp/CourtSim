@@ -273,6 +273,7 @@ function Room({ sessionId }) {
   async function send(event) {
     event.preventDefault();
     if (busy.current || disabled || cooldown || (conversation && !canLearnerSpeak) || draft.content.trim().length < 3) return;
+    stopCourtroomSpeech();
     unlockCourtroomAudio();
     busy.current = true;
     setSubmittedContent(draft.content);
@@ -320,6 +321,7 @@ function Room({ sessionId }) {
 
   async function continueDialogue(action) {
     if (busy.current || disabled) return;
+    stopCourtroomSpeech();
     unlockCourtroomAudio();
     busy.current = true;
     setSelectedId(null);
@@ -694,6 +696,7 @@ function Room({ sessionId }) {
         view={view}
         records={records}
         focusedRecordId={focusedRecordId}
+        onFocusRecord={(id) => setFocusedRecordId(id ? String(id) : null)}
         onSelectRecord={selectRecord}
         navigationDisabled={state.sending || state.ending || session?.processing}
         onHistory={() => setPanel('history')}

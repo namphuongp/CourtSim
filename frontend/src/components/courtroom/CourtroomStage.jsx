@@ -95,6 +95,7 @@ export default function CourtroomStage({
   view,
   records = [],
   focusedRecordId = null,
+  onFocusRecord,
   onHistory,
   onReadFull,
   onSelectRecord,
@@ -248,7 +249,8 @@ export default function CourtroomStage({
     if (!text) return;
 
     if (rec._id) {
-      onSelectRecord?.(rec._id);
+      if (onFocusRecord) onFocusRecord(rec._id);
+      else onSelectRecord?.(rec._id);
     }
 
     const activeIdStr = speakingRecordId != null ? String(speakingRecordId) : null;
@@ -289,7 +291,8 @@ export default function CourtroomStage({
     if (!text) return;
 
     if (rec._id) {
-      onSelectRecord?.(rec._id);
+      if (onFocusRecord) onFocusRecord(rec._id);
+      else onSelectRecord?.(rec._id);
     }
 
     unlockCourtroomAudio();
@@ -538,7 +541,11 @@ export default function CourtroomStage({
                     className={`dialogue-bubble bubble-${speaker.actor} ${
                       isRecordSpeaking ? 'is-speaking-bubble' : ''
                     } ${isSelectedBubble ? 'is-selected-bubble' : ''}`}
-                    onClick={() => rec._id && onSelectRecord?.(rec._id)}
+                    onClick={() => {
+                      if (!rec._id) return;
+                      if (onFocusRecord) onFocusRecord(rec._id);
+                      else onSelectRecord?.(rec._id);
+                    }}
                   >
                     <div className="bubble-header">
                       <div className="bubble-speaker-info">
@@ -702,10 +709,11 @@ export default function CourtroomStage({
                           e.stopPropagation();
                           onReadFull(rec);
                         }}
-                        className="bubble-expand-btn"
+                        className="bubble-expand-btn inline-flex items-center gap-1"
                         aria-label="Phóng to lời thoại"
                       >
-                        Phóng to
+                        <Maximize2 size={11} />
+                        <span>Phóng to</span>
                       </button>
                     </div>
                   </div>
@@ -736,11 +744,12 @@ export default function CourtroomStage({
             {hasNewMessageWhileScrolledUp && (
               <button
                 type="button"
-                className="scroll-to-bottom-pill animate-bounce"
+                className="scroll-to-bottom-pill inline-flex items-center gap-1 animate-bounce"
                 onClick={scrollToBottom}
                 aria-label="Cuộn xuống lời thoại mới nhất"
               >
-                <span>↓ Có lời thoại mới</span>
+                <ChevronDown size={13} />
+                <span>Có lời thoại mới</span>
               </button>
             )}
 

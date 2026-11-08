@@ -65,7 +65,12 @@ export function normalizeRawLines(rawText) {
     const line = rawLine
       .replace(/\s+/gu, ' ')
       .replace(/(\b\d{1,2}\/\d{1,2}\/\d{4})(?=\p{L})/gu, '$1 ')
+      .replace(/(\b\d{4})(?=\p{Ll})/gu, '$1 ')
       .replace(/^-\s*(?=\p{L})/u, '- ')
+      .replace(/Chủ tọa\s*([-–—])\s*Chủ tọa phiên tòa/giu, 'Thẩm phán $1 Chủ tọa phiên tòa')
+      .replace(/(?<![\p{L}\p{N}])Các Chủ tọa(?=\s*:)/giu, 'Các Thẩm phán')
+      .replace(/Hội đồng Chủ tọa/giu, 'Hội đồng Thẩm phán')
+      .replace(/Ủy ban Chủ tọa/giu, 'Ủy ban Thẩm phán')
       .trim();
 
     if (/^(?:trang\s+\d+(?:\s*\/\s*\d+)?|\d+\s*\/\s*\d+)$/iu.test(line)) {
@@ -267,6 +272,12 @@ function classifyContentBlock(line, blockIndex) {
   };
 }
 
+const STANDALONE_PARAGRAPH_START_REGEX =
+  /^(?:ngày\s+\d{1,2}\s+(?:tháng|\d)|do\s+bản\s+án|theo\s+quyết\s+định|tại\s+bản\s+án|tại\s+phiên\s+tòa|đại\s+diện\s+viện|căn\s+cứ\s+vào|vì\s+các\s+lẽ\s+trên|áp\s+dụng|tuyên\s+xử|về\s+án\s+phí|án\s+phí|quyết\s+định\s+này|bản\s+án\s+(?:phúc\s+thẩm|sơ\s+thẩm)|nguyên\s+đơn|bị\s+đơn|người\s+khởi\s+kiện|người\s+bị\s+kiện|người\s+có\s+quyền\s+lợi)/iu;
+
+const NUMBERED_POINT_BREAK_REGEX =
+  /^(?:vì\s+các\s+lẽ\s+trên|quyết\s+định|căn\s+cứ\s+vào|áp\s+dụng|tuyên\s+xử|về\s+án\s+phí|án\s+phí|bản\s+án\s+(?:phúc\s+thẩm|sơ\s+thẩm))/iu;
+
 export function parseLegalDossierDocument(rawText) {
   const reflowedLines = reflowVietnameseLegalLines(rawText);
   if (!reflowedLines.length) {
@@ -368,6 +379,38 @@ export function parseLegalDossierDocument(rawText) {
     );
 
     const classified = classifyContentBlock(line, blockCounter + 1);
+    const prevBlock = activeSec.blocks.at(-1);
+
+    // Nếu khối trước là nhận định đánh số [1], [2] và câu hiện tại là câu diễn giải nối tiếp của cùng mục đó -> gộp vào trong [1]
+    if (
+      prevBlock &&
+      prevBlock.type === 'numbered_point' &&
+      classified.type === 'paragraph' &&
+      !classified.label &&
+      !NUMBERED_POINT_BREAK_REGEX.test(classified.body) &&
+      prevBlock.body.length + 1 + classified.body.length <= 920
+    ) {
+      prevBlock.body = `${prevBlock.body} ${classified.body}`.trim();
+      prevBlock.raw = `${prevBlock.raw} ${classified.raw}`.trim();
+      continue;
+    }
+
+    // Nếu cả khối trước và khối hiện tại đều là câu văn xuôi ngắn (do learnerText tách theo dấu chấm) -> gom thành đoạn văn tự nhiên dễ đọc
+    if (
+      prevBlock &&
+      prevBlock.type === 'paragraph' &&
+      !prevBlock.label &&
+      classified.type === 'paragraph' &&
+      !classified.label &&
+      !STANDALONE_PARAGRAPH_START_REGEX.test(prevBlock.body) &&
+      !STANDALONE_PARAGRAPH_START_REGEX.test(classified.body) &&
+      prevBlock.body.length + 1 + classified.body.length <= 420
+    ) {
+      prevBlock.body = `${prevBlock.body} ${classified.body}`.trim();
+      prevBlock.raw = `${prevBlock.raw} ${classified.raw}`.trim();
+      continue;
+    }
+
     if (classified.type === 'paragraph' && !classified.label && classified.body.length > 560) {
       const subChunks = splitLongParagraphIntoReadableChunks(classified.body, 540);
       for (const chunk of subChunks) {

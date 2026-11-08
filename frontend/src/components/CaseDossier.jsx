@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { BookOpen, ChevronDown, FilePenLine, Maximize2, Minimize2, Search, Stamp, Type, X } from 'lucide-react';
+import { ArrowRight, BookOpen, ChevronDown, FilePenLine, Maximize2, Minimize2, Plus, Search, Stamp, Type, X } from 'lucide-react';
 import { roleLabel } from '../services/simulation';
 import { learnerText } from '../../../shared/learnerText.mjs';
 import { evidenceSummary } from '../../../shared/dialogueText.mjs';
@@ -183,7 +183,7 @@ export default function CaseDossier({ courtCase, role, sessionId, onInsert, inse
         return <article hidden={tabbed && activeEvidence !== item.id} id={'evidence-' + item.id} key={item.id} draggable={Boolean(onInsert) && !insertionDisabled && canCiteEvidence(item, c)} onDragStart={(event) => { if (!canCiteEvidence(item, c)) { event.preventDefault(); return; } event.dataTransfer.setData(EVIDENCE_MIME, item.id); event.dataTransfer.effectAllowed = 'copy'; }} className="mt-3 rounded-xl border border-slate-700 p-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h4 className="font-semibold">{learnerText(item.name)}</h4>
-          <button type="button" onClick={() => appendEvidenceToNote(item)} className="evidence-note-quick-btn">＋ Ghi vào Note cá nhân</button>
+          <button type="button" onClick={() => appendEvidenceToNote(item)} className="evidence-note-quick-btn inline-flex items-center gap-1"><Plus size={12} aria-hidden="true" /><span>Ghi vào Note cá nhân</span></button>
         </div>
         <span className="evidence-availability">{item.availability === 'provided' ? 'Có nội dung được cung cấp' : 'Nội dung được nhắc trong hồ sơ'}</span>
         {evidenceSummary(item.summary) && <p>{item.summary === item.source_quote ? item.summary : learnerText(evidenceSummary(item.summary))}</p>}<p className="text-xs">Bên cung cấp: {learnerText(item.provided_by, 'Chưa rõ')} · Ngày lập: {item.date || 'Chưa rõ'}</p>
@@ -219,7 +219,7 @@ export default function CaseDossier({ courtCase, role, sessionId, onInsert, inse
                 <p>Chữ ký xác nhận: <em className="evidence-cursive-sig">{learnerText(item.provided_by, 'Đã ký')}</em></p>
                 <p>Họ và tên: <strong>{learnerText(item.provided_by, 'ĐƯƠNG SỰ').toUpperCase()}</strong></p>
                 <div className="evidence-red-stamp" aria-label={`Dấu xác nhận ${stamp.authority}`}>
-                  <span className="stamp-title"><Stamp size={11} /> {stamp.authority} ★</span>
+                  <span className="stamp-title"><Stamp size={11} /> {stamp.authority}</span>
                   <span className="stamp-code">{stamp.code}</span>
                 </div>
               </div>
@@ -256,9 +256,10 @@ export default function CaseDossier({ courtCase, role, sessionId, onInsert, inse
               type="button"
               disabled={insertionDisabled || !personalNotes.trim()}
               onClick={() => onInsert(personalNotes)}
-              className="dossier-note-insert-btn"
+              className="dossier-note-insert-btn inline-flex items-center gap-1"
             >
-              Đưa ghi chú vào lập luận →
+              <span>Đưa ghi chú vào lập luận</span>
+              <ArrowRight size={12} aria-hidden="true" />
             </button>
           )}
         </div>

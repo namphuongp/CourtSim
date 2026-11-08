@@ -340,8 +340,11 @@ export async function generateCourtroomSpeech({ text, role = 'judge', customVoic
       });
 
       if (response.ok) {
-        const arrayBuffer = await response.arrayBuffer();
-        buffer = Buffer.from(arrayBuffer);
+        const ct = String(response.headers.get('content-type') || '').toLowerCase();
+        const candidate = Buffer.from(await response.arrayBuffer());
+        if (candidate.length >= 128 && !ct.includes('json') && !ct.includes('html') && !ct.includes('text/plain')) {
+          buffer = candidate;
+        }
       } else if (preferredModel !== 'tts-1') {
         // Dự phòng model tiêu chuẩn nếu tts-1-hd quá tải
         const fallbackRes = await fetch(`${env.AI_BASE_URL}/audio/speech`, {
@@ -359,7 +362,11 @@ export async function generateCourtroomSpeech({ text, role = 'judge', customVoic
           })
         });
         if (fallbackRes.ok) {
-          buffer = Buffer.from(await fallbackRes.arrayBuffer());
+          const ct = String(fallbackRes.headers.get('content-type') || '').toLowerCase();
+          const candidate = Buffer.from(await fallbackRes.arrayBuffer());
+          if (candidate.length >= 128 && !ct.includes('json') && !ct.includes('html') && !ct.includes('text/plain')) {
+            buffer = candidate;
+          }
         }
       }
     } catch (openAiErr) {

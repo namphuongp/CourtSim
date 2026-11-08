@@ -670,8 +670,9 @@ async function fetchSegmentBlob(segmentText, role, signal) {
     return clientAudioCache.get(cacheKey);
   }
   const segmentHash = hashSpeechSegment(normalizedRole, segmentText);
+  const snippetParam = encodeURIComponent(segmentText.slice(0, 28));
   const response = await api.post(
-    `/v1/voice/tts?r=${encodeURIComponent(normalizedRole)}&h=${encodeURIComponent(segmentHash)}`,
+    `/v1/voice/tts?r=${encodeURIComponent(normalizedRole)}&h=${encodeURIComponent(segmentHash)}&t=${snippetParam}`,
     { text: segmentText, role: normalizedRole },
     {
       responseType: 'blob',
@@ -892,6 +893,10 @@ export function speakCourtroomText(text, { role = 'judge', recordId = null, isMa
         if (activeAudio === audio) activeAudio = null;
         reject(err);
       };
+
+      if (isPausedState) {
+        return;
+      }
 
       const playPromise = audio.play();
       if (playPromise && typeof playPromise.catch === 'function') {

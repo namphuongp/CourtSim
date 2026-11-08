@@ -180,10 +180,14 @@ test('Legal Document Formatter: Nối dòng bị gãy từ PDF và phân tách c
     'Theo đơn khởi kiện, ông Hồ Thành L yêu cầu hủy quyết định hành chính.',
     'NHẬN ĐỊNH CỦA TÒA ÁN:',
     '[1] Về tố tụng: Đơn kháng cáo hợp lệ.',
+    'Tòa án cấp sơ thẩm thụ lý giải quyết là đúng thẩm quyền theo quy định pháp luật.',
+    '[2] Về nội dung: Kháng cáo của người khởi kiện là không có căn cứ.',
   ].join('\n');
 
   const reflowed = reflowVietnameseLegalText(brokenPdfJudgment);
   assert.ok(reflowed.includes('V/v: "Khiếu kiện quyết định hành chính về quản lý đất đai".'));
+  assert.ok(reflowed.includes('Thẩm phán – Chủ tọa phiên tòa: Bà Lê Thị Tuyết Trinh'));
+  assert.ok(reflowed.includes('Các Thẩm phán: Bà Huỳnh Thanh Duyên; Ông Phan Đức Phương'));
   assert.ok(reflowed.includes('Thư ký Tòa phúc thẩm Tòa án nhân dân tối cao tại Thành phố Hồ Chí Minh.'));
   assert.ok(reflowed.includes('ngày 24/10/2025 về việc "Khiếu kiện quyết định hành chính về quản lý đất đai".'));
   assert.ok(reflowed.includes('Do Bản án hành chính sơ thẩm số 126/2025/HC-ST ngày 22/4/2025 của Tòa án nhân dân Thành phố Hồ Chí Minh bị kháng cáo.'));
@@ -195,8 +199,11 @@ test('Legal Document Formatter: Nối dòng bị gãy từ PDF và phân tách c
   assert.equal(parsed.sections.length, 3);
   assert.equal(parsed.sections[1].title, 'NỘI DUNG VỤ ÁN');
   assert.equal(parsed.sections[2].title, 'NHẬN ĐỊNH CỦA TÒA ÁN');
+  assert.equal(parsed.sections[2].blocks.length, 2);
   assert.equal(parsed.sections[2].blocks[0].type, 'numbered_point');
   assert.equal(parsed.sections[2].blocks[0].badge, '[1]');
+  assert.ok(parsed.sections[2].blocks[0].body.includes('Đơn kháng cáo hợp lệ. Tòa án cấp sơ thẩm thụ lý giải quyết là đúng thẩm quyền'));
+  assert.equal(parsed.sections[2].blocks[1].badge, '[2]');
 });
 
 
