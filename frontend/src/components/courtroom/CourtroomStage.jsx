@@ -94,6 +94,7 @@ export default function CourtroomStage({
   session,
   view,
   records = [],
+  focusedRecordId = null,
   onHistory,
   onReadFull,
   onSelectRecord,
@@ -230,10 +231,29 @@ export default function CourtroomStage({
     setHasNewMessageWhileScrolledUp(false);
   }
 
-  function handleToggleSpeechForRecord(rec, role, text) {
-    if (!rec?._id) return;
-    const isThisSpeaking = Boolean(speakingRecordId === rec._id && !isPaused);
-    const isThisPaused = Boolean(speakingRecordId === rec._id && isPaused);
+  function resolveRecordSpeech(rec, idx = 0) {
+    const recordKey = String(rec?._id || `turn-${idx}`);
+    const speaker = getSpeakerInfo(rec, session);
+    const role = speaker?.actor || actorFor(rec);
+    const rawContent = rec?.display_content ?? rec?.content ?? '';
+    const text =
+      dialogueText(rawContent, session?.case_id?.evidence_inventory) ||
+      String(rawContent).trim();
+    return { recordKey, speaker, role, text };
+  }
+
+  function handleToggleSpeechForRecord(rec, idx = 0) {
+    if (!rec) return;
+    const { recordKey, role, text } = resolveRecordSpeech(rec, idx);
+    if (!text) return;
+
+    if (rec._id) {
+      onSelectRecord?.(rec._id);
+    }
+
+    const activeIdStr = speakingRecordId != null ? String(speakingRecordId) : null;
+    const isThisSpeaking = Boolean(activeIdStr === recordKey && !isPaused);
+    const isThisPaused = Boolean(activeIdStr === recordKey && isPaused);
 
     if (isThisSpeaking) {
       pauseCourtroomSpeech();
@@ -241,49 +261,54 @@ export default function CourtroomStage({
       resumeCourtroomSpeech();
     } else {
       unlockCourtroomAudio();
-      stopCourtroomSpeech();
-      setSpeakingRecordId(rec._id);
+      setSpeakingRecordId(recordKey);
       setIsPaused(false);
       speakCourtroomText(text, {
         role,
-        recordId: rec._id,
+        recordId: recordKey,
         isManual: true,
         onStart: () => {
-          setSpeakingRecordId(rec._id);
+          setSpeakingRecordId(recordKey);
           setIsPaused(false);
         },
         onEnd: () => {
-          setSpeakingRecordId((cur) => (cur === rec._id ? null : cur));
+          setSpeakingRecordId((cur) => (String(cur) === recordKey ? null : cur));
           setIsPaused(false);
         },
         onError: () => {
-          setSpeakingRecordId((cur) => (cur === rec._id ? null : cur));
+          setSpeakingRecordId((cur) => (String(cur) === recordKey ? null : cur));
           setIsPaused(false);
         },
       });
     }
   }
 
-  function handleReplaySpeechForRecord(rec, role, text) {
-    if (!rec?._id) return;
+  function handleReplaySpeechForRecord(rec, idx = 0) {
+    if (!rec) return;
+    const { recordKey, role, text } = resolveRecordSpeech(rec, idx);
+    if (!text) return;
+
+    if (rec._id) {
+      onSelectRecord?.(rec._id);
+    }
+
     unlockCourtroomAudio();
-    stopCourtroomSpeech();
-    setSpeakingRecordId(rec._id);
+    setSpeakingRecordId(recordKey);
     setIsPaused(false);
     speakCourtroomText(text, {
       role,
-      recordId: rec._id,
+      recordId: recordKey,
       isManual: true,
       onStart: () => {
-        setSpeakingRecordId(rec._id);
+        setSpeakingRecordId(recordKey);
         setIsPaused(false);
       },
       onEnd: () => {
-        setSpeakingRecordId((cur) => (cur === rec._id ? null : cur));
+        setSpeakingRecordId((cur) => (String(cur) === recordKey ? null : cur));
         setIsPaused(false);
       },
       onError: () => {
-        setSpeakingRecordId((cur) => (cur === rec._id ? null : cur));
+        setSpeakingRecordId((cur) => (String(cur) === recordKey ? null : cur));
         setIsPaused(false);
       },
     });
@@ -494,22 +519,26 @@ export default function CourtroomStage({
               aria-label="Danh sách tin nhắn phát biểu trong phiên tòa"
             >
               {displayRecords.map((rec, idx) => {
-                const speaker = getSpeakerInfo(rec, session);
-                const isRecordSpeaking = speakingRecordId === rec._id && !isPaused;
-                const isRecordPaused = speakingRecordId === rec._id && isPaused;
-                const contentText = dialogueText(
-                  rec.display_content ?? rec.content,
-                  session?.case_id?.evidence_inventory
-                ) || 'Chưa hiển thị được phản hồi này. Hãy tải lại phiên.';
+                const { recordKey, speaker, text: resolvedText } = resolveRecordSpeech(rec, idx);
+                const activeIdStr = speakingRecordId != null ? String(speakingRecordId) : null;
+                const isRecordSpeaking = Boolean(activeIdStr === recordKey && !isPaused);
+                const isRecordPaused = Boolean(activeIdStr === recordKey && isPaused);
+                const selectedKey = focusedRecordId != null
+                  ? String(focusedRecordId)
+                  : view?.record?._id != null
+                  ? String(view.record._id)
+                  : null;
+                const isSelectedBubble = Boolean(selectedKey && selectedKey === recordKey);
+                const contentText = resolvedText || 'Chưa hiển thị được phản hồi này. Hãy tải lại phiên.';
 
                 return (
                   <div
-                    key={rec._id || idx}
-                    id={`record-${rec._id}`}
+                    key={recordKey}
+                    id={`record-${recordKey}`}
                     className={`dialogue-bubble bubble-${speaker.actor} ${
                       isRecordSpeaking ? 'is-speaking-bubble' : ''
-                    } ${view?.record?._id === rec._id ? 'is-selected-bubble' : ''}`}
-                    onClick={() => onSelectRecord?.(rec._id)}
+                    } ${isSelectedBubble ? 'is-selected-bubble' : ''}`}
+                    onClick={() => rec._id && onSelectRecord?.(rec._id)}
                   >
                     <div className="bubble-header">
                       <div className="bubble-speaker-info">
@@ -528,7 +557,10 @@ export default function CourtroomStage({
                       <div className="bubble-meta">
                         <button
                           type="button"
-                          onClick={() => handleToggleSpeechForRecord(rec, speaker.actor, contentText)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleSpeechForRecord(rec, idx);
+                          }}
                           className={`bubble-header-voice-btn ${isRecordSpeaking ? 'is-speaking' : isRecordPaused ? 'is-paused' : ''}`}
                           title={isRecordSpeaking ? 'Tạm dừng đọc' : 'Bấm để nghe phát biểu này'}
                           aria-label={isRecordSpeaking ? 'Tạm dừng' : 'Nghe phát biểu này'}
@@ -570,9 +602,15 @@ export default function CourtroomStage({
                             className="speech-citations-chip"
                             role="button"
                             tabIndex={0}
-                            onClick={() => onReadFull(rec)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onReadFull(rec);
+                            }}
                             onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') onReadFull(rec);
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.stopPropagation();
+                                onReadFull(rec);
+                              }
                             }}
                             title="Bấm để xem chi tiết căn cứ pháp luật và toàn văn lời thoại"
                             aria-label="Căn cứ pháp lý trích dẫn"
@@ -612,7 +650,10 @@ export default function CourtroomStage({
                     <div className="bubble-footer">
                       <button
                         type="button"
-                        onClick={() => handleToggleSpeechForRecord(rec, speaker.actor, contentText)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleSpeechForRecord(rec, idx);
+                        }}
                         aria-label={
                           isRecordSpeaking
                             ? 'Tạm dừng đọc lượt này'
@@ -643,7 +684,10 @@ export default function CourtroomStage({
 
                       <button
                         type="button"
-                        onClick={() => handleReplaySpeechForRecord(rec, speaker.actor, contentText)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleReplaySpeechForRecord(rec, idx);
+                        }}
                         className="bubble-replay-btn"
                         aria-label="Phát lại lời thoại từ đầu"
                         title="Phát lại toàn bộ lời thoại này từ đầu"
@@ -654,7 +698,10 @@ export default function CourtroomStage({
 
                       <button
                         type="button"
-                        onClick={() => onReadFull(rec)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onReadFull(rec);
+                        }}
                         className="bubble-expand-btn"
                         aria-label="Phóng to lời thoại"
                       >

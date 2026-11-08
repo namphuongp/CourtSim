@@ -83,3 +83,22 @@ test('aiVoiceService: normalizeVietnameseSpeechForTts chuẩn hóa ngữ âm ti�
   assert.ok(normalized.includes('Tòa án nhân dân'), 'Mở rộng TAND');
   assert.ok(normalized.includes('ông Đ'), 'Không ngắt dấu chấm sau tên viết tắt');
 });
+
+test('aiVoiceService: các tin nhắn khác nhau (Chủ tọa, Luật sư, Bên đối lập) tạo ra luồng âm thanh riêng biệt, không bao giờ đọc lặp cùng 1 nội dung', async () => {
+  clearSpeechCache();
+  const judgeMsg = 'Hội đồng xét xử tuyên bố mở phiên tòa xét xử vụ án dân sự sơ thẩm.';
+  const lawyerMsg = 'Kính thưa Hội đồng xét xử, phía nguyên đơn đề nghị buộc bị đơn hoàn trả số tiền 500.000.000 đồng.';
+  const opponentMsg = 'Thưa Hội đồng xét xử, phía bị đơn bác bỏ toàn bộ yêu cầu khởi kiện vì chưa có chứng cứ giao tiền.';
+
+  const resJudge = await generateCourtroomSpeech({ text: judgeMsg, role: 'judge' });
+  const resLawyer = await generateCourtroomSpeech({ text: lawyerMsg, role: 'learner' });
+  const resOpponent = await generateCourtroomSpeech({ text: opponentMsg, role: 'opponent' });
+
+  assert.equal(resJudge.cached, false);
+  assert.equal(resLawyer.cached, false, 'Tin nhắn của luật sư không được lấy nhầm cache của chủ tọa');
+  assert.equal(resOpponent.cached, false, 'Tin nhắn của bên đối lập không được lấy nhầm cache trước đó');
+
+  assert.notDeepEqual(resJudge.buffer, resLawyer.buffer, 'Âm thanh của luật sư phải khác âm thanh của chủ tọa');
+  assert.notDeepEqual(resLawyer.buffer, resOpponent.buffer, 'Âm thanh của bên đối lập phải khác âm thanh của luật sư');
+  assert.notDeepEqual(resJudge.buffer, resOpponent.buffer, 'Âm thanh của bên đối lập phải khác âm thanh của chủ tọa');
+});

@@ -37,8 +37,10 @@ export default function Transcript({ session, records = [], selected, onSelect, 
 
   function handleTogglePlay(record) {
     if (!record?._id) return;
-    const isThisSpeaking = speakingId === record._id && !isPaused;
-    const isThisPaused = speakingId === record._id && isPaused;
+    const recordKey = String(record._id);
+    const activeIdStr = speakingId != null ? String(speakingId) : null;
+    const isThisSpeaking = activeIdStr === recordKey && !isPaused;
+    const isThisPaused = activeIdStr === recordKey && isPaused;
 
     if (isThisSpeaking) {
       pauseCourtroomSpeech();
@@ -46,10 +48,10 @@ export default function Transcript({ session, records = [], selected, onSelect, 
       resumeCourtroomSpeech();
     } else {
       unlockCourtroomAudio();
-      stopCourtroomSpeech();
-      const text = dialogueText(record.display_content ?? record.content, session?.case_id?.evidence_inventory);
-      const role = actorFor(record);
-      speakCourtroomText(text, { role, recordId: record._id, isManual: true });
+      const rawContent = record.display_content ?? record.content ?? '';
+      const text = dialogueText(rawContent, session?.case_id?.evidence_inventory) || String(rawContent).trim();
+      const role = getSpeakerInfo(record, session)?.actor || actorFor(record);
+      speakCourtroomText(text, { role, recordId: recordKey, isManual: true });
     }
   }
 
@@ -152,10 +154,10 @@ export default function Transcript({ session, records = [], selected, onSelect, 
                     type="button"
                     onClick={() => handleTogglePlay(record)}
                     className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-md bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200 transition-colors cursor-pointer"
-                    aria-label={speakingId === record._id && !isPaused ? 'Tạm dừng đọc' : 'Nghe đọc lượt này'}
+                    aria-label={String(speakingId) === String(record._id) && !isPaused ? 'Tạm dừng đọc' : 'Nghe đọc lượt này'}
                   >
-                    {speakingId === record._id && !isPaused ? <Pause size={12} /> : speakingId === record._id && isPaused ? <Play size={12} /> : <Volume2 size={12} />}
-                    <span>{speakingId === record._id && !isPaused ? 'Đang đọc' : speakingId === record._id && isPaused ? 'Tiếp tục' : 'Nghe đọc'}</span>
+                    {String(speakingId) === String(record._id) && !isPaused ? <Pause size={12} /> : String(speakingId) === String(record._id) && isPaused ? <Play size={12} /> : <Volume2 size={12} />}
+                    <span>{String(speakingId) === String(record._id) && !isPaused ? 'Đang đọc' : String(speakingId) === String(record._id) && isPaused ? 'Tiếp tục' : 'Nghe đọc'}</span>
                   </button>
                   <button type="button" onClick={() => onSelect(record._id)} aria-label={`Xem tại phiên tòa: ${label}`}>
                     Xem tại phiên tòa

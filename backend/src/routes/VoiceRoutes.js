@@ -51,7 +51,10 @@ router.post('/tts', asyncHandler(async (request, response) => {
   response.set({
     'Content-Type': contentType || 'audio/mpeg',
     'Content-Length': buffer.length,
-    'Cache-Control': 'public, max-age=86400',
+    'Cache-Control': 'private, no-store, no-cache, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
+    'Vary': '*',
     'X-TTS-Cached': cached ? '1' : '0',
     'X-TTS-Engine': engine || 'openai'
   });

@@ -172,8 +172,8 @@ export function normalizeVietnameseSpeechForTts(rawText) {
 /**
  * Tạo hàm băm khóa cache
  */
-function getCacheKey(voice, speed, text) {
-  return crypto.createHash('sha256').update(`${voice}:${speed}:${text}`).digest('hex');
+function getCacheKey(role, voice, speed, text) {
+  return crypto.createHash('sha256').update(`${role || 'default'}:${voice}:${speed}:${text}`).digest('hex');
 }
 
 function splitIntoSpeechChunks(text, maxChunkLength = 175) {
@@ -300,7 +300,7 @@ export async function generateCourtroomSpeech({ text, role = 'judge', customVoic
     ? customSpeed
     : roleConfig.speed;
 
-  const cacheKey = getCacheKey(voice, speed, speechText);
+  const cacheKey = getCacheKey(role, voice, speed, speechText);
 
   // 1. Kiểm tra cache trong bộ nhớ (Phát tức thì < 2ms)
   if (audioCache.has(cacheKey)) {
