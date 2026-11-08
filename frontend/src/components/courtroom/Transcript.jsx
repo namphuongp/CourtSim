@@ -56,9 +56,24 @@ export default function Transcript({ session, records = [], selected, onSelect, 
   }
 
   if (fullRecord) {
+    const fullRecordKey = String(fullRecord._id || '');
+    const isFullSpeaking = Boolean(fullRecordKey && String(speakingId) === fullRecordKey && !isPaused);
+    const isFullPaused = Boolean(fullRecordKey && String(speakingId) === fullRecordKey && isPaused);
     return (
       <article className="transcript-full">
-        <h3>{getSpeakerInfo(fullRecord, session).name}</h3>
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <h3 className="m-0">{getSpeakerInfo(fullRecord, session).name}</h3>
+          {fullRecord._id && (
+            <button
+              type="button"
+              onClick={() => handleTogglePlay(fullRecord)}
+              className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-md bg-sky-500/20 text-sky-300 hover:bg-sky-500/30 border border-sky-400/30 transition-colors cursor-pointer"
+            >
+              {isFullSpeaking ? <Pause size={12} /> : isFullPaused ? <Play size={12} /> : <Volume2 size={12} />}
+              <span>{isFullSpeaking ? 'Đang đọc' : isFullPaused ? 'Tiếp tục' : 'Nghe đọc'}</span>
+            </button>
+          )}
+        </div>
         <RecordContent record={fullRecord} session={session} />
       </article>
     );
