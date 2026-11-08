@@ -4,6 +4,7 @@ import { memberEvaluation } from '../src/services/membershipAccess.js';
 import { getTrialStageIndex } from '../../frontend/src/services/courtroom.js';
 import { sanitizeTextForTts, ROLE_VOICE_MAP } from '../src/services/aiVoiceService.js';
 import { isClosingIntent, isExplicitEndByChat } from '../src/services/conversationPolicy.js';
+import { parseLegalDossierDocument, reflowVietnameseLegalText } from '../../shared/legalDocumentFormatter.mjs';
 
 test('memberEvaluation: Trả về kết quả đánh giá chuẩn xác, không bị lỗi 500 do khảo sát cũ', () => {
   const dummyResult = {
@@ -142,4 +143,60 @@ test('Trial Stages: 4 giai đoạn phiên xử được ánh xạ chính xác tr
   assert.equal(getTrialStageIndex({ status: 'completed' }), 3);
   assert.equal(getTrialStageIndex({ conversation: { concluded: true } }), 3);
 });
+
+test('Legal Document Formatter: Nối dòng bị gãy từ PDF và phân tách cấu trúc bản án rõ ràng', () => {
+  const brokenPdfJudgment = [
+    'TÒA ÁN NHÂN DÂN TỐI CAO',
+    'TÒA PHÚC THẨM',
+    'TẠI THÀNH PHỐ HỒ CHÍ MINH',
+    'Bản án số: 17/2026/HC-PT',
+    'Ngày 12 tháng 01 năm 2026.',
+    'V/v: "Khiếu kiện quyết định hành',
+    'chính về quản lý đất đai".',
+    'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM',
+    'Độc lập – Tự do – Hạnh phúc',
+    'NHÂN DANH',
+    'NƯỚC CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM',
+    'TÒA PHÚC THẨM TÒA ÁN NHÂN DÂN TỐI CAO',
+    'TẠI THÀNH PHỐ HỒ CHÍ MINH',
+    '- Thành phần Hội đồng xét xử phúc thẩm gồm có:',
+    'Chủ tọa – Chủ tọa phiên tòa: Bà Lê Thị Tuyết Trinh',
+    'Các Chủ tọa: Bà Huỳnh Thanh Duyên',
+    'Ông Phan Đức Phương',
+    '- Thư ký phiên tòa: Ông Nguyễn Trọng Tâm - Thư ký Tòa phúc thẩm Tòa',
+    'án nhân dân tối cao tại Thành phố Hồ Chí Minh.',
+    '- Đại diện Viện Công tố và Kiểm sát xét xử phúc thẩm tại Thành phố Hồ',
+    'Chí Minh tham gia phiên tòa: Ông Đặng Quốc V - Kiểm sát viên.',
+    'Ngày 12 tháng 01 năm 2026, tại trụ sở Tòa phúc thẩm Tòa án nhân dân tối',
+    'cao tại Thành phố Hồ Chí Minh xét xử phúc thẩm công khai vụ án hành chính thụ',
+    'lý số 236/2025/TLPT-HC ngày 24/10/2025về việc "Khiếu kiện quyết định hành',
+    'chính về quản lý đất đai".',
+    'Do Bản án hành chính sơ thẩm số 126/2025/HC-ST ngày 22/4/2025 của',
+    'Tòa án nhân dân Thành phố Hồ Chí Minh bị kháng cáo.',
+    '-Người khởi kiện: Ông Hồ Thành L, sinh năm 1983 (có mặt).',
+    'Cư trú: A P, phường N, Quận A, Thành phố Hồ Chí Minh (nay là phường',
+    'B, Thành phố Hồ Chí Minh).',
+    'NỘI DUNG VỤ ÁN:',
+    'Theo đơn khởi kiện, ông Hồ Thành L yêu cầu hủy quyết định hành chính.',
+    'NHẬN ĐỊNH CỦA TÒA ÁN:',
+    '[1] Về tố tụng: Đơn kháng cáo hợp lệ.',
+  ].join('\n');
+
+  const reflowed = reflowVietnameseLegalText(brokenPdfJudgment);
+  assert.ok(reflowed.includes('V/v: "Khiếu kiện quyết định hành chính về quản lý đất đai".'));
+  assert.ok(reflowed.includes('Thư ký Tòa phúc thẩm Tòa án nhân dân tối cao tại Thành phố Hồ Chí Minh.'));
+  assert.ok(reflowed.includes('ngày 24/10/2025 về việc "Khiếu kiện quyết định hành chính về quản lý đất đai".'));
+  assert.ok(reflowed.includes('Do Bản án hành chính sơ thẩm số 126/2025/HC-ST ngày 22/4/2025 của Tòa án nhân dân Thành phố Hồ Chí Minh bị kháng cáo.'));
+  assert.ok(reflowed.includes('(nay là phường B, Thành phố Hồ Chí Minh).'));
+
+  const parsed = parseLegalDossierDocument(brokenPdfJudgment);
+  assert.ok(parsed.preamble);
+  assert.equal(parsed.preamble.subjectLine, 'V/v: "Khiếu kiện quyết định hành chính về quản lý đất đai".');
+  assert.equal(parsed.sections.length, 3);
+  assert.equal(parsed.sections[1].title, 'NỘI DUNG VỤ ÁN');
+  assert.equal(parsed.sections[2].title, 'NHẬN ĐỊNH CỦA TÒA ÁN');
+  assert.equal(parsed.sections[2].blocks[0].type, 'numbered_point');
+  assert.equal(parsed.sections[2].blocks[0].badge, '[1]');
+});
+
 
