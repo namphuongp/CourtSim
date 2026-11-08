@@ -2400,6 +2400,7 @@ body .courtroom-page .voice-rate-btn strong {
   cursor: pointer;
   transition: all 0.15s ease;
   line-height: 1.2;
+  white-space: nowrap;
 }
 .bubble-header-voice-btn:hover {
   background: rgba(56, 189, 248, 0.3);
@@ -2440,37 +2441,6 @@ body .courtroom-page .voice-rate-btn strong {
   background: rgba(59, 130, 246, 0.25);
   border-color: #60a5fa;
   color: #ffffff;
-}
-
-.bubble-header-voice-btn {
-  background: transparent;
-  border: 1px solid transparent;
-  color: #94a3b8;
-  border-radius: 4px;
-  width: 22px;
-  height: 22px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  padding: 0;
-  margin-left: 2px;
-}
-.bubble-header-voice-btn:hover {
-  background: rgba(59, 130, 246, 0.2);
-  border-color: rgba(96, 165, 250, 0.4);
-  color: #38bdf8;
-}
-.bubble-header-voice-btn.is-speaking {
-  color: #38bdf8;
-  background: rgba(14, 165, 233, 0.25);
-  border-color: #38bdf8;
-}
-.bubble-header-voice-btn.is-paused {
-  color: #fbbf24;
-  background: rgba(245, 158, 11, 0.25);
-  border-color: #fbbf24;
 }
 
 body .court-speech.court-dialogue-stream.is-stream-expanded {

@@ -545,38 +545,29 @@ export function getSpeakingRecordId() {
   return currentSpeakingRecordId;
 }
 
-function getSharedAudio() {
-  if (typeof Audio === 'undefined') return null;
-  if (!activeAudio) {
-    activeAudio = new Audio();
-    activeAudio.preload = 'auto';
-  }
-  return activeAudio;
-}
+let unlockAudioEl = null;
 
 /**
- * Mở khóa HTMLAudioElement ngay trong sự kiện click/submit của người dùng
- * để trình duyệt không chặn Autoplay khi AI trả lời sau vài giây.
+ * Mở khóa quyền phát âm thanh của trình duyệt trên một phần tử Audio tách biệt hoàn toàn
+ * để tuyệt đối không bao giờ chạm vào hoặc làm gián đoạn activeAudio đang đọc lời thoại.
  */
 export function unlockCourtroomAudio() {
-  const audio = getSharedAudio();
-  if (!audio) return;
+  if (typeof Audio === 'undefined') return;
   try {
-    if (audio.paused && !currentSpeakingRecordId) {
-      // Phát 1 frame WAV câm siêu ngắn để mở khóa quyền phát âm thanh của tab
-      audio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
-      audio.volume = 0.01;
-      const p = audio.play();
+    if (!unlockAudioEl) {
+      unlockAudioEl = new Audio();
+      unlockAudioEl.preload = 'auto';
+    }
+    if (unlockAudioEl.paused && !currentSpeakingRecordId) {
+      // Phát 1 frame WAV câm siêu ngắn trên phần tử riêng biệt để mở khóa quyền Autoplay của tab
+      unlockAudioEl.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+      unlockAudioEl.volume = 0.01;
+      const p = unlockAudioEl.play();
       if (p && typeof p.then === 'function') {
         p.then(() => {
-          audio.pause();
-          audio.currentTime = 0;
-          audio.volume = 1;
-        }).catch(() => {
-          audio.volume = 1;
-        });
-      } else {
-        audio.volume = 1;
+          unlockAudioEl.pause();
+          unlockAudioEl.currentTime = 0;
+        }).catch(() => {});
       }
     }
   } catch { /* Bỏ qua */ }
@@ -660,16 +651,38 @@ export function isSpeakingCourtroom() {
   return Boolean(currentSpeakingRecordId) || Boolean(activeAudio && !activeAudio.paused) || Boolean(activeUtterance);
 }
 
+function hashSpeechSegment(role, segmentText) {
+  const input = `${role || 'judge'}:${segmentText || ''}`;
+  let h1 = 0x811c9dc5;
+  let h2 = 0x01000193;
+  for (let i = 0; i < input.length; i++) {
+    const ch = input.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 0x01000193);
+    h2 = Math.imul(h2 ^ ch, 0x811c9dc5);
+  }
+  return `${(h1 >>> 0).toString(36)}_${(h2 >>> 0).toString(36)}_${input.length}`;
+}
+
 async function fetchSegmentBlob(segmentText, role, signal) {
-  const cacheKey = `${role}:${segmentText}`;
+  const normalizedRole = role || 'judge';
+  const cacheKey = `${normalizedRole}:${segmentText}`;
   if (clientAudioCache.has(cacheKey)) {
     return clientAudioCache.get(cacheKey);
   }
-  const response = await api.post('/v1/voice/tts', { text: segmentText, role }, {
-    responseType: 'blob',
-    signal,
-    timeout: 15_000,
-  });
+  const segmentHash = hashSpeechSegment(normalizedRole, segmentText);
+  const response = await api.post(
+    `/v1/voice/tts?r=${encodeURIComponent(normalizedRole)}&h=${encodeURIComponent(segmentHash)}`,
+    { text: segmentText, role: normalizedRole },
+    {
+      responseType: 'blob',
+      signal,
+      timeout: 15_000,
+      headers: {
+        'Cache-Control': 'no-cache',
+        Pragma: 'no-cache',
+      },
+    }
+  );
   const blob = response.data;
   if (!blob || !(blob instanceof Blob) || (blob.type && blob.type.includes('json'))) {
     throw new Error('Dữ liệu âm thanh từ máy chủ không hợp lệ.');
@@ -705,13 +718,14 @@ export function speakCourtroomText(text, { role = 'judge', recordId = null, isMa
   const clean = cleanTextForSpeech(text);
   if (!clean) return () => {};
 
+  const normalizedRecordId = recordId != null ? String(recordId) : null;
   const now = Date.now();
-  const callKey = `${role}:${recordId || clean.slice(0, 100)}`;
+  const callKey = `${role}:${normalizedRecordId || clean.slice(0, 100)}:${clean.length}`;
   // Deduplication: Chặn gọi lại cùng một câu/bản ghi trong vòng 1.2 giây (chỉ áp dụng cho tự động đọc)
   if (!isManual && lastSpeakingCall.key === callKey && now - lastSpeakingCall.timestamp < 1200) {
     return () => {};
   }
-  lastSpeakingCall = { key: callKey, recordId, timestamp: now };
+  lastSpeakingCall = { key: callKey, recordId: normalizedRecordId, timestamp: now };
 
   if (isManual) {
     manualSpeakingActive = true;
@@ -725,12 +739,12 @@ export function speakCourtroomText(text, { role = 'judge', recordId = null, isMa
   }
 
   const sessionId = ++activeSpeechSessionId;
-  currentSpeakingRecordId = recordId || `speech-${sessionId}`;
+  currentSpeakingRecordId = normalizedRecordId || `speech-${sessionId}`;
   isPausedState = false;
   if (isManual) {
     manualSpeakingActive = true;
   }
-  pendingBlockedSpeech = { text, options: { role, recordId, onStart, onEnd, onError } };
+  pendingBlockedSpeech = { text, options: { role, recordId: normalizedRecordId, isManual, onStart, onEnd, onError } };
   notifySpeechListeners();
 
   const abortController = new AbortController();
@@ -818,21 +832,33 @@ export function speakCourtroomText(text, { role = 'judge', recordId = null, isMa
         resolve();
         return;
       }
+      if (activeAudio) {
+        try {
+          activeAudio.onplay = null;
+          activeAudio.onended = null;
+          activeAudio.onerror = null;
+          activeAudio.pause();
+        } catch { /* Bỏ qua */ }
+        activeAudio = null;
+      }
       if (currentAudioUrl) {
         URL.revokeObjectURL(currentAudioUrl);
         currentAudioUrl = null;
       }
       const audioUrl = URL.createObjectURL(blob);
       currentAudioUrl = audioUrl;
-      const audio = getSharedAudio() || new Audio();
+      const audio = new Audio(audioUrl);
+      audio.preload = 'auto';
       activeAudio = audio;
       audio.volume = 1;
       audio.defaultPlaybackRate = currentSpeechRate;
       audio.playbackRate = currentSpeechRate;
-      audio.src = audioUrl;
 
       const cleanup = () => {
         abortController.signal.removeEventListener('abort', onAbort);
+        audio.onplay = null;
+        audio.onended = null;
+        audio.onerror = null;
         if (currentAudioUrl === audioUrl) {
           URL.revokeObjectURL(audioUrl);
           currentAudioUrl = null;
@@ -845,6 +871,7 @@ export function speakCourtroomText(text, { role = 'judge', recordId = null, isMa
           audio.pause();
           audio.currentTime = 0;
         } catch { /* Bỏ qua */ }
+        if (activeAudio === audio) activeAudio = null;
         resolve();
       };
       abortController.signal.addEventListener('abort', onAbort, { once: true });
@@ -857,10 +884,12 @@ export function speakCourtroomText(text, { role = 'judge', recordId = null, isMa
       };
       audio.onended = () => {
         cleanup();
+        if (activeAudio === audio) activeAudio = null;
         resolve();
       };
       audio.onerror = (err) => {
         cleanup();
+        if (activeAudio === audio) activeAudio = null;
         reject(err);
       };
 
@@ -868,6 +897,7 @@ export function speakCourtroomText(text, { role = 'judge', recordId = null, isMa
       if (playPromise && typeof playPromise.catch === 'function') {
         playPromise.catch((err) => {
           cleanup();
+          if (activeAudio === audio) activeAudio = null;
           if (isAutoplayBlockedError(err)) {
             isAutoplayBlockedState = true;
             notifyAutoplayBlocked(true);
@@ -936,14 +966,14 @@ export function stopCourtroomSpeech({ keepManual = false } = {}) {
   }
 
   if (activeAudio) {
+    const audioToStop = activeAudio;
+    activeAudio = null;
     try {
-      activeAudio.onplay = null;
-      activeAudio.onended = null;
-      activeAudio.onerror = null;
-      activeAudio.pause();
-      activeAudio.currentTime = 0;
-      activeAudio.removeAttribute('src');
-      activeAudio.load();
+      audioToStop.onplay = null;
+      audioToStop.onended = null;
+      audioToStop.onerror = null;
+      audioToStop.pause();
+      audioToStop.currentTime = 0;
     } catch { /* Bỏ qua */ }
   }
 

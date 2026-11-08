@@ -79,7 +79,8 @@ function Room({ sessionId }) {
   // Phát đúng một lời thoại cụ thể và ghi nhận đã đọc để chế độ tự động không đọc lặp lại.
   function speakRecord(record, { manual }) {
     if (!record?._id) return;
-    const text = dialogueText(record.display_content || record.content, session?.case_id?.evidence_inventory);
+    const rawContent = record.display_content ?? record.content ?? '';
+    const text = dialogueText(rawContent, session?.case_id?.evidence_inventory) || String(rawContent).trim();
     if (!text) return;
     const recordId = String(record._id);
     autoSpokenRecordIdsRef.current.add(recordId);
@@ -102,7 +103,6 @@ function Room({ sessionId }) {
     const target = (preferId && records.find((r) => String(r._id) === String(preferId)))
       || records.filter((r) => r?._id && r.sender_type !== 'user').at(-1);
     if (target) {
-      stopCourtroomSpeech();
       speakRecord(target, { manual: true });
     }
   }
@@ -294,6 +294,7 @@ function Room({ sessionId }) {
         setRecords((current) => [...new Map([...current, ...data.data].map((r) => [r._id, r])).values()]);
       }
       setSelectedId(null);
+      setFocusedRecordId(null);
       setDraft({ content: '', request_id: crypto.randomUUID() });
     } catch (error) {
       setState((s) => ({ ...s, error: getApiError(error, 'Chưa thể gửi lập luận. Nội dung bạn viết vẫn được giữ lại. Vui lòng thử lại.') }));
@@ -322,6 +323,7 @@ function Room({ sessionId }) {
     unlockCourtroomAudio();
     busy.current = true;
     setSelectedId(null);
+    setFocusedRecordId(null);
     setState(s => ({ ...s, sending: true, error: '' }));
     try {
       const { data } = await postDialogue(sessionId, { action, revision: conversation.revision }, setStreamedSpeech);
@@ -444,12 +446,13 @@ function Room({ sessionId }) {
 
   function selectRecord(id) {
     // Chỉ đổi lời đang xem; không tiến cursor hoặc gọi model khi duyệt biên bản.
-    setFocusedRecordId(id);
+    setFocusedRecordId(id ? String(id) : null);
     setSelectedId(id === conversation?.current_record_id ? null : id);
     setPanel(null);
   }
   function returnToCurrent() {
     setSelectedId(null);
+    setFocusedRecordId(null);
     requestAnimationFrame(() => document.querySelector('.speech-content, .dialogue-messages-scroll')?.focus({ preventScroll: true }));
   }
   const view = streamedSpeech?.content && state.sending ? { record: { _id: 'streaming', content: streamedSpeech.content, sender_type: streamedSpeech.role === 'judge' ? 'ai_judge' : 'ai_prosecutor' }, actor: streamedSpeech.role, streaming: true }
@@ -690,6 +693,7 @@ function Room({ sessionId }) {
         pendingSpeaker={state.sending && !submittedContent && ['judge', 'opponent'].includes(conversation?.next_speaker) ? conversation.next_speaker : null}
         view={view}
         records={records}
+        focusedRecordId={focusedRecordId}
         onSelectRecord={selectRecord}
         navigationDisabled={state.sending || state.ending || session?.processing}
         onHistory={() => setPanel('history')}
