@@ -71,17 +71,24 @@ test('aiVoiceService: hỗ trợ đầy đủ các vai tố tụng (Chủ tọa,
   }
 });
 
-test('aiVoiceService: normalizeVietnameseSpeechForTts chuẩn hóa ngữ âm tiếng Việt tự nhiên', () => {
-  const input = "Kính thưa HĐXX, căn cứ ngày 18/12/2015 do ông Đ. viện dẫn với số tiền 1.600.000.000 đồng, lãi 2% theo Điều 463 BLDS tại TAND tỉnh.";
+test('aiVoiceService: normalizeVietnameseSpeechForTts chuẩn hóa ngữ âm tiếng Việt tự nhiên và triệt tiêu ký tự dễ đọc sang tiếng Anh', () => {
+  const input =
+    'Kính thưa HĐXX tại Giai đoạn III, căn cứ Bản án số 17/2026/HC-PT ngày 18/12/2015 do ông Đ. và Ông Hồ Thành L tại phường B viện dẫn diện tích 150m2 với số tiền 1.600.000.000 đồng, lãi 2% theo điểm b khoản 1 Điều 463 BLDS tại TAND tỉnh.';
   const normalized = normalizeVietnameseSpeechForTts(input);
 
   assert.ok(normalized.includes('Hội đồng xét xử'), 'Mở rộng HĐXX thành Hội đồng xét xử');
+  assert.ok(normalized.includes('Giai đoạn 3'), 'Chuyển Giai đoạn III thành Giai đoạn 3');
+  assert.ok(normalized.includes('17 năm 2026 hành chính phúc thẩm'), 'Mở rộng mã bản án 17/2026/HC-PT sang tiếng Việt');
   assert.ok(normalized.includes('ngày 18 tháng 12 năm 2015'), 'Đọc ngày tháng tự nhiên');
+  assert.ok(normalized.includes('150 mét vuông'), 'Đọc đơn vị diện tích 150m2 sang tiếng Việt');
   assert.ok(normalized.includes('1 tỷ 600 triệu đồng'), 'Đọc số tiền lớn tự nhiên');
   assert.ok(normalized.includes('2 phần trăm'), 'Đọc phần trăm tự nhiên');
+  assert.ok(normalized.includes('điểm bê'), 'Phiên âm điểm b thành điểm bê');
   assert.ok(normalized.includes('Bộ luật Dân sự'), 'Mở rộng BLDS');
   assert.ok(normalized.includes('Tòa án nhân dân'), 'Mở rộng TAND');
-  assert.ok(normalized.includes('ông Đ'), 'Không ngắt dấu chấm sau tên viết tắt');
+  assert.ok(normalized.includes('ông Đê'), 'Phiên âm tên tắt ông Đ. thành ông Đê');
+  assert.ok(normalized.includes('Ông Hồ Thành Lờ'), 'Phiên âm tên tắt Ông Hồ Thành L thành Ông Hồ Thành Lờ');
+  assert.ok(normalized.includes('phường Bê'), 'Phiên âm phường B thành phường Bê');
 });
 
 test('aiVoiceService: các tin nhắn khác nhau (Chủ tọa, Luật sư, Bên đối lập) tạo ra luồng âm thanh riêng biệt, không bao giờ đọc lặp cùng 1 nội dung', async () => {

@@ -27,6 +27,7 @@ import {
   isAutoplayBlocked,
   isCourtroomSpeechPaused,
   pauseCourtroomSpeech,
+  prefetchCourtroomSpeech,
   resumeCourtroomSpeech,
   speakCourtroomText,
   stopCourtroomSpeech,
@@ -242,6 +243,35 @@ export default function CourtroomStage({
       String(rawContent).trim();
     return { recordKey, speaker, role, text };
   }
+
+  function handlePrefetchForRecord(rec, idx = 0) {
+    if (!rec || rec.streaming || rec.pending) return;
+    const { role, text } = resolveRecordSpeech(rec, idx);
+    if (text) {
+      prefetchCourtroomSpeech(text, { role });
+    }
+  }
+
+  // Tải trước câu mở đầu của 2 lượt thoại gần nhất để bấm "Nghe đọc" phát tức thì (0ms)
+  useEffect(() => {
+    if (!records?.length || view?.streaming) return;
+    const recent = records.slice(-2);
+    const timer = setTimeout(() => {
+      recent.forEach((rec, i) => {
+        if (!rec?._id) return;
+        const speaker = getSpeakerInfo(rec, session);
+        const role = speaker?.actor || actorFor(rec);
+        const rawContent = rec.display_content ?? rec.content ?? '';
+        const text =
+          dialogueText(rawContent, session?.case_id?.evidence_inventory) ||
+          String(rawContent).trim();
+        if (text) {
+          prefetchCourtroomSpeech(text, { role, idx: i });
+        }
+      });
+    }, 120);
+    return () => clearTimeout(timer);
+  }, [records, session, view?.streaming]);
 
   function handleToggleSpeechForRecord(rec, idx = 0) {
     if (!rec) return;
@@ -564,6 +594,8 @@ export default function CourtroomStage({
                       <div className="bubble-meta">
                         <button
                           type="button"
+                          onMouseEnter={() => handlePrefetchForRecord(rec, idx)}
+                          onFocus={() => handlePrefetchForRecord(rec, idx)}
                           onClick={(e) => {
                             e.stopPropagation();
                             handleToggleSpeechForRecord(rec, idx);
@@ -657,6 +689,8 @@ export default function CourtroomStage({
                     <div className="bubble-footer">
                       <button
                         type="button"
+                        onMouseEnter={() => handlePrefetchForRecord(rec, idx)}
+                        onFocus={() => handlePrefetchForRecord(rec, idx)}
                         onClick={(e) => {
                           e.stopPropagation();
                           handleToggleSpeechForRecord(rec, idx);
@@ -691,6 +725,8 @@ export default function CourtroomStage({
 
                       <button
                         type="button"
+                        onMouseEnter={() => handlePrefetchForRecord(rec, idx)}
+                        onFocus={() => handlePrefetchForRecord(rec, idx)}
                         onClick={(e) => {
                           e.stopPropagation();
                           handleReplaySpeechForRecord(rec, idx);
