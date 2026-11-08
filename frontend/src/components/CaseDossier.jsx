@@ -1,9 +1,10 @@
-import { useEffect, useId, useState } from 'react';
-import { FilePenLine, Stamp } from 'lucide-react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { BookOpen, ChevronDown, FilePenLine, Maximize2, Minimize2, Search, Stamp, Type, X } from 'lucide-react';
 import { roleLabel } from '../services/simulation';
 import { learnerText } from '../../../shared/learnerText.mjs';
 import { evidenceSummary } from '../../../shared/dialogueText.mjs';
 import { canCiteEvidence, EVIDENCE_ASSUMPTION, caseIntroduction, practiceText } from '../../../shared/casePresentation.mjs';
+import { parseLegalDossierDocument, reflowVietnameseLegalText } from '../../../shared/legalDocumentFormatter.mjs';
 import { draftKey, readDraft, saveDraft } from '../services/auth';
 import { EVIDENCE_MIME } from '../services/references';
 
@@ -14,6 +15,28 @@ function formatDocumentDate(dateStr) {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dateStr).trim());
   if (match) return `${match[3]}/${match[2]}/${match[1]}`;
   return dateStr;
+}
+
+function escapeRegExp(str) {
+  return String(str).replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+}
+
+function renderHighlightedText(text, query) {
+  if (!text) return null;
+  const trimmed = String(query ?? '').trim();
+  if (!trimmed) return text;
+  const regex = new RegExp(`(${escapeRegExp(trimmed)})`, 'giu');
+  const parts = String(text).split(regex);
+  if (parts.length === 1) return text;
+  return parts.map((part, idx) =>
+    idx % 2 === 1 ? (
+      <mark key={idx} className="dossier-doc-mark">
+        {part}
+      </mark>
+    ) : (
+      part
+    )
+  );
 }
 
 function resolveStampMeta(item, courtCase, index = 0) {
@@ -61,8 +84,14 @@ export default function CaseDossier({ courtCase, role, sessionId, onInsert, inse
   const [evidenceExpanded, setEvidenceExpanded] = useState(initialTab === 'evidence');
   const [tab, setTab] = useState(initialTab);
   const [evidenceSelected, setEvidenceSelected] = useState(null);
+  const [docSearch, setDocSearch] = useState('');
+  const [docFilterMatches, setDocFilterMatches] = useState(false);
+  const [docFontSize, setDocFontSize] = useState('md');
+  const [docExpandedHeight, setDocExpandedHeight] = useState(false);
+  const readerViewportRef = useRef(null);
   const evidenceId = useId();
   const noteInputId = useId();
+  const docSearchId = useId();
 
   const caseId = courtCase?._id || courtCase?.id || 'default';
   const sessionNoteKey = sessionId ? draftKey(`${sessionId}:notes`) : null;
@@ -81,6 +110,31 @@ export default function CaseDossier({ courtCase, role, sessionId, onInsert, inse
     saveDraft(caseNoteKey, { content: personalNotes });
   }, [sessionNoteKey, caseNoteKey, personalNotes]);
 
+  const rawFullDocument = useMemo(
+    () => (courtCase ? learnerText(practiceText(courtCase.full_document), 'Chưa có nội dung bổ sung.') : ''),
+    [courtCase]
+  );
+
+  const parsedDocument = useMemo(
+    () => parseLegalDossierDocument(rawFullDocument),
+    [rawFullDocument]
+  );
+
+  const normalizedSearch = docSearch.trim().toLowerCase();
+
+  const matchedBlocksCount = useMemo(() => {
+    if (!normalizedSearch) return 0;
+    let count = 0;
+    for (const sec of parsedDocument.sections) {
+      for (const blk of sec.blocks) {
+        if (blk.raw.toLowerCase().includes(normalizedSearch)) {
+          count += 1;
+        }
+      }
+    }
+    return count;
+  }, [parsedDocument, normalizedSearch]);
+
   if (!courtCase) return <p>Chưa tải được hồ sơ vụ án. Vui lòng đóng và mở lại.</p>;
   const c = courtCase;
   const introduction = caseIntroduction(c);
@@ -97,23 +151,35 @@ export default function CaseDossier({ courtCase, role, sessionId, onInsert, inse
     });
   }
 
+  function scrollToDocSection(sectionId) {
+    const container = readerViewportRef.current;
+    if (!container) return;
+    const target = container.querySelector(`[data-doc-section="${sectionId}"]`);
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  const preamble = parsedDocument.preamble;
+
   return <div className="case-dossier space-y-5 text-sm leading-7" data-view={tabbed ? tab : 'all'}>
     {tabbed && <nav className="case-dossier-tabs" aria-label="Các phần hồ sơ">{[['overview', 'Tổng quan'], ['parties', 'Các bên & yêu cầu'], ['evidence', 'Tài liệu gốc'], ['procedure', 'Hồ sơ tố tụng'], ['law', 'Căn cứ pháp lý']].map(([id, label]) => <button type="button" key={id} aria-pressed={tab === id} onClick={() => { setTab(id); if (id === 'evidence') setEvidenceExpanded(true); }}>{label}{id === 'evidence' ? ` (${c.evidence_inventory?.length ?? 0})` : ''}</button>)}</nav>}
     <div className="dossier-overview">
-    <div><p className="text-blue-400">{learnerText(c.category)}</p><h3 className="text-lg font-bold">{learnerText(introduction.title)}</h3><p>{learnerText(introduction.summary)}</p><p className="mt-2 font-semibold">Vai của bạn: {role ? roleLabel(role, c.category, c) : 'Chọn vai ở bước tiếp theo'}</p></div>
-    <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5"><h3 className="font-bold">Mốc thời gian</h3>{c.timeline?.length ? <ul className="space-y-2">{c.timeline.map((event, i) => <li key={i}><strong>{eventLabels[event.kind] ?? 'Sự kiện'} — {event.date || 'Chưa rõ ngày'}{event.date_to && event.date_to !== event.date ? ` đến ${event.date_to}` : ''}</strong><p>{learnerText(event.description)}</p></li>)}</ul> : <p>Chưa có mốc thời gian được nêu rõ trong hồ sơ.</p>}</section>
+    <div className="dossier-intro-banner"><p className="text-blue-400">{learnerText(c.category)}</p><h3 className="text-lg font-bold">{learnerText(introduction.title)}</h3><p className="dossier-intro-summary">{reflowVietnameseLegalText(learnerText(introduction.summary))}</p><p className="mt-2 font-semibold">Vai của bạn: {role ? roleLabel(role, c.category, c) : 'Chọn vai ở bước tiếp theo'}</p></div>
+    <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5"><h3 className="font-bold">Mốc thời gian</h3>{c.timeline?.length ? <ul className="dossier-timeline-list space-y-2">{c.timeline.map((event, i) => <li key={i}><strong>{eventLabels[event.kind] ?? 'Sự kiện'} — {event.date || 'Chưa rõ ngày'}{event.date_to && event.date_to !== event.date ? ` đến ${event.date_to}` : ''}</strong><p>{learnerText(event.description)}</p></li>)}</ul> : <p>Chưa có mốc thời gian được nêu rõ trong hồ sơ.</p>}</section>
     {!!introduction.developments.length && <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5" aria-label="Tóm tắt diễn biến"><h3 className="font-bold">Tóm tắt diễn biến</h3><ol className="mt-4 space-y-4">{introduction.developments.map((item, index) => <li key={item.title} className="flex gap-3"><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 font-semibold text-blue-700">{index + 1}</span><div><h4 className="font-semibold">{item.title}</h4><p>{item.text}</p></div></li>)}</ol></section>}
-    {c.practice_context && <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5"><h3 className="font-bold">Vấn đề cần làm rõ</h3><ul className="list-disc pl-5">{c.practice_context.issues?.map(text => <li key={text}>{practiceText(text)}</li>)}</ul></section>}
+    {c.practice_context && <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5"><h3 className="font-bold">Vấn đề cần làm rõ</h3><ul className="list-disc pl-5 space-y-1.5">{c.practice_context.issues?.map(text => <li key={text}>{practiceText(text)}</li>)}</ul></section>}
     </div>
-    <section className="dossier-parties rounded-2xl border border-slate-200 bg-white p-4 sm:p-5"><h3 className="font-bold">Các bên và yêu cầu</h3>{c.parties?.length ? c.parties.map((party, index) => <article key={index} className="mt-2 rounded-lg border border-slate-700 p-3"><strong>{{ plaintiff: 'Nguyên đơn', defendant: 'Bị đơn', other: 'Bên liên quan' }[party.side]}: {learnerText(party.name, 'Chưa có tên')}</strong>{party.claims?.length ? <ul className="list-disc pl-5">{party.claims.map((claim, i) => <li key={i}>{learnerText(practiceText(claim))}</li>)}</ul> : <p>Chưa có thông tin yêu cầu.</p>}</article>) : <p>Hồ sơ chưa cung cấp thông tin riêng về các bên và yêu cầu.</p>}</section>
+    <section className="dossier-parties rounded-2xl border border-slate-200 bg-white p-4 sm:p-5"><h3 className="font-bold">Các bên và yêu cầu</h3>{c.parties?.length ? c.parties.map((party, index) => <article key={index} className="mt-2 rounded-lg border border-slate-700 p-3"><strong>{{ plaintiff: 'Nguyên đơn', defendant: 'Bị đơn', other: 'Bên liên quan' }[party.side]}: {learnerText(party.name, 'Chưa có tên')}</strong>{party.claims?.length ? <ul className="list-disc pl-5 space-y-1.5 mt-1.5">{party.claims.map((claim, i) => <li key={i}>{learnerText(practiceText(claim))}</li>)}</ul> : <p>Chưa có thông tin yêu cầu.</p>}</article>) : <p>Hồ sơ chưa cung cấp thông tin riêng về các bên và yêu cầu.</p>}</section>
     <section className="dossier-evidence rounded-2xl border border-slate-200 bg-white p-4 sm:p-5"><div className="flex items-center justify-between gap-3"><h3 className="font-bold">Chứng cứ ({c.evidence_inventory?.length ?? 0})</h3><button type="button" aria-expanded={evidenceExpanded} aria-controls={evidenceId} onClick={() => setEvidenceExpanded(value => !value)} className="shrink-0 rounded-lg border border-blue-300 px-3 py-1 font-medium text-blue-700 hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">{evidenceExpanded ? 'Thu gọn chứng cứ' : 'Mở rộng chứng cứ'}</button></div><div id={evidenceId} hidden={!evidenceExpanded}><p className="mt-3">{EVIDENCE_ASSUMPTION}</p>{!c.evidence_inventory?.length && <p>Hồ sơ chưa có danh sách chứng cứ.</p>}
       <div className="evidence-and-note-layout">
       <div className={tabbed ? 'evidence-workspace' : ''}>{tabbed && !!c.evidence_inventory?.length && <nav className="evidence-list" aria-label="Danh sách tài liệu">{c.evidence_inventory.map((item, index) => <button type="button" key={item.id} data-evidence-select={item.id} aria-pressed={activeEvidence === item.id} onClick={() => setEvidenceSelected(item.id)}><span>{String(index + 1).padStart(2, '0')}</span><div><strong>{learnerText(item.name)}</strong><small>{learnerText(item.provided_by, 'Chưa rõ bên cung cấp')}</small></div></button>)}</nav>}<div className="evidence-detail">
       {c.evidence_inventory?.map((item, idx) => {
         const stamp = resolveStampMeta(item, c, idx);
-        const docBody = item.availability === 'provided' && item.content
+        const rawDocBody = item.availability === 'provided' && item.content
           ? practiceText(item.content)
           : (item.summary === item.source_quote ? item.summary : learnerText(evidenceSummary(item.summary)));
+        const docBody = reflowVietnameseLegalText(rawDocBody);
         return <article hidden={tabbed && activeEvidence !== item.id} id={'evidence-' + item.id} key={item.id} draggable={Boolean(onInsert) && !insertionDisabled && canCiteEvidence(item, c)} onDragStart={(event) => { if (!canCiteEvidence(item, c)) { event.preventDefault(); return; } event.dataTransfer.setData(EVIDENCE_MIME, item.id); event.dataTransfer.effectAllowed = 'copy'; }} className="mt-3 rounded-xl border border-slate-700 p-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h4 className="font-semibold">{learnerText(item.name)}</h4>
@@ -161,7 +227,7 @@ export default function CaseDossier({ courtCase, role, sessionId, onInsert, inse
           </div>
         </div>
 
-        <details><summary className="cursor-pointer underline">Chi tiết chứng cứ: {learnerText(item.name)}</summary>{item.proof_scope && <p>Phạm vi chứng minh: {item.proof_scope}</p>}{item.availability === 'provided' && item.content && <p className="whitespace-pre-wrap">{practiceText(item.content)}</p>}</details>
+        <details><summary className="cursor-pointer underline">Chi tiết chứng cứ: {learnerText(item.name)}</summary>{item.proof_scope && <p>Phạm vi chứng minh: {item.proof_scope}</p>}{item.availability === 'provided' && item.content && <p className="whitespace-pre-wrap">{reflowVietnameseLegalText(practiceText(item.content))}</p>}</details>
         {onInsert && canCiteEvidence(item, c) && <button type="button" disabled={insertionDisabled} onClick={() => onInsert(item)} className="mt-2 rounded-lg border border-blue-400 px-3 py-1 disabled:opacity-40" aria-label={`Đưa vào lập luận: ${item.name}`}>Đưa vào lập luận</button>}
       </article>;
       })}</div></div>
@@ -201,7 +267,274 @@ export default function CaseDossier({ courtCase, role, sessionId, onInsert, inse
     </div></section>
     <section className="dossier-procedure" hidden={!tabbed}><h3 className="font-bold">Hồ sơ tố tụng</h3>{c.timeline?.filter(event => ['filing', 'hearing'].includes(event.kind)).map((event, i) => <article key={i} className="mt-3 rounded-xl border border-slate-200 p-4"><strong>{eventLabels[event.kind]} · {event.date || 'Chưa rõ ngày'}</strong><p>{learnerText(event.description)}</p></article>)}{!c.timeline?.some(event => ['filing', 'hearing'].includes(event.kind)) && <p>Chưa có mốc khởi kiện hoặc xét xử được cung cấp riêng. Xem toàn bộ nội dung hồ sơ bên dưới.</p>}</section>
     <section className="dossier-law" hidden={!tabbed}><h3 className="font-bold">Phạm vi tra cứu pháp luật</h3><p>{learnerText(c.legal_scope_note, 'Hồ sơ chưa cung cấp danh sách căn cứ pháp lý riêng. Bạn có thể tra cứu bằng Trợ lý luật trong phiên khi gói của bạn có quyền sử dụng.')}</p><p className="mt-3">Mốc tham chiếu: {c.reference_date || 'Chọn ở bước Mốc tra cứu'}</p>{c.reference_date_note && <p>{learnerText(c.reference_date_note)}</p>}</section>
-    <details className="dossier-document"><summary className="cursor-pointer font-semibold">Đọc toàn bộ nội dung hồ sơ</summary><p className="mt-2 whitespace-pre-wrap">{learnerText(practiceText(c.full_document), 'Chưa có nội dung bổ sung.')}</p></details>
+
+    <details className="dossier-document">
+      <summary className="dossier-document-summary cursor-pointer font-semibold">
+        <span className="dossier-doc-summary-main">
+          <BookOpen size={17} />
+          <span>Đọc toàn bộ nội dung hồ sơ</span>
+        </span>
+        <span className="dossier-doc-summary-meta">
+          {parsedDocument.sections.length > 0 && (
+            <span className="dossier-doc-badge">
+              {parsedDocument.sections.length} phần · {parsedDocument.totalBlocks} mục
+            </span>
+          )}
+          <ChevronDown size={16} className="dossier-doc-chevron" />
+        </span>
+      </summary>
+
+      <div className="dossier-document-reader" data-font-size={docFontSize}>
+        {/* Thanh công cụ hỗ trợ đọc hồ sơ dài */}
+        <div className="dossier-reader-toolbar">
+          <div className="dossier-reader-search">
+            <Search size={14} />
+            <label htmlFor={docSearchId} className="sr-only">Tìm trong toàn văn hồ sơ</label>
+            <input
+              id={docSearchId}
+              type="search"
+              value={docSearch}
+              onChange={(e) => {
+                setDocSearch(e.target.value);
+                if (!e.target.value.trim()) setDocFilterMatches(false);
+              }}
+              placeholder="Tìm nhanh từ khóa, tên đương sự, số bản án, ngày tháng..."
+            />
+            {docSearch && (
+              <button
+                type="button"
+                onClick={() => { setDocSearch(''); setDocFilterMatches(false); }}
+                className="dossier-reader-clear"
+                aria-label="Xóa từ khóa tìm kiếm"
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+
+          <div className="dossier-reader-controls">
+            {normalizedSearch && (
+              <button
+                type="button"
+                aria-pressed={docFilterMatches}
+                onClick={() => setDocFilterMatches((v) => !v)}
+                className="dossier-reader-filter-btn"
+              >
+                {matchedBlocksCount} kết quả · {docFilterMatches ? 'Hiện tất cả' : 'Chỉ hiện đoạn khớp'}
+              </button>
+            )}
+
+            <div className="dossier-reader-fontsize" role="group" aria-label="Cỡ chữ đọc hồ sơ">
+              <Type size={13} />
+              {[
+                ['sm', 'A-'],
+                ['md', 'A'],
+                ['lg', 'A+'],
+              ].map(([sizeId, label]) => (
+                <button
+                  key={sizeId}
+                  type="button"
+                  aria-pressed={docFontSize === sizeId}
+                  onClick={() => setDocFontSize(sizeId)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              aria-pressed={docExpandedHeight}
+              onClick={() => setDocExpandedHeight((v) => !v)}
+              className="dossier-reader-expand-btn"
+            >
+              {docExpandedHeight ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+              <span>{docExpandedHeight ? 'Thu gọn khung' : 'Mở rộng khung'}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Mục lục chuyển nhanh giữa các phần của bản án / hồ sơ */}
+        {parsedDocument.sections.length > 1 && (
+          <nav className="dossier-reader-toc" aria-label="Mục lục chuyển nhanh trong hồ sơ">
+            <span className="dossier-toc-label">Mục lục:</span>
+            {parsedDocument.sections.map((sec) => (
+              <button
+                key={sec.id}
+                type="button"
+                onClick={() => scrollToDocSection(sec.id)}
+                className="dossier-toc-chip"
+              >
+                <span>{sec.badge}</span>
+                <strong>{sec.title}</strong>
+              </button>
+            ))}
+          </nav>
+        )}
+
+        {/* Trang văn bản hồ sơ định dạng chuẩn pháp lý */}
+        <div
+          ref={readerViewportRef}
+          className={`dossier-reader-viewport ${docExpandedHeight ? 'is-expanded' : ''}`}
+        >
+          <div className="dossier-reader-sheet">
+            {/* Phần Quốc hiệu / Đầu đề bản án hoặc hồ sơ */}
+            {preamble && (!normalizedSearch || !docFilterMatches || preamble.rawLines.some((l) => l.toLowerCase().includes(normalizedSearch))) && (
+              <header className="dossier-doc-preamble">
+                {(preamble.courtLines.length > 0 || preamble.mottoLines.length > 0) && (
+                  <div className="dossier-preamble-grid">
+                    {preamble.courtLines.length > 0 && (
+                      <div className="dossier-preamble-court">
+                        {preamble.courtLines.map((line, idx) => (
+                          <p key={idx}>{renderHighlightedText(line, docSearch)}</p>
+                        ))}
+                      </div>
+                    )}
+                    {preamble.mottoLines.length > 0 && (
+                      <div className="dossier-preamble-motto">
+                        {preamble.mottoLines.map((line, idx) => (
+                          <p key={idx}>{renderHighlightedText(line, docSearch)}</p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {preamble.titleLines.length > 0 && (
+                  <div className="dossier-preamble-titles">
+                    {preamble.titleLines.map((line, idx) => (
+                      <p key={idx} className="dossier-preamble-main-title">
+                        {renderHighlightedText(line, docSearch)}
+                      </p>
+                    ))}
+                  </div>
+                )}
+
+                {(preamble.metaLines.length > 0 || preamble.subjectLine) && (
+                  <div className="dossier-preamble-meta">
+                    {preamble.metaLines.length > 0 && (
+                      <div className="dossier-preamble-badges">
+                        {preamble.metaLines.map((line, idx) => (
+                          <span key={idx} className="dossier-preamble-pill">
+                            {renderHighlightedText(line, docSearch)}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {preamble.subjectLine && (
+                      <p className="dossier-preamble-subject">
+                        {renderHighlightedText(preamble.subjectLine, docSearch)}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {preamble.authorityLines.length > 0 && (
+                  <div className="dossier-preamble-authority">
+                    {preamble.authorityLines.map((line, idx) => (
+                      <p key={idx}>{renderHighlightedText(line, docSearch)}</p>
+                    ))}
+                  </div>
+                )}
+              </header>
+            )}
+
+            {/* Các phần nội dung chính */}
+            {parsedDocument.sections.length > 0 ? (
+              parsedDocument.sections.map((sec) => {
+                const visibleBlocks = normalizedSearch && docFilterMatches
+                  ? sec.blocks.filter((blk) => blk.raw.toLowerCase().includes(normalizedSearch))
+                  : sec.blocks;
+
+                if (normalizedSearch && docFilterMatches && visibleBlocks.length === 0) {
+                  return null;
+                }
+
+                return (
+                  <section
+                    key={sec.id}
+                    data-doc-section={sec.id}
+                    className="dossier-doc-section"
+                  >
+                    {(parsedDocument.sections.length > 1 || sec.rawHeading) && (
+                      <h4 className="dossier-doc-section-heading">
+                        <span className="dossier-doc-sec-badge">{sec.badge}</span>
+                        <span>{renderHighlightedText(sec.title, docSearch)}</span>
+                      </h4>
+                    )}
+
+                    <div className="dossier-doc-blocks">
+                      {visibleBlocks.map((blk) => {
+                        const isMatch = Boolean(normalizedSearch && blk.raw.toLowerCase().includes(normalizedSearch));
+
+                        if (blk.type === 'numbered_point') {
+                          return (
+                            <div
+                              key={blk.id}
+                              className={`dossier-doc-point ${isMatch ? 'is-search-match' : ''}`}
+                            >
+                              <span className="dossier-doc-point-badge">{blk.badge}</span>
+                              <p className="dossier-doc-point-text">
+                                {blk.label && (
+                                  <strong className="dossier-doc-inline-label">
+                                    {renderHighlightedText(blk.label, docSearch)}{' '}
+                                  </strong>
+                                )}
+                                {renderHighlightedText(blk.body, docSearch)}
+                              </p>
+                            </div>
+                          );
+                        }
+
+                        if (blk.type === 'meta_item') {
+                          return (
+                            <div
+                              key={blk.id}
+                              className={`dossier-doc-meta-item ${blk.isBullet ? 'is-bullet' : 'is-sub'} ${isMatch ? 'is-search-match' : ''}`}
+                            >
+                              <p>
+                                {blk.label && (
+                                  <strong className="dossier-doc-meta-label">
+                                    {renderHighlightedText(blk.label, docSearch)}{blk.body ? ' ' : ''}
+                                  </strong>
+                                )}
+                                {blk.body && <span>{renderHighlightedText(blk.body, docSearch)}</span>}
+                              </p>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <p
+                            key={blk.id}
+                            className={`dossier-doc-paragraph ${isMatch ? 'is-search-match' : ''}`}
+                          >
+                            {blk.label && (
+                              <strong className="dossier-doc-inline-label">
+                                {renderHighlightedText(blk.label, docSearch)}{' '}
+                              </strong>
+                            )}
+                            {renderHighlightedText(blk.body, docSearch)}
+                          </p>
+                        );
+                      })}
+                    </div>
+                  </section>
+                );
+              })
+            ) : (
+              <p className="dossier-doc-paragraph">{rawFullDocument}</p>
+            )}
+
+            {normalizedSearch && docFilterMatches && matchedBlocksCount === 0 && (
+              <p className="dossier-doc-empty-search">
+                Không tìm thấy đoạn văn nào khớp với từ khóa &ldquo;{docSearch}&rdquo;.
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    </details>
     {/^https:\/\//.test(c.source_url ?? '') && <details><summary className="cursor-pointer underline">Nguồn bản án — có tiết lộ kết quả xét xử</summary><a className="text-blue-400 underline" href={c.source_url} target="_blank" rel="noopener noreferrer">Mở nguồn bản án</a></details>}
   </div>;
 }
