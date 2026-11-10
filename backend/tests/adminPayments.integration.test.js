@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID, randomBytes, createHash } from 'node:crypto';
 import mongoose from 'mongoose';
+import ExcelJS from 'exceljs';
 import { createSepayFixture } from './helpers/sepayFixture.mjs';
 
 test('admin thanh toán: tổng tiền, lịch sử người dùng, đối soát và phân quyền', { skip: !process.env.COURTSIM_TEST_MONGO_URI, timeout: 60000 }, async t => {
@@ -77,7 +78,7 @@ test('admin thanh toán: tổng tiền, lịch sử người dùng, đối soát
     assert.equal((await request(`/payments/${history[0].transaction_id}`)).data.amount, 30000);
   });
   await t.test('bộ lọc sai, truy cập thường và yêu cầu thiếu CSRF bị từ chối', async () => {
-    for (const path of ['/payments', '/payments?view=users', `/payments/${history[0].transaction_id}`]) {
+    for (const path of ['/users/export', '/payments/export', '/payments', '/payments?view=users', `/payments/${history[0].transaction_id}`]) {
       assert.equal((await request(path, { cookie: '' })).status, 401);
       assert.equal((await request(path, { cookie: cookies[1] })).status, 403);
     }
@@ -86,6 +87,27 @@ test('admin thanh toán: tổng tiền, lịch sử người dùng, đối soát
     }
     assert.equal((await request(`/payments/${history[0].transaction_id}/reconcile`, { method: 'POST', body: {}, cookie: cookies[1] })).status, 403);
     assert.equal((await request(`/payments/${history[0].transaction_id}/reconcile`, { method: 'POST', body: {}, csrf: false })).status, 403);
+  });
+  await t.test('Excel bỏ phân trang, giữ bộ lọc và xuất tổng hợp đúng', async () => {
+    async function workbook(path) {
+      const response = await fetch(base + path, { headers: { Cookie: cookies[0] } });
+      assert.equal(response.status, 200);
+      assert.match(response.headers.get('content-type'), /spreadsheetml/);
+      assert.equal(response.headers.get('cache-control'), 'no-store');
+      const book = new ExcelJS.Workbook();
+      await book.xlsx.load(Buffer.from(await response.arrayBuffer()));
+      return book;
+    }
+    const payments = await workbook('/payments/export?status=paid&page=2&limit=1');
+    assert.equal(payments.getWorksheet('Giao dịch').rowCount, 4);
+    assert.equal(payments.getWorksheet('Tổng hợp').getCell('B4').value, 378000);
+    const users = await workbook('/users/export?role=user&q=Alice&page=2&limit=1');
+    assert.equal(users.getWorksheet('Người dùng').rowCount, 2);
+    assert.equal(users.getWorksheet('Người dùng').getCell('B2').value, 'Alice');
+    const grouped = await workbook('/payments/export?view=users&sort=paidAmount');
+    assert.equal(grouped.getWorksheet('Theo người dùng').rowCount, 3);
+    assert.equal(grouped.getWorksheet('Theo người dùng').getCell('F2').value, 249000);
+    assert.doesNotMatch(JSON.stringify(payments.model), /PRIVATE_CUSTOMER|SECRET_CARD|SECRET_PROVIDER_KEY/);
   });
   await t.test('admin đối soát qua SePay, cấp lượt một lần và ghi lịch sử quản trị', async () => {
     const payment = await createPaymentOrder({ userId: alice._id, type: 'case' });

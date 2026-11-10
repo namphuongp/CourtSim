@@ -1,3 +1,4 @@
+import AdminExportButton from './AdminExportButton';
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import api, { getApiError } from '../../../services/api';
@@ -85,7 +86,7 @@ export default function AdminPayments() {
   }
   function showUser(id) { setSearchParams({ user: id }); changeView('transactions'); }
   return <>
-    <header className="admin-page-heading"><div><h1>Quản lý thanh toán</h1><p>Theo dõi số tiền, lịch sử mua gói và đối soát giao dịch của người dùng.</p></div><button onClick={resource.reload} disabled={resource.loading}>Làm mới dữ liệu</button></header>
+    <header className="admin-page-heading"><div><h1>Quản lý thanh toán</h1><p>Theo dõi số tiền, lịch sử mua gói và đối soát giao dịch của người dùng.</p></div><button onClick={resource.reload} disabled={resource.loading}>Làm mới dữ liệu</button><AdminExportButton kind="payments" query={query} disabled={resource.loading || Boolean(resource.error)}/></header>
     <div className="admin-payment-views" role="group" aria-label="Chế độ xem thanh toán"><button aria-pressed={view === 'transactions'} onClick={() => changeView('transactions')}>Lịch sử giao dịch</button><button aria-pressed={view === 'users'} onClick={() => changeView('users')}>Theo người dùng</button></div>
     {userId && <p className="admin-notice">Đang xem thanh toán của một người dùng. <button onClick={() => { setSearchParams({}); change('page', 1); }}>Xem tất cả người dùng</button></p>}
     <form className="admin-filters" onSubmit={event => { event.preventDefault(); change('q', String(new FormData(event.currentTarget).get('q')).trim()); }}>

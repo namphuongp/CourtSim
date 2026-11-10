@@ -11,7 +11,7 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  if (config.method === 'get' || config.url?.startsWith('/auth/')) config.timeout = 15000;
+  if ((config.method === 'get' || config.url?.startsWith('/auth/')) && config.timeout === api.defaults.timeout) config.timeout = 15000;
   if (config.url?.endsWith('/complete')) config.timeout = 210_000;
   if (config.url?.endsWith('/dialogue')) config.timeout = 150_000;
   return config;

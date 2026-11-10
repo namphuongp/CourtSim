@@ -61,6 +61,8 @@ Chỉ khi bật chuyển khoản QR cũ bằng `PAYMENT_PROVIDER=sepay_bank_tran
 
 ## Kiểm tra
 
+Trong trang quản trị **Người dùng** và **Quản lý thanh toán**, nút **Xuất Excel** tải file `.xlsx` chứa toàn bộ kết quả theo bộ lọc và thứ tự hiện tại, không chỉ trang đang xem. Thanh toán hỗ trợ cả lịch sử giao dịch và tổng hợp theo người dùng, kèm sheet tổng hợp số tiền. Ngày giờ dùng GMT+7, số tiền dùng VND. Tối đa 10.000 dòng/lần và 10 yêu cầu/15 phút cho mỗi quản trị viên; vượt giới hạn dòng cần thu hẹp bộ lọc. Chức năng chỉ dành cho quản trị viên và không xuất mật khẩu, token hay dữ liệu thô từ cổng thanh toán.
+
 ```powershell
 # Tại gốc:
 node scripts/check-source.mjs

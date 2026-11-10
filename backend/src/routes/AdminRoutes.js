@@ -1,3 +1,4 @@
+import { exportOptions, sendAdminExport } from '../services/adminExport.js';
 import { Router } from 'express';
 import mongoose from 'mongoose';
 import openAiBillingRoutes from './OpenAiBillingRoutes.js';
@@ -32,6 +33,10 @@ router.get('/analytics/activity', run(async req => ({ data: await activity(timed
 router.get('/ai/usage', run(async req => ({ data: await aiAnalytics(timed(req.query)) })));
 router.get('/ai/cost', run(async req => ({ data: await aiAnalytics(timed(req.query)) })));
 
+router.get('/payments/export', asyncHandler(async (req, res) => {
+  await consumeAuthLimit(`admin-export:${req.auth.userId}`, 10);
+  await sendAdminExport(res, 'payments', await adminPaymentList(req.query, undefined, true), req.query);
+}));
 router.get('/payments', run(req => adminPaymentList(req.query)));
 router.get('/payments/:transactionId', run(req => adminPaymentDetail(req.params.transactionId)));
 router.post('/payments/:transactionId/reconcile', run(async req => {
@@ -101,12 +106,12 @@ router.get('/sessions/:id', run(async req => {
     models: await AiUsage.distinct('model', { session_id: session._id }),
   } };
 }));
-router.get('/users', run(async req => {
-  const opts = queryOptions(req.query, ['created_at', 'username', 'email', 'status']);
+async function userList(query, exporting = false) {
+  const opts = exportOptions(queryOptions(query, ['created_at', 'username', 'email', 'status']), exporting);
   const filter = {};
-  if (req.query.role) { if (!['admin', 'user'].includes(req.query.role)) throw new AppError('Vai trò không hợp lệ.'); filter.system_role = req.query.role; }
-  if (req.query.status) { if (!['active', 'banned'].includes(req.query.status)) throw new AppError('Trạng thái không hợp lệ.'); filter.status = req.query.status; }
-  if (req.query.verified) { if (!['true', 'false'].includes(req.query.verified)) throw new AppError('Bộ lọc xác thực không hợp lệ.'); filter.email_verified = req.query.verified === 'true' ? true : { $ne: true }; }
+  if (query.role) { if (!['admin', 'user'].includes(query.role)) throw new AppError('Vai trò không hợp lệ.'); filter.system_role = query.role; }
+  if (query.status) { if (!['active', 'banned'].includes(query.status)) throw new AppError('Trạng thái không hợp lệ.'); filter.status = query.status; }
+  if (query.verified) { if (!['true', 'false'].includes(query.verified)) throw new AppError('Bộ lọc xác thực không hợp lệ.'); filter.email_verified = query.verified === 'true' ? true : { $ne: true }; }
   if (opts.search) filter.$or = ['username', 'email'].map(field => ({ [field]: { $regex: literalRegex(opts.search), $options: 'i' } }));
   const [users, total] = await Promise.all([User.find(filter).select(userFields).sort(opts.sort).skip(opts.skip).limit(opts.limit).lean(), User.countDocuments(filter)]);
   const stats = await SimulationSession.aggregate([{ $match: { user_id: { $in: users.map(u => u._id) } } },
@@ -116,6 +121,11 @@ router.get('/users', run(async req => {
   ]);
   const statsById = new Map(stats.map(s => [String(s._id), s]));
   return pageResult(users.map(u => ({ ...u, sessions: statsById.get(String(u._id))?.sessions ?? 0, lastSessionAt: statsById.get(String(u._id))?.lastSessionAt ?? null, lastActivityAt: statsById.get(String(u._id))?.lastActivityAt ?? null })), total, opts);
+}
+router.get('/users', run(req => userList(req.query)));
+router.get('/users/export', asyncHandler(async (req, res) => {
+  await consumeAuthLimit(`admin-export:${req.auth.userId}`, 10);
+  await sendAdminExport(res, 'users', await userList(req.query, true), req.query);
 }));
 router.get('/users/:id', run(async req => {
   const id = objectId(req.params.id), user = await User.findById(id).select(userFields).lean();

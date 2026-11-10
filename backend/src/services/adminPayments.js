@@ -1,3 +1,4 @@
+import { exportOptions } from './adminExport.js';
 import mongoose from 'mongoose';
 import PaymentTransaction from '../models/PaymentTransaction.js';
 import PaymentAudit from '../models/PaymentAudit.js';
@@ -37,11 +38,11 @@ export function publicAdminPayment(transaction) {
   };
 }
 
-export async function adminPaymentList(query, scopedUserId) {
+export async function adminPaymentList(query, scopedUserId, exporting = false) {
   const { view = 'transactions', user_id: userId, ...options } = query;
   if (!['transactions', 'users'].includes(view)) throw new AppError('Chế độ xem không hợp lệ.');
-  const opts = queryOptions(options, view === 'users'
-    ? ['paidAmount', 'pendingAmount', 'totalOrders', 'lastPaymentAt'] : ['created_at', 'updated_at', 'amount', 'status']);
+  const opts = exportOptions(queryOptions(options, view === 'users'
+    ? ['paidAmount', 'pendingAmount', 'totalOrders', 'lastPaymentAt'] : ['created_at', 'updated_at', 'amount', 'status']), exporting);
   const filter = {};
   if (userId !== undefined && (typeof userId !== 'string' || !userId)) throw new AppError('Người dùng không hợp lệ.');
   if (scopedUserId || userId) filter.user_id = objectId(scopedUserId ?? userId);
