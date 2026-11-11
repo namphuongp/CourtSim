@@ -654,6 +654,8 @@ export function normalizeAndRepairCasePayload(aiDraft, rawText, options = {}) {
     summary: candidate.summary,
     full_document: candidate.full_document,
     category: candidate.category,
+    origin: 'user_upload',
+    created_by: options.userId || null,
     reference_date: candidate.reference_date,
     reference_date_note: candidate.reference_date_note,
     legal_scope_note: candidate.legal_scope_note,
@@ -688,6 +690,7 @@ export async function extractAndStructureUserCase(
           titleHint: titleHint || parsedJson.title,
           categoryHint: categoryHint || parsedJson.category,
           referenceDateHint: referenceDateHint || parsedJson.reference_date,
+          userId,
         });
       }
     } catch {
@@ -747,5 +750,6 @@ export async function extractAndStructureUserCase(
     titleHint,
     categoryHint,
     referenceDateHint,
+    userId,
   });
 }

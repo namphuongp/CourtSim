@@ -66,3 +66,40 @@ test('giả định chứng cứ không sửa nguồn, không cho viện dẫn t
   assert.match(hearingProblem({ content: 'Đề nghị bạn xuất trình bản gốc giấy chứng nhận.' }, 'judge', { hearing: {} }, []), /giả định/);
   assert.deepEqual(c, before);
 });
+
+test('phân loại rõ vụ án chuẩn hệ thống và hồ sơ người dùng tải lên cùng mức độ đầy đủ dữ liệu', async () => {
+  const { detectCaseOrigin, caseCompletenessStats } = await import('../../shared/casePresentation.mjs');
+  const { learnerCase } = await import('../src/services/learnerPresentation.js');
+  const { extractAndStructureUserCase } = await import('../src/services/userCaseUploadService.js');
+
+  assert.equal(detectCaseOrigin(c), 'system');
+  const sysStats = caseCompletenessStats(c);
+  assert.equal(sysStats.origin, 'system');
+  assert.equal(sysStats.has_full_dossier, true);
+  assert.equal(sysStats.quality_level, 'verified_system');
+  assert.equal(learnerCase(c).origin, 'system');
+
+  const structuredUpload = await extractAndStructureUserCase({
+    rawText: 'Ngày 10/01/2025, nguyên đơn là bà Nguyễn Thị Lan khởi kiện yêu cầu bị đơn là ông Trần Văn Hùng hoàn trả 500.000.000 đồng tiền đặt cọc theo Hợp đồng đặt cọc ngày 10/01/2025. Ngày 15/02/2025, hai bên lập Biên bản làm việc nhưng ông Hùng từ chối hoàn trả.',
+    userId: '507f1f77bcf86cd799439011',
+  }, { complete: async () => { throw new Error('offline'); } });
+
+  assert.equal(structuredUpload.origin, 'user_upload');
+  assert.equal(structuredUpload.created_by, '507f1f77bcf86cd799439011');
+  const presentedUpload = learnerCase(structuredUpload);
+  assert.equal(presentedUpload.origin, 'user_upload');
+  assert.equal(presentedUpload.created_by, '507f1f77bcf86cd799439011');
+
+  const partialUpload = {
+    title: 'Hồ sơ người dùng tải lên thiếu dữ liệu',
+    source_note: 'Hồ sơ bản án do người dùng tải lên và được chuẩn hóa cấu trúc tự động.',
+    parties: [{ side: 'plaintiff', name: 'Nguyên đơn', claims: [] }],
+    timeline: [],
+    evidence_inventory: [],
+  };
+  const partialStats = caseCompletenessStats(partialUpload);
+  assert.equal(partialStats.origin, 'user_upload');
+  assert.equal(partialStats.has_full_dossier, false);
+  assert.equal(partialStats.quality_level, 'partial_upload');
+  assert.ok(partialStats.missing_fields.length >= 2);
+});

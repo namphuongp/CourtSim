@@ -12,21 +12,79 @@ import { validateCaseDetails } from '../services/caseEvidence.js';
 import { validateCaseFacts } from '../services/caseKnowledge.js';
 import { validatePracticeContext } from '../services/casePractice.js';
 import { extractAndStructureUserCase } from '../services/userCaseUploadService.js';
+import { detectCaseOrigin } from '../../../shared/casePresentation.mjs';
 
 const router = Router();
 
+const escapeRegex = (value = '') => String(value).replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+
+function buildCaseListFilter(query = {}) {
+  const conditions = [];
+  const category = typeof query.category === 'string' ? query.category.trim() : '';
+  if (category && category !== 'all') {
+    conditions.push({ category: new RegExp(`^${escapeRegex(category)}$`, 'iu') });
+  }
+
+  const origin = typeof query.origin === 'string' ? query.origin.trim() : '';
+  const userUploadMatch = {
+    $or: [
+      { origin: 'user_upload' },
+      { created_by: { $ne: null } },
+      { source_note: /người dùng tải lên/iu },
+      { 'evidence_inventory.id': /^EV-custom-/ },
+    ],
+  };
+  if (origin === 'user_upload') {
+    conditions.push(userUploadMatch);
+  } else if (origin === 'system') {
+    conditions.push({
+      $and: [
+        { origin: { $ne: 'user_upload' } },
+        { $or: [{ created_by: null }, { created_by: { $exists: false } }] },
+        { source_note: { $not: /người dùng tải lên/iu } },
+        { 'evidence_inventory.id': { $not: /^EV-custom-/ } },
+      ],
+    });
+  }
+
+  const rawSearch = typeof query.q === 'string' ? query.q : typeof query.search === 'string' ? query.search : '';
+  const search = rawSearch.trim();
+  if (search) {
+    const regex = new RegExp(escapeRegex(search), 'iu');
+    conditions.push({
+      $or: [
+        { title: regex },
+        { summary: regex },
+        { category: regex },
+        { 'parties.name': regex },
+      ],
+    });
+  }
+
+  if (conditions.length === 0) return {};
+  if (conditions.length === 1) return conditions[0];
+  return { $and: conditions };
+}
+
 router.get('/', asyncHandler(async (request, response) => {
   const query = request.query;
-  if (Object.keys(query).some(key => !['page', 'limit', 'category'].includes(key))
+  const allowedKeys = ['page', 'limit', 'category', 'origin', 'q', 'search'];
+  if (
+    Object.keys(query).some(key => !allowedKeys.includes(key))
     || ['page', 'limit'].some(key => query[key] !== undefined && (typeof query[key] !== 'string' || !/^[1-9]\d{0,4}$/.test(query[key])))
-    || (query.category !== undefined && (typeof query.category !== 'string' || query.category.length > 80))) {
+    || (query.category !== undefined && (typeof query.category !== 'string' || query.category.length > 80))
+    || (query.origin !== undefined && (typeof query.origin !== 'string' || !['', 'all', 'system', 'user_upload'].includes(query.origin)))
+    || (query.q !== undefined && (typeof query.q !== 'string' || query.q.length > 120))
+    || (query.search !== undefined && (typeof query.search !== 'string' || query.search.length > 120))
+  ) {
     throw new AppError('Bộ lọc danh sách vụ án không hợp lệ.');
   }
   const page = Math.max(Number.parseInt(request.query.page, 10) || 1, 1);
   const limit = Math.min(Math.max(Number.parseInt(request.query.limit, 10) || 20, 1), 50);
-  const filter = request.query.category ? { category: String(request.query.category).trim() } : {};
+  const filter = buildCaseListFilter(query);
+  const selectFields = 'title summary category created_at reference_date source_url source_note origin created_by practice_context parties timeline evidence_inventory legal_scope_note';
   const [items, total] = await Promise.all([
-    Case.find(filter).select('title summary category created_at').sort({ created_at: -1 }).skip((page - 1) * limit).limit(limit).lean(),
+    Case.find(filter).select(selectFields).sort({ created_at: -1 }).skip((page - 1) * limit).limit(limit).lean(),
     Case.countDocuments(filter),
   ]);
   response.json({ data: items.map(learnerCase), pagination: { page, limit, total } });
@@ -62,7 +120,11 @@ router.post('/upload-parse', authenticate, asyncHandler(async (request, response
     });
   }
 
-  const created = await Case.create(structured);
+  const created = await Case.create({
+    ...structured,
+    origin: 'user_upload',
+    created_by: request.auth.userId,
+  });
   response.status(201).json({
     data: learnerCase(created.toObject()),
     extracted_text: structured.full_document,
@@ -91,7 +153,18 @@ router.post('/', authenticate, requireAdmin, asyncHandler(async (request, respon
   const details = validateCaseDetails(request.body);
   const case_facts = validateCaseFacts(request.body);
   const practice_context = validatePracticeContext(request.body.practice_context);
-  const item = await Case.create({ title: title.trim(), summary: summary.trim(), full_document: document.trim(), category: category.trim(), timeline, case_facts, ...details, practice_context });
+  const item = await Case.create({
+    title: title.trim(),
+    summary: summary.trim(),
+    full_document: document.trim(),
+    category: category.trim(),
+    origin: 'system',
+    created_by: null,
+    timeline,
+    case_facts,
+    ...details,
+    practice_context,
+  });
   response.status(201).json({ data: learnerCase(item) });
 }));
 
@@ -109,13 +182,23 @@ router.put('/:caseId', authenticate, requireAdmin, asyncHandler(async (request, 
   if (title.length > 200 || summary.length > 4000 || document.length > 50000 || category.length > 80) {
     throw new AppError('Hồ sơ quá dài: tiêu đề tối đa 200, tóm tắt 4.000, nội dung 50.000 và loại vụ án 80 ký tự.');
   }
-  const timeline = validateTimeline(request.body.timeline);
-  if (timeline.some((event) => !document.includes(event.source_quote))) {
+  const timeline = request.body.timeline !== undefined
+    ? validateTimeline(request.body.timeline)
+    : (existing.timeline ?? []).filter(event => !event?.source_quote || document.includes(event.source_quote));
+  if (request.body.timeline !== undefined && timeline.some((event) => !document.includes(event.source_quote))) {
     throw new AppError('Trích đoạn của mốc thời gian phải có trong nội dung hồ sơ.');
   }
-  const details = validateCaseDetails(request.body);
-  const case_facts = validateCaseFacts(request.body);
-  const practice_context = validatePracticeContext(request.body.practice_context);
+  const details = validateCaseDetails({
+    ...request.body,
+    parties: request.body.parties !== undefined ? request.body.parties : existing.parties,
+    evidence_absences: request.body.evidence_absences !== undefined ? request.body.evidence_absences : [],
+  });
+  const case_facts = request.body.case_facts !== undefined
+    ? validateCaseFacts(request.body)
+    : (existing.case_facts ?? []).filter(f => f?.quote && (`${summary}\n${document}`).includes(f.quote));
+  const practice_context = request.body.practice_context !== undefined
+    ? validatePracticeContext(request.body.practice_context)
+    : existing.practice_context;
 
   existing.title = title.trim();
   existing.summary = summary.trim();
@@ -125,24 +208,48 @@ router.put('/:caseId', authenticate, requireAdmin, asyncHandler(async (request, 
   existing.case_facts = case_facts;
   if (details.evidence_inventory) existing.evidence_inventory = details.evidence_inventory;
   if (details.parties) existing.parties = details.parties;
-  if (details.evidence_absences) existing.evidence_absences = details.evidence_absences;
+  if (request.body.evidence_absences !== undefined && details.evidence_absences) existing.evidence_absences = details.evidence_absences;
   if (details.reference_date !== undefined) existing.reference_date = details.reference_date;
   if (details.source_url !== undefined) existing.source_url = details.source_url;
   if (details.source_note !== undefined) existing.source_note = details.source_note;
   if (details.reference_date_note !== undefined) existing.reference_date_note = details.reference_date_note;
   if (details.legal_scope_note !== undefined) existing.legal_scope_note = details.legal_scope_note;
+  if (request.body.origin === 'system' || request.body.origin === 'user_upload') {
+    existing.origin = request.body.origin;
+    if (request.body.origin === 'system') {
+      existing.created_by = null;
+      if (/người dùng tải lên/iu.test(existing.source_note ?? '')) {
+        existing.source_note = 'Hồ sơ vụ án chuẩn hệ thống.';
+      }
+      if (Array.isArray(existing.evidence_inventory)) {
+        existing.evidence_inventory = existing.evidence_inventory.map(ev => ({
+          ...(ev.toObject ? ev.toObject() : ev),
+          id: String(ev.id || '').startsWith('EV-custom-') ? String(ev.id).replace(/^EV-custom-/, 'EV-sys-') : ev.id,
+        }));
+      }
+    }
+  }
   existing.practice_context = practice_context;
 
   await existing.save();
   response.json({ data: learnerCase(existing) });
 }));
 
-router.delete('/:caseId', authenticate, requireAdmin, asyncHandler(async (request, response) => {
+router.delete('/:caseId', authenticate, asyncHandler(async (request, response) => {
   if (!mongoose.isObjectIdOrHexString(request.params.caseId)) {
     throw new AppError('Mã vụ án không hợp lệ.', 400);
   }
   const existing = await Case.findById(request.params.caseId);
   if (!existing) throw new AppError('Không tìm thấy vụ án cần xóa.', 404, 'CASE_NOT_FOUND');
+
+  const isAdmin = request.auth?.role === 'admin';
+  const isOwnerOfUploadedCase = detectCaseOrigin(existing) === 'user_upload'
+    && Boolean(existing.created_by)
+    && String(existing.created_by) === String(request.auth?.userId);
+
+  if (!isAdmin && !isOwnerOfUploadedCase) {
+    throw new AppError('Bạn không có quyền thực hiện thao tác này.', 403, 'FORBIDDEN');
+  }
 
   const activeSessions = await SimulationSession.countDocuments({
     case_id: existing._id,

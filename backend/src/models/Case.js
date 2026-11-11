@@ -5,6 +5,8 @@ const caseSchema = new mongoose.Schema({
   summary: { type: String, required: true },
   full_document: { type: String, required: true },
   category: { type: String, required: true },
+  origin: { type: String, enum: ['system', 'user_upload'], default: 'system' },
+  created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   source_url: String,
   source_note: String,
   reference_date: String,

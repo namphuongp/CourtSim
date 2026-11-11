@@ -734,3 +734,447 @@
   color: #14532d !important;
   font-weight: 600;
 }
+
+/* --- Phân loại nguồn vụ án, Bộ lọc tìm kiếm & Phân trang (Step 1) --- */
+.simulation-setup .setup-case-browser {
+  margin-bottom: 18px;
+  padding: 16px;
+  border: 1px solid #d6e4f0;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #f8fbff, #f1f6fb);
+  box-shadow: inset 0 1px 0 #fff;
+}
+
+.simulation-setup .setup-origin-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 720px) {
+  .simulation-setup .setup-origin-tabs {
+    grid-template-columns: 1fr;
+  }
+}
+
+.simulation-setup .setup-origin-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 8px 12px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #334e68 !important;
+  font-size: 13px;
+  font-weight: 750;
+  transition: all 0.16s ease;
+}
+
+.simulation-setup .setup-origin-tab:hover {
+  border-color: #64748b;
+  background: #f8fafc;
+}
+
+.simulation-setup .setup-origin-tab.is-active {
+  border-color: #0284c7;
+  background: linear-gradient(180deg, #e0f2fe, #bae6fd);
+  color: #0c4a6e !important;
+  box-shadow: 0 4px 12px rgb(2 132 199 / 0.14);
+}
+
+.simulation-setup .setup-origin-tab.is-system-tab.is-active {
+  border-color: #0d9488;
+  background: linear-gradient(180deg, #ccfbf1, #99f6e4);
+  color: #115e59 !important;
+  box-shadow: 0 4px 12px rgb(13 148 136 / 0.15);
+}
+
+.simulation-setup .setup-origin-tab.is-upload-tab.is-active {
+  border-color: #4f46e5;
+  background: linear-gradient(180deg, #e0e7ff, #c7d2fe);
+  color: #312e81 !important;
+  box-shadow: 0 4px 12px rgb(79 70 229 / 0.15);
+}
+
+.simulation-setup .setup-origin-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgb(15 23 42 / 0.08);
+  color: inherit !important;
+  font-size: 11.5px;
+  font-weight: 800;
+}
+
+.simulation-setup .setup-origin-explainer {
+  margin-bottom: 12px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid #dbeafe;
+  background: #ffffff;
+}
+
+.simulation-setup .setup-origin-explainer p {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 !important;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #334e68 !important;
+}
+
+.simulation-setup .setup-origin-explainer svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.simulation-setup .setup-filter-bar {
+  display: grid;
+  gap: 10px;
+}
+
+.simulation-setup .setup-search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.simulation-setup .setup-search-icon {
+  position: absolute;
+  left: 12px;
+  pointer-events: none;
+  color: #64748b !important;
+}
+
+.simulation-setup .setup-search-box input {
+  margin-top: 0 !important;
+  padding: 10px 36px 10px 36px !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 11px !important;
+  font-size: 13px !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+.simulation-setup .setup-search-clear {
+  position: absolute;
+  right: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  border: 0;
+  background: #f1f5f9;
+  color: #475569 !important;
+}
+
+.simulation-setup .setup-search-clear:hover {
+  background: #e2e8f0;
+}
+
+.simulation-setup .setup-filter-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+@media (max-width: 780px) {
+  .simulation-setup .setup-filter-controls {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .simulation-setup .setup-filter-controls {
+    grid-template-columns: 1fr;
+  }
+}
+
+.simulation-setup .setup-filter-item label {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 4px;
+  font-size: 11.5px !important;
+  font-weight: 750 !important;
+  color: #475569 !important;
+}
+
+.simulation-setup .setup-filter-item select {
+  margin-top: 0 !important;
+  padding: 8px 10px !important;
+  min-height: 38px;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 10px !important;
+  font-size: 12.5px !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+.simulation-setup .setup-filter-reset {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #334e68 !important;
+  font-size: 12px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.simulation-setup .setup-filter-reset:hover {
+  border-color: #94a3b8;
+  background: #f1f5f9;
+}
+
+.simulation-setup .setup-empty-filter {
+  padding: 24px 16px;
+  text-align: center;
+  border: 1px dashed #cbd5e1;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.simulation-setup .setup-empty-filter p {
+  margin-bottom: 10px;
+  font-size: 13.5px;
+}
+
+.simulation-setup .setup-case-card-wrap {
+  position: relative;
+}
+
+.simulation-setup .setup-case-card.is-origin-system {
+  border-left: 4px solid #0d9488 !important;
+}
+
+.simulation-setup .setup-case-card.is-origin-upload {
+  border-left: 4px solid #6366f1 !important;
+}
+
+.simulation-setup .setup-case-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.simulation-setup .setup-option .setup-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px !important;
+  border-radius: 999px !important;
+  font-size: 11px !important;
+  font-weight: 750 !important;
+  line-height: 1.35;
+}
+
+.simulation-setup .setup-option .setup-badge.is-system-badge {
+  color: #0f5132 !important;
+  background: #d1fae5 !important;
+  border: 1px solid #6ee7b7;
+}
+
+.simulation-setup .setup-option .setup-badge.is-system-badge svg {
+  color: #047857 !important;
+}
+
+.simulation-setup .setup-option .setup-badge.is-upload-badge {
+  color: #3730a3 !important;
+  background: #e0e7ff !important;
+  border: 1px solid #a5b4fc;
+}
+
+.simulation-setup .setup-option .setup-badge.is-upload-badge svg {
+  color: #4338ca !important;
+}
+
+.simulation-setup .setup-option .setup-badge.is-category-badge {
+  color: #075d70 !important;
+  background: #e7fbfc !important;
+  border: 1px solid #a5f3fc;
+  text-transform: capitalize;
+}
+
+.simulation-setup .setup-option .setup-badge.is-quality-ok {
+  color: #0369a1 !important;
+  background: #e0f2fe !important;
+  border: 1px solid #bae6fd;
+}
+
+.simulation-setup .setup-option .setup-badge.is-quality-ok svg {
+  color: #0284c7 !important;
+}
+
+.simulation-setup .setup-option .setup-badge.is-quality-warn {
+  color: #92400e !important;
+  background: #fef3c7 !important;
+  border: 1px solid #fcd34d;
+}
+
+.simulation-setup .setup-option .setup-badge.is-quality-warn svg {
+  color: #d97706 !important;
+}
+
+.simulation-setup .setup-case-card-title {
+  display: block;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.simulation-setup .setup-case-card-summary {
+  line-height: 1.55;
+}
+
+.simulation-setup .setup-option .setup-case-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed #e2e8f0;
+  font-size: 11.5px;
+  color: #64748b !important;
+}
+
+.simulation-setup .setup-option .setup-case-meta span {
+  padding: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #475569 !important;
+  font-weight: 600 !important;
+}
+
+.simulation-setup .setup-case-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  padding: 4px 10px;
+  border: 1px solid #fecdd3;
+  border-radius: 8px;
+  background: #fff1f2;
+  color: #be123c !important;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.simulation-setup .setup-case-delete-btn:hover:not(:disabled) {
+  background: #ffe4e6;
+  border-color: #fda4af;
+}
+
+.simulation-setup .setup-case-delete-btn svg {
+  color: #be123c !important;
+}
+
+.simulation-setup .setup-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid #d6e4f0;
+  border-radius: 12px;
+  background: #f8fbff;
+  font-size: 12.5px;
+  color: #334e68;
+}
+
+.simulation-setup .setup-pagination-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+}
+
+.simulation-setup .setup-page-size {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+  margin: 0 !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: #475569 !important;
+}
+
+.simulation-setup .setup-page-size select {
+  width: auto !important;
+  margin-top: 0 !important;
+  padding: 4px 8px !important;
+  border-radius: 8px !important;
+  font-size: 12px !important;
+}
+
+.simulation-setup .setup-pagination-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.simulation-setup .setup-pagination-controls button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1e293b !important;
+  font-size: 12px;
+  font-weight: 700;
+  transition: all 0.15s ease;
+}
+
+.simulation-setup .setup-pagination-controls button:hover:not(:disabled) {
+  border-color: #0284c7;
+  background: #f0f9ff;
+}
+
+.simulation-setup .setup-pagination-controls button.is-active {
+  border-color: #0284c7;
+  background: #0284c7;
+  color: #ffffff !important;
+}
+
+.simulation-setup .setup-pagination-controls button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.simulation-setup .setup-pagination-pages {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.simulation-setup .setup-pagination-ellipsis {
+  padding: 0 4px;
+  color: #64748b;
+}

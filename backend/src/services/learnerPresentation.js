@@ -1,4 +1,5 @@
 import { dialogueText, evidenceSummary } from '../../../shared/dialogueText.mjs';
+import { detectCaseOrigin } from '../../../shared/casePresentation.mjs';
 import { caseKnowledge } from './caseKnowledge.js';
 import { evidenceInventory } from './caseEvidence.js';
 import { scoreSummary } from '../../../shared/scorePresentation.mjs';
@@ -18,6 +19,8 @@ export function learnerCase(value) {
   return {
     _id: c._id, title: learnerText(c.title, 'Hồ sơ vụ án'), category: learnerText(c.category),
     summary: learnerText(c.summary), full_document: learnerText(c.full_document),
+    origin: detectCaseOrigin(c), created_by: c.created_by ? String(c.created_by) : null,
+    source_note: learnerText(c.source_note),
     reference_date: c.reference_date, source_url: safeUrl(c.source_url), created_at: c.created_at,
     practice_context: c.practice_context, web_reference_scoring: false,
     recorded_events: caseKnowledge(c).recorded_events.map((f) => ({ text: f.quote, source_quote: f.quote, source: f.source_type === 'judgment' ? 'Theo nội dung bản án' : 'Theo hồ sơ bài tập' })),

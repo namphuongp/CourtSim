@@ -65,6 +65,59 @@ function buildDefaultDevelopments(courtCase) {
   return steps;
 }
 
+export function detectCaseOrigin(courtCase) {
+  if (!courtCase || typeof courtCase !== 'object') return 'system';
+  if (courtCase.origin === 'user_upload') return 'user_upload';
+  if (courtCase.created_by) return 'user_upload';
+  if (/người dùng tải lên/iu.test(courtCase.source_note ?? '')) return 'user_upload';
+  if ((courtCase.evidence_inventory ?? []).some(e => String(e?.id ?? '').startsWith('EV-custom-'))) return 'user_upload';
+  return 'system';
+}
+
+export function caseCompletenessStats(courtCase) {
+  const origin = detectCaseOrigin(courtCase);
+  const parties = Array.isArray(courtCase?.parties) ? courtCase.parties : [];
+  const timeline = Array.isArray(courtCase?.timeline) ? courtCase.timeline : [];
+  const evidenceList = Array.isArray(courtCase?.evidence_inventory) ? courtCase.evidence_inventory : [];
+  const partiesCount = parties.length;
+  const timelineCount = timeline.length;
+  const evidenceCount = evidenceList.length;
+  const providedEvidenceCount = evidenceList.filter(e => e?.availability === 'provided' || Boolean(e?.content?.trim())).length;
+
+  const hasSpecificParties = partiesCount >= 2 && !parties.every(p => /^(?:Nguyên đơn|Bị đơn|Người bị hại|Bị cáo|Bên khởi kiện|Bên bị kiện)$/iu.test(String(p?.name ?? '').trim()));
+  const missingFields = [];
+  if (partiesCount < 2 || !hasSpecificParties) missingFields.push('đương sự cụ thể');
+  if (evidenceCount < 2) missingFields.push('chứng cứ');
+  if (timelineCount < 2) missingFields.push('mốc thời gian');
+
+  if (origin === 'system') {
+    return {
+      origin: 'system',
+      parties_count: partiesCount,
+      timeline_count: timelineCount,
+      evidence_count: evidenceCount,
+      provided_evidence_count: providedEvidenceCount,
+      has_full_dossier: true,
+      quality_level: 'verified_system',
+      quality_label: 'Chuẩn hệ thống',
+      missing_fields: [],
+    };
+  }
+
+  const isCompleteUpload = partiesCount >= 2 && hasSpecificParties && evidenceCount >= 2 && timelineCount >= 2;
+  return {
+    origin: 'user_upload',
+    parties_count: partiesCount,
+    timeline_count: timelineCount,
+    evidence_count: evidenceCount,
+    provided_evidence_count: providedEvidenceCount,
+    has_full_dossier: isCompleteUpload,
+    quality_level: isCompleteUpload ? 'complete_upload' : 'partial_upload',
+    quality_label: isCompleteUpload ? 'Đầy đủ cấu trúc' : 'Thiếu dữ liệu chi tiết',
+    missing_fields: missingFields,
+  };
+}
+
 export function caseIntroduction(courtCase) {
   // Nhận đúng hồ sơ để các vụ án khác không nhận nhầm diễn biến.
   if (courtCase?.practice_context?.source_label !== 'Bản chép lời Case1.docx'

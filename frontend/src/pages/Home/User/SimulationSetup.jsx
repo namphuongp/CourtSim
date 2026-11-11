@@ -1,12 +1,35 @@
-import { caseIntroduction } from '../../../../../shared/casePresentation.mjs';
+import { caseIntroduction, caseCompletenessStats, detectCaseOrigin } from '../../../../../shared/casePresentation.mjs';
 import CaseDossier from '../../../components/CaseDossier';
-import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, BookOpen, CircleHelp, CheckCircle2, Gavel, Upload, Sparkles, FileText, Eye } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  BookOpen,
+  CircleHelp,
+  Check,
+  CheckCircle2,
+  Gavel,
+  Upload,
+  Sparkles,
+  FileText,
+  Eye,
+  Plus,
+  Search,
+  Filter,
+  ShieldCheck,
+  AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
+  RotateCcw,
+  Trash2,
+  X,
+  Layers,
+} from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import FeedbackModal from '../../../components/feedback/FeedbackModal';
 import api, { getApiError } from '../../../services/api';
 import { roleLabel } from '../../../services/simulation';
-import { draftKey, readDraft, saveDraft } from '../../../services/auth';
+import { draftKey, getCurrentUser, readDraft, saveDraft } from '../../../services/auth';
 import '../../../components/dashboard/dashboard.css';
 import useMembership from '../../../components/membership/useMembership';
 import MembershipSummary from '../../../components/membership/MembershipSummary';
@@ -63,6 +86,15 @@ export default function SimulationSetup() {
   const [uploadForm, setUploadForm] = useState({ raw_text: '', title: '', category: '', reference_date: '' });
   const [uploadPreview, setUploadPreview] = useState(null);
   const [uploadState, setUploadState] = useState({ loading: false, previewing: false, error: '', success: '' });
+  const [originFilter, setOriginFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [qualityFilter, setQualityFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('system_first');
+  const [casePage, setCasePage] = useState(1);
+  const [casePageSize, setCasePageSize] = useState(6);
+  const [deletingCaseId, setDeletingCaseId] = useState(null);
+  const currentUser = getCurrentUser();
 
   useEffect(() => { saveDraft(storageKey, form); }, [storageKey, form]);
   useEffect(() => {
@@ -91,6 +123,126 @@ export default function SimulationSetup() {
     }).catch((error) => { if (active) setState({ loading: false, submitting: false, error: getApiError(error) }); });
     return () => { active = false; };
   }, [reload]);
+
+  const originCounts = useMemo(() => {
+    let system = 0;
+    let userUpload = 0;
+    let mine = 0;
+    for (const item of cases) {
+      const origin = detectCaseOrigin(item);
+      if (origin === 'user_upload') {
+        userUpload += 1;
+        if (currentUser?.id && item.created_by && String(item.created_by) === String(currentUser.id)) {
+          mine += 1;
+        }
+      } else {
+        system += 1;
+      }
+    }
+    return { all: cases.length, system, user_upload: userUpload, mine };
+  }, [cases, currentUser?.id]);
+
+  const availableCategories = useMemo(() => {
+    const standard = ['dân sự', 'hình sự', 'đất đai', 'hành chính', 'thương mại', 'lao động', 'hôn nhân và gia đình'];
+    const map = new Map();
+    for (const cat of standard) map.set(cat.toLocaleLowerCase('vi'), cat);
+    for (const item of cases) {
+      const raw = String(item.category || '').trim();
+      if (raw) {
+        const key = raw.toLocaleLowerCase('vi');
+        if (!map.has(key)) map.set(key, raw);
+      }
+    }
+    return Array.from(map.entries()).map(([value, label]) => ({
+      value,
+      label: label.charAt(0).toLocaleUpperCase('vi') + label.slice(1),
+    }));
+  }, [cases]);
+
+  const filteredCases = useMemo(() => {
+    const normalizedSearch = searchQuery.trim().toLocaleLowerCase('vi');
+    const filtered = cases.filter((item) => {
+      const stats = caseCompletenessStats(item);
+      if (originFilter === 'system' && stats.origin !== 'system') return false;
+      if (originFilter === 'user_upload' && stats.origin !== 'user_upload') return false;
+
+      if (categoryFilter !== 'all') {
+        const itemCat = String(item.category || '').trim().toLocaleLowerCase('vi');
+        if (itemCat !== categoryFilter) return false;
+      }
+
+      if (qualityFilter === 'full' && !stats.has_full_dossier) return false;
+      if (qualityFilter === 'partial' && stats.has_full_dossier) return false;
+      if (qualityFilter === 'mine') {
+        const isMine = Boolean(currentUser?.id && item.created_by && String(item.created_by) === String(currentUser.id));
+        if (!isMine) return false;
+      }
+
+      if (normalizedSearch) {
+        const intro = caseIntroduction(item);
+        const partyNames = (item.parties ?? []).map((p) => p.name || '').join(' ');
+        const haystack = `${intro.title || ''} ${intro.summary || ''} ${item.title || ''} ${item.summary || ''} ${item.category || ''} ${partyNames}`.toLocaleLowerCase('vi');
+        if (!haystack.includes(normalizedSearch)) return false;
+      }
+      return true;
+    });
+
+    return [...filtered].sort((a, b) => {
+      const statsA = caseCompletenessStats(a);
+      const statsB = caseCompletenessStats(b);
+      if (sortBy === 'system_first') {
+        if (statsA.origin !== statsB.origin) {
+          return statsA.origin === 'system' ? -1 : 1;
+        }
+        if (statsA.has_full_dossier !== statsB.has_full_dossier) {
+          return statsA.has_full_dossier ? -1 : 1;
+        }
+      } else if (sortBy === 'most_evidence') {
+        const diff = (statsB.evidence_count + statsB.timeline_count) - (statsA.evidence_count + statsA.timeline_count);
+        if (diff !== 0) return diff;
+      }
+      const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return dateB - dateA;
+    });
+  }, [cases, originFilter, categoryFilter, qualityFilter, searchQuery, sortBy, currentUser?.id]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredCases.length / casePageSize));
+  const safePage = Math.min(casePage, totalPages);
+  const paginatedCases = useMemo(() => {
+    const start = (safePage - 1) * casePageSize;
+    return filteredCases.slice(start, start + casePageSize);
+  }, [filteredCases, safePage, casePageSize]);
+
+  const hasActiveFilters = originFilter !== 'all' || categoryFilter !== 'all' || qualityFilter !== 'all' || Boolean(searchQuery.trim()) || sortBy !== 'system_first';
+
+  function resetCaseFilters() {
+    setOriginFilter('all');
+    setCategoryFilter('all');
+    setQualityFilter('all');
+    setSearchQuery('');
+    setSortBy('system_first');
+    setCasePage(1);
+  }
+
+  async function handleDeleteUploadedCase(event, item) {
+    event.stopPropagation();
+    if (deletingCaseId) return;
+    setDeletingCaseId(item._id);
+    try {
+      await api.delete(`/v1/cases/${item._id}`);
+      setCases((prev) => prev.filter((c) => c._id !== item._id));
+      if (form.case_id === item._id) {
+        setSelectedCase(null);
+        setForm({ ...form, case_id: '' });
+      }
+      setUploadState((cur) => ({ ...cur, error: '', success: `Đã xóa hồ sơ tải lên "${item.title}".` }));
+    } catch (error) {
+      setState((cur) => ({ ...cur, error: getApiError(error, 'Chưa thể xóa hồ sơ tải lên này.') }));
+    } finally {
+      setDeletingCaseId(null);
+    }
+  }
 
   async function handleFileSelect(event) {
     const file = event.target.files?.[0];
@@ -255,7 +407,7 @@ export default function SimulationSetup() {
   const canNext = step === 0 ? ready : step === 1 ? ready : step === 2 ? Boolean(form.user_court_role) : step === 3 ? Boolean(eventDate) : false;
   const summary = <dl className="setup-summary"><div><dt>Vụ án</dt><dd>{ready ? caseIntroduction(selectedCase).title : 'Chưa chọn vụ án'}</dd></div><div><dt>Vai của bạn</dt><dd>{form.user_court_role ? roleLabel(form.user_court_role, selectedCase?.category, selectedCase) : 'Chưa chọn vai'}</dd></div><div><dt>Mốc tra cứu</dt><dd>{eventDate || 'Chưa chọn mốc tra cứu'}</dd></div><div><dt>Giới hạn</dt><dd>20 lượt trao đổi</dd></div></dl>;
   return <section className="practice-dashboard simulation-setup mx-auto space-y-6">
-    <header className="flex flex-wrap items-start justify-between gap-4"><div><h1 className="text-3xl font-bold text-white">Thiết lập phiên tòa</h1><p className="mt-2 text-slate-400">Đọc hồ sơ, chọn vai và mốc tra cứu — chuẩn bị trước khi vào phòng xử án.</p><nav className="setup-step-tabs" aria-label="Các bước thiết lập">{steps.map((title, index) => <button key={title} type="button" aria-current={step === index ? 'step' : undefined} disabled={state.submitting || (index > 0 && !ready)} onClick={() => goStep(index)}>{index < step && completedSteps[index] ? '✓' : index + 1} {title}</button>)}</nav></div><Link to="/guide" className="setup-guide-link flex items-center gap-2 px-4 py-2 text-sm"><CircleHelp size={16}/> Xem hướng dẫn</Link></header>
+    <header className="flex flex-wrap items-start justify-between gap-4"><div><h1 className="text-3xl font-bold text-white">Thiết lập phiên tòa</h1><p className="mt-2 text-slate-400">Đọc hồ sơ, chọn vai và mốc tra cứu — chuẩn bị trước khi vào phòng xử án.</p><nav className="setup-step-tabs" aria-label="Các bước thiết lập">{steps.map((title, index) => <button key={title} type="button" aria-current={step === index ? 'step' : undefined} disabled={state.submitting || (index > 0 && !ready)} onClick={() => goStep(index)}>{index < step && completedSteps[index] ? <Check size={12} className="inline" aria-hidden="true" /> : index + 1} {title}</button>)}</nav></div><Link to="/guide" className="setup-guide-link flex items-center gap-2 px-4 py-2 text-sm"><CircleHelp size={16}/> Xem hướng dẫn</Link></header>
     {state.error && <p role="alert" className="dashboard-card dashboard-alert">{state.error} <button className="underline" onClick={() => setReload(n => n + 1)}>Thử lại</button></p>}
     {uploadState.success && <p role="status" className="dashboard-card setup-upload-success p-3.5 text-sm">{uploadState.success}</p>}
     <fieldset disabled={state.submitting} className="setup-grid grid gap-6 lg:grid-cols-3">
@@ -272,7 +424,7 @@ export default function SimulationSetup() {
                 onClick={() => setUploadOpen((v) => !v)}
               >
                 <Upload size={15} />
-                {uploadOpen ? 'Đóng khung tải hồ sơ' : '＋ Tải lên bản án / hồ sơ riêng'}
+                {uploadOpen ? 'Đóng khung tải hồ sơ' : <><Plus size={14} /> Tải lên bản án / hồ sơ riêng</>}
               </button>
             </div>
 
@@ -312,7 +464,7 @@ export default function SimulationSetup() {
                   </div>
                 </div>
                 <p className="setup-upload-desc">
-                  Tải lên tệp bản án <strong>PDF, Word (.docx/.doc), văn bản (.txt)</strong> hoặc dán nội dung vụ việc vào ô bên dưới. Hệ thống sẽ tự động tóm tắt diễn biến, xác định các bên đương sự, lập dòng thời gian và trích xuất danh mục tài liệu, chứng cứ cho phiên tòa.
+                  Tải lên tệp bản án <strong>PDF, Word (.docx/.doc), văn bản (.txt)</strong> hoặc dán nội dung vụ việc vào ô bên dưới. Hệ thống sẽ tự động tóm tắt diễn biến, xác định các bên đương sự, lập dòng thời gian và trích xuất danh mục tài liệu, chứng cứ cho phiên tòa. Hồ sơ tải lên được phân loại riêng để không ảnh hưởng đến bộ vụ án chuẩn của hệ thống.
                 </p>
                 <div className="grid gap-3 md:grid-cols-3">
                   <div>
@@ -336,6 +488,7 @@ export default function SimulationSetup() {
                       <option value="">Tự động xác định theo nội dung</option>
                       <option value="dân sự">Dân sự</option>
                       <option value="hình sự">Hình sự</option>
+                      <option value="đất đai">Đất đai</option>
                       <option value="lao động">Lao động</option>
                       <option value="thương mại">Kinh doanh - Thương mại</option>
                       <option value="hành chính">Hành chính</option>
@@ -367,7 +520,7 @@ export default function SimulationSetup() {
                 {uploadPreview && (
                   <div className="setup-upload-preview" role="region" aria-label="Bản xem trước tóm tắt hồ sơ">
                     <div className="setup-upload-preview-head">
-                      <strong>✓ Tóm tắt hồ sơ trích xuất</strong>
+                      <strong className="inline-flex items-center gap-1.5"><CheckCircle2 size={15} /> Tóm tắt hồ sơ trích xuất</strong>
                       <span className="setup-upload-preview-badge">{uploadPreview.category} · Mốc tra cứu: {uploadPreview.reference_date}</span>
                     </div>
                     <p className="setup-upload-preview-title"><strong>Tên vụ án:</strong> {uploadPreview.title}</p>
@@ -415,10 +568,306 @@ export default function SimulationSetup() {
               </form>
             )}
 
-            {state.loading ? <p role="status">Đang tải hồ sơ...</p> : <div className="space-y-3">{!cases.length && <p>Chưa có vụ án để lựa chọn. Bạn có thể tải lại sau.</p>}{cases.map(item => <button key={item._id} aria-pressed={form.case_id === item._id} onClick={() => setForm({ ...form, case_id: item._id })} className={`setup-option w-full border p-4 text-left ${form.case_id === item._id ? 'is-selected' : ''}`}><strong>{caseIntroduction(item).title}</strong><p className="mt-1 text-sm">{caseIntroduction(item).summary}</p><span className="mt-2 inline-block text-xs">{item.category}</span></button>)}</div>}{form.case_id && !ready && <p className="mt-4" role={detailError ? 'alert' : 'status'}>{detailError || 'Đang tải chi tiết hồ sơ…'}{detailError && <button onClick={() => setReload(n => n + 1)} className="ml-2 underline">Thử lại</button>}</p>}
+            {/* Thanh phân loại nguồn vụ án & Bộ lọc tìm kiếm */}
+            <div className="setup-case-browser" aria-label="Phân loại và tìm kiếm vụ án">
+              <div className="setup-origin-tabs" role="tablist" aria-label="Phân loại nguồn hồ sơ vụ án">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={originFilter === 'all'}
+                  className={`setup-origin-tab ${originFilter === 'all' ? 'is-active' : ''}`}
+                  onClick={() => { setOriginFilter('all'); setCasePage(1); }}
+                >
+                  <Layers size={15} />
+                  <span>Tất cả hồ sơ</span>
+                  <strong className="setup-origin-count">{originCounts.all}</strong>
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={originFilter === 'system'}
+                  className={`setup-origin-tab is-system-tab ${originFilter === 'system' ? 'is-active' : ''}`}
+                  onClick={() => { setOriginFilter('system'); setCasePage(1); }}
+                >
+                  <ShieldCheck size={15} />
+                  <span>Vụ án chuẩn hệ thống</span>
+                  <strong className="setup-origin-count">{originCounts.system}</strong>
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={originFilter === 'user_upload'}
+                  className={`setup-origin-tab is-upload-tab ${originFilter === 'user_upload' ? 'is-active' : ''}`}
+                  onClick={() => { setOriginFilter('user_upload'); setCasePage(1); }}
+                >
+                  <Upload size={15} />
+                  <span>Hồ sơ người dùng tải lên</span>
+                  <strong className="setup-origin-count">{originCounts.user_upload}</strong>
+                </button>
+              </div>
+
+              <div className="setup-origin-explainer">
+                {originFilter === 'system' ? (
+                  <p>
+                    <ShieldCheck size={14} />
+                    <span><strong>Vụ án chuẩn của hệ thống:</strong> Đã được chuẩn hóa đầy đủ thông tin đương sự, dòng thời gian và bút lục chứng cứ, đảm bảo chất lượng chấm điểm cao nhất.</span>
+                  </p>
+                ) : originFilter === 'user_upload' ? (
+                  <p>
+                    <Upload size={14} />
+                    <span><strong>Danh sách vụ án đã được tải lên:</strong> Hồ sơ do người dùng tự tải lên được phân tách riêng biệt để tránh trường hợp thiếu dữ liệu làm ảnh hưởng đến bộ vụ án chuẩn của hệ thống.</span>
+                  </p>
+                ) : (
+                  <p>
+                    <ShieldCheck size={14} />
+                    <span>Hệ thống phân loại rõ <strong>Vụ án chuẩn hệ thống (Của hệ thống)</strong> và <strong>Hồ sơ người dùng tải lên</strong>. Các vụ án chuẩn được ưu tiên hiển thị đầu tiên.</span>
+                  </p>
+                )}
+              </div>
+
+              <div className="setup-filter-bar">
+                <div className="setup-search-box">
+                  <Search size={15} className="setup-search-icon" aria-hidden="true" />
+                  <input
+                    type="search"
+                    aria-label="Tìm kiếm vụ án"
+                    placeholder="Tìm theo tên vụ án, đương sự, tình tiết hoặc lĩnh vực..."
+                    value={searchQuery}
+                    onChange={(e) => { setSearchQuery(e.target.value); setCasePage(1); }}
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      className="setup-search-clear"
+                      aria-label="Xóa từ khóa tìm kiếm"
+                      onClick={() => { setSearchQuery(''); setCasePage(1); }}
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+
+                <div className="setup-filter-controls">
+                  <div className="setup-filter-item">
+                    <label htmlFor="setup-filter-category">
+                      <Filter size={12} /> Lĩnh vực
+                    </label>
+                    <select
+                      id="setup-filter-category"
+                      value={categoryFilter}
+                      onChange={(e) => { setCategoryFilter(e.target.value); setCasePage(1); }}
+                    >
+                      <option value="all">Tất cả lĩnh vực</option>
+                      {availableCategories.map((cat) => (
+                        <option key={cat.value} value={cat.value}>{cat.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="setup-filter-item">
+                    <label htmlFor="setup-filter-quality">Chất lượng dữ liệu</label>
+                    <select
+                      id="setup-filter-quality"
+                      value={qualityFilter}
+                      onChange={(e) => { setQualityFilter(e.target.value); setCasePage(1); }}
+                    >
+                      <option value="all">Tất cả mức dữ liệu</option>
+                      <option value="full">Đầy đủ dữ liệu tranh tụng</option>
+                      <option value="partial">Hồ sơ tải lên thiếu chi tiết</option>
+                      {currentUser?.id && <option value="mine">Hồ sơ do tôi tải lên ({originCounts.mine})</option>}
+                    </select>
+                  </div>
+
+                  <div className="setup-filter-item">
+                    <label htmlFor="setup-filter-sort">Sắp xếp</label>
+                    <select
+                      id="setup-filter-sort"
+                      value={sortBy}
+                      onChange={(e) => { setSortBy(e.target.value); setCasePage(1); }}
+                    >
+                      <option value="system_first">Ưu tiên vụ án hệ thống</option>
+                      <option value="newest">Mới nhất trước</option>
+                      <option value="most_evidence">Nhiều chứng cứ nhất</option>
+                    </select>
+                  </div>
+
+                  {hasActiveFilters && (
+                    <button
+                      type="button"
+                      className="setup-filter-reset"
+                      onClick={resetCaseFilters}
+                    >
+                      <RotateCcw size={13} />
+                      <span>Đặt lại lọc</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {state.loading ? (
+              <p role="status">Đang tải hồ sơ...</p>
+            ) : (
+              <div className="space-y-3">
+                {!cases.length ? (
+                  <p>Chưa có vụ án để lựa chọn. Bạn có thể tải lại sau.</p>
+                ) : !filteredCases.length ? (
+                  <div className="setup-empty-filter">
+                    <p>Không tìm thấy vụ án nào khớp với bộ lọc hiện tại.</p>
+                    <button type="button" onClick={resetCaseFilters} className="setup-filter-reset">
+                      <RotateCcw size={14} /> Xem lại toàn bộ vụ án
+                    </button>
+                  </div>
+                ) : (
+                  paginatedCases.map((item) => {
+                    const intro = caseIntroduction(item);
+                    const stats = caseCompletenessStats(item);
+                    const isMine = Boolean(currentUser?.id && item.created_by && String(item.created_by) === String(currentUser.id));
+                    const canDelete = stats.origin === 'user_upload' && (isMine || currentUser?.role === 'admin');
+                    const isSelected = form.case_id === item._id;
+
+                    return (
+                      <div key={item._id} className="setup-case-card-wrap">
+                        <button
+                          type="button"
+                          aria-pressed={isSelected}
+                          onClick={() => setForm({ ...form, case_id: item._id })}
+                          className={`setup-option setup-case-card w-full border p-4 text-left ${isSelected ? 'is-selected' : ''} ${stats.origin === 'system' ? 'is-origin-system' : 'is-origin-upload'}`}
+                        >
+                          <div className="setup-case-badges">
+                            {stats.origin === 'system' ? (
+                              <span className="setup-badge is-system-badge">
+                                <ShieldCheck size={12} /> Vụ án chuẩn hệ thống
+                              </span>
+                            ) : (
+                              <span className="setup-badge is-upload-badge">
+                                <Upload size={12} /> {isMine ? 'Hồ sơ của bạn tải lên' : 'Hồ sơ người dùng tải lên'}
+                              </span>
+                            )}
+                            <span className="setup-badge is-category-badge">{item.category}</span>
+                            {stats.origin === 'system' ? (
+                              <span className="setup-badge is-quality-ok">
+                                <CheckCircle2 size={12} /> Dữ liệu chuẩn
+                              </span>
+                            ) : stats.has_full_dossier ? (
+                              <span className="setup-badge is-quality-ok">
+                                <CheckCircle2 size={12} /> Đủ cấu trúc ({stats.evidence_count} chứng cứ)
+                              </span>
+                            ) : (
+                              <span
+                                className="setup-badge is-quality-warn"
+                                title={`Hồ sơ người dùng tải lên còn thiếu: ${stats.missing_fields.join(', ')}`}
+                              >
+                                <AlertTriangle size={12} /> Dữ liệu tóm lược ({stats.evidence_count} chứng cứ)
+                              </span>
+                            )}
+                          </div>
+
+                          <strong className="setup-case-card-title">{intro.title}</strong>
+                          <p className="mt-1 text-sm setup-case-card-summary">{intro.summary}</p>
+
+                          <div className="setup-case-meta">
+                            <span>{stats.parties_count} bên đương sự</span>
+                            <span>·</span>
+                            <span>{stats.evidence_count} tài liệu chứng cứ</span>
+                            <span>·</span>
+                            <span>{stats.timeline_count} mốc thời gian</span>
+                            {item.reference_date && (
+                              <>
+                                <span>·</span>
+                                <span>Mốc: {item.reference_date}</span>
+                              </>
+                            )}
+                          </div>
+                        </button>
+
+                        {canDelete && (
+                          <button
+                            type="button"
+                            className="setup-case-delete-btn"
+                            disabled={deletingCaseId === item._id}
+                            title={`Xóa hồ sơ tải lên: ${intro.title}`}
+                            onClick={(e) => handleDeleteUploadedCase(e, item)}
+                          >
+                            <Trash2 size={13} />
+                            <span>{deletingCaseId === item._id ? 'Đang xóa...' : 'Xóa hồ sơ tải lên'}</span>
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+
+                {filteredCases.length > 0 && (
+                  <nav className="setup-pagination" aria-label="Phân trang danh sách vụ án">
+                    <div className="setup-pagination-info">
+                      <span>
+                        Hiển thị <strong>{(safePage - 1) * casePageSize + 1}–{Math.min(safePage * casePageSize, filteredCases.length)}</strong> trong tổng số <strong>{filteredCases.length}</strong> vụ án
+                      </span>
+                      <label className="setup-page-size">
+                        <span>Hiển thị:</span>
+                        <select
+                          aria-label="Số vụ án mỗi trang"
+                          value={casePageSize}
+                          onChange={(e) => { setCasePageSize(Number(e.target.value)); setCasePage(1); }}
+                        >
+                          <option value={6}>6 / trang</option>
+                          <option value={10}>10 / trang</option>
+                          <option value={20}>20 / trang</option>
+                        </select>
+                      </label>
+                    </div>
+
+                    {totalPages > 1 && (
+                      <div className="setup-pagination-controls">
+                        <button
+                          type="button"
+                          disabled={safePage <= 1}
+                          onClick={() => setCasePage((p) => Math.max(1, p - 1))}
+                        >
+                          <ChevronLeft size={14} /> Trước
+                        </button>
+                        <div className="setup-pagination-pages">
+                          {Array.from({ length: totalPages }, (_, idx) => idx + 1)
+                            .filter((p) => p === 1 || p === totalPages || Math.abs(p - safePage) <= 1)
+                            .reduce((acc, p, idx, arr) => {
+                              if (idx > 0 && p - arr[idx - 1] > 1) acc.push(`ellipsis-${p}`);
+                              acc.push(p);
+                              return acc;
+                            }, [])
+                            .map((item) =>
+                              typeof item === 'string' ? (
+                                <span key={item} className="setup-pagination-ellipsis">…</span>
+                              ) : (
+                                <button
+                                  key={item}
+                                  type="button"
+                                  aria-current={safePage === item ? 'page' : undefined}
+                                  className={safePage === item ? 'is-active' : ''}
+                                  onClick={() => setCasePage(item)}
+                                >
+                                  {item}
+                                </button>
+                              )
+                            )}
+                        </div>
+                        <button
+                          type="button"
+                          disabled={safePage >= totalPages}
+                          onClick={() => setCasePage((p) => Math.min(totalPages, p + 1))}
+                        >
+                          Sau <ChevronRight size={14} />
+                        </button>
+                      </div>
+                    )}
+                  </nav>
+                )}
+              </div>
+            )}
+            {form.case_id && !ready && <p className="mt-4" role={detailError ? 'alert' : 'status'}>{detailError || 'Đang tải chi tiết hồ sơ…'}{detailError && <button onClick={() => setReload(n => n + 1)} className="ml-2 underline">Thử lại</button>}</p>}
           </>}
           {step === 1 && <CaseDossier key={form.case_id} tabbed courtCase={selectedCase} role={form.user_court_role} />}
-          {step === 2 && <><p className="setup-step-description">Chọn phía bạn bảo vệ; AI đảm nhiệm Chủ tọa và bên còn lại.</p><div className="grid gap-3 md:grid-cols-2">{roles.map(role => <button key={role.id} aria-label={roleLabel(role.id, selectedCase?.category, selectedCase)} aria-pressed={form.user_court_role === role.id} onClick={() => setForm({ ...form, user_court_role: role.id })} className={`setup-option setup-role border p-5 text-left ${form.user_court_role === role.id ? 'is-selected' : ''}`}><strong>{roleLabel(role.id, selectedCase?.category, selectedCase)}</strong><p>Đọc yêu cầu, liên hệ tình tiết và chứng cứ để bảo vệ quan điểm của thân chủ.</p>{selectedCase?.parties?.filter(party => party.side === (role.id === 'defense_lawyer' ? 'defendant' : 'plaintiff')).map((party, index) => <div className="setup-role-party" key={index}><b>{party.name}</b>{party.claims?.map((claim, i) => <p key={i}>{claim}</p>)}</div>)}<span>{form.user_court_role === role.id ? '◉ Đã chọn vai' : '○ Chọn vai này'}</span></button>)}</div></>}
+          {step === 2 && <><p className="setup-step-description">Chọn phía bạn bảo vệ; AI đảm nhiệm Chủ tọa và bên còn lại.</p><div className="grid gap-3 md:grid-cols-2">{roles.map(role => <button key={role.id} aria-label={roleLabel(role.id, selectedCase?.category, selectedCase)} aria-pressed={form.user_court_role === role.id} onClick={() => setForm({ ...form, user_court_role: role.id })} className={`setup-option setup-role border p-5 text-left ${form.user_court_role === role.id ? 'is-selected' : ''}`}><strong>{roleLabel(role.id, selectedCase?.category, selectedCase)}</strong><p>Đọc yêu cầu, liên hệ tình tiết và chứng cứ để bảo vệ quan điểm của thân chủ.</p>{selectedCase?.parties?.filter(party => party.side === (role.id === 'defense_lawyer' ? 'defendant' : 'plaintiff')).map((party, index) => <div className="setup-role-party" key={index}><b>{party.name}</b>{party.claims?.map((claim, i) => <p key={i}>{claim}</p>)}</div>)}<span className="inline-flex items-center gap-1.5">{form.user_court_role === role.id ? <><CheckCircle2 size={13} /> Đã chọn vai</> : 'Chọn vai này'}</span></button>)}</div></>}
           {step === 3 && <><label htmlFor="case-event-date" className="mb-2 mt-5 block font-bold">{fixedDate ? '3. Mốc tra cứu của bài tập' : '3. Ngày sự kiện làm phát sinh tranh chấp'}</label><p className="mb-4 text-sm">{selectedCase?.practice_context ? 'Dùng ngày xét xử sơ thẩm làm mốc tham khảo khi tra cứu luật. Ngày xét xử phúc thẩm chưa được nêu trong hồ sơ.' : 'Chọn ngày xảy ra sự việc để tra cứu luật. Nếu hồ sơ không nêu rõ, bạn có thể chọn ngày giả định cho bài tập. Cần đối chiếu thời điểm áp dụng của từng quy định.'}</p><input id="case-event-date" type="date" required readOnly={Boolean(fixedDate)} value={eventDate} onChange={event => setForm({ ...form, case_event_date: event.target.value })} className="setup-date w-full rounded-lg border px-4 py-3"/><p className="setup-date-note">{selectedCase?.reference_date_note || 'Mốc tra cứu không tự xác nhận hiệu lực hay điều kiện áp dụng của văn bản pháp luật.'}</p></>}
           {step === 4 && <><p className="setup-step-description">Kiểm tra các lựa chọn và cách tham gia phiên trước khi bắt đầu.</p>{summary}<div className="setup-preparation"><div><BookOpen size={20}/><h3>Nắm rõ hồ sơ</h3><p>Chỉ sử dụng tình tiết và chứng cứ đã được cung cấp.</p></div><div><Gavel size={20}/><h3>Tranh luận theo lượt</h3><p>Đọc lời thoại rồi bấm Tiếp tục. Gửi lập luận khi đến lượt bạn.</p></div></div></>}
         </article>
