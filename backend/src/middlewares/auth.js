@@ -22,7 +22,7 @@ export async function authenticate(request, response, next) {
     next();
   } catch (error) { next(error); }
 }
-export async function optionalAuthenticate(request, _response, next) {
+export async function optionalAuthenticate(request, response, next) {
   try {
     const token = cookie(request, SESSION_COOKIE);
     if (!token) return next();
@@ -33,6 +33,7 @@ export async function optionalAuthenticate(request, _response, next) {
     if (!user || user.status !== 'active' || (session.authVersion ?? 0) !== (user.auth_version ?? 0)) return next();
     request.auth = { userId: String(user._id), role: user.system_role, tier: user.subscription_type, sessionId: session._id, authVersion: user.auth_version ?? 0 };
     request.authUser = user;
+    response.setHeader('Cache-Control', 'no-store');
     next();
   } catch {
     next();

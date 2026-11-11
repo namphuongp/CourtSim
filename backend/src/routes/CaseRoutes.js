@@ -19,7 +19,7 @@ const router = Router();
 
 const escapeRegex = (value = '') => String(value).replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
 
-function buildCaseListFilter(query = {}, auth = null) {
+export function buildCaseListFilter(query = {}, auth = null) {
   const conditions = [];
   const category = typeof query.category === 'string' ? query.category.trim() : '';
   if (category && category !== 'all') {
@@ -276,6 +276,9 @@ router.put('/:caseId', authenticate, requireAdmin, asyncHandler(async (request, 
     existing.origin = request.body.origin;
     if (request.body.origin === 'system') {
       existing.created_by = null;
+      existing.moderation_status = 'approved';
+      existing.moderated_by = request.auth.userId;
+      existing.moderated_at = new Date();
       if (/người dùng tải lên/iu.test(existing.source_note ?? '')) {
         existing.source_note = 'Hồ sơ vụ án chuẩn hệ thống.';
       }

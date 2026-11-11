@@ -425,7 +425,7 @@ export default function SimulationSetup() {
   const canNext = step === 0 ? ready : step === 1 ? (ready && isSelectedCaseApproved) : step === 2 ? Boolean(form.user_court_role) : step === 3 ? Boolean(eventDate) : false;
   const summary = <dl className="setup-summary"><div><dt>Vụ án</dt><dd>{ready ? caseIntroduction(selectedCase).title : 'Chưa chọn vụ án'}</dd></div><div><dt>Vai của bạn</dt><dd>{form.user_court_role ? roleLabel(form.user_court_role, selectedCase?.category, selectedCase) : 'Chưa chọn vai'}</dd></div><div><dt>Mốc tra cứu</dt><dd>{eventDate || 'Chưa chọn mốc tra cứu'}</dd></div><div><dt>Giới hạn</dt><dd>20 lượt trao đổi</dd></div></dl>;
   return <section className="practice-dashboard simulation-setup mx-auto space-y-6">
-    <header className="flex flex-wrap items-start justify-between gap-4"><div><h1 className="text-3xl font-bold text-white">Thiết lập phiên tòa</h1><p className="mt-2 text-slate-400">Đọc hồ sơ, chọn vai và mốc tra cứu — chuẩn bị trước khi vào phòng xử án.</p><nav className="setup-step-tabs" aria-label="Các bước thiết lập">{steps.map((title, index) => <button key={title} type="button" aria-current={step === index ? 'step' : undefined} disabled={state.submitting || (index > 0 && !ready)} onClick={() => goStep(index)}>{index < step && completedSteps[index] ? <Check size={12} className="inline" aria-hidden="true" /> : index + 1} {title}</button>)}</nav></div><Link to="/guide" className="setup-guide-link flex items-center gap-2 px-4 py-2 text-sm"><CircleHelp size={16}/> Xem hướng dẫn</Link></header>
+    <header className="flex flex-wrap items-start justify-between gap-4"><div><h1 className="text-3xl font-bold text-white">Thiết lập phiên tòa</h1><p className="mt-2 text-slate-400">Đọc hồ sơ, chọn vai và mốc tra cứu — chuẩn bị trước khi vào phòng xử án.</p><nav className="setup-step-tabs" aria-label="Các bước thiết lập">{steps.map((title, index) => <button key={title} type="button" aria-current={step === index ? 'step' : undefined} disabled={state.submitting || (index > 0 && !ready) || (index > 1 && !isSelectedCaseApproved)} onClick={() => goStep(index)}>{index < step && completedSteps[index] ? <Check size={12} className="inline" aria-hidden="true" /> : index + 1} {title}</button>)}</nav></div><Link to="/guide" className="setup-guide-link flex items-center gap-2 px-4 py-2 text-sm"><CircleHelp size={16}/> Xem hướng dẫn</Link></header>
     {state.error && <p role="alert" className="dashboard-card dashboard-alert">{state.error} <button className="underline" onClick={() => setReload(n => n + 1)}>Thử lại</button></p>}
     {uploadState.success && <p role="status" className="dashboard-card setup-upload-success p-3.5 text-sm">{uploadState.success}</p>}
     <fieldset disabled={state.submitting} className="setup-grid grid gap-6 lg:grid-cols-3">
@@ -454,15 +454,15 @@ export default function SimulationSetup() {
                       <Sparkles size={17} /> Tải lên bản án hoặc hồ sơ vụ việc của riêng bạn
                     </h3>
                     <p className="mt-1 text-xs font-medium text-slate-600">
-                      {currentUser?.role === 'admin' || membership?.unlimitedUploads ? (
+                      {currentUser?.role === 'admin' || membership.data?.unlimitedUploads ? (
                         <span className="text-emerald-700 font-semibold">Tài khoản được tải lên không giới hạn</span>
-                      ) : (membership?.freeUploadsRemaining ?? 2) > 0 ? (
+                      ) : (membership.data?.freeUploadsRemaining ?? 2) > 0 ? (
                         <span>
-                          Bạn còn <strong className="text-blue-700">{membership?.freeUploadsRemaining ?? 2}/2 lượt tải hồ sơ miễn phí</strong>. Sau 2 bản miễn phí sẽ tính phí (01 lượt tranh tụng/bản hoặc gói Pro).
+                          Bạn còn <strong className="text-blue-700">{membership.data?.freeUploadsRemaining ?? 2}/2 lượt tải hồ sơ miễn phí</strong>. Sau 2 bản miễn phí sẽ tính phí (01 lượt tranh tụng/bản hoặc gói Pro).
                         </span>
-                      ) : (membership?.caseCredits ?? 0) > 0 ? (
+                      ) : (membership.data?.caseCredits ?? 0) > 0 ? (
                         <span>
-                          Đã dùng hết 2 lượt miễn phí · Tải thêm sẽ trừ <strong className="text-amber-700">01 lượt tranh tụng</strong> (hiện còn {membership.caseCredits} lượt).
+                          Đã dùng hết 2 lượt miễn phí · Tải thêm sẽ trừ <strong className="text-amber-700">01 lượt tranh tụng</strong> (hiện còn {membership.data.caseCredits} lượt).
                         </span>
                       ) : (
                         <span className="text-rose-700 font-semibold">
