@@ -136,4 +136,119 @@ test('giới hạn 2 lượt tải miễn phí và trạng thái kiểm duyệt 
   assert.equal(rejectedStats.is_rejected, true);
   assert.equal(rejectedStats.is_approved, false);
   assert.equal(learnerCase(rejectedUpload).moderation_note, 'Thiếu dữ liệu các bên đương sự.');
+
+  const { buildCaseListFilter } = await import('../src/routes/CaseRoutes.js');
+  const guestFilter = buildCaseListFilter({}, null);
+  assert.deepEqual(guestFilter, { moderation_status: { $nin: ['pending', 'rejected'] } });
+
+  const userFilter = buildCaseListFilter({}, { userId: '507f1f77bcf86cd799439011', role: 'user' });
+  assert.ok(Array.isArray(userFilter.$or));
+  assert.equal(userFilter.$or.length, 2);
+
+  const adminPendingFilter = buildCaseListFilter({ moderation_status: 'pending' }, { userId: '507f1f77bcf86cd799439012', role: 'admin' });
+  assert.deepEqual(adminPendingFilter, { moderation_status: 'pending' });
+});
+
+test('kiểm tra thực thi hạn mức 2 bản miễn phí, tính phí từ bản thứ 3 và miễn phí không giới hạn cho Pro/Admin', async () => {
+  const { assertCanUploadCase, consumeCaseUploadAccess, membershipStatus } = await import('../src/services/paymentAccess.js');
+  const CaseModel = (await import('../src/models/Case.js')).default;
+  const UserUsageQuota = (await import('../src/models/UserUsageQuota.js')).default;
+  const SimulationSession = (await import('../src/models/SimulationSession.js')).default;
+
+  const origCaseCount = CaseModel.countDocuments;
+  const origQuotaFindOne = UserUsageQuota.findOne;
+  const origQuotaFindById = UserUsageQuota.findById;
+  const origQuotaUpdateOne = UserUsageQuota.updateOne;
+  const origSessionCount = SimulationSession.countDocuments;
+
+  const state = {
+    uploadedCases: 0,
+    quotaDoc: {
+      _id: '507f1f77bcf86cd799439099',
+      user_id: '507f1f77bcf86cd799439011',
+      free_cases_used: 0,
+      free_uploads_used: 0,
+      case_credits: 0,
+    },
+  };
+
+  try {
+    CaseModel.countDocuments = async () => state.uploadedCases;
+    SimulationSession.countDocuments = async () => 0;
+    UserUsageQuota.findOne = () => ({ lean: async () => ({ ...state.quotaDoc }) });
+    UserUsageQuota.findById = () => ({ lean: async () => ({ ...state.quotaDoc }) });
+    UserUsageQuota.updateOne = async (filter, update) => {
+      if (filter.case_credits?.$gt === 0 && state.quotaDoc.case_credits <= 0) {
+        return { matchedCount: 0 };
+      }
+      if (update.$set) Object.assign(state.quotaDoc, update.$set);
+      if (update.$inc?.case_credits) state.quotaDoc.case_credits += update.$inc.case_credits;
+      return { matchedCount: 1 };
+    };
+
+    const userObj = { _id: '507f1f77bcf86cd799439011', subscription_type: 'free', system_role: 'user' };
+
+    // Ban đầu còn 2/2 lượt miễn phí
+    const status0 = await membershipStatus(userObj);
+    assert.equal(status0.freeUploadLimit, 2);
+    assert.equal(status0.freeUploadsRemaining, 2);
+    assert.equal(status0.canUploadCase, true);
+
+    // Tải bản 1 (miễn phí)
+    await assertCanUploadCase(userObj._id, 'free', 'user');
+    const up1 = await consumeCaseUploadAccess(userObj._id, 'free', 'user');
+    assert.equal(up1.source, 'free_upload');
+    state.uploadedCases = 1;
+
+    const status1 = await membershipStatus(userObj);
+    assert.equal(status1.freeUploadsUsed, 1);
+    assert.equal(status1.freeUploadsRemaining, 1);
+    assert.equal(status1.canUploadCase, true);
+
+    // Tải bản 2 (miễn phí)
+    await assertCanUploadCase(userObj._id, 'free', 'user');
+    const up2 = await consumeCaseUploadAccess(userObj._id, 'free', 'user');
+    assert.equal(up2.source, 'free_upload');
+    state.uploadedCases = 2;
+
+    const status2 = await membershipStatus(userObj);
+    assert.equal(status2.freeUploadsUsed, 2);
+    assert.equal(status2.freeUploadsRemaining, 0);
+    assert.equal(status2.canUploadCase, false);
+
+    // Tải bản 3 khi hết lượt miễn phí và không có credit -> chặn 402 UPLOAD_PAYMENT_REQUIRED
+    await assert.rejects(
+      () => assertCanUploadCase(userObj._id, 'free', 'user'),
+      (err) => err.statusCode === 402 && err.code === 'UPLOAD_PAYMENT_REQUIRED'
+    );
+
+    // Kể cả khi người dùng xóa bớt 1 hồ sơ đã tải lên (uploadedCases = 1), free_uploads_used vẫn là 2 nên không thể lách luật
+    state.uploadedCases = 1;
+    await assert.rejects(
+      () => assertCanUploadCase(userObj._id, 'free', 'user'),
+      (err) => err.statusCode === 402 && err.code === 'UPLOAD_PAYMENT_REQUIRED'
+    );
+
+    // Khi mua thêm 1 lượt lẻ (case_credits = 1), được phép tải bản thứ 3 và trừ 1 credit
+    state.quotaDoc.case_credits = 1;
+    const statusWithCredit = await membershipStatus(userObj);
+    assert.equal(statusWithCredit.canUploadCase, true);
+
+    await assertCanUploadCase(userObj._id, 'pay-per-use', 'user');
+    const up3 = await consumeCaseUploadAccess(userObj._id, 'pay-per-use', 'user');
+    assert.equal(up3.source, 'credit');
+    assert.equal(state.quotaDoc.case_credits, 0);
+
+    // Tài khoản Pro hoặc Admin được tải không giới hạn
+    const proUp = await consumeCaseUploadAccess(userObj._id, 'pro', 'user');
+    assert.equal(proUp.source, 'subscription');
+    const adminUp = await consumeCaseUploadAccess(userObj._id, 'free', 'admin');
+    assert.equal(adminUp.source, 'subscription');
+  } finally {
+    CaseModel.countDocuments = origCaseCount;
+    UserUsageQuota.findOne = origQuotaFindOne;
+    UserUsageQuota.findById = origQuotaFindById;
+    UserUsageQuota.updateOne = origQuotaUpdateOne;
+    SimulationSession.countDocuments = origSessionCount;
+  }
 });
