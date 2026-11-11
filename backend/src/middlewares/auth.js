@@ -22,6 +22,23 @@ export async function authenticate(request, response, next) {
     next();
   } catch (error) { next(error); }
 }
+export async function optionalAuthenticate(request, _response, next) {
+  try {
+    const token = cookie(request, SESSION_COOKIE);
+    if (!token) return next();
+    const now = new Date();
+    const session = await AuthSession.findOne({ tokenHash: hash(token), expiresAt: { $gt: now }, idleExpiresAt: { $gt: now } }).lean();
+    if (!session) return next();
+    const user = await User.findById(session.userId).lean();
+    if (!user || user.status !== 'active' || (session.authVersion ?? 0) !== (user.auth_version ?? 0)) return next();
+    request.auth = { userId: String(user._id), role: user.system_role, tier: user.subscription_type, sessionId: session._id, authVersion: user.auth_version ?? 0 };
+    request.authUser = user;
+    next();
+  } catch {
+    next();
+  }
+}
+
 export function requireAdmin(request, _response, next) {
   if (request.auth?.role !== 'admin') return next(new AppError('Bạn không có quyền thực hiện thao tác này.', 403, 'FORBIDDEN'));
   next();

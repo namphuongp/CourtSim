@@ -21,7 +21,7 @@ export function createApp(authDependencies, paymentDependencies = {}) {
   app.use(cors({ origin: corsOptions, credentials: true, methods: ['GET', 'POST', 'PATCH', 'DELETE'], allowedHeaders: ['Content-Type', 'X-CourtSim-Request'] }));
   app.use(browserMutationGuard);
   app.use(express.json({
-    limit: '8mb',
+    limit: '30mb',
     verify: (request, _response, buffer) => {
       request.rawBody = Buffer.from(buffer);
     },

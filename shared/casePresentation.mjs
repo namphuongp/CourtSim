@@ -65,6 +65,91 @@ function buildDefaultDevelopments(courtCase) {
   return steps;
 }
 
+export function detectCaseOrigin(courtCase) {
+  if (!courtCase || typeof courtCase !== 'object') return 'system';
+  if (courtCase.origin === 'system') return 'system';
+  if (courtCase.origin === 'user_upload') return 'user_upload';
+  if (courtCase.created_by) return 'user_upload';
+  if (/người dùng tải lên/iu.test(courtCase.source_note ?? '')) return 'user_upload';
+  if ((courtCase.evidence_inventory ?? []).some(e => String(e?.id ?? '').startsWith('EV-custom-'))) return 'user_upload';
+  return 'system';
+}
+
+export function detectModerationStatus(courtCase) {
+  if (!courtCase || typeof courtCase !== 'object') return 'approved';
+  if (detectCaseOrigin(courtCase) === 'system') return 'approved';
+  return ['approved', 'pending', 'rejected'].includes(courtCase.moderation_status)
+    ? courtCase.moderation_status
+    : 'approved';
+}
+
+export function caseCompletenessStats(courtCase) {
+  const origin = detectCaseOrigin(courtCase);
+  const moderationStatus = detectModerationStatus(courtCase);
+  const parties = Array.isArray(courtCase?.parties) ? courtCase.parties : [];
+  const timeline = Array.isArray(courtCase?.timeline) ? courtCase.timeline : [];
+  const evidenceList = Array.isArray(courtCase?.evidence_inventory) ? courtCase.evidence_inventory : [];
+  const partiesCount = parties.length;
+  const timelineCount = timeline.length;
+  const evidenceCount = evidenceList.length;
+  const providedEvidenceCount = evidenceList.filter(e => e?.availability === 'provided' || Boolean(e?.content?.trim())).length;
+
+  const baseDocChars = String(courtCase?.full_document ?? '').length;
+  const evidenceChars = evidenceList.reduce((acc, ev) => acc + String(ev?.content || ev?.summary || '').length, 0);
+  const totalChars = Math.max(baseDocChars, baseDocChars + Math.round(evidenceChars * 0.65));
+  const estimatedPages = totalChars > 0 ? Math.max(1, Math.ceil(totalChars / 1650)) : 1;
+
+  const hasSpecificParties = partiesCount >= 2 && !parties.every(p => /^(?:Nguyên đơn|Bị đơn|Người bị hại|Bị cáo|Bên khởi kiện|Bên bị kiện)$/iu.test(String(p?.name ?? '').trim()));
+  const missingFields = [];
+  if (partiesCount < 2 || !hasSpecificParties) missingFields.push('đương sự cụ thể');
+  if (evidenceCount < 2) missingFields.push('chứng cứ');
+  if (timelineCount < 2) missingFields.push('mốc thời gian');
+  if (origin === 'user_upload' && totalChars > 0 && totalChars < 1800) missingFields.push('nội dung toàn văn quá ngắn');
+
+  if (origin === 'system') {
+    return {
+      origin: 'system',
+      moderation_status: 'approved',
+      is_approved: true,
+      is_pending: false,
+      is_rejected: false,
+      parties_count: partiesCount,
+      timeline_count: timelineCount,
+      evidence_count: evidenceCount,
+      provided_evidence_count: providedEvidenceCount,
+      total_chars: totalChars,
+      estimated_pages: estimatedPages,
+      has_full_dossier: true,
+      quality_level: 'verified_system',
+      quality_label: 'Chuẩn hệ thống',
+      missing_fields: [],
+    };
+  }
+
+  const isCompleteUpload = partiesCount >= 2
+    && hasSpecificParties
+    && evidenceCount >= 2
+    && timelineCount >= 2
+    && (totalChars === 0 || totalChars >= 1800);
+  return {
+    origin: 'user_upload',
+    moderation_status: moderationStatus,
+    is_approved: moderationStatus === 'approved',
+    is_pending: moderationStatus === 'pending',
+    is_rejected: moderationStatus === 'rejected',
+    parties_count: partiesCount,
+    timeline_count: timelineCount,
+    evidence_count: evidenceCount,
+    provided_evidence_count: providedEvidenceCount,
+    total_chars: totalChars,
+    estimated_pages: estimatedPages,
+    has_full_dossier: isCompleteUpload,
+    quality_level: isCompleteUpload ? 'complete_upload' : 'partial_upload',
+    quality_label: isCompleteUpload ? 'Đầy đủ cấu trúc' : 'Thiếu dữ liệu chi tiết',
+    missing_fields: missingFields,
+  };
+}
+
 export function caseIntroduction(courtCase) {
   // Nhận đúng hồ sơ để các vụ án khác không nhận nhầm diễn biến.
   if (courtCase?.practice_context?.source_label !== 'Bản chép lời Case1.docx'

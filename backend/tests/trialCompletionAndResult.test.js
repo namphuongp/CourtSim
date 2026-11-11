@@ -4,7 +4,9 @@ import { memberEvaluation } from '../src/services/membershipAccess.js';
 import { getTrialStageIndex } from '../../frontend/src/services/courtroom.js';
 import { sanitizeTextForTts, ROLE_VOICE_MAP } from '../src/services/aiVoiceService.js';
 import { isClosingIntent, isExplicitEndByChat } from '../src/services/conversationPolicy.js';
-import { parseLegalDossierDocument, reflowVietnameseLegalText } from '../../shared/legalDocumentFormatter.mjs';
+import { buildCompleteDossierDocument, parseLegalDossierDocument, reflowVietnameseLegalText } from '../../shared/legalDocumentFormatter.mjs';
+import { learnerText } from '../../shared/learnerText.mjs';
+import { normalizeAndRepairCasePayload, segmentVietnameseJudgment } from '../src/services/userCaseUploadService.js';
 
 test('memberEvaluation: Trả về kết quả đánh giá chuẩn xác, không bị lỗi 500 do khảo sát cũ', () => {
   const dummyResult = {
@@ -205,5 +207,48 @@ test('Legal Document Formatter: Nối dòng bị gãy từ PDF và phân tách c
   assert.ok(parsed.sections[2].blocks[0].body.includes('Đơn kháng cáo hợp lệ. Tòa án cấp sơ thẩm thụ lý giải quyết là đúng thẩm quyền'));
   assert.equal(parsed.sections[2].blocks[1].badge, '[2]');
 });
+
+test('Hồ sơ dài 55+ trang: Không bị cắt cụt ở 38.000 ký tự, không mất đoạn sau QUYẾT ĐỊNH giữa hồ sơ và gộp đầy đủ bút lục', () => {
+  // 1. learnerText giữ nguyên số thứ tự tiêu đề "1. Bối cảnh..." và tên tài khoản "@kpop_tin_nhanh"
+  const rawHeadingSample = '1. Bối cảnh và diễn biến sự việc trước khi khởi kiện:\nBị đơn Trần Minh Khoa quản lý tài khoản @kpop_tin_nhanh đăng tải video ngày 11/10/2026.';
+  const cleaned = learnerText(rawHeadingSample);
+  assert.ok(cleaned.includes('1. Bối cảnh và diễn biến sự việc trước khi khởi kiện:'));
+  assert.ok(cleaned.includes('@kpop_tin_nhanh'));
+
+  // 2. Hồ sơ 55 trang (~95.000 ký tự) có chữ QUYẾT ĐỊNH ở trang 10 không bị cắt mất 45 trang sau
+  const pageBlock = 'Ngày 15/03/2025, nguyên đơn là ông Nguyễn Văn An và bị đơn là bà Trần Thị Bình lập biên bản đối chiếu công nợ chuyển nhượng đất tại Ủy ban nhân dân phường. ';
+  const firstTenPages = pageBlock.repeat(120); // ~19.000 ký tự
+  const midProceduralDecision = '\nQUYẾT ĐỊNH:\nĐưa vụ án dân sự thụ lý số 45/2025/TLST-DS ra xét xử sơ thẩm.\n';
+  const remainingFortyFivePages = pageBlock.repeat(500); // ~80.000 ký tự
+  const long55PageDossier = `${firstTenPages}${midProceduralDecision}${remainingFortyFivePages}`;
+
+  const segmented = segmentVietnameseJudgment(long55PageDossier);
+  assert.ok(segmented.bodyWithoutVerdict.length > 96000);
+  assert.equal(segmented.verdictSection, '');
+
+  const normalizedCase = normalizeAndRepairCasePayload(null, long55PageDossier, {});
+  assert.ok(normalizedCase.full_document.length > 90000, 'Hồ sơ 55 trang (>90.000 ký tự) phải được giữ nguyên toàn văn');
+
+  // 3. buildCompleteDossierDocument gộp cả các bút lục đính kèm vào chế độ Đọc toàn bộ nội dung hồ sơ
+  const complete = buildCompleteDossierDocument({
+    full_document: 'HỒ SƠ TÓM TẮT VỤ ÁN\n1.\nBối cảnh khởi kiện:\nNội dung mở đầu vụ án.',
+    evidence_inventory: [
+      {
+        id: 'EV-01',
+        name: 'Bản tường trình của Nguyễn Ngọc Mai',
+        date: '2026-09-14',
+        provided_by: 'Nguyễn Ngọc Mai',
+        content: 'BẢN TƯỜNG TRÌNH CỦA NGUYỄN NGỌC MAI\nTôi xác nhận sự việc xảy ra tại tầng 2 cơ sở lưu trú An Phúc.',
+      },
+    ],
+  });
+  assert.equal(complete.appendedEvidenceCount, 1);
+  const parsedComplete = parseLegalDossierDocument(complete.fullText);
+  assert.equal(parsedComplete.sections.length, 2);
+  assert.equal(parsedComplete.sections[0].badge, '01');
+  assert.equal(parsedComplete.sections[0].title, 'Bối cảnh khởi kiện');
+  assert.equal(parsedComplete.sections[1].badge, 'BL-01');
+});
+
 
 

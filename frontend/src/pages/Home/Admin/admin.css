@@ -76,6 +76,18 @@
 .admin-case-list { list-style:none; padding:0; }
 .admin-case-list li { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; border-bottom:1px solid var(--admin-border); padding:16px 0; overflow-wrap:anywhere; }
 .admin-case-list li>div { flex:1 1 250px; min-width:0; }
+.admin-case-list-header { display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:14px; margin-bottom:14px; }
+.admin-origin-tabs { display:flex; flex-wrap:wrap; gap:8px; }
+.admin-origin-tabs button { display:inline-flex; align-items:center; gap:6px; font-size:12.5px; padding:7px 13px; min-height:36px; border-radius:999px; background:#f8fafc; border:1px solid #cbd5e1; color:#334e68; font-weight:650; }
+.admin-origin-tabs button.is-active { background:#e0f2fe; border-color:#0284c7; color:#0c4a6e; font-weight:750; }
+.admin-origin-tabs button.is-active.is-system { background:#d1fae5; border-color:#059669; color:#065f46; }
+.admin-origin-tabs button.is-active.is-upload { background:#e0e7ff; border-color:#4f46e5; color:#312e81; }
+.admin-case-badges { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-bottom:6px; }
+.admin-badge.admin-upload-badge { color:#3730a3; background:#e0e7ff; }
+.admin-search-input-wrap { position:relative; display:flex; align-items:center; width:100%; }
+.admin-search-input-wrap input { width:100% !important; padding-left:32px !important; padding-right:30px !important; }
+.admin-search-icon { position:absolute; left:10px; color:#64748b; pointer-events:none; }
+.admin-search-clear { position:absolute; right:6px; min-height:24px !important; width:24px; height:24px; padding:0 !important; border:0 !important; border-radius:999px !important; background:#f1f5f9 !important; color:#475569 !important; display:inline-flex; align-items:center; justify-content:center; }
 .admin-case-item-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 .admin-case-item-actions button { font-size:13px; padding:6px 12px; min-height:36px; display:inline-flex; align-items:center; gap:6px; font-weight:600; cursor:pointer; }
 .admin-btn-edit { color:#1853b9; border-color:#8daee1; background:#ecf3ff; }

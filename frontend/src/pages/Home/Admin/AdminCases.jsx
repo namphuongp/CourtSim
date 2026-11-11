@@ -1,16 +1,45 @@
 import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Pencil, Trash2, Eye, Plus, X, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import {
+  Pencil,
+  Trash2,
+  Eye,
+  Plus,
+  X,
+  AlertTriangle,
+  CheckCircle2,
+  ShieldCheck,
+  Upload,
+  Search,
+  RotateCcw,
+  Layers,
+  Clock,
+  Check,
+  XCircle,
+} from 'lucide-react';
 import api, { getApiError } from '../../../services/api';
 import CaseDossier from '../../../components/CaseDossier';
+import { caseCompletenessStats, detectCaseOrigin } from '../../../../../shared/casePresentation.mjs';
 import { useAdminData } from './adminData';
 import { LoadState, Pagination } from './AdminElements';
 
-const emptyCase = () => ({ title: '', category: 'dân sự', summary: '', full_document: '', evidence_inventory: [] });
+const emptyCase = () => ({ title: '', category: 'dân sự', origin: 'system', summary: '', full_document: '', evidence_inventory: [] });
 
 export default function AdminCases() {
   const [page, setPage] = useState(1);
-  const resource = useAdminData(`/v1/cases?limit=10&page=${page}`);
+  const [limit, setLimit] = useState(10);
+  const [originFilter, setOriginFilter] = useState('all');
+  const [moderationFilter, setModerationFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const queryParams = new URLSearchParams({ limit: String(limit), page: String(page) });
+  if (originFilter !== 'all') queryParams.set('origin', originFilter);
+  if (moderationFilter !== 'all') queryParams.set('moderation_status', moderationFilter);
+  if (categoryFilter !== 'all') queryParams.set('category', categoryFilter);
+  if (searchQuery.trim()) queryParams.set('q', searchQuery.trim().slice(0, 120));
+
+  const resource = useAdminData(`/v1/cases?${queryParams.toString()}`);
   const [form, setForm] = useState(emptyCase);
   const [editingCaseId, setEditingCaseId] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -42,6 +71,7 @@ export default function AdminCases() {
       setForm({
         title: caseData.title || '',
         category: caseData.category || 'dân sự',
+        origin: caseData.origin || 'system',
         summary: caseData.summary || '',
         full_document: caseData.full_document || '',
         evidence_inventory: (caseData.evidence_inventory || []).map(e => ({
@@ -162,6 +192,58 @@ export default function AdminCases() {
     }
   }
 
+  async function toggleCaseOrigin(item) {
+    if (lock.current) return;
+    const currentOrigin = detectCaseOrigin(item);
+    const nextOrigin = currentOrigin === 'system' ? 'user_upload' : 'system';
+    lock.current = true;
+    setBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      await api.patch(`/v1/cases/${item._id}/origin`, { origin: nextOrigin });
+      setNotice(
+        nextOrigin === 'system'
+          ? `Đã chuyển “${item.title}” vào danh sách Vụ án chuẩn hệ thống (Của mình).`
+          : `Đã chuyển “${item.title}” sang danh sách Hồ sơ người dùng tải lên.`
+      );
+      resource.reload();
+    } catch (failure) {
+      setError(getApiError(failure, 'Chưa thể cập nhật phân loại nguồn vụ án.'));
+    } finally {
+      lock.current = false;
+      setBusy(false);
+    }
+  }
+
+  async function handleModerateCase(item, moderationStatus) {
+    if (lock.current) return;
+    lock.current = true;
+    setBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      await api.patch(`/v1/cases/${item._id}/moderation`, {
+        moderation_status: moderationStatus,
+        moderation_note:
+          moderationStatus === 'rejected'
+            ? 'Hồ sơ chưa đầy đủ dữ liệu hoặc chưa đạt tiêu chuẩn kiểm duyệt của hệ thống.'
+            : 'Đã được Quản trị viên kiểm duyệt.',
+      });
+      setNotice(
+        moderationStatus === 'approved'
+          ? `Đã phê duyệt hồ sơ “${item.title}”. Người dùng hiện có thể mở phiên tranh tụng.`
+          : `Đã từ chối phê duyệt hồ sơ “${item.title}”.`
+      );
+      resource.reload();
+    } catch (failure) {
+      setError(getApiError(failure, 'Chưa thể cập nhật trạng thái kiểm duyệt hồ sơ.'));
+    } finally {
+      lock.current = false;
+      setBusy(false);
+    }
+  }
+
   async function viewCase(id) {
     const request = ++detailRequest.current;
     setDetail({ loading: true });
@@ -200,7 +282,9 @@ export default function AdminCases() {
         {editingCaseId ? (
           <div className="admin-edit-banner">
             <div>
-              <strong>✏️ Đang chỉnh sửa vụ án: “{form.title || 'Hồ sơ'}”</strong>
+              <strong className="inline-flex items-center gap-1.5">
+                <Pencil size={15} /> Đang chỉnh sửa vụ án: “{form.title || 'Hồ sơ'}”
+              </strong>
               <p style={{ margin: '2px 0 0', fontSize: '13px', color: '#4b6584' }}>
                 Thay đổi các thông tin bên dưới và bấm "Lưu thay đổi" để cập nhật dữ liệu.
               </p>
@@ -228,13 +312,22 @@ export default function AdminCases() {
               Loại vụ án (Dân sự, Hình sự, Đất đai, Thương mại...)
               <input required maxLength={80} value={form.category} onChange={e => update('category', e.target.value)} />
             </label>
+            {editingCaseId && (
+              <label>
+                Phân loại nguồn vụ án
+                <select value={form.origin || 'system'} onChange={e => update('origin', e.target.value)}>
+                  <option value="system">Vụ án chuẩn hệ thống (Đã kiểm duyệt của hệ thống)</option>
+                  <option value="user_upload">Hồ sơ do người dùng tải lên</option>
+                </select>
+              </label>
+            )}
             <label>
               Tóm tắt vụ án
               <textarea required rows={4} maxLength={4000} value={form.summary} onChange={e => update('summary', e.target.value)} />
             </label>
             <label>
-              Nội dung hồ sơ đầy đủ
-              <textarea required rows={10} maxLength={50000} value={form.full_document} onChange={e => update('full_document', e.target.value)} />
+              Nội dung hồ sơ đầy đủ {form.full_document ? `(${form.full_document.length.toLocaleString('vi-VN')} ký tự · ~${Math.max(1, Math.ceil(form.full_document.length / 1650))} trang)` : ''}
+              <textarea required rows={10} maxLength={250000} value={form.full_document} onChange={e => update('full_document', e.target.value)} />
             </label>
 
             <h3>Danh sách chứng cứ hồ sơ ({form.evidence_inventory.length})</h3>
@@ -286,7 +379,7 @@ export default function AdminCases() {
                 ])
               }
             >
-              + Thêm chứng cứ
+              <Plus size={14} className="inline mr-1" /> Thêm chứng cứ
             </button>
 
             {error && <p role="alert" style={{ color: '#b91c1c', marginTop: '12px' }}>{error}</p>}
@@ -307,58 +400,260 @@ export default function AdminCases() {
         </form>
       </section>
 
-      {/* Danh sách vụ án hiện có với chức năng Xem, Sửa, Xóa */}
+      {/* Danh sách vụ án hiện có với bộ lọc Nguồn, Tìm kiếm, Lĩnh vực và Phân trang */}
       <section className="admin-card" aria-labelledby="case-list-heading">
-        <h2 id="case-list-heading">Vụ án hiện có ({resource?.data?.pagination?.total ?? '…'})</h2>
+        <div className="admin-case-list-header">
+          <div>
+            <h2 id="case-list-heading" style={{ marginBottom: '4px' }}>
+              Vụ án hiện có ({resource?.data?.pagination?.total ?? '…'})
+            </h2>
+            <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
+              Phân loại giữa <strong>Vụ án chuẩn hệ thống (Của mình)</strong> và <strong>Hồ sơ người dùng tải lên</strong> để kiểm soát chất lượng dữ liệu.
+            </p>
+          </div>
+
+          <div className="admin-origin-tabs" role="tablist" aria-label="Phân loại nguồn vụ án">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={originFilter === 'all'}
+              className={originFilter === 'all' ? 'is-active' : ''}
+              onClick={() => { setOriginFilter('all'); setPage(1); }}
+            >
+              <Layers size={14} /> Tất cả nguồn
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={originFilter === 'system'}
+              className={originFilter === 'system' ? 'is-active is-system' : ''}
+              onClick={() => { setOriginFilter('system'); setPage(1); }}
+            >
+              <ShieldCheck size={14} /> Vụ án chuẩn hệ thống
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={originFilter === 'user_upload'}
+              className={originFilter === 'user_upload' ? 'is-active is-upload' : ''}
+              onClick={() => { setOriginFilter('user_upload'); setPage(1); }}
+            >
+              <Upload size={14} /> Người dùng tải lên
+            </button>
+          </div>
+        </div>
+
+        <div className="admin-filters admin-case-filters" role="search" aria-label="Bộ lọc tìm kiếm vụ án">
+          <label style={{ flex: '1 1 260px' }}>
+            Tìm kiếm vụ án
+            <div className="admin-search-input-wrap">
+              <Search size={14} className="admin-search-icon" />
+              <input
+                type="search"
+                placeholder="Nhập tên vụ án, đương sự hoặc nội dung tóm tắt..."
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  className="admin-search-clear"
+                  aria-label="Xóa từ khóa"
+                  onClick={() => { setSearchQuery(''); setPage(1); }}
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </div>
+          </label>
+
+          <label>
+            Lĩnh vực
+            <select
+              value={categoryFilter}
+              onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }}
+            >
+              <option value="all">Tất cả lĩnh vực</option>
+              <option value="dân sự">Dân sự</option>
+              <option value="hình sự">Hình sự</option>
+              <option value="đất đai">Đất đai</option>
+              <option value="hành chính">Hành chính</option>
+              <option value="thương mại">Thương mại</option>
+              <option value="lao động">Lao động</option>
+              <option value="hôn nhân và gia đình">Hôn nhân và gia đình</option>
+            </select>
+          </label>
+
+          <label>
+            Trạng thái kiểm duyệt
+            <select
+              value={moderationFilter}
+              onChange={(e) => { setModerationFilter(e.target.value); setPage(1); }}
+            >
+              <option value="all">Tất cả trạng thái</option>
+              <option value="pending">Chờ kiểm duyệt</option>
+              <option value="approved">Đã kiểm duyệt</option>
+              <option value="rejected">Từ chối duyệt</option>
+            </select>
+          </label>
+
+          <label>
+            Số dòng / trang
+            <select
+              value={limit}
+              onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }}
+            >
+              <option value={10}>10 vụ án</option>
+              <option value={20}>20 vụ án</option>
+              <option value={50}>50 vụ án</option>
+            </select>
+          </label>
+
+          {(originFilter !== 'all' || moderationFilter !== 'all' || categoryFilter !== 'all' || searchQuery.trim()) && (
+            <button
+              type="button"
+              onClick={() => {
+                setOriginFilter('all');
+                setModerationFilter('all');
+                setCategoryFilter('all');
+                setSearchQuery('');
+                setPage(1);
+              }}
+            >
+              <RotateCcw size={13} className="inline mr-1" /> Đặt lại lọc
+            </button>
+          )}
+        </div>
+
         <LoadState resource={resource}>
           {result => (
             <>
               {!result.data.length ? (
-                <p>Chưa có vụ án nào trong hệ thống.</p>
+                <p className="admin-empty">Không có vụ án nào phù hợp với bộ lọc hiện tại.</p>
               ) : (
                 <ul className="admin-case-list">
-                  {result.data.map(item => (
-                    <li key={item._id} style={editingCaseId === item._id ? { background: '#f8faff', padding: '16px 12px', borderRadius: '8px' } : undefined}>
-                      <div>
-                        <strong>{item.title}</strong>
-                        {editingCaseId === item._id && (
-                          <span style={{ marginLeft: '8px', fontSize: '11px', color: '#1d4ed8', fontWeight: 600 }}>
-                            (Đang sửa)
-                          </span>
-                        )}
-                        <p>{item.category} · {item.summary}</p>
-                      </div>
+                  {result.data.map(item => {
+                    const stats = caseCompletenessStats(item);
+                    return (
+                      <li key={item._id} style={editingCaseId === item._id ? { background: '#f8faff', padding: '16px 12px', borderRadius: '8px' } : undefined}>
+                        <div>
+                          <div className="admin-case-badges">
+                            {stats.origin === 'system' ? (
+                              <span className="admin-badge admin-ok inline-flex items-center gap-1">
+                                <ShieldCheck size={12} /> Vụ án chuẩn hệ thống
+                              </span>
+                            ) : (
+                              <span className="admin-badge admin-upload-badge inline-flex items-center gap-1">
+                                <Upload size={12} /> Người dùng tải lên
+                              </span>
+                            )}
+                            {stats.is_pending ? (
+                              <span className="admin-badge admin-warning inline-flex items-center gap-1">
+                                <Clock size={12} /> Chờ kiểm duyệt
+                              </span>
+                            ) : stats.is_rejected ? (
+                              <span className="admin-badge admin-danger inline-flex items-center gap-1">
+                                <XCircle size={12} /> Từ chối duyệt
+                              </span>
+                            ) : (
+                              <span className="admin-badge admin-ok inline-flex items-center gap-1">
+                                <CheckCircle2 size={12} /> Đã duyệt
+                              </span>
+                            )}
+                            <span className="admin-badge">{item.category}</span>
+                            {stats.origin === 'user_upload' && !stats.has_full_dossier ? (
+                              <span
+                                className="admin-badge admin-warning inline-flex items-center gap-1"
+                                title={`Thiếu: ${stats.missing_fields.join(', ')}`}
+                              >
+                                <AlertTriangle size={12} /> Dữ liệu tóm lược (~{stats.estimated_pages} trang · {stats.evidence_count} chứng cứ)
+                              </span>
+                            ) : (
+                              <span className="admin-badge">
+                                ~{stats.estimated_pages} trang · {stats.parties_count} đương sự · {stats.evidence_count} chứng cứ · {stats.timeline_count} mốc thời gian
+                              </span>
+                            )}
+                          </div>
 
-                      <div className="admin-case-item-actions">
-                        <button type="button" onClick={() => viewCase(item._id)} title={`Xem chi tiết hồ sơ: ${item.title}`}>
-                          <Eye size={15} />
-                          <span>Xem hồ sơ</span>
-                        </button>
+                          <strong>{item.title}</strong>
+                          {editingCaseId === item._id && (
+                            <span style={{ marginLeft: '8px', fontSize: '11px', color: '#1d4ed8', fontWeight: 600 }}>
+                              (Đang sửa)
+                            </span>
+                          )}
+                          <p>{item.summary}</p>
+                        </div>
 
-                        <button
-                          type="button"
-                          className="admin-btn-edit"
-                          onClick={() => startEdit(item)}
-                          disabled={busy}
-                          title={`Chỉnh sửa hồ sơ vụ án: ${item.title}`}
-                        >
-                          <Pencil size={15} />
-                          <span>Chỉnh sửa</span>
-                        </button>
+                        <div className="admin-case-item-actions">
+                          {stats.moderation_status !== 'approved' && (
+                            <button
+                              type="button"
+                              onClick={() => handleModerateCase(item, 'approved')}
+                              disabled={busy}
+                              style={{ background: '#ecfdf5', borderColor: '#6ee7b7', color: '#047857', fontWeight: 700 }}
+                              title="Phê duyệt hồ sơ này để cho phép người học bắt đầu phiên tòa mô phỏng"
+                            >
+                              <Check size={15} />
+                              <span>Duyệt hồ sơ</span>
+                            </button>
+                          )}
+                          {stats.origin === 'user_upload' && stats.moderation_status !== 'rejected' && (
+                            <button
+                              type="button"
+                              onClick={() => handleModerateCase(item, 'rejected')}
+                              disabled={busy}
+                              style={{ background: '#fffbeb', borderColor: '#fcd34d', color: '#b45309' }}
+                              title="Từ chối phê duyệt hồ sơ này"
+                            >
+                              <XCircle size={15} />
+                              <span>Từ chối</span>
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => toggleCaseOrigin(item)}
+                            disabled={busy}
+                            title={stats.origin === 'system' ? 'Chuyển sang Hồ sơ người dùng tải lên' : 'Đánh dấu là Vụ án chuẩn của hệ thống (Của mình)'}
+                          >
+                            {stats.origin === 'system' ? <Upload size={15} /> : <ShieldCheck size={15} />}
+                            <span>{stats.origin === 'system' ? 'Sang tải lên' : 'Đặt làm chuẩn'}</span>
+                          </button>
 
-                        <button
-                          type="button"
-                          className="admin-btn-danger"
-                          onClick={() => setDeleteTarget(item)}
-                          disabled={busy}
-                          title={`Xóa vụ án: ${item.title}`}
-                        >
-                          <Trash2 size={15} />
-                          <span>Xóa</span>
-                        </button>
-                      </div>
-                    </li>
-                  ))}
+                          <button
+                            type="button"
+                            aria-label={`Xem hồ sơ: ${item.title}`}
+                            onClick={() => viewCase(item._id)}
+                            title={`Xem chi tiết hồ sơ: ${item.title}`}
+                          >
+                            <Eye size={15} />
+                            <span>Xem hồ sơ</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            className="admin-btn-edit"
+                            onClick={() => startEdit(item)}
+                            disabled={busy}
+                            title={`Chỉnh sửa hồ sơ vụ án: ${item.title}`}
+                          >
+                            <Pencil size={15} />
+                            <span>Chỉnh sửa</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            className="admin-btn-danger"
+                            onClick={() => setDeleteTarget(item)}
+                            disabled={busy}
+                            title={`Xóa vụ án: ${item.title}`}
+                          >
+                            <Trash2 size={15} />
+                            <span>Xóa</span>
+                          </button>
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
               <Pagination pagination={result.pagination} onChange={setPage} />
@@ -399,8 +694,9 @@ export default function AdminCases() {
             <p>
               Bạn có chắc chắn muốn xóa vụ án <strong>“{deleteTarget.title}”</strong> (Loại: {deleteTarget.category}) không?
             </p>
-            <p style={{ fontSize: '13px', color: '#64748b' }}>
-              ⚠️ Thao tác này sẽ xóa hồ sơ vĩnh viễn khỏi danh mục tình huống luyện tập. Nếu đang có phiên luyện tập diễn ra trên vụ án này, hệ thống sẽ chặn xóa để bảo vệ bài thi của người học.
+            <p className="flex items-start gap-1.5" style={{ fontSize: '13px', color: '#64748b' }}>
+              <AlertTriangle size={15} className="shrink-0 mt-0.5 text-amber-600" />
+              <span>Thao tác này sẽ xóa hồ sơ vĩnh viễn khỏi danh mục tình huống luyện tập. Nếu đang có phiên luyện tập diễn ra trên vụ án này, hệ thống sẽ chặn xóa để bảo vệ bài thi của người học.</span>
             </p>
             <div className="admin-modal-actions">
               <button

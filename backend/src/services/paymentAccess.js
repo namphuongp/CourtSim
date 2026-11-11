@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { FREE_SESSION_LIMIT, memberFeatures, normalizeMembership } from '../../../shared/membershipPolicy.mjs';
+import { FREE_SESSION_LIMIT, FREE_UPLOAD_LIMIT, memberFeatures, normalizeMembership } from '../../../shared/membershipPolicy.mjs';
+import Case from '../models/Case.js';
 import User from '../models/User.js';
 import UserUsageQuota from '../models/UserUsageQuota.js';
 import SimulationSession from '../models/SimulationSession.js';
@@ -100,6 +101,12 @@ export async function membershipStatus(user, creationRequestId) {
   // Người dùng chỉ hết thời gian dùng thử SAU KHI đã hoàn thành xong 02 case miễn phí đầu tiên
   const isTrialActive = features.id === 'freemium' && completedFreeCases < FREE_SESSION_LIMIT;
 
+  // Đếm số hồ sơ riêng người dùng đã tải lên
+  const uploadedCasesCount = await Case.countDocuments({ created_by: user._id });
+  const rawFreeUploadsUsed = quota?.free_uploads_used ?? 0;
+  const freeUploadsUsed = Math.min(FREE_UPLOAD_LIMIT, Math.max(uploadedCasesCount, rawFreeUploadsUsed));
+  const freeUploadsRemaining = Math.max(0, FREE_UPLOAD_LIMIT - freeUploadsUsed);
+
   const credits = Math.max(0, quota?.case_credits ?? 0);
   // Lượt mua từ phiên bản cũ vẫn có đầy đủ quyền của phiên trả phí.
   const plan = features.id === 'freemium' && credits > 0 ? 'pay-per-use' : features.id;
@@ -111,6 +118,9 @@ export async function membershipStatus(user, creationRequestId) {
     ? { ...effective, legalAssistant: true, detailedScoring: true, isFreeTrial: true }
     : effective;
 
+  const unlimitedUploads = Boolean(effective.unlimitedSessions || user?.system_role === 'admin' || user?.role === 'admin');
+  const canUploadCase = Boolean(unlimitedUploads || freeUploadsRemaining > 0 || credits > 0);
+
   return {
     ...trialEffective,
     freeLimit: FREE_SESSION_LIMIT,
@@ -121,7 +131,13 @@ export async function membershipStatus(user, creationRequestId) {
     caseCredits: credits,
     remainingSessions: effective.unlimitedSessions ? null : freeRemaining + credits,
     resumeRequestId: resumable ? creationRequestId : null,
-    canCreateSession: effective.unlimitedSessions || freeRemaining + credits > 0
+    canCreateSession: effective.unlimitedSessions || freeRemaining + credits > 0,
+    freeUploadLimit: FREE_UPLOAD_LIMIT,
+    freeUploadsUsed,
+    freeUploadsRemaining,
+    uploadedCasesCount,
+    unlimitedUploads,
+    canUploadCase,
   };
 }
 
@@ -152,4 +168,49 @@ export async function consumeCaseAccess(userId, tier, requestId = randomUUID(), 
 
 export async function finishCaseAllocation(userId, requestId) {
   await UserUsageQuota.updateOne({ user_id: userId }, { $pull: { case_allocations: { request_id: requestId } } });
+}
+
+export async function assertCanUploadCase(userId, tier, role = 'user') {
+  if (role === 'admin' || normalizeMembership(tier) === 'pro') return;
+  const quota = await ensureQuota(userId);
+  const uploadedCasesCount = await Case.countDocuments({ created_by: userId });
+  const freeUploadsUsed = Math.max(uploadedCasesCount, quota?.free_uploads_used ?? 0);
+  if (freeUploadsUsed < FREE_UPLOAD_LIMIT || (quota?.case_credits ?? 0) > 0) return;
+  throw new AppError(
+    `Bạn đã sử dụng hết ${FREE_UPLOAD_LIMIT} lượt tải hồ sơ riêng miễn phí. Vui lòng mua thêm lượt hoặc nâng cấp gói (Lite / Pro) để tiếp tục tải hồ sơ riêng.`,
+    402,
+    'UPLOAD_PAYMENT_REQUIRED'
+  );
+}
+
+export async function consumeCaseUploadAccess(userId, tier, role = 'user') {
+  if (role === 'admin' || normalizeMembership(tier) === 'pro') {
+    return { source: 'subscription', plan: 'pro' };
+  }
+  const quota = await ensureQuota(userId);
+  const uploadedCasesCount = await Case.countDocuments({ created_by: userId });
+  const currentFreeUploads = Math.max(uploadedCasesCount, quota?.free_uploads_used ?? 0);
+
+  if (currentFreeUploads < FREE_UPLOAD_LIMIT) {
+    await UserUsageQuota.updateOne(
+      { _id: quota._id },
+      { $set: { free_uploads_used: currentFreeUploads + 1 } }
+    );
+    return { source: 'free_upload', plan: normalizeMembership(tier) };
+  }
+
+  const paidPlan = normalizeMembership(tier) === 'lite' ? 'lite' : 'pay-per-use';
+  const credited = await UserUsageQuota.updateOne(
+    { _id: quota._id, case_credits: { $gt: 0 } },
+    { $inc: { case_credits: -1 } }
+  );
+  if (credited.matchedCount) {
+    return { source: 'credit', plan: paidPlan };
+  }
+
+  throw new AppError(
+    `Bạn đã sử dụng hết ${FREE_UPLOAD_LIMIT} lượt tải hồ sơ riêng miễn phí. Vui lòng mua thêm lượt hoặc nâng cấp gói (Lite / Pro) để tiếp tục tải hồ sơ riêng.`,
+    402,
+    'UPLOAD_PAYMENT_REQUIRED'
+  );
 }
