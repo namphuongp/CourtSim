@@ -103,3 +103,37 @@ test('phân loại rõ vụ án chuẩn hệ thống và hồ sơ người dùng
   assert.equal(partialStats.quality_level, 'partial_upload');
   assert.ok(partialStats.missing_fields.length >= 2);
 });
+
+test('giới hạn 2 lượt tải miễn phí và trạng thái kiểm duyệt hồ sơ người dùng tải lên', async () => {
+  const { FREE_UPLOAD_LIMIT } = await import('../../shared/membershipPolicy.mjs');
+  const { detectModerationStatus, caseCompletenessStats } = await import('../../shared/casePresentation.mjs');
+  const { learnerCase } = await import('../src/services/learnerPresentation.js');
+
+  assert.equal(FREE_UPLOAD_LIMIT, 2);
+  assert.equal(detectModerationStatus(c), 'approved');
+  assert.equal(caseCompletenessStats(c).is_approved, true);
+
+  const pendingUpload = {
+    title: 'Hồ sơ người dùng tải lên chờ duyệt',
+    origin: 'user_upload',
+    moderation_status: 'pending',
+    summary: 'Tóm tắt vụ việc',
+  };
+  assert.equal(detectModerationStatus(pendingUpload), 'pending');
+  const pendingStats = caseCompletenessStats(pendingUpload);
+  assert.equal(pendingStats.is_pending, true);
+  assert.equal(pendingStats.is_approved, false);
+  assert.equal(learnerCase(pendingUpload).moderation_status, 'pending');
+
+  const rejectedUpload = {
+    title: 'Hồ sơ bị từ chối',
+    origin: 'user_upload',
+    moderation_status: 'rejected',
+    moderation_note: 'Thiếu dữ liệu các bên đương sự.',
+    summary: 'Tóm tắt vụ việc',
+  };
+  const rejectedStats = caseCompletenessStats(rejectedUpload);
+  assert.equal(rejectedStats.is_rejected, true);
+  assert.equal(rejectedStats.is_approved, false);
+  assert.equal(learnerCase(rejectedUpload).moderation_note, 'Thiếu dữ liệu các bên đương sự.');
+});

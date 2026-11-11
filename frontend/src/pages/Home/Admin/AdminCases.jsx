@@ -13,6 +13,9 @@ import {
   Search,
   RotateCcw,
   Layers,
+  Clock,
+  Check,
+  XCircle,
 } from 'lucide-react';
 import api, { getApiError } from '../../../services/api';
 import CaseDossier from '../../../components/CaseDossier';
@@ -26,11 +29,13 @@ export default function AdminCases() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [originFilter, setOriginFilter] = useState('all');
+  const [moderationFilter, setModerationFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   const queryParams = new URLSearchParams({ limit: String(limit), page: String(page) });
   if (originFilter !== 'all') queryParams.set('origin', originFilter);
+  if (moderationFilter !== 'all') queryParams.set('moderation_status', moderationFilter);
   if (categoryFilter !== 'all') queryParams.set('category', categoryFilter);
   if (searchQuery.trim()) queryParams.set('q', searchQuery.trim().slice(0, 120));
 
@@ -205,6 +210,34 @@ export default function AdminCases() {
       resource.reload();
     } catch (failure) {
       setError(getApiError(failure, 'Chưa thể cập nhật phân loại nguồn vụ án.'));
+    } finally {
+      lock.current = false;
+      setBusy(false);
+    }
+  }
+
+  async function handleModerateCase(item, moderationStatus) {
+    if (lock.current) return;
+    lock.current = true;
+    setBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      await api.patch(`/v1/cases/${item._id}/moderation`, {
+        moderation_status: moderationStatus,
+        moderation_note:
+          moderationStatus === 'rejected'
+            ? 'Hồ sơ chưa đầy đủ dữ liệu hoặc chưa đạt tiêu chuẩn kiểm duyệt của hệ thống.'
+            : 'Đã được Quản trị viên kiểm duyệt.',
+      });
+      setNotice(
+        moderationStatus === 'approved'
+          ? `Đã phê duyệt hồ sơ “${item.title}”. Người dùng hiện có thể mở phiên tranh tụng.`
+          : `Đã từ chối phê duyệt hồ sơ “${item.title}”.`
+      );
+      resource.reload();
+    } catch (failure) {
+      setError(getApiError(failure, 'Chưa thể cập nhật trạng thái kiểm duyệt hồ sơ.'));
     } finally {
       lock.current = false;
       setBusy(false);
@@ -452,6 +485,19 @@ export default function AdminCases() {
           </label>
 
           <label>
+            Trạng thái kiểm duyệt
+            <select
+              value={moderationFilter}
+              onChange={(e) => { setModerationFilter(e.target.value); setPage(1); }}
+            >
+              <option value="all">Tất cả trạng thái</option>
+              <option value="pending">Chờ kiểm duyệt</option>
+              <option value="approved">Đã kiểm duyệt</option>
+              <option value="rejected">Từ chối duyệt</option>
+            </select>
+          </label>
+
+          <label>
             Số dòng / trang
             <select
               value={limit}
@@ -463,11 +509,12 @@ export default function AdminCases() {
             </select>
           </label>
 
-          {(originFilter !== 'all' || categoryFilter !== 'all' || searchQuery.trim()) && (
+          {(originFilter !== 'all' || moderationFilter !== 'all' || categoryFilter !== 'all' || searchQuery.trim()) && (
             <button
               type="button"
               onClick={() => {
                 setOriginFilter('all');
+                setModerationFilter('all');
                 setCategoryFilter('all');
                 setSearchQuery('');
                 setPage(1);
@@ -500,6 +547,19 @@ export default function AdminCases() {
                                 <Upload size={12} /> Người dùng tải lên
                               </span>
                             )}
+                            {stats.is_pending ? (
+                              <span className="admin-badge admin-warning inline-flex items-center gap-1">
+                                <Clock size={12} /> Chờ kiểm duyệt
+                              </span>
+                            ) : stats.is_rejected ? (
+                              <span className="admin-badge admin-danger inline-flex items-center gap-1">
+                                <XCircle size={12} /> Từ chối duyệt
+                              </span>
+                            ) : (
+                              <span className="admin-badge admin-ok inline-flex items-center gap-1">
+                                <CheckCircle2 size={12} /> Đã duyệt
+                              </span>
+                            )}
                             <span className="admin-badge">{item.category}</span>
                             {stats.origin === 'user_upload' && !stats.has_full_dossier ? (
                               <span
@@ -525,6 +585,30 @@ export default function AdminCases() {
                         </div>
 
                         <div className="admin-case-item-actions">
+                          {stats.moderation_status !== 'approved' && (
+                            <button
+                              type="button"
+                              onClick={() => handleModerateCase(item, 'approved')}
+                              disabled={busy}
+                              style={{ background: '#ecfdf5', borderColor: '#6ee7b7', color: '#047857', fontWeight: 700 }}
+                              title="Phê duyệt hồ sơ này để cho phép người học bắt đầu phiên tòa mô phỏng"
+                            >
+                              <Check size={15} />
+                              <span>Duyệt hồ sơ</span>
+                            </button>
+                          )}
+                          {stats.origin === 'user_upload' && stats.moderation_status !== 'rejected' && (
+                            <button
+                              type="button"
+                              onClick={() => handleModerateCase(item, 'rejected')}
+                              disabled={busy}
+                              style={{ background: '#fffbeb', borderColor: '#fcd34d', color: '#b45309' }}
+                              title="Từ chối phê duyệt hồ sơ này"
+                            >
+                              <XCircle size={15} />
+                              <span>Từ chối</span>
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={() => toggleCaseOrigin(item)}

@@ -75,8 +75,17 @@ export function detectCaseOrigin(courtCase) {
   return 'system';
 }
 
+export function detectModerationStatus(courtCase) {
+  if (!courtCase || typeof courtCase !== 'object') return 'approved';
+  if (detectCaseOrigin(courtCase) === 'system') return 'approved';
+  return ['approved', 'pending', 'rejected'].includes(courtCase.moderation_status)
+    ? courtCase.moderation_status
+    : 'approved';
+}
+
 export function caseCompletenessStats(courtCase) {
   const origin = detectCaseOrigin(courtCase);
+  const moderationStatus = detectModerationStatus(courtCase);
   const parties = Array.isArray(courtCase?.parties) ? courtCase.parties : [];
   const timeline = Array.isArray(courtCase?.timeline) ? courtCase.timeline : [];
   const evidenceList = Array.isArray(courtCase?.evidence_inventory) ? courtCase.evidence_inventory : [];
@@ -100,6 +109,10 @@ export function caseCompletenessStats(courtCase) {
   if (origin === 'system') {
     return {
       origin: 'system',
+      moderation_status: 'approved',
+      is_approved: true,
+      is_pending: false,
+      is_rejected: false,
       parties_count: partiesCount,
       timeline_count: timelineCount,
       evidence_count: evidenceCount,
@@ -120,6 +133,10 @@ export function caseCompletenessStats(courtCase) {
     && (totalChars === 0 || totalChars >= 1800);
   return {
     origin: 'user_upload',
+    moderation_status: moderationStatus,
+    is_approved: moderationStatus === 'approved',
+    is_pending: moderationStatus === 'pending',
+    is_rejected: moderationStatus === 'rejected',
     parties_count: partiesCount,
     timeline_count: timelineCount,
     evidence_count: evidenceCount,

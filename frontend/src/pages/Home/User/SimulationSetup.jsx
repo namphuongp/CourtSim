@@ -24,6 +24,8 @@ import {
   Trash2,
   X,
   Layers,
+  Clock,
+  Lock,
 } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import FeedbackModal from '../../../components/feedback/FeedbackModal';
@@ -374,14 +376,18 @@ export default function SimulationSetup() {
       setUploadPreview(null);
       setUploadedFileName('');
       setUploadForm({ raw_text: '', title: '', category: '', reference_date: '' });
+      membership.refresh();
       setUploadState({
         loading: false,
         previewing: false,
         error: '',
-        success: `Đã tạo hồ sơ vụ án "${created.title}" thành công.`,
+        success: created.moderation_status === 'pending'
+          ? `Đã tải lên hồ sơ "${created.title}". Hồ sơ đang chờ Quản trị viên kiểm duyệt chất lượng dữ liệu trước khi mở phiên tranh tụng.`
+          : `Đã tạo hồ sơ vụ án "${created.title}" thành công.`,
       });
       setStep(1);
     } catch (error) {
+      if (error.response?.status === 402) membership.refresh();
       setUploadState({
         loading: false,
         previewing: false,
@@ -410,11 +416,13 @@ export default function SimulationSetup() {
   }
 
   const ready = selectedCase?._id === form.case_id && !detailError;
-  const valid = ready && Boolean(form.user_court_role && eventDate) && canStart && !membership.loading && !state.submitting;
+  const isSelectedCaseApproved = currentUser?.role === 'admin' || !['pending', 'rejected'].includes(selectedCase?.moderation_status);
+  const canUploadMoreCases = currentUser?.role === 'admin' || membership.loading || membership.data?.canUploadCase !== false;
+  const valid = ready && isSelectedCaseApproved && Boolean(form.user_court_role && eventDate) && canStart && !membership.loading && !state.submitting;
   const steps = ['Vụ án', 'Hồ sơ', 'Vai', 'Mốc tra cứu', 'Chuẩn bị'];
   const completedSteps = [Boolean(form.case_id), reviewedCase === form.case_id, Boolean(form.user_court_role), Boolean(eventDate)];
   function goStep(index) { if (index === 1) setReviewedCase(form.case_id); setStep(index); }
-  const canNext = step === 0 ? ready : step === 1 ? ready : step === 2 ? Boolean(form.user_court_role) : step === 3 ? Boolean(eventDate) : false;
+  const canNext = step === 0 ? ready : step === 1 ? (ready && isSelectedCaseApproved) : step === 2 ? Boolean(form.user_court_role) : step === 3 ? Boolean(eventDate) : false;
   const summary = <dl className="setup-summary"><div><dt>Vụ án</dt><dd>{ready ? caseIntroduction(selectedCase).title : 'Chưa chọn vụ án'}</dd></div><div><dt>Vai của bạn</dt><dd>{form.user_court_role ? roleLabel(form.user_court_role, selectedCase?.category, selectedCase) : 'Chưa chọn vai'}</dd></div><div><dt>Mốc tra cứu</dt><dd>{eventDate || 'Chưa chọn mốc tra cứu'}</dd></div><div><dt>Giới hạn</dt><dd>20 lượt trao đổi</dd></div></dl>;
   return <section className="practice-dashboard simulation-setup mx-auto space-y-6">
     <header className="flex flex-wrap items-start justify-between gap-4"><div><h1 className="text-3xl font-bold text-white">Thiết lập phiên tòa</h1><p className="mt-2 text-slate-400">Đọc hồ sơ, chọn vai và mốc tra cứu — chuẩn bị trước khi vào phòng xử án.</p><nav className="setup-step-tabs" aria-label="Các bước thiết lập">{steps.map((title, index) => <button key={title} type="button" aria-current={step === index ? 'step' : undefined} disabled={state.submitting || (index > 0 && !ready)} onClick={() => goStep(index)}>{index < step && completedSteps[index] ? <Check size={12} className="inline" aria-hidden="true" /> : index + 1} {title}</button>)}</nav></div><Link to="/guide" className="setup-guide-link flex items-center gap-2 px-4 py-2 text-sm"><CircleHelp size={16}/> Xem hướng dẫn</Link></header>
@@ -441,15 +449,35 @@ export default function SimulationSetup() {
             {uploadOpen && (
               <form onSubmit={handleUploadCase} className="setup-upload-panel" aria-label="Tải lên bản án của riêng bạn">
                 <div className="setup-upload-header">
-                  <h3 className="setup-upload-title">
-                    <Sparkles size={17} /> Tải lên bản án hoặc hồ sơ vụ việc của riêng bạn
-                  </h3>
+                  <div>
+                    <h3 className="setup-upload-title">
+                      <Sparkles size={17} /> Tải lên bản án hoặc hồ sơ vụ việc của riêng bạn
+                    </h3>
+                    <p className="mt-1 text-xs font-medium text-slate-600">
+                      {currentUser?.role === 'admin' || membership?.unlimitedUploads ? (
+                        <span className="text-emerald-700 font-semibold">Tài khoản được tải lên không giới hạn</span>
+                      ) : (membership?.freeUploadsRemaining ?? 2) > 0 ? (
+                        <span>
+                          Bạn còn <strong className="text-blue-700">{membership?.freeUploadsRemaining ?? 2}/2 lượt tải hồ sơ miễn phí</strong>. Sau 2 bản miễn phí sẽ tính phí (01 lượt tranh tụng/bản hoặc gói Pro).
+                        </span>
+                      ) : (membership?.caseCredits ?? 0) > 0 ? (
+                        <span>
+                          Đã dùng hết 2 lượt miễn phí · Tải thêm sẽ trừ <strong className="text-amber-700">01 lượt tranh tụng</strong> (hiện còn {membership.caseCredits} lượt).
+                        </span>
+                      ) : (
+                        <span className="text-rose-700 font-semibold">
+                          Bạn đã dùng hết 2 bản hồ sơ miễn phí. Vui lòng mua thêm lượt lẻ hoặc nâng cấp gói Pro để tiếp tục tải hồ sơ riêng.
+                        </span>
+                      )}
+                    </p>
+                  </div>
                   <div className="setup-upload-toolbar">
-                    <label className="setup-upload-file-btn">
+                    <label className={`setup-upload-file-btn ${!canUploadMoreCases ? 'opacity-50 pointer-events-none' : ''}`}>
                       <FileText size={14} />
                       <span>{uploadedFileName ? `Đã chọn: ${uploadedFileName.slice(0, 28)}` : 'Chọn tệp bản án (.pdf, .docx, .doc, .txt)'}</span>
                       <input
                         type="file"
+                        disabled={!canUploadMoreCases}
                         accept=".pdf,.docx,.doc,.html,.htm,.txt,.md,.json,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,application/json"
                         onChange={handleFileSelect}
                         className="setup-file-input"
@@ -457,6 +485,7 @@ export default function SimulationSetup() {
                     </label>
                     <button
                       type="button"
+                      disabled={!canUploadMoreCases}
                       className="setup-upload-sample-btn"
                       onClick={() => {
                         setUploadPreview(null);
@@ -473,8 +502,19 @@ export default function SimulationSetup() {
                     </button>
                   </div>
                 </div>
+                {!canUploadMoreCases && (
+                  <div className="mb-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-950 flex flex-wrap items-center justify-between gap-2">
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <Lock size={14} className="text-amber-700 shrink-0" />
+                      Bạn đã sử dụng hết 2 lượt tải lên hồ sơ riêng miễn phí. Vui lòng mua thêm lượt hoặc nâng cấp gói dịch vụ để tải thêm hồ sơ.
+                    </span>
+                    <Link to="/pricing" className="btn-primary py-1.5 px-3 text-xs">
+                      Mua lượt / Nâng cấp gói
+                    </Link>
+                  </div>
+                )}
                 <p className="setup-upload-desc">
-                  Tải lên tệp bản án <strong>PDF, Word (.docx/.doc), văn bản (.txt)</strong> hoặc dán nội dung vụ việc vào ô bên dưới. Hệ thống sẽ tự động tóm tắt diễn biến, xác định các bên đương sự, lập dòng thời gian và trích xuất danh mục tài liệu, chứng cứ cho phiên tòa. Hồ sơ tải lên được phân loại riêng để không ảnh hưởng đến bộ vụ án chuẩn của hệ thống.
+                  Tải lên tệp bản án <strong>PDF, Word (.docx/.doc), văn bản (.txt)</strong> hoặc dán nội dung vụ việc vào ô bên dưới. Hệ thống sẽ tự động tóm tắt diễn biến, xác định các bên đương sự, lập dòng thời gian và trích xuất danh mục tài liệu, chứng cứ cho phiên tòa. <strong>Lưu ý:</strong> Hồ sơ do người dùng tải lên sẽ ở trạng thái <strong>Chờ kiểm duyệt</strong> và cần Quản trị viên phê duyệt trước khi bắt đầu phiên tòa mô phỏng.
                 </p>
                 <div className="grid gap-3 md:grid-cols-3">
                   <div>
@@ -576,7 +616,7 @@ export default function SimulationSetup() {
                   </button>
                   <button
                     type="button"
-                    disabled={uploadState.loading || uploadState.previewing || uploadForm.raw_text.trim().length < 30}
+                    disabled={!canUploadMoreCases || uploadState.loading || uploadState.previewing || uploadForm.raw_text.trim().length < 30}
                     onClick={handlePreviewCase}
                     className="setup-upload-preview-btn"
                   >
@@ -585,11 +625,11 @@ export default function SimulationSetup() {
                   </button>
                   <button
                     type="submit"
-                    disabled={uploadState.loading || uploadState.previewing || uploadForm.raw_text.trim().length < 30}
+                    disabled={!canUploadMoreCases || uploadState.loading || uploadState.previewing || uploadForm.raw_text.trim().length < 30}
                     className="setup-next inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-bold"
                   >
                     <Sparkles size={14} />
-                    {uploadState.loading ? 'Đang khởi tạo hồ sơ vụ án...' : 'Hoàn tất & Mở hồ sơ vụ án'}
+                    {uploadState.loading ? 'Đang khởi tạo hồ sơ vụ án...' : 'Hoàn tất & Gửi kiểm duyệt'}
                   </button>
                 </div>
               </form>
@@ -773,6 +813,21 @@ export default function SimulationSetup() {
                               </span>
                             )}
                             <span className="setup-badge is-category-badge">{item.category}</span>
+                            {stats.origin === 'user_upload' && (
+                              stats.is_pending ? (
+                                <span className="setup-badge is-quality-warn" title="Hồ sơ đang chờ Quản trị viên kiểm duyệt chất lượng trước khi mở tranh tụng">
+                                  <Clock size={12} /> Chờ kiểm duyệt
+                                </span>
+                              ) : stats.is_rejected ? (
+                                <span className="setup-badge is-quality-warn" title={item.moderation_note || 'Hồ sơ không đạt yêu cầu kiểm duyệt'}>
+                                  <AlertTriangle size={12} /> Từ chối duyệt
+                                </span>
+                              ) : (
+                                <span className="setup-badge is-quality-ok">
+                                  <ShieldCheck size={12} /> Đã kiểm duyệt
+                                </span>
+                              )
+                            )}
                             {stats.origin === 'system' ? (
                               <span className="setup-badge is-quality-ok">
                                 <CheckCircle2 size={12} /> {stats.estimated_pages >= 8 ? `Hồ sơ toàn văn (~${stats.estimated_pages} trang)` : `Hồ sơ chuẩn (~${stats.estimated_pages} trang)`}
@@ -894,7 +949,26 @@ export default function SimulationSetup() {
             )}
             {form.case_id && !ready && <p className="mt-4" role={detailError ? 'alert' : 'status'}>{detailError || 'Đang tải chi tiết hồ sơ…'}{detailError && <button onClick={() => setReload(n => n + 1)} className="ml-2 underline">Thử lại</button>}</p>}
           </>}
-          {step === 1 && <CaseDossier key={form.case_id} tabbed courtCase={selectedCase} role={form.user_court_role} />}
+          {step === 1 && (
+            <>
+              {!isSelectedCaseApproved && (
+                <div role="alert" className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+                  <strong className="flex items-center gap-1.5 font-bold">
+                    <Clock size={16} />
+                    {selectedCase?.moderation_status === 'rejected'
+                      ? 'Hồ sơ tải lên này đã bị từ chối kiểm duyệt'
+                      : 'Hồ sơ tải lên này đang chờ Quản trị viên kiểm duyệt'}
+                  </strong>
+                  <p className="mt-1 text-xs">
+                    {selectedCase?.moderation_status === 'rejected'
+                      ? (selectedCase?.moderation_note || 'Hồ sơ không đủ dữ liệu chuẩn để tổ chức phiên tranh tụng. Vui lòng chọn một vụ án chuẩn của hệ thống.')
+                      : 'Bạn có thể đọc trước cấu trúc hồ sơ vừa tải lên bên dưới. Sau khi Quản trị viên phê duyệt chất lượng dữ liệu, bạn sẽ có thể chọn vai và bắt đầu phiên tòa với hồ sơ này.'}
+                  </p>
+                </div>
+              )}
+              <CaseDossier key={form.case_id} tabbed courtCase={selectedCase} role={form.user_court_role} />
+            </>
+          )}
           {step === 2 && <><p className="setup-step-description">Chọn phía bạn bảo vệ; AI đảm nhiệm Chủ tọa và bên còn lại.</p><div className="grid gap-3 md:grid-cols-2">{roles.map(role => <button key={role.id} aria-label={roleLabel(role.id, selectedCase?.category, selectedCase)} aria-pressed={form.user_court_role === role.id} onClick={() => setForm({ ...form, user_court_role: role.id })} className={`setup-option setup-role border p-5 text-left ${form.user_court_role === role.id ? 'is-selected' : ''}`}><strong>{roleLabel(role.id, selectedCase?.category, selectedCase)}</strong><p>Đọc yêu cầu, liên hệ tình tiết và chứng cứ để bảo vệ quan điểm của thân chủ.</p>{selectedCase?.parties?.filter(party => party.side === (role.id === 'defense_lawyer' ? 'defendant' : 'plaintiff')).map((party, index) => <div className="setup-role-party" key={index}><b>{party.name}</b>{party.claims?.map((claim, i) => <p key={i}>{claim}</p>)}</div>)}<span className="inline-flex items-center gap-1.5">{form.user_court_role === role.id ? <><CheckCircle2 size={13} /> Đã chọn vai</> : 'Chọn vai này'}</span></button>)}</div></>}
           {step === 3 && <><label htmlFor="case-event-date" className="mb-2 mt-5 block font-bold">{fixedDate ? '3. Mốc tra cứu của bài tập' : '3. Ngày sự kiện làm phát sinh tranh chấp'}</label><p className="mb-4 text-sm">{selectedCase?.practice_context ? 'Dùng ngày xét xử sơ thẩm làm mốc tham khảo khi tra cứu luật. Ngày xét xử phúc thẩm chưa được nêu trong hồ sơ.' : 'Chọn ngày xảy ra sự việc để tra cứu luật. Nếu hồ sơ không nêu rõ, bạn có thể chọn ngày giả định cho bài tập. Cần đối chiếu thời điểm áp dụng của từng quy định.'}</p><input id="case-event-date" type="date" required readOnly={Boolean(fixedDate)} value={eventDate} onChange={event => setForm({ ...form, case_event_date: event.target.value })} className="setup-date w-full rounded-lg border px-4 py-3"/><p className="setup-date-note">{selectedCase?.reference_date_note || 'Mốc tra cứu không tự xác nhận hiệu lực hay điều kiện áp dụng của văn bản pháp luật.'}</p></>}
           {step === 4 && <><p className="setup-step-description">Kiểm tra các lựa chọn và cách tham gia phiên trước khi bắt đầu.</p>{summary}<div className="setup-preparation"><div><BookOpen size={20}/><h3>Nắm rõ hồ sơ</h3><p>Chỉ sử dụng tình tiết và chứng cứ đã được cung cấp.</p></div><div><Gavel size={20}/><h3>Tranh luận theo lượt</h3><p>Đọc lời thoại rồi bấm Tiếp tục. Gửi lập luận khi đến lượt bạn.</p></div></div></>}

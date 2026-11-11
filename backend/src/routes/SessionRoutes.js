@@ -57,6 +57,20 @@ router.post('/', asyncHandler(async (request, response) => {
     await consumeAuthLimit(`session-create:${request.auth.userId}`, 20);
     const courtCase = await Case.findById(caseId).lean();
     if (!courtCase) throw new AppError('Không tìm thấy vụ án.', 404, 'CASE_NOT_FOUND');
+    if (request.auth?.role !== 'admin') {
+      if (courtCase.moderation_status === 'pending') {
+        throw new AppError('Hồ sơ tải lên này đang chờ Quản trị viên kiểm duyệt chất lượng dữ liệu trước khi đưa vào thực hành tranh tụng.', 403, 'CASE_PENDING_MODERATION');
+      }
+      if (courtCase.moderation_status === 'rejected') {
+        throw new AppError(
+          courtCase.moderation_note
+            ? `Hồ sơ tải lên không đạt yêu cầu kiểm duyệt: ${courtCase.moderation_note}`
+            : 'Hồ sơ tải lên này đã bị từ chối kiểm duyệt.',
+          403,
+          'CASE_REJECTED_MODERATION'
+        );
+      }
+    }
     if (courtCase.reference_date && eventDate !== courtCase.reference_date) {
       throw new AppError(`Hồ sơ lịch sử này dùng mốc tra cứu cố định ${courtCase.reference_date}.`, 400, 'CASE_DATE_MISMATCH');
     }

@@ -1,4 +1,5 @@
 export const FREE_SESSION_LIMIT = 2;
+export const FREE_UPLOAD_LIMIT = 2;
 
 export const MEMBERSHIP_PLANS = Object.freeze({
   freemium: Object.freeze({ id: 'freemium', name: 'Freemium', legalAssistant: false, detailedScoring: false, skillAnalytics: false, unlimitedSessions: false }),

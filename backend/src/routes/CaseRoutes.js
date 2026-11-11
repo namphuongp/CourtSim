@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { Router } from 'express';
 import Case from '../models/Case.js';
 import SimulationSession from '../models/SimulationSession.js';
-import { authenticate, requireAdmin } from '../middlewares/auth.js';
+import { authenticate, optionalAuthenticate, requireAdmin } from '../middlewares/auth.js';
 import { consumeAuthLimit } from '../middlewares/rateLimit.js';
 import { AppError } from '../utils/AppError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
@@ -12,13 +12,14 @@ import { validateCaseDetails } from '../services/caseEvidence.js';
 import { validateCaseFacts } from '../services/caseKnowledge.js';
 import { validatePracticeContext } from '../services/casePractice.js';
 import { extractAndStructureUserCase } from '../services/userCaseUploadService.js';
+import { assertCanUploadCase, consumeCaseUploadAccess } from '../services/paymentAccess.js';
 import { detectCaseOrigin } from '../../../shared/casePresentation.mjs';
 
 const router = Router();
 
 const escapeRegex = (value = '') => String(value).replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
 
-function buildCaseListFilter(query = {}) {
+function buildCaseListFilter(query = {}, auth = null) {
   const conditions = [];
   const category = typeof query.category === 'string' ? query.category.trim() : '';
   if (category && category !== 'all') {
@@ -57,6 +58,37 @@ function buildCaseListFilter(query = {}) {
     });
   }
 
+  const moderationFilter = typeof query.moderation_status === 'string' ? query.moderation_status.trim() : '';
+  const isAdmin = auth?.role === 'admin';
+  const validUserId = auth?.userId && mongoose.isObjectIdOrHexString(auth.userId)
+    ? new mongoose.Types.ObjectId(auth.userId)
+    : null;
+
+  if (isAdmin) {
+    if (moderationFilter === 'pending' || moderationFilter === 'rejected') {
+      conditions.push({ moderation_status: moderationFilter });
+    } else if (moderationFilter === 'approved') {
+      conditions.push({ moderation_status: { $nin: ['pending', 'rejected'] } });
+    }
+  } else {
+    // Người dùng thường chỉ thấy các vụ án đã được duyệt HOẶC hồ sơ do chính họ tải lên
+    if (validUserId) {
+      conditions.push({
+        $or: [
+          { moderation_status: { $nin: ['pending', 'rejected'] } },
+          { created_by: validUserId },
+        ],
+      });
+    } else {
+      conditions.push({ moderation_status: { $nin: ['pending', 'rejected'] } });
+    }
+    if (moderationFilter === 'pending' || moderationFilter === 'rejected') {
+      conditions.push({ moderation_status: moderationFilter });
+    } else if (moderationFilter === 'approved') {
+      conditions.push({ moderation_status: { $nin: ['pending', 'rejected'] } });
+    }
+  }
+
   const rawSearch = typeof query.q === 'string' ? query.q : typeof query.search === 'string' ? query.search : '';
   const search = rawSearch.trim();
   if (search) {
@@ -76,14 +108,15 @@ function buildCaseListFilter(query = {}) {
   return { $and: conditions };
 }
 
-router.get('/', asyncHandler(async (request, response) => {
+router.get('/', optionalAuthenticate, asyncHandler(async (request, response) => {
   const query = request.query;
-  const allowedKeys = ['page', 'limit', 'category', 'origin', 'q', 'search'];
+  const allowedKeys = ['page', 'limit', 'category', 'origin', 'moderation_status', 'q', 'search'];
   if (
     Object.keys(query).some(key => !allowedKeys.includes(key))
     || ['page', 'limit'].some(key => query[key] !== undefined && (typeof query[key] !== 'string' || !/^[1-9]\d{0,4}$/.test(query[key])))
     || (query.category !== undefined && (typeof query.category !== 'string' || query.category.length > 80))
     || (query.origin !== undefined && (typeof query.origin !== 'string' || !['', 'all', 'system', 'user_upload'].includes(query.origin)))
+    || (query.moderation_status !== undefined && (typeof query.moderation_status !== 'string' || !['', 'all', 'approved', 'pending', 'rejected'].includes(query.moderation_status)))
     || (query.q !== undefined && (typeof query.q !== 'string' || query.q.length > 120))
     || (query.search !== undefined && (typeof query.search !== 'string' || query.search.length > 120))
   ) {
@@ -91,8 +124,8 @@ router.get('/', asyncHandler(async (request, response) => {
   }
   const page = Math.max(Number.parseInt(request.query.page, 10) || 1, 1);
   const limit = Math.min(Math.max(Number.parseInt(request.query.limit, 10) || 20, 1), 50);
-  const filter = buildCaseListFilter(query);
-  const selectFields = 'title summary full_document category created_at reference_date source_url source_note origin created_by practice_context parties timeline evidence_inventory legal_scope_note';
+  const filter = buildCaseListFilter(query, request.auth);
+  const selectFields = 'title summary full_document category created_at reference_date source_url source_note origin created_by moderation_status moderation_note moderated_at practice_context parties timeline evidence_inventory legal_scope_note';
   const [items, total] = await Promise.all([
     Case.find(filter).select(selectFields).sort({ created_at: -1 }).skip((page - 1) * limit).limit(limit).lean(),
     Case.countDocuments(filter),
@@ -102,6 +135,8 @@ router.get('/', asyncHandler(async (request, response) => {
 
 router.post('/upload-parse', authenticate, asyncHandler(async (request, response) => {
   await consumeAuthLimit(`case-upload:${request.auth.userId}`, 20, 15 * 60000, 'Bạn đã tải lên quá nhiều bản án trong thời gian ngắn. Vui lòng thử lại sau ít phút.');
+  await assertCanUploadCase(request.auth.userId, request.auth.tier, request.auth.role);
+
   const {
     raw_text: rawText,
     file_name: fileName,
@@ -130,25 +165,36 @@ router.post('/upload-parse', authenticate, asyncHandler(async (request, response
     });
   }
 
-  const saveAsSystem = request.auth?.role === 'admin' && request.body?.as_system === true;
+  const uploadAccess = await consumeCaseUploadAccess(request.auth.userId, request.auth.tier, request.auth.role);
+  const isAdmin = request.auth?.role === 'admin';
+  const saveAsSystem = isAdmin && request.body?.as_system === true;
   const created = await Case.create({
     ...structured,
     origin: saveAsSystem ? 'system' : 'user_upload',
     created_by: saveAsSystem ? null : request.auth.userId,
+    moderation_status: isAdmin ? 'approved' : 'pending',
+    moderated_by: isAdmin ? request.auth.userId : null,
+    moderated_at: isAdmin ? new Date() : null,
     source_note: saveAsSystem ? 'Hồ sơ vụ án chuẩn hệ thống.' : structured.source_note,
   });
   response.status(201).json({
     data: learnerCase(created.toObject()),
     extracted_text: structured.full_document,
+    upload_access: uploadAccess,
   });
 }));
 
-router.get('/:caseId', asyncHandler(async (request, response) => {
+router.get('/:caseId', optionalAuthenticate, asyncHandler(async (request, response) => {
   if (!mongoose.isObjectIdOrHexString(request.params.caseId)) {
     throw new AppError('Mã vụ án không hợp lệ.', 400);
   }
   const item = await Case.findById(request.params.caseId).lean();
   if (!item) throw new AppError('Không tìm thấy vụ án.', 404, 'CASE_NOT_FOUND');
+  const isUnapproved = item.moderation_status === 'pending' || item.moderation_status === 'rejected';
+  const isOwner = item.created_by && request.auth?.userId && String(item.created_by) === String(request.auth.userId);
+  if (isUnapproved && request.auth?.role !== 'admin' && !isOwner) {
+    throw new AppError('Hồ sơ tải lên này đang chờ Quản trị viên kiểm duyệt.', 403, 'CASE_NOT_APPROVED');
+  }
   response.json({ data: learnerCase(item) });
 }));
 
@@ -261,8 +307,39 @@ router.patch('/:caseId/origin', authenticate, requireAdmin, asyncHandler(async (
   existing.origin = origin;
   if (origin === 'system') {
     existing.created_by = null;
+    existing.moderation_status = 'approved';
+    existing.moderated_by = request.auth.userId;
+    existing.moderated_at = new Date();
     if (/người dùng tải lên/iu.test(existing.source_note ?? '')) {
       existing.source_note = 'Hồ sơ vụ án chuẩn hệ thống.';
+    }
+  }
+  await existing.save();
+  response.json({ data: learnerCase(existing) });
+}));
+
+router.patch('/:caseId/moderation', authenticate, requireAdmin, asyncHandler(async (request, response) => {
+  if (!mongoose.isObjectIdOrHexString(request.params.caseId)) {
+    throw new AppError('Mã vụ án không hợp lệ.', 400);
+  }
+  const { moderation_status: status, moderation_note: note, origin } = request.body ?? {};
+  if (!['approved', 'pending', 'rejected'].includes(status)) {
+    throw new AppError('Trạng thái kiểm duyệt không hợp lệ.', 400);
+  }
+  const existing = await Case.findById(request.params.caseId);
+  if (!existing) throw new AppError('Không tìm thấy vụ án.', 404, 'CASE_NOT_FOUND');
+
+  existing.moderation_status = status;
+  existing.moderation_note = typeof note === 'string' ? note.trim().slice(0, 500) : '';
+  existing.moderated_by = request.auth.userId;
+  existing.moderated_at = new Date();
+  if (origin === 'system' || origin === 'user_upload') {
+    existing.origin = origin;
+    if (origin === 'system') {
+      existing.created_by = null;
+      if (/người dùng tải lên/iu.test(existing.source_note ?? '')) {
+        existing.source_note = 'Hồ sơ vụ án chuẩn hệ thống.';
+      }
     }
   }
   await existing.save();
