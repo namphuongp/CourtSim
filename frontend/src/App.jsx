@@ -2,6 +2,7 @@ import React, { lazy, Suspense, useEffect, useLayoutEffect, useState } from 'rea
 import api from './services/api';
 import { getCurrentUser, setCurrentUser, clearAuth, safeReturnPath } from './services/auth';
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
+import { Analytics as VercelAnalytics } from '@vercel/analytics/react';
 import AnalyticsTracker from './components/analytics/AnalyticsTracker';
 import ConsentBanner from './components/analytics/ConsentBanner';
 import SeoMetadata from './components/SeoMetadata';
@@ -208,6 +209,7 @@ function App() {
       </Routes>
       <AnalyticsTracker />
       </Suspense>
+      <VercelAnalytics />
       <footer className="privacy-footer"><Link to="/privacy">Cài đặt quyền riêng tư</Link></footer>
     </BrowserRouter>
   );
