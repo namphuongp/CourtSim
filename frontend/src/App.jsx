@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react
 import AnalyticsTracker from './components/analytics/AnalyticsTracker';
 import ConsentBanner from './components/analytics/ConsentBanner';
 import SeoMetadata from './components/SeoMetadata';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 const PrivacySettings = lazy(() => import('./pages/Privacy/PrivacySettings'));
 
 const AccountSettings = lazy(() => import('./pages/Account/AccountSettings'));
@@ -207,6 +208,7 @@ function App() {
         
       </Routes>
       <AnalyticsTracker />
+      <SpeedInsights />
       </Suspense>
       <footer className="privacy-footer"><Link to="/privacy">Cài đặt quyền riêng tư</Link></footer>
     </BrowserRouter>
