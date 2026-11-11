@@ -17,7 +17,11 @@ export function Metric({ label, value, note }) {
 }
 export function Pagination({ pagination, onChange }) {
   const pages = Math.max(1, Math.ceil(pagination.total / pagination.limit));
-  return <nav className="admin-pagination" aria-label="Phân trang"><span>{number(pagination.total)} kết quả</span><button disabled={pagination.page <= 1} onClick={() => onChange(pagination.page - 1)}>Trước</button><span>Trang {pagination.page}/{pages}</span><button disabled={pagination.page >= pages} onClick={() => onChange(pagination.page + 1)}>Sau</button></nav>;
+  const changePage = (next) => {
+    onChange(next);
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+  };
+  return <nav className="admin-pagination" aria-label="Phân trang"><span>{number(pagination.total)} kết quả</span><button disabled={pagination.page <= 1} onClick={() => changePage(pagination.page - 1)}>Trước</button><span>Trang {pagination.page}/{pages}</span><button disabled={pagination.page >= pages} onClick={() => changePage(pagination.page + 1)}>Sau</button></nav>;
 }
 export function SessionTable({ items }) {
   if (!items.length) return <p className="admin-empty">Chưa có phiên mô phỏng phù hợp.</p>;

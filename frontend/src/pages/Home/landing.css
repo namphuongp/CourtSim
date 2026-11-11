@@ -16,7 +16,14 @@
 .landing-header .courtsim-brand span,.landing-footer .courtsim-brand span { color:white; }
 .landing-header nav { display:flex; gap:24px; align-items:center; font-size:13px; color:#c2ccec; }
 .landing-header nav a:hover { color:white; }
-.landing-header-actions { display:flex; align-items:center; gap:24px; font-size:14px; font-weight:650; }
+.landing-header-actions { display:flex; align-items:center; gap:14px; font-size:14px; font-weight:650; flex-wrap:wrap; }
+.landing-auth-link { color:#dce6ff; font-size:13px; font-weight:650; padding:6px 10px; border-radius:8px; transition:background .15s,color .15s; }
+.landing-auth-link:hover { color:#fff; background:rgba(255,255,255,0.1); }
+.landing-user-chip { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:999px; background:rgba(255,255,255,0.1); border:1px solid rgba(157,184,255,0.35); color:#fff; font-size:13px; font-weight:650; max-width:210px; }
+.landing-user-chip span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.landing-user-chip:hover { background:rgba(255,255,255,0.18); }
+.landing-header-actions button { background:transparent; border:1px solid rgba(157,184,255,0.35); color:#dce6ff; border-radius:999px; padding:6px 12px; font-size:12px; font-weight:650; min-height:34px; }
+.landing-header-actions button:hover { background:rgba(255,255,255,0.14); color:#fff; }
 .landing-cta,.landing-secondary { display:inline-flex; justify-content:center; align-items:center; gap:12px; border:1px solid transparent; border-radius:999px; min-height:48px; padding:10px 22px; font-size:14px; font-weight:750; white-space:nowrap; }
 .landing-cta { color:white; background:linear-gradient(120deg,#388cff,#2461ed); box-shadow:0 6px 16px #0b4eec25; }
 .landing-cta svg { background:white; color:#2879ff; border-radius:50%; padding:2px; width:21px; height:21px; }

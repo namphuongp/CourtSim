@@ -1,22 +1,27 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, BookOpen, CheckCircle2, ClipboardList, FileText, Gavel, Scale, Sparkles } from 'lucide-react';
+import { ArrowRight, BookOpen, CheckCircle2, ClipboardList, FileText, Gavel, Scale, Sparkles, UserRound } from 'lucide-react';
 import CourtSimBrand from '../../components/CourtSimBrand';
 import LandingFooter from '../../components/landing/LandingFooter';
 import ArenaIllustration from '../../components/landing/ArenaIllustration';
 import FeedbackModal from '../../components/feedback/FeedbackModal';
 import CaseDossier from '../../components/CaseDossier';
+import { LogoutButton } from '../Auth/AccountActions';
+import { useCurrentUser } from '../../services/auth';
 import api, { getApiError } from '../../services/api';
 import { caseIntroduction } from '../../../../shared/casePresentation.mjs';
 import './landing.css';
 
 const START_PATH = '/dashboard/setup';
 const filters = ['Tất cả', 'Đất đai', 'Phúc thẩm', 'Sơ thẩm'];
-function StartLink({ children = 'Bắt đầu miễn phí', className = '' }) {
-  return <Link to={START_PATH} className={`landing-cta ${className}`}>{children}<ArrowRight size={17} aria-hidden="true" /></Link>;
+function StartLink({ children, className = '' }) {
+  const user = useCurrentUser();
+  const label = children ?? (user?.id ? 'Vào phòng luyện tập' : 'Bắt đầu miễn phí');
+  return <Link to={START_PATH} className={`landing-cta ${className}`}>{label}<ArrowRight size={17} aria-hidden="true" /></Link>;
 }
 
 export default function LandingPage() {
+  const currentUser = useCurrentUser();
   const [catalog, setCatalog] = useState({ loading: true, cases: [], error: '' });
   const [filter, setFilter] = useState('Tất cả');
   const [reload, setReload] = useState(0);
@@ -38,7 +43,25 @@ export default function LandingPage() {
     <header className="landing-header"><div className="landing-container landing-header-inner">
       <CourtSimBrand />
       <nav aria-label="Điều hướng trang chủ"><a href="#workflow">Cách hoạt động</a><a href="#cases">Thư viện vụ án</a><a href="#feedback">Phản hồi AI</a><Link to="/pricing">Bảng giá</Link><Link to="/guide">Hướng dẫn</Link></nav>
-      <div className="landing-header-actions"><Link to="/login">Đăng nhập</Link><StartLink /></div>
+      <div className="landing-header-actions">
+        {currentUser?.id ? (
+          <>
+            {currentUser.role === 'admin' && <Link to="/admin" className="landing-auth-link">Quản trị</Link>}
+            <Link to="/dashboard" className="landing-auth-link">Tổng quan</Link>
+            <Link to="/account" className="landing-user-chip" title="Tài khoản của bạn">
+              <UserRound size={15} aria-hidden="true" />
+              <span>{currentUser.full_name || currentUser.email || 'Tài khoản'}</span>
+            </Link>
+            <StartLink>Luyện tập ngay</StartLink>
+            <LogoutButton />
+          </>
+        ) : (
+          <>
+            <Link to="/login">Đăng nhập</Link>
+            <StartLink />
+          </>
+        )}
+      </div>
     </div></header>
     <main id="main-content" tabIndex={-1}>
       <section className="landing-hero" aria-labelledby="hero-heading">

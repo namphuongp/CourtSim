@@ -3,14 +3,14 @@ import { useEffect, useRef, useState } from 'react';
 import { ChevronDown, UserRound, ShieldCheck, CreditCard, Link2, Settings } from 'lucide-react';
 import CourtSimBrand from './CourtSimBrand';
 import { LogoutButton } from '../pages/Auth/AccountActions';
-import { getCurrentUser } from '../services/auth';
+import { useCurrentUser } from '../services/auth';
 import './userShell.css';
 import { memberFeatures } from '../../../shared/membershipPolicy.mjs';
 import './membership/membership.css';
 
 const navigation = [['/dashboard', 'Tổng quan'], ['/dashboard/sessions', 'Phiên đang học'], ['/dashboard/history', 'Lịch sử'], ['/dashboard/analytics', 'Đánh giá kỹ năng'], ['/guide', 'Hướng dẫn'], ['/account', 'Tài khoản']];
 export default function UserHeader() {
-  const user = getCurrentUser();
+  const user = useCurrentUser();
   const [open, setOpen] = useState(false);
   const menu = useRef(null);
   const trigger = useRef(null);

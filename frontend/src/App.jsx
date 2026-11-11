@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useEffect, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useLayoutEffect, useState } from 'react';
 import api from './services/api';
 import { getCurrentUser, setCurrentUser, clearAuth, safeReturnPath } from './services/auth';
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
@@ -87,6 +87,47 @@ const ProtectedUserRoute = ({ children }) => {
   return children;
 };
 
+function ScrollToTop() {
+  const { pathname, search, hash } = useLocation();
+  useEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+  }, []);
+  useLayoutEffect(() => {
+    if (hash) {
+      const targetId = decodeURIComponent(hash.slice(1));
+      const scrollToAnchor = () => {
+        const el = document.getElementById(targetId);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          return true;
+        }
+        return false;
+      };
+      if (!scrollToAnchor()) {
+        const timer = setTimeout(scrollToAnchor, 90);
+        return () => clearTimeout(timer);
+      }
+      return undefined;
+    }
+
+    const scrollTopNow = () => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    };
+    scrollTopNow();
+    const frameId = requestAnimationFrame(scrollTopNow);
+    const timerId = setTimeout(scrollTopNow, 40);
+    return () => {
+      cancelAnimationFrame(frameId);
+      clearTimeout(timerId);
+    };
+  }, [pathname, search, hash]);
+  return null;
+}
+
 // ==========================================
 // CẤU HÌNH ROUTER CHÍNH
 // ==========================================
@@ -107,6 +148,7 @@ function App() {
   if (authStatus === 'error') return <main className="auth-page"><section className="auth-card"><p role="alert">Chưa thể kết nối CourtSim. Kiểm tra kết nối và thử lại.</p><button className="auth-primary" onClick={() => window.location.reload()}>Thử lại</button></section></main>;
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <SeoMetadata />
       <ConsentBanner />
       <Suspense fallback={<main className="auth-page"><p role="status">Đang mở trang…</p></main>}>

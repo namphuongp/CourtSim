@@ -227,6 +227,11 @@ export default function SimulationSetup() {
 
   const hasActiveFilters = originFilter !== 'all' || categoryFilter !== 'all' || qualityFilter !== 'all' || Boolean(searchQuery.trim()) || sortBy !== 'system_first';
 
+  function changeCasePage(newPage) {
+    setCasePage(newPage);
+    document.querySelector('.setup-case-browser')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
   function resetCaseFilters() {
     setOriginFilter('all');
     setCategoryFilter('all');
@@ -421,7 +426,11 @@ export default function SimulationSetup() {
   const valid = ready && isSelectedCaseApproved && Boolean(form.user_court_role && eventDate) && canStart && !membership.loading && !state.submitting;
   const steps = ['Vụ án', 'Hồ sơ', 'Vai', 'Mốc tra cứu', 'Chuẩn bị'];
   const completedSteps = [Boolean(form.case_id), reviewedCase === form.case_id, Boolean(form.user_court_role), Boolean(eventDate)];
-  function goStep(index) { if (index === 1) setReviewedCase(form.case_id); setStep(index); }
+  function goStep(index) {
+    if (index === 1) setReviewedCase(form.case_id);
+    setStep(index);
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+  }
   const canNext = step === 0 ? ready : step === 1 ? (ready && isSelectedCaseApproved) : step === 2 ? Boolean(form.user_court_role) : step === 3 ? Boolean(eventDate) : false;
   const summary = <dl className="setup-summary"><div><dt>Vụ án</dt><dd>{ready ? caseIntroduction(selectedCase).title : 'Chưa chọn vụ án'}</dd></div><div><dt>Vai của bạn</dt><dd>{form.user_court_role ? roleLabel(form.user_court_role, selectedCase?.category, selectedCase) : 'Chưa chọn vai'}</dd></div><div><dt>Mốc tra cứu</dt><dd>{eventDate || 'Chưa chọn mốc tra cứu'}</dd></div><div><dt>Giới hạn</dt><dd>20 lượt trao đổi</dd></div></dl>;
   return <section className="practice-dashboard simulation-setup mx-auto space-y-6">
@@ -906,7 +915,7 @@ export default function SimulationSetup() {
                         <button
                           type="button"
                           disabled={safePage <= 1}
-                          onClick={() => setCasePage((p) => Math.max(1, p - 1))}
+                          onClick={() => changeCasePage(Math.max(1, safePage - 1))}
                         >
                           <ChevronLeft size={14} /> Trước
                         </button>
@@ -927,7 +936,7 @@ export default function SimulationSetup() {
                                   type="button"
                                   aria-current={safePage === item ? 'page' : undefined}
                                   className={safePage === item ? 'is-active' : ''}
-                                  onClick={() => setCasePage(item)}
+                                  onClick={() => changeCasePage(item)}
                                 >
                                   {item}
                                 </button>
@@ -937,7 +946,7 @@ export default function SimulationSetup() {
                         <button
                           type="button"
                           disabled={safePage >= totalPages}
-                          onClick={() => setCasePage((p) => Math.min(totalPages, p + 1))}
+                          onClick={() => changeCasePage(Math.min(totalPages, safePage + 1))}
                         >
                           Sau <ChevronRight size={14} />
                         </button>
