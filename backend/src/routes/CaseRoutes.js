@@ -27,22 +27,32 @@ function buildCaseListFilter(query = {}) {
 
   const origin = typeof query.origin === 'string' ? query.origin.trim() : '';
   const userUploadMatch = {
-    $or: [
-      { origin: 'user_upload' },
-      { created_by: { $ne: null } },
-      { source_note: /người dùng tải lên/iu },
-      { 'evidence_inventory.id': /^EV-custom-/ },
+    $and: [
+      { origin: { $ne: 'system' } },
+      {
+        $or: [
+          { origin: 'user_upload' },
+          { created_by: { $ne: null } },
+          { source_note: /người dùng tải lên/iu },
+          { 'evidence_inventory.id': /^EV-custom-/ },
+        ],
+      },
     ],
   };
   if (origin === 'user_upload') {
     conditions.push(userUploadMatch);
   } else if (origin === 'system') {
     conditions.push({
-      $and: [
-        { origin: { $ne: 'user_upload' } },
-        { $or: [{ created_by: null }, { created_by: { $exists: false } }] },
-        { source_note: { $not: /người dùng tải lên/iu } },
-        { 'evidence_inventory.id': { $not: /^EV-custom-/ } },
+      $or: [
+        { origin: 'system' },
+        {
+          $and: [
+            { origin: { $ne: 'user_upload' } },
+            { $or: [{ created_by: null }, { created_by: { $exists: false } }] },
+            { source_note: { $not: /người dùng tải lên/iu } },
+            { 'evidence_inventory.id': { $not: /^EV-custom-/ } },
+          ],
+        },
       ],
     });
   }
@@ -82,7 +92,7 @@ router.get('/', asyncHandler(async (request, response) => {
   const page = Math.max(Number.parseInt(request.query.page, 10) || 1, 1);
   const limit = Math.min(Math.max(Number.parseInt(request.query.limit, 10) || 20, 1), 50);
   const filter = buildCaseListFilter(query);
-  const selectFields = 'title summary category created_at reference_date source_url source_note origin created_by practice_context parties timeline evidence_inventory legal_scope_note';
+  const selectFields = 'title summary full_document category created_at reference_date source_url source_note origin created_by practice_context parties timeline evidence_inventory legal_scope_note';
   const [items, total] = await Promise.all([
     Case.find(filter).select(selectFields).sort({ created_at: -1 }).skip((page - 1) * limit).limit(limit).lean(),
     Case.countDocuments(filter),
@@ -120,10 +130,12 @@ router.post('/upload-parse', authenticate, asyncHandler(async (request, response
     });
   }
 
+  const saveAsSystem = request.auth?.role === 'admin' && request.body?.as_system === true;
   const created = await Case.create({
     ...structured,
-    origin: 'user_upload',
-    created_by: request.auth.userId,
+    origin: saveAsSystem ? 'system' : 'user_upload',
+    created_by: saveAsSystem ? null : request.auth.userId,
+    source_note: saveAsSystem ? 'Hồ sơ vụ án chuẩn hệ thống.' : structured.source_note,
   });
   response.status(201).json({
     data: learnerCase(created.toObject()),
@@ -145,8 +157,8 @@ router.post('/', authenticate, requireAdmin, asyncHandler(async (request, respon
   if (![title, summary, document, category].every((value) => typeof value === 'string' && value.trim())) {
     throw new AppError('Vui lòng nhập tên vụ án, tóm tắt, nội dung hồ sơ và loại vụ án.');
   }
-  if (title.length > 200 || summary.length > 4000 || document.length > 50000 || category.length > 80) {
-    throw new AppError('Hồ sơ quá dài: tiêu đề tối đa 200, tóm tắt 4.000, nội dung 50.000 và loại vụ án 80 ký tự.');
+  if (title.length > 200 || summary.length > 4000 || document.length > 250000 || category.length > 80) {
+    throw new AppError('Hồ sơ quá dài: tiêu đề tối đa 200, tóm tắt 4.000, nội dung 250.000 và loại vụ án 80 ký tự.');
   }
   const timeline = validateTimeline(request.body.timeline);
   if (timeline.some((event) => !document.includes(event.source_quote))) throw new AppError('Trích đoạn của mốc thời gian phải có trong nội dung hồ sơ.');
@@ -179,8 +191,8 @@ router.put('/:caseId', authenticate, requireAdmin, asyncHandler(async (request, 
   if (![title, summary, document, category].every((value) => typeof value === 'string' && value.trim())) {
     throw new AppError('Vui lòng nhập tên vụ án, tóm tắt, nội dung hồ sơ và loại vụ án.');
   }
-  if (title.length > 200 || summary.length > 4000 || document.length > 50000 || category.length > 80) {
-    throw new AppError('Hồ sơ quá dài: tiêu đề tối đa 200, tóm tắt 4.000, nội dung 50.000 và loại vụ án 80 ký tự.');
+  if (title.length > 200 || summary.length > 4000 || document.length > 250000 || category.length > 80) {
+    throw new AppError('Hồ sơ quá dài: tiêu đề tối đa 200, tóm tắt 4.000, nội dung 250.000 và loại vụ án 80 ký tự.');
   }
   const timeline = request.body.timeline !== undefined
     ? validateTimeline(request.body.timeline)
@@ -231,6 +243,28 @@ router.put('/:caseId', authenticate, requireAdmin, asyncHandler(async (request, 
   }
   existing.practice_context = practice_context;
 
+  await existing.save();
+  response.json({ data: learnerCase(existing) });
+}));
+
+router.patch('/:caseId/origin', authenticate, requireAdmin, asyncHandler(async (request, response) => {
+  if (!mongoose.isObjectIdOrHexString(request.params.caseId)) {
+    throw new AppError('Mã vụ án không hợp lệ.', 400);
+  }
+  const { origin } = request.body ?? {};
+  if (!['system', 'user_upload'].includes(origin)) {
+    throw new AppError('Phân loại nguồn vụ án không hợp lệ.', 400);
+  }
+  const existing = await Case.findById(request.params.caseId);
+  if (!existing) throw new AppError('Không tìm thấy vụ án.', 404, 'CASE_NOT_FOUND');
+
+  existing.origin = origin;
+  if (origin === 'system') {
+    existing.created_by = null;
+    if (/người dùng tải lên/iu.test(existing.source_note ?? '')) {
+      existing.source_note = 'Hồ sơ vụ án chuẩn hệ thống.';
+    }
+  }
   await existing.save();
   response.json({ data: learnerCase(existing) });
 }));

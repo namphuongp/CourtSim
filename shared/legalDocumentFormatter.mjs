@@ -25,14 +25,14 @@ function isSubjectLineStart(line) {
 
 function isSectionHeadingLine(line) {
   if (!line || line.length > 180) return false;
-  if (/^(?:nội dung vụ án|nội dung vụ việc|nhận thấy|nhận định của tòa án|nhận định của hội đồng xét xử|xét thấy|quyết định|vì các lẽ trên|phần nội dung|tóm tắt nội dung vụ án|diễn biến vụ án)\s*[:.]?$/iu.test(line)) {
+  if (/^(?:nội dung vụ án|nội dung vụ việc|nhận thấy|nhận định của tòa án|nhận định của hội đồng xét xử|xét thấy|quyết định|vì các lẽ trên|phần mở đầu|phần nội dung|phần kết luận|tóm tắt nội dung vụ án|diễn biến vụ án|phụ lục trích yếu[^\n]*|danh mục bút lục[^\n]*|hồ sơ chứng cứ đính kèm[^\n]*)\s*[:.]?$/iu.test(line)) {
     return true;
   }
-  if (/^(?:phần\s+[IVXLCDM\d]+|[IVXLCDM]+)\.\s+\p{L}/iu.test(line) && line.length <= 140) {
+  if (/^(?:bút\s+lục(?:\s+số)?\s*\d+|tài\s+liệu(?:\s+số)?\s*\d+|phần\s+(?:thứ\s+\p{L}+|[IVXLCDM\d]+)|chương\s+[IVXLCDM\d]+|[IVXLCDM]+)\s*[.:–—-]\s*\p{L}/iu.test(line) && line.length <= 165) {
     return true;
   }
-  if (/^\d+\.\s+[\p{Lu}\p{L}][^.!?\n]{3,130}:?$/u.test(line)) {
-    if (line.endsWith(':') || line.length <= 115) return true;
+  if (/^\d+\.\s+[\p{Lu}\p{L}][^.!?\n]{3,145}:?$/u.test(line)) {
+    if (line.endsWith(':') || line.length <= 125) return true;
   }
   return false;
 }
@@ -101,6 +101,13 @@ export function reflowVietnameseLegalLines(rawText) {
 
     const prev = blocks[blocks.length - 1];
     const prevEnded = endsWithTerminalPunctuation(prev);
+
+    // Trường hợp số thứ tự mục ("1.", "2.", "I.", "Phần 1.") bị tách riêng một dòng trước tiêu đề mục
+    if (/^(?:\d+|[IVXLCDM]+|(?:phần|mục|chương|bút\s+lục(?:\s+số)?)\s*(?:\d+|[IVXLCDM]+))[.:]?$/iu.test(prev)) {
+      const normalizedPrefix = prev.endsWith(':') || prev.endsWith('.') ? prev : `${prev}.`;
+      blocks[blocks.length - 1] = `${normalizedPrefix} ${curr}`;
+      continue;
+    }
 
     // Trường hợp nối tên thành viên HĐXX bị xuống dòng (VD: "Các Chủ tọa: Bà Huỳnh Thanh Duyên" + "Ông Phan Đức Phương")
     if (
@@ -360,11 +367,16 @@ export function parseLegalDossierDocument(rawText) {
     // Kiểm tra nếu đây là tiêu đề phần lớn (Section Heading)
     if (isSectionHeadingLine(line) || (isAllCapsLine(line) && line.length <= 95)) {
       const cleanTitle = line.replace(/[:.]$/u, '').trim();
-      const numMatch = /^(\d+|[IVXLCDM]+)\.\s*(.+)$/iu.exec(cleanTitle);
+      const numMatch = /^(?:(bút\s+lục(?:\s+số)?\s*\d+|tài\s+liệu(?:\s+số)?\s*\d+)|(\d+|[IVXLCDM]+))\s*[.:–—-]\s*(.+)$/iu.exec(cleanTitle);
+      const badgeLabel = numMatch
+        ? (numMatch[1]
+            ? `BL-${numMatch[1].match(/\d+/u)?.[0]?.padStart(2, '0') || String(sections.length + 1).padStart(2, '0')}`
+            : String(numMatch[2]).padStart(2, '0'))
+        : String(sections.length + 1).padStart(2, '0');
       currentSection = {
         id: `doc-sec-${sections.length + 1}`,
-        title: numMatch ? numMatch[2] : cleanTitle,
-        badge: numMatch ? String(numMatch[1]) : String(sections.length + 1).padStart(2, '0'),
+        title: numMatch ? numMatch[3] : cleanTitle,
+        badge: badgeLabel,
         rawHeading: line,
         blocks: [],
       };
@@ -434,5 +446,69 @@ export function parseLegalDossierDocument(rawText) {
     preamble,
     sections: sections.filter((s) => s.blocks.length > 0 || s.rawHeading),
     totalBlocks: blockCounter,
+  };
+}
+
+export function buildCompleteDossierDocument(courtCase, { sanitizeText = (v) => String(v ?? '') } = {}) {
+  if (!courtCase || typeof courtCase !== 'object') {
+    return {
+      fullText: '',
+      charCount: 0,
+      wordCount: 0,
+      estimatedPages: 0,
+      appendedEvidenceCount: 0,
+    };
+  }
+
+  const baseDoc = sanitizeText(courtCase.full_document || '').trim();
+  const evidences = Array.isArray(courtCase.evidence_inventory) ? courtCase.evidence_inventory : [];
+  const appendedSections = [];
+
+  evidences.forEach((ev, idx) => {
+    if (!ev || typeof ev !== 'object') return;
+    const rawBody = sanitizeText(ev.content || ev.summary || '').trim();
+    if (!rawBody || rawBody.length < 20) return;
+
+    // Nếu nội dung cốt lõi của bút lục đã nằm nguyên văn trong full_document thì không lặp lại
+    const sampleProbe = rawBody.slice(0, Math.min(120, rawBody.length)).trim();
+    if (sampleProbe.length >= 35 && baseDoc.includes(sampleProbe)) {
+      return;
+    }
+
+    const seq = String(idx + 1).padStart(2, '0');
+    const name = sanitizeText(ev.name || `Tài liệu chứng cứ số ${seq}`).trim();
+    const providedBy = sanitizeText(ev.provided_by || 'Theo hồ sơ vụ án').trim();
+    const dateStr = ev.date ? String(ev.date).trim() : 'Theo hồ sơ';
+    const scope = sanitizeText(ev.proof_scope || '').trim();
+
+    const bodyLines = rawBody.split('\n').map((l) => l.trim()).filter(Boolean);
+    if (bodyLines.length > 1 && isAllCapsLine(bodyLines[0])) {
+      bodyLines.shift();
+    }
+    const cleanedBody = bodyLines.join('\n');
+
+    const lines = [
+      `BÚT LỤC ${seq}: ${name}`,
+      `- Nguồn cung cấp: ${providedBy} (Thời điểm lập: ${dateStr}).`,
+    ];
+    if (scope && !cleanedBody.includes(scope)) {
+      lines.push(`- Phạm vi chứng minh: ${scope}`);
+    }
+    lines.push(cleanedBody);
+    appendedSections.push(lines.join('\n'));
+  });
+
+  const fullText = [baseDoc, ...appendedSections].filter(Boolean).join('\n\n');
+  const charCount = fullText.length;
+  const wordCount = fullText ? fullText.trim().split(/\s+/u).length : 0;
+  // Trung bình 1 trang hồ sơ/bản án chuẩn A4 tiếng Việt có khoảng 1.600 - 1.800 ký tự (khoảng 300-350 từ)
+  const estimatedPages = charCount > 0 ? Math.max(1, Math.ceil(charCount / 1650)) : 0;
+
+  return {
+    fullText,
+    charCount,
+    wordCount,
+    estimatedPages,
+    appendedEvidenceCount: appendedSections.length,
   };
 }

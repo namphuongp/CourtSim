@@ -67,6 +67,7 @@ function buildDefaultDevelopments(courtCase) {
 
 export function detectCaseOrigin(courtCase) {
   if (!courtCase || typeof courtCase !== 'object') return 'system';
+  if (courtCase.origin === 'system') return 'system';
   if (courtCase.origin === 'user_upload') return 'user_upload';
   if (courtCase.created_by) return 'user_upload';
   if (/người dùng tải lên/iu.test(courtCase.source_note ?? '')) return 'user_upload';
@@ -84,11 +85,17 @@ export function caseCompletenessStats(courtCase) {
   const evidenceCount = evidenceList.length;
   const providedEvidenceCount = evidenceList.filter(e => e?.availability === 'provided' || Boolean(e?.content?.trim())).length;
 
+  const baseDocChars = String(courtCase?.full_document ?? '').length;
+  const evidenceChars = evidenceList.reduce((acc, ev) => acc + String(ev?.content || ev?.summary || '').length, 0);
+  const totalChars = Math.max(baseDocChars, baseDocChars + Math.round(evidenceChars * 0.65));
+  const estimatedPages = totalChars > 0 ? Math.max(1, Math.ceil(totalChars / 1650)) : 1;
+
   const hasSpecificParties = partiesCount >= 2 && !parties.every(p => /^(?:Nguyên đơn|Bị đơn|Người bị hại|Bị cáo|Bên khởi kiện|Bên bị kiện)$/iu.test(String(p?.name ?? '').trim()));
   const missingFields = [];
   if (partiesCount < 2 || !hasSpecificParties) missingFields.push('đương sự cụ thể');
   if (evidenceCount < 2) missingFields.push('chứng cứ');
   if (timelineCount < 2) missingFields.push('mốc thời gian');
+  if (origin === 'user_upload' && totalChars > 0 && totalChars < 1800) missingFields.push('nội dung toàn văn quá ngắn');
 
   if (origin === 'system') {
     return {
@@ -97,6 +104,8 @@ export function caseCompletenessStats(courtCase) {
       timeline_count: timelineCount,
       evidence_count: evidenceCount,
       provided_evidence_count: providedEvidenceCount,
+      total_chars: totalChars,
+      estimated_pages: estimatedPages,
       has_full_dossier: true,
       quality_level: 'verified_system',
       quality_label: 'Chuẩn hệ thống',
@@ -104,13 +113,19 @@ export function caseCompletenessStats(courtCase) {
     };
   }
 
-  const isCompleteUpload = partiesCount >= 2 && hasSpecificParties && evidenceCount >= 2 && timelineCount >= 2;
+  const isCompleteUpload = partiesCount >= 2
+    && hasSpecificParties
+    && evidenceCount >= 2
+    && timelineCount >= 2
+    && (totalChars === 0 || totalChars >= 1800);
   return {
     origin: 'user_upload',
     parties_count: partiesCount,
     timeline_count: timelineCount,
     evidence_count: evidenceCount,
     provided_evidence_count: providedEvidenceCount,
+    total_chars: totalChars,
+    estimated_pages: estimatedPages,
     has_full_dossier: isCompleteUpload,
     quality_level: isCompleteUpload ? 'complete_upload' : 'partial_upload',
     quality_label: isCompleteUpload ? 'Đầy đủ cấu trúc' : 'Thiếu dữ liệu chi tiết',

@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import api, { getApiError } from '../../../services/api';
 import CaseDossier from '../../../components/CaseDossier';
-import { caseCompletenessStats } from '../../../../../shared/casePresentation.mjs';
+import { caseCompletenessStats, detectCaseOrigin } from '../../../../../shared/casePresentation.mjs';
 import { useAdminData } from './adminData';
 import { LoadState, Pagination } from './AdminElements';
 
@@ -187,6 +187,30 @@ export default function AdminCases() {
     }
   }
 
+  async function toggleCaseOrigin(item) {
+    if (lock.current) return;
+    const currentOrigin = detectCaseOrigin(item);
+    const nextOrigin = currentOrigin === 'system' ? 'user_upload' : 'system';
+    lock.current = true;
+    setBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      await api.patch(`/v1/cases/${item._id}/origin`, { origin: nextOrigin });
+      setNotice(
+        nextOrigin === 'system'
+          ? `Đã chuyển “${item.title}” vào danh sách Vụ án chuẩn hệ thống (Của mình).`
+          : `Đã chuyển “${item.title}” sang danh sách Hồ sơ người dùng tải lên.`
+      );
+      resource.reload();
+    } catch (failure) {
+      setError(getApiError(failure, 'Chưa thể cập nhật phân loại nguồn vụ án.'));
+    } finally {
+      lock.current = false;
+      setBusy(false);
+    }
+  }
+
   async function viewCase(id) {
     const request = ++detailRequest.current;
     setDetail({ loading: true });
@@ -269,8 +293,8 @@ export default function AdminCases() {
               <textarea required rows={4} maxLength={4000} value={form.summary} onChange={e => update('summary', e.target.value)} />
             </label>
             <label>
-              Nội dung hồ sơ đầy đủ
-              <textarea required rows={10} maxLength={50000} value={form.full_document} onChange={e => update('full_document', e.target.value)} />
+              Nội dung hồ sơ đầy đủ {form.full_document ? `(${form.full_document.length.toLocaleString('vi-VN')} ký tự · ~${Math.max(1, Math.ceil(form.full_document.length / 1650))} trang)` : ''}
+              <textarea required rows={10} maxLength={250000} value={form.full_document} onChange={e => update('full_document', e.target.value)} />
             </label>
 
             <h3>Danh sách chứng cứ hồ sơ ({form.evidence_inventory.length})</h3>
@@ -482,11 +506,11 @@ export default function AdminCases() {
                                 className="admin-badge admin-warning inline-flex items-center gap-1"
                                 title={`Thiếu: ${stats.missing_fields.join(', ')}`}
                               >
-                                <AlertTriangle size={12} /> Dữ liệu tóm lược ({stats.evidence_count} chứng cứ)
+                                <AlertTriangle size={12} /> Dữ liệu tóm lược (~{stats.estimated_pages} trang · {stats.evidence_count} chứng cứ)
                               </span>
                             ) : (
                               <span className="admin-badge">
-                                {stats.parties_count} đương sự · {stats.evidence_count} chứng cứ · {stats.timeline_count} mốc thời gian
+                                ~{stats.estimated_pages} trang · {stats.parties_count} đương sự · {stats.evidence_count} chứng cứ · {stats.timeline_count} mốc thời gian
                               </span>
                             )}
                           </div>
@@ -501,6 +525,16 @@ export default function AdminCases() {
                         </div>
 
                         <div className="admin-case-item-actions">
+                          <button
+                            type="button"
+                            onClick={() => toggleCaseOrigin(item)}
+                            disabled={busy}
+                            title={stats.origin === 'system' ? 'Chuyển sang Hồ sơ người dùng tải lên' : 'Đánh dấu là Vụ án chuẩn của hệ thống (Của mình)'}
+                          >
+                            {stats.origin === 'system' ? <Upload size={15} /> : <ShieldCheck size={15} />}
+                            <span>{stats.origin === 'system' ? 'Sang tải lên' : 'Đặt làm chuẩn'}</span>
+                          </button>
+
                           <button
                             type="button"
                             aria-label={`Xem hồ sơ: ${item.title}`}

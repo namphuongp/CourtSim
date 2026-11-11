@@ -95,6 +95,7 @@ export default function SimulationSetup() {
   const [casePageSize, setCasePageSize] = useState(6);
   const [deletingCaseId, setDeletingCaseId] = useState(null);
   const currentUser = getCurrentUser();
+  const [uploadAsSystem, setUploadAsSystem] = useState(currentUser?.role === 'admin');
 
   useEffect(() => { saveDraft(storageKey, form); }, [storageKey, form]);
   useEffect(() => {
@@ -197,6 +198,14 @@ export default function SimulationSetup() {
         if (statsA.has_full_dossier !== statsB.has_full_dossier) {
           return statsA.has_full_dossier ? -1 : 1;
         }
+        const isLongA = (statsA.total_chars || 0) >= 12000;
+        const isLongB = (statsB.total_chars || 0) >= 12000;
+        if (isLongA !== isLongB) {
+          return isLongA ? -1 : 1;
+        }
+      } else if (sortBy === 'longest_dossier') {
+        const charDiff = (statsB.total_chars || 0) - (statsA.total_chars || 0);
+        if (charDiff !== 0) return charDiff;
       } else if (sortBy === 'most_evidence') {
         const diff = (statsB.evidence_count + statsB.timeline_count) - (statsA.evidence_count + statsA.timeline_count);
         if (diff !== 0) return diff;
@@ -247,8 +256,8 @@ export default function SimulationSetup() {
   async function handleFileSelect(event) {
     const file = event.target.files?.[0];
     if (!file) return;
-    if (file.size > 5_000_000) {
-      setUploadState({ loading: false, previewing: false, error: 'Tệp tải lên quá lớn (tối đa 5MB). Vui lòng chọn tệp nhỏ hơn.', success: '' });
+    if (file.size > 20_000_000) {
+      setUploadState({ loading: false, previewing: false, error: 'Tệp tải lên quá lớn (tối đa 20MB). Vui lòng chọn tệp nhỏ hơn.', success: '' });
       return;
     }
     setUploadedFileName(file.name);
@@ -270,7 +279,7 @@ export default function SimulationSetup() {
         const parsed = data.parsed || data.data;
         const extractedText = data.extracted_text || parsed?.full_document || '';
         setUploadForm((cur) => ({
-          raw_text: extractedText.slice(0, 45000),
+          raw_text: extractedText.slice(0, 250000),
           title: cur.title || parsed?.title || '',
           category: cur.category || parsed?.category || '',
           reference_date: cur.reference_date || parsed?.reference_date || '',
@@ -280,7 +289,7 @@ export default function SimulationSetup() {
           loading: false,
           previewing: false,
           error: '',
-          success: `Đã đọc nội dung từ tệp "${file.name}". Kiểm tra tóm tắt hồ sơ bên dưới rồi bấm Hoàn tất & Mở hồ sơ vụ án.`,
+          success: `Đã đọc toàn văn từ tệp "${file.name}" (${Math.max(1, Math.ceil(extractedText.length / 1650))} trang). Kiểm tra tóm tắt bên dưới rồi bấm Hoàn tất & Mở hồ sơ vụ án.`,
         });
       } catch (error) {
         setUploadState({
@@ -298,11 +307,11 @@ export default function SimulationSetup() {
       const cleanName = file.name.replace(/\.[^.]+$/u, '').replace(/[_-]+/gu, ' ').trim();
       setUploadForm((cur) => ({
         ...cur,
-        raw_text: content.slice(0, 45000),
+        raw_text: content.slice(0, 250000),
         title: cur.title || cleanName.slice(0, 150),
       }));
       setUploadPreview(null);
-      setUploadState({ loading: false, previewing: false, error: '', success: `Đã đọc tệp "${file.name}". Bấm Xem trước hồ sơ hoặc Hoàn tất & Mở hồ sơ vụ án.` });
+      setUploadState({ loading: false, previewing: false, error: '', success: `Đã đọc tệp "${file.name}" (${Math.max(1, Math.ceil(content.length / 1650))} trang). Bấm Xem trước hồ sơ hoặc Hoàn tất & Mở hồ sơ vụ án.` });
     } catch {
       setUploadState({ loading: false, previewing: false, error: 'Không thể đọc tệp đã chọn. Vui lòng dán trực tiếp nội dung bản án vào ô bên dưới.', success: '' });
     }
@@ -348,6 +357,7 @@ export default function SimulationSetup() {
         title: uploadForm.title.trim() || undefined,
         category: uploadForm.category.trim() || undefined,
         reference_date: uploadForm.reference_date || undefined,
+        as_system: currentUser?.role === 'admin' ? uploadAsSystem : false,
         save: true,
       });
       const created = data.data;
@@ -506,15 +516,32 @@ export default function SimulationSetup() {
                   </div>
                 </div>
                 <div className="mt-3">
-                  <label htmlFor="custom-case-raw-text">Nội dung bản án / hồ sơ vụ án *</label>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <label htmlFor="custom-case-raw-text">Nội dung bản án / hồ sơ vụ án *</label>
+                    {uploadForm.raw_text.length > 0 && (
+                      <span className="text-xs font-semibold text-blue-700">
+                        Đã nhận {uploadForm.raw_text.length.toLocaleString('vi-VN')} ký tự (~{Math.max(1, Math.ceil(uploadForm.raw_text.length / 1650))} trang)
+                      </span>
+                    )}
+                  </div>
                   <textarea
                     id="custom-case-raw-text"
                     rows={6}
                     required
-                    placeholder="Dán toàn văn hoặc tóm tắt nội dung bản án, lời trình bày của các bên và các tài liệu chứng cứ vào đây (hoặc chọn tệp PDF/Word ở trên)..."
+                    placeholder="Dán toàn văn 50-80 trang hồ sơ vụ án, bản án, lời trình bày của các bên và các tài liệu chứng cứ vào đây (hoặc chọn tệp PDF/Word tối đa 20MB ở trên)..."
                     value={uploadForm.raw_text}
                     onChange={(e) => setUploadForm((cur) => ({ ...cur, raw_text: e.target.value }))}
                   />
+                  {currentUser?.role === 'admin' && (
+                    <label className="mt-2 inline-flex cursor-pointer items-center gap-2 text-xs font-semibold text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={uploadAsSystem}
+                        onChange={(e) => setUploadAsSystem(e.target.checked)}
+                      />
+                      <span>Lưu vào danh sách <strong>Vụ án chuẩn hệ thống (Của mình)</strong> thay vì Hồ sơ người dùng tải lên</span>
+                    </label>
+                  )}
                 </div>
 
                 {uploadPreview && (
@@ -686,6 +713,7 @@ export default function SimulationSetup() {
                       onChange={(e) => { setSortBy(e.target.value); setCasePage(1); }}
                     >
                       <option value="system_first">Ưu tiên vụ án hệ thống</option>
+                      <option value="longest_dossier">Hồ sơ toàn văn dài nhất</option>
                       <option value="newest">Mới nhất trước</option>
                       <option value="most_evidence">Nhiều chứng cứ nhất</option>
                     </select>
@@ -747,18 +775,18 @@ export default function SimulationSetup() {
                             <span className="setup-badge is-category-badge">{item.category}</span>
                             {stats.origin === 'system' ? (
                               <span className="setup-badge is-quality-ok">
-                                <CheckCircle2 size={12} /> Dữ liệu chuẩn
+                                <CheckCircle2 size={12} /> {stats.estimated_pages >= 8 ? `Hồ sơ toàn văn (~${stats.estimated_pages} trang)` : `Hồ sơ chuẩn (~${stats.estimated_pages} trang)`}
                               </span>
                             ) : stats.has_full_dossier ? (
                               <span className="setup-badge is-quality-ok">
-                                <CheckCircle2 size={12} /> Đủ cấu trúc ({stats.evidence_count} chứng cứ)
+                                <CheckCircle2 size={12} /> Đủ cấu trúc (~{stats.estimated_pages} trang · {stats.evidence_count} chứng cứ)
                               </span>
                             ) : (
                               <span
                                 className="setup-badge is-quality-warn"
                                 title={`Hồ sơ người dùng tải lên còn thiếu: ${stats.missing_fields.join(', ')}`}
                               >
-                                <AlertTriangle size={12} /> Dữ liệu tóm lược ({stats.evidence_count} chứng cứ)
+                                <AlertTriangle size={12} /> Dữ liệu tóm lược (~{stats.estimated_pages} trang · {stats.evidence_count} chứng cứ)
                               </span>
                             )}
                           </div>

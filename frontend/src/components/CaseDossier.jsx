@@ -4,7 +4,7 @@ import { roleLabel } from '../services/simulation';
 import { learnerText } from '../../../shared/learnerText.mjs';
 import { evidenceSummary } from '../../../shared/dialogueText.mjs';
 import { canCiteEvidence, EVIDENCE_ASSUMPTION, caseIntroduction, practiceText } from '../../../shared/casePresentation.mjs';
-import { parseLegalDossierDocument, reflowVietnameseLegalText } from '../../../shared/legalDocumentFormatter.mjs';
+import { buildCompleteDossierDocument, parseLegalDossierDocument, reflowVietnameseLegalText } from '../../../shared/legalDocumentFormatter.mjs';
 import { draftKey, readDraft, saveDraft } from '../services/auth';
 import { EVIDENCE_MIME } from '../services/references';
 
@@ -110,10 +110,14 @@ export default function CaseDossier({ courtCase, role, sessionId, onInsert, inse
     saveDraft(caseNoteKey, { content: personalNotes });
   }, [sessionNoteKey, caseNoteKey, personalNotes]);
 
-  const rawFullDocument = useMemo(
-    () => (courtCase ? learnerText(practiceText(courtCase.full_document), 'Chưa có nội dung bổ sung.') : ''),
+  const completeDossier = useMemo(
+    () => buildCompleteDossierDocument(courtCase, {
+      sanitizeText: (value) => learnerText(practiceText(String(value ?? ''))),
+    }),
     [courtCase]
   );
+
+  const rawFullDocument = completeDossier.fullText || 'Chưa có nội dung bổ sung.';
 
   const parsedDocument = useMemo(
     () => parseLegalDossierDocument(rawFullDocument),
@@ -278,7 +282,7 @@ export default function CaseDossier({ courtCase, role, sessionId, onInsert, inse
         <span className="dossier-doc-summary-meta">
           {parsedDocument.sections.length > 0 && (
             <span className="dossier-doc-badge">
-              {parsedDocument.sections.length} phần · {parsedDocument.totalBlocks} mục
+              ~{completeDossier.estimatedPages} trang · {parsedDocument.sections.length} phần · {parsedDocument.totalBlocks} mục
             </span>
           )}
           <ChevronDown size={16} className="dossier-doc-chevron" />

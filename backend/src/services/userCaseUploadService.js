@@ -95,8 +95,8 @@ export async function extractTextFromUploadedDocument({ fileName = '', fileBase6
     if (!bytes.length) {
       throw new AppError('Tệp tải lên trống hoặc không hợp lệ.', 400, 'CASE_FILE_EMPTY');
     }
-    if (bytes.length > 5_500_000) {
-      throw new AppError('Tệp bản án tải lên quá lớn (tối đa 5MB). Vui lòng chọn tệp nhỏ hơn hoặc dán phần nội dung chính.', 400, 'CASE_FILE_TOO_LARGE');
+    if (bytes.length > 20_000_000) {
+      throw new AppError('Tệp bản án tải lên quá lớn (tối đa 20MB). Vui lòng chọn tệp nhỏ hơn hoặc dán phần nội dung chính.', 400, 'CASE_FILE_TOO_LARGE');
     }
 
     const ext = String(fileName).toLowerCase().match(/\.([a-z0-9]+)$/u)?.[1] ?? '';
@@ -108,7 +108,7 @@ export async function extractTextFromUploadedDocument({ fileName = '', fileBase6
 
     if (isPdf) {
       try {
-        const extracted = await extractPdfBytes(bytes, { maxPages: 80, maxCharacters: 250_000 });
+        const extracted = await extractPdfBytes(bytes, { maxPages: 120, maxCharacters: 300_000 });
         const text = cleanJudgmentNoise(extracted.text);
         if (text.length < 30) {
           throw new AppError('Tệp PDF này là bản scan ảnh chưa có lớp văn bản (OCR). Vui lòng chọn tệp PDF có văn bản, tệp Word (.docx) hoặc dán nội dung bản án.', 400, 'CASE_PDF_SCAN_ONLY');
@@ -157,13 +157,15 @@ export async function extractTextFromUploadedDocument({ fileName = '', fileBase6
 
 export function segmentVietnameseJudgment(text) {
   const clean = cleanJudgmentNoise(text);
-  const verdictMatch = clean.match(/(?:^|\n)\s*(?:QUYẾT ĐỊNH\s*[:.]|TÒA ÁN NHÂN DÂN[^\n]*QUYẾT ĐỊNH\s*[:.])/imu);
-  if (!verdictMatch || verdictMatch.index === undefined || verdictMatch.index < 80) {
+  // Chỉ tách phần QUYẾT ĐỊNH tuyên án ở cuối văn bản (trong 20% cuối) để không cắt mất nội dung của hồ sơ 50-80 trang có các quyết định tố tụng ở giữa
+  const matches = [...clean.matchAll(/(?:^|\n)\s*(?:QUYẾT ĐỊNH\s*[:.]|TÒA ÁN NHÂN DÂN[^\n]*QUYẾT ĐỊNH\s*[:.])/gimu)];
+  const lastMatch = matches.at(-1);
+  if (!lastMatch || lastMatch.index === undefined || lastMatch.index < 80 || lastMatch.index < clean.length * 0.78) {
     return { bodyWithoutVerdict: clean, verdictSection: '' };
   }
   return {
-    bodyWithoutVerdict: clean.slice(0, verdictMatch.index).trim(),
-    verdictSection: clean.slice(verdictMatch.index).trim(),
+    bodyWithoutVerdict: clean.slice(0, lastMatch.index).trim(),
+    verdictSection: clean.slice(lastMatch.index).trim(),
   };
 }
 
@@ -263,7 +265,8 @@ export function detectCaseTitleFromText(text, parties = [], category = 'dân s�
   const defendant = parties.find((p) => p.side === 'defendant')?.name;
   const hasRealParties = plaintiff && defendant && !/trong hồ sơ|khởi kiện|trong vụ án/iu.test(`${plaintiff} ${defendant}`);
 
-  const subjectMatch = clean.match(/(?:về việc|v\/v)\s*[:：-]?\s*["“]?([^\n"”.]{8,130})/iu);
+  const normalizedSubjectText = clean.replace(/\n+(?=\p{Ll})/gu, ' ');
+  const subjectMatch = normalizedSubjectText.match(/(?:về việc|v\/v)\s*[:：-]?\s*["“]?([^\n"”.]{8,140})/iu);
   if (subjectMatch?.[1]) {
     const subject = subjectMatch[1].trim().replace(/^tranh chấp/iu, 'tranh chấp');
     if (hasRealParties) {
@@ -411,9 +414,15 @@ export function normalizeAndRepairCasePayload(aiDraft, rawText, options = {}) {
   );
   const summary = rawSummary.slice(0, 3800);
 
-  // 2. Xây dựng các trích đoạn chuẩn để đảm bảo 100% có mặt trong full_document
+  // 2. Xây dựng các trích đoạn chuẩn để đảm bảo 100% có mặt trong full_document (giữ nguyên toàn văn hồ sơ 55-100 trang, tối đa 240.000 ký tự)
   const extraDocumentLines = [];
-  const baseDocument = stripSemicolons(aiDraft?.full_document || bodyWithoutVerdict || cleanRaw).slice(0, 38000);
+  const rawFullCandidate = (bodyWithoutVerdict && bodyWithoutVerdict.length >= cleanRaw.length * 0.78)
+    ? bodyWithoutVerdict
+    : cleanRaw;
+  const preferredFullText = (aiDraft?.full_document && aiDraft.full_document.length >= rawFullCandidate.length * 0.9)
+    ? aiDraft.full_document
+    : rawFullCandidate;
+  const baseDocument = stripSemicolons(preferredFullText).slice(0, 240000);
 
   // 3. Chuẩn hóa Timeline (bắt buộc source_quote nằm trong full_document và ngày hợp lệ YYYY-MM-DD)
   const rawTimeline = Array.isArray(aiDraft?.timeline) ? aiDraft.timeline : [];
@@ -620,7 +629,7 @@ export function normalizeAndRepairCasePayload(aiDraft, rawText, options = {}) {
     extraDocumentLines.length
       ? `${baseDocument}\n\nPHỤ LỤC TRÍCH YẾU SỰ KIỆN PHÁP LÝ TRONG HỒ SƠ:\n${extraDocumentLines.join('\n')}`
       : baseDocument
-  ).slice(0, 49500);
+  ).slice(0, 250000);
 
   const candidate = {
     title,
@@ -674,8 +683,8 @@ export async function extractAndStructureUserCase(
   if (typeof resolvedText !== 'string' || !resolvedText.trim()) {
     throw new AppError('Vui lòng nhập hoặc tải lên nội dung bản án, hồ sơ vụ án.', 400, 'CASE_UPLOAD_EMPTY');
   }
-  if (resolvedText.length > 80000) {
-    throw new AppError('Nội dung bản án quá dài (tối đa 80.000 ký tự). Vui lòng rút gọn phần nội dung chính của bản án.', 400, 'CASE_UPLOAD_TOO_LARGE');
+  if (resolvedText.length > 300000) {
+    throw new AppError('Nội dung hồ sơ bản án quá dài (tối đa 300.000 ký tự, tương đương ~120 trang). Vui lòng rút gọn phần phụ lục không cần thiết.', 400, 'CASE_UPLOAD_TOO_LARGE');
   }
 
   let aiDraft = null;
