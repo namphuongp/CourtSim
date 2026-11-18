@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, ClipboardList, FileText, Gavel, Scale, Search, UserRound } from 'lucide-react';
+import { ArrowRight, ChevronDown, ClipboardList, FileText, Gavel, Scale, Search, UserRound } from 'lucide-react';
 import CourtSimBrand from '../../components/CourtSimBrand';
 import LandingFooter from '../../components/landing/LandingFooter';
 import FeedbackModal from '../../components/feedback/FeedbackModal';
@@ -26,10 +26,67 @@ const courtroomTools = [
   [ClipboardList, 'Biên bản phiên', 'Xem lại từng lượt trình bày, câu hỏi và phản biện trong phiên.', 'Tìm hiểu biên bản', '/guide'],
 ];
 
-function StartLink({ children }) {
+function StartLink() {
   const user = useCurrentUser();
-  const label = children ?? (user?.id ? 'Vào phòng luyện tập' : 'Bắt đầu miễn phí');
+  const label = user?.id ? 'Vào phòng luyện tập' : 'Bắt đầu miễn phí';
   return <Link to={START_PATH} className="landing-cta">{label}<ArrowRight size={17} aria-hidden="true" /></Link>;
+}
+
+function LandingPublicLinks({ onNavigate }) {
+  return <>
+    <a href="#workflow" onClick={onNavigate}>Cách hoạt động</a>
+    <a href="#cases" onClick={onNavigate}>Thư viện vụ án</a>
+    <a href="#feedback" onClick={onNavigate}>Đánh giá</a>
+    <Link to="/pricing" onClick={onNavigate}>Bảng giá</Link>
+    <Link to="/guide" onClick={onNavigate}>Hướng dẫn</Link>
+  </>;
+}
+
+function LandingAccountActions({ user }) {
+  const [open, setOpen] = useState(false);
+  const container = useRef(null);
+  const trigger = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function dismissOutside(event) {
+      if (!container.current?.contains(event.target)) setOpen(false);
+    }
+    function dismissWithEscape(event) {
+      if (event.key !== 'Escape') return;
+      setOpen(false);
+      trigger.current?.focus();
+    }
+    document.addEventListener('pointerdown', dismissOutside);
+    document.addEventListener('keydown', dismissWithEscape);
+    return () => {
+      document.removeEventListener('pointerdown', dismissOutside);
+      document.removeEventListener('keydown', dismissWithEscape);
+    };
+  }, [open]);
+
+  return <div className="landing-header-actions landing-signed-in-actions">
+    <Link to="/dashboard" className="landing-auth-link">Tổng quan</Link>
+    <div className="landing-account" ref={container} onBlur={event => {
+      if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget)) setOpen(false);
+    }}>
+      <button ref={trigger} type="button" className="landing-account-trigger" aria-expanded={open}
+        aria-controls="landing-account-panel" onClick={() => setOpen(value => !value)}>
+        <UserRound size={16} aria-hidden="true" />
+        <span>Tài khoản</span>
+        <ChevronDown size={14} aria-hidden="true" />
+      </button>
+      <div id="landing-account-panel" className="landing-account-panel" hidden={!open}>
+        {(user.full_name || user.email) && <p className="landing-account-name">{user.full_name || user.email}</p>}
+        <Link to="/account" onClick={() => setOpen(false)}>Hồ sơ cá nhân</Link>
+        {user.role === 'admin' && <Link to="/admin" onClick={() => setOpen(false)}>Quản trị</Link>}
+        <LogoutButton />
+        <nav className="landing-account-public-nav" aria-label="Khám phá CourtSim">
+          <LandingPublicLinks onNavigate={() => setOpen(false)} />
+        </nav>
+      </div>
+    </div>
+  </div>;
 }
 
 export default function LandingPage() {
@@ -64,31 +121,16 @@ export default function LandingPage() {
 
   return <div className="landing-page">
     <a className="landing-skip" href="#main-content">Đến nội dung chính</a>
-    <header className="landing-header">
+    <header className={currentUser?.id ? 'landing-header landing-header--signed-in' : 'landing-header'}>
       <div className="landing-container landing-header-inner">
         <CourtSimBrand />
-        <nav aria-label="Điều hướng trang chủ">
-          <a href="#workflow">Cách hoạt động</a>
-          <a href="#cases">Thư viện vụ án</a>
-          <a href="#feedback">Đánh giá</a>
-          <Link to="/pricing">Bảng giá</Link>
-          <Link to="/guide">Hướng dẫn</Link>
-        </nav>
-        <div className="landing-header-actions">
-          {currentUser?.id ? <>
-            {currentUser.role === 'admin' && <Link to="/admin" className="landing-auth-link">Quản trị</Link>}
-            <Link to="/dashboard" className="landing-auth-link">Tổng quan</Link>
-            <Link to="/account" className="landing-user-chip" title="Tài khoản của bạn">
-              <UserRound size={16} aria-hidden="true" />
-              <span>{currentUser.full_name || currentUser.email || 'Tài khoản'}</span>
-            </Link>
-            <StartLink>Luyện tập ngay</StartLink>
-            <LogoutButton />
-          </> : <>
+        <nav className="landing-public-nav" aria-label="Điều hướng trang chủ"><LandingPublicLinks /></nav>
+        {currentUser?.id ? <LandingAccountActions user={currentUser} /> : (
+          <div className="landing-header-actions">
             <Link to="/login" className="landing-auth-link">Đăng nhập</Link>
             <StartLink />
-          </>}
-        </div>
+          </div>
+        )}
       </div>
     </header>
 

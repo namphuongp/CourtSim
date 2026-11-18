@@ -47,8 +47,6 @@ body .transcript-entry>button { background:#f0f6ff; color:#2a73eb; border:1px so
 .court-action-deck strong { font-size:11px; font-weight:650; }
 .court-action-deck small { display:none; }
 .composer-turn-status { font-size:10px; color:#d3f883; padding-left:10px; }
-body .courtroom-controls .end-session { background:#26375e; color:#ddff5f; border-color:#a8bc6b; }
-body .courtroom-controls .end-session:disabled { background:#1c2c53; color:#859bc2; border-color:#435b8b; opacity:1; cursor:not-allowed; }
 .session-notebook { display:grid; gap:18px; color:#53709b; }
 .session-notebook>label { font-size:12px; color:#33578e; font-weight:650; }
 .session-notebook>textarea { width:100%; min-height:320px; resize:vertical; padding:16px; border:1px solid #bfd5fa; border-radius:9px; background:#fff; font-size:13px; line-height:1.9; }
@@ -59,6 +57,6 @@ body .courtroom-controls .end-session:disabled { background:#1c2c53; color:#859b
 body .case-dossier .evidence-detail article>button { color:#fff; }
 /* Giữ đủ chiều cao cảnh để khung lời thoại không bị viewport cắt mất. */
 @media(min-width:851px) { body .courtroom-workspace { min-height:0; height:100%; flex:1; } body .court-scene { min-height:0; height:100%; } body .character-opponent .character-portrait,body .character-learner .character-portrait { top:16%; height:70%; } body .character-judge .character-name { top:19%; } body .court-turn-badge { top:92%; } }
-@media(max-width:850px) { body .courtroom-controls { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }.courtroom-controls>:last-child { grid-column:span 2; }.court-action-deck { grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }.court-action-deck button { min-height:44px; padding:6px; }.composer-turn-status { padding:0; } }
+@media(max-width:850px) { .court-action-deck { grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }.court-action-deck button { min-height:44px; padding:6px; }.composer-turn-status { padding:0; } }
 @media(max-width:520px) { .assistant-workspace { grid-template-columns:1fr; }.assistant-workspace nav { max-height:170px; grid-template-columns:repeat(2,minmax(0,1fr)); }.assistant-workspace h4 { grid-column:1/-1; }.assistant-answer { padding:14px; } }
 @media(prefers-reduced-motion:reduce) { .court-action-deck button { transition:none; } }

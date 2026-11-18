@@ -3,6 +3,7 @@
 @import "./courtsim-type.css";
 
 @theme {
+  --font-sans: "Be Vietnam Pro", "Aptos", "Segoe UI", system-ui, sans-serif;
   --color-legal-dark: #1A1612;
   --color-legal-panel: #2A241E;
   --color-legal-gold: #D9C3A3;
@@ -14,6 +15,7 @@
 :root {
   color: #243b53;
   background: #f7fafc;
+  font-family: var(--font-sans);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
@@ -23,7 +25,6 @@ body {
   min-height: 100vh;
   background: #f7fafc;
   color: #334e68;
-  font-family: "Be Vietnam Pro", "Aptos", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
   font-size: 16px;
   line-height: 1.6;
   letter-spacing: 0.005em;
@@ -31,7 +32,6 @@ body {
 
 h1, h2, h3, h4 {
   color: #102a43;
-  font-family: "Aptos Display", "Segoe UI Variable Display", "Be Vietnam Pro", "Segoe UI", sans-serif;
   letter-spacing: -0.025em;
   text-wrap: balance;
 }

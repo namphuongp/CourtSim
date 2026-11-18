@@ -391,7 +391,7 @@ body .admin-shell .admin-badge { border-radius:999px; font-size:10px; }
   border-radius: 4px;
   background: rgba(220, 38, 38, 0.06);
   color: #b91c1c !important;
-  font-family: "Be Vietnam Pro", system-ui, sans-serif;
+  font-family: var(--font-sans);
   transform: rotate(-6deg);
   box-shadow: 0 0 0 1px rgba(185, 28, 28, 0.25);
   user-select: none;

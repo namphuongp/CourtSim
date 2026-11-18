@@ -43,8 +43,11 @@ test('Case1: chọn vai, hồ sơ, kéo thả, đối đáp, tải lại, chấm
   await page.getByRole('button', { name: 'Xác nhận bắt đầu', exact: true }).click();
   await expect(page).toHaveURL(/simulation\/[a-f0-9]{24}$/);
   const room = page.url();
-  await expect(page.locator('.courtroom-meta')).toContainText(label);
-  await page.getByRole('button', { name: 'Công cụ khác', exact: true }).click();
+  const tools = page.getByRole('button', { name: 'Công cụ khác', exact: true });
+  await page.getByRole('button', { name: 'Thông tin vụ án', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Thông tin vụ án' })).toContainText(label);
+  await page.keyboard.press('Escape');
+  await tools.click();
   await page.getByRole('button', { name: 'Hồ sơ phiên tòa', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Tóm tắt diễn biến' })).toBeVisible();
   await page.getByRole('button', { name: /Tài liệu gốc/ }).click();
@@ -75,6 +78,7 @@ test('Case1: chọn vai, hồ sơ, kéo thả, đối đáp, tải lại, chấm
     await page.getByRole('button', { name: 'Trình bày ý kiến' }).click();
     await expect(page.getByLabel('Lập luận của bạn')).toBeEnabled();
   }
+  await tools.click();
   await page.getByRole('button', { name: 'Kết thúc và chấm điểm', exact: true }).click();
   await page.getByRole('button', { name: 'Xác nhận kết thúc', exact: true }).click();
   await page.getByRole('button', { name: 'Bỏ qua và xem kết quả', exact: true }).click();

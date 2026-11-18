@@ -11,7 +11,7 @@ function guideSteps(completed, maxTurns) {
     ] : []),
     { target: '.room-tools-trigger', title: 'Tra cứu và sử dụng luật', text: 'Trong Công cụ khác, chọn Trợ lý luật, nhập vấn đề hoặc số hiệu, điều khoản rồi bấm Hỏi trợ lý. Đọc trích đoạn, mở nguồn và kiểm tra trạng thái áp dụng theo thời điểm.' + (completed ? ' Phiên này không thể gửi thêm lập luận.' : ' Khi đến lượt bạn, chọn Đưa trích dẫn vào lập luận, nội dung chỉ được gửi khi bạn bấm Gửi lập luận.') },
     { target: '.deck-transcript-btn', title: 'Xem biên bản', text: 'Bấm Biên bản trên thanh điều khiển để xem các lời trao đổi đã lưu. Chọn một lời để xem lại tại phòng xử án.' },
-    { target: completed ? '.room-turn-action' : '.end-session, .room-finish-button', title: completed ? 'Xem kết quả' : 'Kết thúc và chấm điểm', text: completed ? 'Bấm Xem kết quả để đọc điểm và nhận xét của phiên đã hoàn tất. Bạn có thể xem lại biên bản để đối chiếu với nhận xét.' : 'Sau ít nhất một lượt gửi và khi lời thoại đã hoàn tất, bạn có thể bấm Kết thúc và chấm điểm rồi xác nhận. Hãy gửi lập luận còn dang dở trước khi kết thúc.' },
+    { target: completed ? '.room-turn-action' : '.room-finish-button, .room-tools-trigger', title: completed ? 'Xem kết quả' : 'Kết thúc và chấm điểm', text: completed ? 'Bấm Xem kết quả để đọc điểm và nhận xét của phiên đã hoàn tất. Bạn có thể xem lại biên bản để đối chiếu với nhận xét.' : 'Sau ít nhất một lượt gửi, mở Công cụ khác, chọn Kết thúc và chấm điểm rồi xác nhận. Khi đã đủ lượt, nút kết thúc có thể xuất hiện ngay trên thanh điều khiển.' },
   ];
 }
 

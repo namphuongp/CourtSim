@@ -1,4 +1,4 @@
-.admin-shell { --admin-border:#dce5ef; min-height:100dvh; background:#f5f8fc; color:#29445e; font-family:"Segoe UI",Arial,sans-serif; font-synthesis:weight; font-size:14px; line-height:1.6; letter-spacing:normal; }
+.admin-shell { --admin-border:#dce5ef; min-height:100dvh; background:#f5f8fc; color:#29445e; font-synthesis:weight; font-size:14px; line-height:1.6; letter-spacing:normal; }
 .admin-shell :is(h1,h2,h3,h4) { font-family:inherit; font-weight:700; line-height:1.4; letter-spacing:normal; text-wrap:wrap; }
 .admin-shell :is(input,textarea,select,button) { font-family:inherit; letter-spacing:normal; }
 .admin-shell .feedback-modal { font-family:inherit; }

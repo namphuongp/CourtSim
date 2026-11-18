@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   Gavel,
-  Gauge,
   Maximize2,
   MessageSquare,
   Minimize2,
@@ -21,7 +20,7 @@ import { dialogueText } from '../../../../shared/dialogueText.mjs';
 import { actorFor, courtroomRoles, getSpeakerInfo } from '../../services/courtroom';
 import FeedbackModal from '../feedback/FeedbackModal';
 import {
-  cycleCourtroomSpeechRate,
+  COURTROOM_SPEECH_RATES,
   getCourtroomSpeechRate,
   getSpeakingRecordId,
   isAutoplayBlocked,
@@ -29,6 +28,7 @@ import {
   pauseCourtroomSpeech,
   prefetchCourtroomSpeech,
   resumeCourtroomSpeech,
+  setCourtroomSpeechRate,
   speakCourtroomText,
   stopCourtroomSpeech,
   subscribeAutoplayBlocked,
@@ -38,14 +38,7 @@ import {
   unlockCourtroomAudio,
 } from '../../services/voiceService';
 import './courtroom.css';
-
-const PHASE_LABELS = {
-  opening: 'Giai đoạn I: Khai mạc & Thủ tục bắt đầu phiên tòa',
-  presentation: 'Giai đoạn I: Trình bày yêu cầu & Quan điểm mở đầu',
-  clarification: 'Giai đoạn II: Xét hỏi & Kiểm tra chứng cứ tại tòa',
-  debate: 'Giai đoạn III: Tranh luận & Đối đáp pháp lý',
-  summary: 'Giai đoạn IV: Tổng kết tranh tụng & HĐXX Nghị án',
-};
+import './courtroomStageSettings.css';
 
 function Character({ actor, role, active, preparing, invited, onInspect }) {
   const [failed, setFailed] = useState(false);
@@ -114,6 +107,10 @@ export default function CourtroomStage({
   const [speechRate, setSpeechRate] = useState(() => getCourtroomSpeechRate());
   const [inspectedActor, setInspectedActor] = useState(null);
   const [isStreamExpanded, setIsStreamExpanded] = useState(false);
+  const [audioSettingsOpen, setAudioSettingsOpen] = useState(false);
+  const audioSettingsId = useId();
+  const audioTriggerRef = useRef(null);
+  const audioSettingsRef = useRef(null);
 
   // Auto-scroll state & refs
   const chatScrollRef = useRef(null);
@@ -144,6 +141,31 @@ export default function CourtroomStage({
   useEffect(() => {
     return subscribeCourtroomSpeechRate((r) => setSpeechRate(r));
   }, []);
+
+  useEffect(() => {
+    if (!audioSettingsOpen) return;
+
+    function closeSettingsOutside(event) {
+      const { target } = event;
+      if (audioTriggerRef.current?.contains(target) || audioSettingsRef.current?.contains(target)) return;
+      setAudioSettingsOpen(false);
+    }
+
+    document.addEventListener('pointerdown', closeSettingsOutside);
+    document.addEventListener('focusin', closeSettingsOutside);
+    return () => {
+      document.removeEventListener('pointerdown', closeSettingsOutside);
+      document.removeEventListener('focusin', closeSettingsOutside);
+    };
+  }, [audioSettingsOpen]);
+
+  function dismissAudioSettingsOnEscape(event) {
+    if (event.key !== 'Escape' || !audioSettingsOpen) return;
+    event.preventDefault();
+    event.stopPropagation();
+    setAudioSettingsOpen(false);
+    audioTriggerRef.current?.focus();
+  }
 
   // Xây dựng danh sách tin nhắn theo đúng thứ tự lượt phát biểu
   const sortedRecords = [...records].sort((a, b) => {
@@ -368,56 +390,9 @@ export default function CourtroomStage({
     view.record?._id === session?.conversation?.current_record_id;
 
   const activeActor = view.streaming ? view.actor : invited || preparing ? null : view.actor;
-  const currentPhase = session?.conversation?.phase ?? (records.length <= 1 ? 'opening' : 'debate');
-  const phaseLabel =
-    session?.status === 'completed'
-      ? 'Phiên tòa đã khép lại — Hoàn tất nghị án'
-      : (PHASE_LABELS[currentPhase] ?? 'Phiên luyện tập');
-  const currentIssueLabel =
-    session?.status !== 'completed' && currentPhase !== 'summary'
-      ? session?.conversation?.hearing_state?.current_issue?.label
-      : null;
 
   return (
     <section className="court-stage-section" aria-label="Phòng xử án">
-      <div className="court-stage-toolbar">
-        <span>
-          PHÒNG XỬ ÁN <span className="stage-divider">/</span> {phaseLabel}
-          {currentIssueLabel ? <> <span className="stage-divider">·</span> Trọng tâm: {currentIssueLabel}</> : null}
-        </span>
-        <div className="stage-audio-master-controls">
-          {typeof onToggleTts === 'function' && (
-            <button
-              type="button"
-              onClick={onToggleTts}
-              className={`stage-master-sound-btn ${ttsEnabled ? 'is-active' : ''}`}
-              title={
-                ttsEnabled
-                  ? 'Đang bật tự động phát âm thanh AI (Bấm để tắt âm thanh)'
-                  : 'Đang tắt âm thanh AI (Bấm để bật âm thanh tự động)'
-              }
-              aria-label={ttsEnabled ? 'Tắt âm thanh phiên tòa' : 'Bật âm thanh phiên tòa'}
-            >
-              {ttsEnabled ? (
-                <><Volume2 size={13} aria-hidden="true" /><span>Âm thanh: Bật</span></>
-              ) : (
-                <><VolumeX size={13} aria-hidden="true" /><span>Âm thanh: Tắt</span></>
-              )}
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={() => cycleCourtroomSpeechRate()}
-            className="stage-master-rate-btn"
-            aria-label={`Tốc độ đọc hiện tại: ${speechRate}x. Bấm để đổi`}
-            title={`Tốc độ đọc âm thanh hiện tại: ${speechRate}x. Bấm để chuyển đổi 1.0x, 1.25x và 1.5x`}
-          >
-            <Gauge size={12} className="text-sky-400" />
-            <span>{speechRate}x</span>
-          </button>
-        </div>
-      </div>
-
       {autoplayBlocked && (
         <aside role="alert" className="court-autoplay-banner">
           <div className="autoplay-banner-content">
@@ -487,11 +462,15 @@ export default function CourtroomStage({
           <div className="court-desk-layer desk-front" aria-hidden="true" />
 
           {/* KHUNG HỘI THOẠI PHIÊN TÒA: DANH SÁCH BONG BÓNG CHAT VỚI AUTO-SCROLL THÔNG MINH */}
-          <article className={`court-speech court-dialogue-stream ${isStreamExpanded ? 'is-stream-expanded' : ''}`} aria-label="Khung hội thoại phiên tòa">
+          <article
+            className={`court-speech court-dialogue-stream ${isStreamExpanded ? 'is-stream-expanded' : ''}`}
+            aria-label="Khung hội thoại phiên tòa"
+            onKeyDown={dismissAudioSettingsOnEscape}
+          >
             <div className="dialogue-stream-header">
               <span className="dialogue-stream-title">
-                <MessageSquare size={13} className="text-sky-400" />
-                HỘI THOẠI PHIÊN TÒA
+                <MessageSquare size={13} className="text-sky-400" aria-hidden="true" />
+                Hội thoại phiên tòa
               </span>
               <div className="dialogue-stream-header-actions">
                 <span className="dialogue-stream-count">
@@ -504,9 +483,44 @@ export default function CourtroomStage({
                   title={isStreamExpanded ? 'Thu nhỏ khung hội thoại' : 'Mở rộng khung hội thoại'}
                   aria-label={isStreamExpanded ? 'Thu nhỏ' : 'Mở rộng'}
                 >
-                  {isStreamExpanded ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+                  {isStreamExpanded ? <Minimize2 size={13} aria-hidden="true" /> : <Maximize2 size={13} aria-hidden="true" />}
+                </button>
+                <button
+                  ref={audioTriggerRef}
+                  type="button"
+                  className="dialogue-audio-trigger"
+                  aria-expanded={audioSettingsOpen}
+                  aria-controls={audioSettingsId}
+                  onClick={() => setAudioSettingsOpen(open => !open)}
+                >
+                  {ttsEnabled ? <Volume2 size={15} aria-hidden="true" /> : <VolumeX size={15} aria-hidden="true" />}
+                  Âm thanh
                 </button>
               </div>
+            </div>
+
+            <div
+              ref={audioSettingsRef}
+              id={audioSettingsId}
+              className="dialogue-audio-settings"
+              role="group"
+              aria-label="Cài đặt âm thanh"
+              hidden={!audioSettingsOpen}
+            >
+              {typeof onToggleTts === 'function' && (
+                <button type="button" className="dialogue-audio-toggle" onClick={onToggleTts}>
+                  {ttsEnabled ? <VolumeX size={15} aria-hidden="true" /> : <Volume2 size={15} aria-hidden="true" />}
+                  {ttsEnabled ? 'Tắt âm thanh phiên tòa' : 'Bật âm thanh phiên tòa'}
+                </button>
+              )}
+              <label className="dialogue-audio-rate">
+                Tốc độ đọc
+                <select value={speechRate} onChange={event => setCourtroomSpeechRate(event.target.value)}>
+                  {COURTROOM_SPEECH_RATES.map(rate => (
+                    <option key={rate} value={rate}>{String(rate).replace('.', ',')}×</option>
+                  ))}
+                </select>
+              </label>
             </div>
 
             <div
