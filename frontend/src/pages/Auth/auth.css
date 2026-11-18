@@ -1,6 +1,6 @@
 .auth-page { min-height:100dvh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:30px 20px; color:var(--cs-navy); background:var(--cs-canvas); }
 .auth-split { display:grid; grid-template-columns:43% 57%; padding:0; align-items:stretch; }
-.auth-story { display:flex; flex-direction:column; position:relative; isolation:isolate; overflow:hidden; padding:32px 40px; color:var(--cs-on-brand); background:linear-gradient(0deg,var(--cs-brand),color-mix(in srgb,var(--cs-brand) 93%,transparent)),url('/courtsim-landing-courtroom.webp') 50% 30% / cover; }
+.auth-story { display:flex; flex-direction:column; position:relative; isolation:isolate; overflow:hidden; padding:32px 40px; color:var(--cs-on-brand); background:linear-gradient(180deg,#0b1247c9,#07104de8),url('/courtsim-landing-courtroom.webp') 50% 30% / cover; }
 .auth-story-brand { display:flex; align-items:center; gap:10px; color:white; font-size:22px; font-weight:800; text-decoration:none; width:fit-content; }
 .auth-story-emblem { position:absolute; width:100px; height:100px; top:14%; left:calc(50% - 50px); padding:20px; color:#a2b7e359; border:2px solid #a2b7e33a; border-radius:50%; }
 .auth-story-copy { margin-block:auto; padding:130px 0; }

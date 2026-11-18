@@ -56,7 +56,8 @@
 .landing-skip:focus { top: 1rem; }
 
 .landing-header {
-  background: var(--landing-white);
+  background: #091442;
+  color: var(--cs-on-brand);
 }
 
 .landing-header-inner {
@@ -72,6 +73,9 @@
   flex-shrink: 0;
   font-size: 1.25rem;
 }
+
+.landing-header .courtsim-brand,
+.landing-header .courtsim-brand span { color: var(--cs-on-brand); }
 
 .landing-public-nav,
 .landing-header-actions {
@@ -91,15 +95,15 @@
   min-height: 2.5rem;
   border-radius: 6px;
   padding: .35rem .3rem;
-  color: var(--landing-muted);
+  color: #dce6ff;
 }
 
 .landing-public-nav a:hover,
 .landing-auth-link:hover,
 .landing-account-trigger:hover,
 .landing-account-trigger[aria-expanded="true"] {
-  color: var(--landing-blue);
-  background: #edf2f7;
+  color: var(--cs-on-brand);
+  background: #ffffff17;
 }
 
 .landing-header-actions {
@@ -117,12 +121,11 @@
 .landing-account-trigger {
   gap: .4rem;
   padding-inline: .65rem;
-  border: 1px solid var(--landing-line);
-  color: var(--landing-navy);
+  border: 1px solid #9db8ff59;
   transition: background-color 140ms ease, border-color 140ms ease;
 }
 
-.landing-account-trigger[aria-expanded="true"] { border-color: #a9c3cf; }
+.landing-account-trigger[aria-expanded="true"] { border-color: #9db8ff; }
 
 .landing-account-panel {
   position: absolute;
@@ -162,7 +165,7 @@
 }
 
 .landing-account-panel :is(a, button):hover { background: #edf2f7; }
-.landing-account-panel :focus-visible { outline-offset: -3px; }
+.landing-account-panel :focus-visible { outline-color: var(--landing-blue); outline-offset: -3px; }
 
 @media (prefers-reduced-motion: no-preference) {
   .landing-account-panel:not([hidden]) {
@@ -222,7 +225,12 @@
 .landing-hero {
   padding-block: clamp(2.8rem, 6vw, 5.5rem);
   color: var(--cs-on-brand);
-  background: var(--cs-brand-surface);
+  background-color: #142b99;
+  background-image:
+    linear-gradient(120deg, #0c104dcf, #0d207c50),
+    radial-gradient(ellipse at 0 72%, #218aff 0, transparent 42%),
+    radial-gradient(ellipse at 95% 65%, #1355eb 0, transparent 50%),
+    linear-gradient(135deg, #030855, #142b99 55%, #06134b);
 }
 
 .hero-grid {
@@ -264,11 +272,11 @@
 }
 
 .landing-hero .landing-cta {
-  color: var(--cs-brand-hover);
-  background: var(--landing-white);
+  color: var(--cs-on-brand);
+  background: var(--landing-blue);
 }
 
-.landing-hero .landing-cta:hover { background: var(--cs-on-brand-muted); }
+.landing-hero .landing-cta:hover { background: var(--cs-brand-hover); }
 
 .landing-hero .landing-secondary {
   border-color: #d6e8ff;
@@ -276,7 +284,8 @@
 }
 
 .landing-hero .landing-secondary:hover { background: var(--cs-brand-hover); }
-.landing-hero :focus-visible, .landing-footer :focus-visible { outline-color: var(--cs-on-brand); }
+.landing-header :focus-visible, .landing-hero :focus-visible, .landing-footer :focus-visible { outline-color: var(--cs-on-brand); }
+.landing-header .landing-account-panel :focus-visible { outline-color: var(--landing-blue); }
 
 .hero-photo {
   display: block;
@@ -523,7 +532,7 @@
 .landing-footer {
   padding: 3rem 0 1.5rem;
   color: var(--cs-on-brand-muted);
-  background: var(--cs-brand);
+  background: #050e2d;
 }
 
 .landing-footer-grid {

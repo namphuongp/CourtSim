@@ -1809,7 +1809,7 @@ body .court-speech.court-dialogue-stream {
 }
 
 .dialogue-stream-header {
-  background: var(--cs-brand);
+  background: linear-gradient(90deg, #12245c, #0a1640);
   border-color: #a5caff;
 }
 
