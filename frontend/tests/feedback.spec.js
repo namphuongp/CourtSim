@@ -29,6 +29,7 @@ async function setupFeedback(page, { failPrompt = false, failSubmit = false } = 
 
 test('bỏ qua góp ý mở kết quả ngay, tải lại không hỏi lần nữa', async ({ page }, testInfo) => {
   const { submissions, surveyRequests } = await setupFeedback(page);
+  await expect(page.getByRole('heading', { name: 'Phiên luyện tập đã kết thúc', exact: true })).toBeVisible();
   await expect(page.getByLabel('Góp ý của bạn')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Gửi góp ý và xem kết quả' })).toBeDisabled();
   await expect(page.getByText(/Google Forms/)).toHaveCount(0);

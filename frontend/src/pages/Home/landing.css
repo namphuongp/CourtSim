@@ -1,10 +1,10 @@
 .landing-page {
-  --landing-navy: #172e49;
-  --landing-blue: #214778;
-  --landing-muted: #4c5e71;
-  --landing-line: #d8dfe6;
-  --landing-paper: #f8f7f3;
-  --landing-white: #fff;
+  --landing-navy: var(--cs-navy);
+  --landing-blue: var(--cs-brand);
+  --landing-muted: var(--cs-muted);
+  --landing-line: var(--cs-line);
+  --landing-paper: var(--cs-canvas);
+  --landing-white: var(--cs-surface);
   color: var(--landing-navy);
   background: var(--landing-white);
   font: 400 1rem/1.65 var(--font-sans);
@@ -265,10 +265,10 @@
 
 .landing-hero .landing-cta {
   color: var(--landing-navy);
-  background: #faf4e9;
+  background: var(--cs-tint);
 }
 
-.landing-hero .landing-cta:hover { background: #ebded0; }
+.landing-hero .landing-cta:hover { background: var(--cs-accent-bright); }
 
 .landing-hero .landing-secondary {
   border-color: #91a7bf;

@@ -12,10 +12,10 @@ import { EVIDENCE_MIME, evidenceText, evidenceIds } from '../../../services/refe
 import StudyPanel from '../../../components/StudyPanel';
 import LegalAssistant from '../../../components/LegalAssistant';
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import api, { getApiError } from '../../../services/api';
 import { postDialogue } from '../../../services/dialogueStream';
-import { draftKey, readDraft, saveDraft } from '../../../services/auth';
+import { draftKey, readDraft, saveDraft, useCurrentUser } from '../../../services/auth';
 import UpgradeNotice from '../../../components/membership/UpgradeNotice';
 import VoiceDebateControls from '../../../components/courtroom/VoiceDebateControls';
 import { isManualSpeaking, speakCourtroomText, stopCourtroomSpeech, unlockCourtroomAudio } from '../../../services/voiceService';
@@ -25,6 +25,13 @@ import CaseQuickSummaryModal from '../../../components/courtroom/CaseQuickSummar
 import { ArrowLeft, ArrowRight, Award, BookOpen, ChevronDown, CircleHelp, ClipboardList, FileDown, FileText, FolderOpen, Gavel, HelpCircle, Maximize2, MessageSquareQuote, Plus, Scale, Send } from 'lucide-react';
 import { LoadingState } from '../../../components/WorkspaceStates';
 
+const guidePreferencesInMemory = new Set();
+
+function isGuideSuppressed(key) {
+  if (guidePreferencesInMemory.has(key)) return true;
+  try { return localStorage.getItem(key) === '1'; } catch { return false; }
+}
+
 export default function SimulationRoom() {
   const { sessionId } = useParams();
   return <Room key={sessionId} sessionId={sessionId} />;
@@ -32,6 +39,10 @@ export default function SimulationRoom() {
 
 function Room({ sessionId }) {
   const navigate = useNavigate();
+  const { hash } = useLocation();
+  const userId = useCurrentUser()?.id;
+  const guidePreferenceKey = userId ? `courtsim.courtroom-guide.v1:${userId}` : null;
+  const guideCheckedFor = useRef(null);
   const [selectedId, setSelectedId] = useState(null);
   const [fullRecord, setFullRecord] = useState(null);
   const [submittedContent, setSubmittedContent] = useState('');
@@ -99,6 +110,14 @@ function Room({ sessionId }) {
     toolsTriggerRef.current?.focus();
     setToolsOpen(false);
     action();
+  }
+
+  function dismissGuidePermanently() {
+    if (guidePreferenceKey) {
+      try { localStorage.setItem(guidePreferenceKey, '1'); }
+      catch { guidePreferencesInMemory.add(guidePreferenceKey); }
+    }
+    setPanel(null);
   }
 
   // Phát đúng một lời thoại cụ thể và ghi nhận đã đọc để chế độ tự động không đọc lặp lại.
@@ -555,6 +574,15 @@ function Room({ sessionId }) {
     userTurns >= 1
   );
 
+  const canOfferGuide = session?.status === 'ongoing' && !disabled && !preparing &&
+    !isConcluded && !state.error && !selectedId && hash !== '#transcript' && !hash.startsWith('#record-') &&
+    !panel && !toolsOpen && !confirmEnd && !expandedComposer && !pdfModalOpen && !caseSummaryOpen;
+  useEffect(() => {
+    if (state.loading || !session || !guidePreferenceKey || guideCheckedFor.current === guidePreferenceKey) return;
+    guideCheckedFor.current = guidePreferenceKey;
+    if (canOfferGuide && !isGuideSuppressed(guidePreferenceKey)) setPanel('guide');
+  }, [state.loading, session, guidePreferenceKey, canOfferGuide]);
+
   useEffect(() => {
     if (!isConcluded || completed || state.ending || countdownStopped) {
       setAutoCloseCountdown(null);
@@ -632,7 +660,14 @@ function Room({ sessionId }) {
   }
   if (state.loading) return <main className="courtroom-page"><LoadingState>Đang tải phiên tòa...</LoadingState></main>;
   return <main className="courtroom-page">
-    {panel === 'guide' && <CourtroomGuide completed={completed} maxTurns={maxTurns} hasDialogue={Boolean(view.record)} onClose={() => setPanel(null)} />}
+    {panel === 'guide' && <CourtroomGuide
+      completed={completed}
+      maxTurns={maxTurns}
+      hasDialogue={Boolean(view.record)}
+      returnFocusRef={toolsTriggerRef}
+      onClose={() => setPanel(null)}
+      onDismissPermanently={dismissGuidePermanently}
+    />}
     <StudyPanel open={Boolean(panel) && panel !== 'guide'} compact={panel === 'speech'} title={panelTitles[panel] ?? 'Hồ sơ vụ án'} onClose={() => setPanel(null)}>
       {insertError && <p role="alert" className="mb-3 text-rose-400">{insertError}</p>}
       {(panel === 'case' || panel === 'history') && <>

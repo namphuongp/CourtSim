@@ -146,6 +146,28 @@ body:has(.courtroom-page) .privacy-footer { display:none !important; }
 .tour-card .guide-step h3 { font-size:17px; margin-bottom:8px; }
 .tour-card .guide-dots,.tour-card .guide-actions { margin-top:12px; gap:6px; }
 .tour-card .guide-dots button { padding:5px 10px; }
+
+.tour-card .guide-footer {
+  display: grid;
+  gap: 8px;
+}
+
+.tour-card .guide-skip {
+  justify-self: start;
+  min-height: 36px;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #405b70;
+  font-size: .8125rem;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.tour-card .guide-skip:hover { background: #edf3f6; color: #19385f; }
 /* Cảnh báo và nút tra cứu phải đủ tương phản trên panel nền sáng. */
 .courtroom-page .study-panel .text-amber-400 { color:#85550d; }
 .courtroom-page .study-panel .bg-blue-600 { color:#fff; }
@@ -476,10 +498,10 @@ body .courtroom-page .dossier-tabs button { font-size:12px; border-radius:999px;
 body .courtroom-page .dossier-tabs button[aria-selected=true] { background:#2d77ff; color:white; border-color:#2d77ff; }
 body .courtroom-page dialog { border-color:#d0dfff; border-radius:16px; }
 body .courtroom-page dialog::backdrop { background:#030c3bb8; backdrop-filter:blur(3px); }
-body .courtroom-page .tour-spotlight { border-color:#d6ff43; box-shadow:0 0 0 9999px #030b36b8,0 0 18px #d6ff4370; }
+body .courtroom-page .tour-spotlight { border-color:#74d3bb; box-shadow:0 0 0 9999px #111e32b8; }
 body .courtroom-page .guide-progress { color:#3764bd; background:#edf5ff; }
 body .courtroom-page .tour-card { border-radius:12px; border-color:#bdd2ff; box-shadow:0 15px 35px #020a4340; }
-body .courtroom-page .guide-actions button:last-child { border-radius:999px; background:#2d77ff; color:white; border-color:#2d77ff; }
+body .courtroom-page .guide-actions button:last-child { border-radius:var(--cs-button-radius); background:var(--cs-brand); color:white; border-color:var(--cs-brand); }
 @media(min-width:851px) {
   body .courtroom-page { height:100vh !important; height:100dvh !important; max-height:100vh !important; max-height:100dvh !important; min-height:0 !important; overflow:hidden !important; }
   body .courtroom-workspace { flex:1 1 0% !important; min-height:0 !important; height:100% !important; } body .court-stage-section { height:100% !important; min-height:0 !important; } body .court-viewport { height:100% !important; min-height:0 !important; } body .court-scene { height:100% !important; min-height:0 !important; aspect-ratio:auto !important; }
@@ -640,13 +662,11 @@ body .courtroom-page .guide-actions button:last-child { border-radius:999px; bac
 
 .room-primary-button {
   min-width: min(100%, 200px);
-  background: #214778;
+  background: var(--cs-brand);
   color: #fff;
 }
 
-.room-primary-button:hover:not(:disabled) {
-  background: #19385f;
-}
+.room-primary-button:hover:not(:disabled) { background: var(--cs-brand-hover); }
 
 .room-primary-button:disabled {
   border-color: #d5dde6;
@@ -1594,7 +1614,7 @@ body .court-speech.court-dialogue-stream.is-stream-expanded {
 }
 
 body .courtroom-page {
-  background: #f3f1eb;
+  background: var(--cs-canvas);
   color: #203148;
 }
 
@@ -1629,7 +1649,7 @@ body .courtroom-page {
 
 .room-header-meta {
   margin: 3px 0 0;
-  color: #43676a;
+  color: var(--cs-accent);
   font-size: .8125rem;
   line-height: 1.45;
 }
@@ -1652,13 +1672,13 @@ body .courtroom-page {
 }
 
 .room-header-summary {
-  border-color: #ccdeda;
-  background: #edf6f3;
-  color: #265b53;
+  border-color: #acd9ce;
+  background: var(--cs-tint);
+  color: var(--cs-accent);
 }
 
 .room-header-back:hover { background: #edf3fa; }
-.room-header-summary:hover { border-color: #9abfb4; background: #dfeee9; }
+.room-header-summary:hover { border-color: #83cabc; background: #c7f1e5; }
 
 body .courtroom-page .feedback-modal:has(.room-case-details) { max-width: 720px; }
 
@@ -1706,9 +1726,9 @@ body .courtroom-page .feedback-modal:has(.room-case-details) { max-width: 720px;
 }
 
 .room-case-stages li[aria-current="step"] {
-  border-color: #a2c1b9;
-  background: #edf6f3;
-  color: #265b53;
+  border-color: #acd9ce;
+  background: var(--cs-tint);
+  color: var(--cs-accent);
 }
 
 .room-case-stages li span { margin-inline-start: 8px; font-size: .75rem; }

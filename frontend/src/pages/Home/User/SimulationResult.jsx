@@ -2,9 +2,8 @@ import ScoringSummary from '../../../components/ScoringSummary';
 import LearnerFeedback from '../../../components/feedback/LearnerFeedback';
 import { LegalCitations, LegalResearchResult } from '../../../components/LegalBasis';
 import { useEffect, useState } from 'react';
-import { Home, FileDown, Sparkles, CheckCircle2, Info, Clock } from 'lucide-react';
-import { formatDuration, formatDurationLong } from '../../../services/courtroom';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { FileDown } from 'lucide-react';
+import { Link, useParams } from 'react-router-dom';
 import api, { getApiError } from '../../../services/api';
 import './simulationResult.css';
 import UpgradeNotice from '../../../components/membership/UpgradeNotice';
@@ -30,9 +29,7 @@ export default function SimulationResult() {
 }
 
 function SessionResult({ sessionId }) {
-  const navigate = useNavigate();
-  const [feedbackOpen, setFeedbackOpen] = useState(false);
-  const [optionalFeedback, setOptionalFeedback] = useState(null);
+  const [showFeedback, setShowFeedback] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [reload, setReload] = useState(0);
@@ -44,27 +41,21 @@ function SessionResult({ sessionId }) {
     let active = true;
     api.get(`/v1/sessions/${sessionId}/result`).then(async ({ data }) => {
       if (!active) return;
-      let invitation = null;
+      let inviteFeedback = false;
       try {
         const response = await api.post(`/v1/sessions/${sessionId}/feedback/prompt`, {}, { timeout: 5000 });
-        if (response.data.data?.show === true) invitation = response.data.data;
+        inviteFeedback = response.data.data?.show === true;
       } catch {
         /* Tài khoản đã xác minh; lỗi lời mời góp ý không khóa kết quả. */
       }
       if (active) {
-        setOptionalFeedback(invitation);
-        setFeedbackOpen(false);
-        const rawResult = data.data || {};
-        setResult(rawResult);
+        setShowFeedback(inviteFeedback);
+        setResult(data.data || {});
         setError('');
       }
     }).catch((requestError) => {
       if (!active) return;
-      if (requestError.response?.data?.error?.code === 'SURVEY_REQUIRED') {
-        setFeedbackOpen(true);
-      } else {
-        setError(getApiError(requestError, 'Chưa tải được kết quả. Vui lòng thử lại hoặc trở về phiên.'));
-      }
+      setError(getApiError(requestError, 'Chưa tải được kết quả. Vui lòng thử lại hoặc trở về phiên.'));
     });
     return () => { active = false; };
   }, [sessionId, reload]);
@@ -81,46 +72,19 @@ function SessionResult({ sessionId }) {
     );
   }
 
-  const finishFeedback = () => {
-    setFeedbackOpen(false);
-    setReload(n => n + 1);
-  };
-
-  if (feedbackOpen || optionalFeedback) {
+  if (showFeedback) {
     return (
       <main className="result-page result-feedback">
         <div className="result-container">
-          <header className="result-hero">
-            <p>HOÀN THÀNH PHIÊN LUYỆN TẬP</p>
-            <h1>Phản hồi trước khi xem kết quả</h1>
-            <p>Kết quả đã được lưu. Hoàn tất bước phản hồi để tiếp tục.</p>
+          <header className="result-heading">
+            <h1>Phiên luyện tập đã kết thúc</h1>
+            <p>Kết quả của bạn đã sẵn sàng.</p>
           </header>
           <div className="result-feedback-layout">
-            <LearnerFeedback
-              embedded
-              sessionId={sessionId}
-              required={feedbackOpen}
-              initialFormUrl={optionalFeedback?.form_url}
-              onDone={feedbackOpen ? finishFeedback : () => setOptionalFeedback(null)}
-            />
-            <aside className="result-card">
-              <h2>Các bước tiếp theo</h2>
-              <ol>
-                <li>
-                  <strong>01 · Kết thúc phiên</strong>
-                  <p>Các lượt trình bày đã được lưu.</p>
-                </li>
-                <li>
-                  <strong>02 · Gửi phản hồi</strong>
-                  <p>{feedbackOpen ? 'Máy chủ kiểm tra xác nhận từ Google Forms.' : 'Bạn có thể góp ý thêm hoặc bỏ qua.'}</p>
-                </li>
-                <li>
-                  <strong>03 · Xem kết quả</strong>
-                  <p>Đọc nhận xét và chọn kỹ năng luyện tập tiếp.</p>
-                </li>
-              </ol>
-              <Link to="/dashboard/history">Về lịch sử luyện tập →</Link>
-            </aside>
+            <LearnerFeedback embedded sessionId={sessionId} onDone={() => {
+              setShowFeedback(false);
+              requestAnimationFrame(() => document.getElementById('result-heading')?.focus());
+            }} />
           </div>
         </div>
       </main>
@@ -142,92 +106,20 @@ function SessionResult({ sessionId }) {
   return (
     <main className="result-page">
       <div className="result-container space-y-6">
-        <header className="result-hero flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 flex-wrap mb-1">
-              <span className="text-slate-400 text-sm">Kết quả phiên mô phỏng</span>
-              {Number(result.duration_seconds) > 0 && (
-                <span
-                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/15 text-blue-200 border border-blue-400/30"
-                  title={`Tổng thời lượng phiên tòa: ${formatDurationLong(result.duration_seconds)}`}
-                >
-                  <Clock size={12} className="text-blue-400 shrink-0" />
-                  <span>Thời lượng: <strong className="text-white font-mono">{formatDuration(result.duration_seconds)}</strong></span>
-                </span>
-              )}
-              {isFreeTrial && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">
-                  <Sparkles size={12} />
-                  Case dùng thử miễn phí · Mở khóa tính năng cốt lõi Pro
-                </span>
-              )}
-            </div>
-            <h1 id="result-heading" tabIndex={-1}>{detailView ? 'Điểm & nhận xét chi tiết' : 'Kết quả luyện tập'}</h1>
-          </div>
-          <div className="flex flex-wrap items-center gap-3 result-hero-actions">
-            {hasCriteria && canViewDetailedScoring && (
-              <button
-                className="result-view-switch"
-                onClick={() => { setDetailView(value => !value); setActiveGroup('all'); }}
-              >
-                {detailView ? 'Xem tổng quan phiên' : 'Điểm & nhận xét chi tiết'}
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => setPdfExportOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl font-semibold shadow-md shadow-blue-500/20 text-sm transition-all cursor-pointer"
-            >
-              <FileDown size={17} />
-              <span>Xuất kết quả / Biên bản PDF</span>
-            </button>
-            <button onClick={() => navigate('/dashboard')}><Home size={17} /> Tổng quan</button>
-          </div>
+        <header className="result-heading result-overview-heading">
+          <h1 id="result-heading" tabIndex={-1}>{detailView ? 'Điểm & nhận xét chi tiết' : 'Kết quả luyện tập'}</h1>
+          <Link className="result-practice-link" to="/dashboard/setup">Tạo phiên mới</Link>
         </header>
-
-        {/* Hộp thông tin minh bạch quyền lợi dùng thử theo yêu cầu */}
-        {isFreeTrial && (
-          <section className="rounded-2xl border border-emerald-500/30 bg-emerald-950/25 p-4 text-xs text-slate-300 space-y-2.5" aria-label="Chính sách dùng thử minh bạch">
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <div className="flex items-center gap-2 font-bold text-emerald-300 text-sm">
-                <Sparkles size={16} />
-                <span>Chính sách dùng thử minh bạch (Áp dụng trong 02 case miễn phí đầu tiên)</span>
-              </div>
-              <span className="text-emerald-400 font-medium">Cam kết trải nghiệm thực tế</span>
-            </div>
-            <p className="leading-relaxed">
-              CourtSim mở khóa phần lớn các tính năng cốt lõi của gói Pro trong 02 case dùng thử này để bạn đánh giá chính xác giá trị sản phẩm:
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-1">
-              <div className="flex items-start gap-1.5 text-emerald-200">
-                <CheckCircle2 size={14} className="text-emerald-400 shrink-0 mt-0.5" />
-                <span><strong>Bảng điểm chi tiết:</strong> Đánh giá 6 nhóm kỹ năng, điểm số từng mục & căn cứ phát biểu.</span>
-              </div>
-              <div className="flex items-start gap-1.5 text-emerald-200">
-                <CheckCircle2 size={14} className="text-emerald-400 shrink-0 mt-0.5" />
-                <span><strong>Nhận xét & Gợi ý cải thiện:</strong> Nhận xét sâu theo 4 kỹ năng tố tụng và đề xuất hoàn thiện.</span>
-              </div>
-              <div className="flex items-start gap-1.5 text-emerald-200">
-                <CheckCircle2 size={14} className="text-emerald-400 shrink-0 mt-0.5" />
-                <span><strong>Trợ lý Luật:</strong> Tra cứu văn bản pháp luật, xem trích đoạn và đưa căn cứ vào lập luận.</span>
-              </div>
-              <div className="flex items-start gap-1.5 text-emerald-200">
-                <CheckCircle2 size={14} className="text-emerald-400 shrink-0 mt-0.5" />
-                <span><strong>Công cụ phòng xử án:</strong> Hồ sơ chứng cứ, sổ tay ghi chép, giọng đọc AI và xuất biên bản PDF.</span>
-              </div>
-            </div>
-            <div className="border-t border-emerald-500/20 pt-2 text-slate-400 space-y-1">
-              <p className="font-semibold text-slate-300 flex items-center gap-1.5">
-                <Info size={13} className="text-sky-400 shrink-0" />
-                <span>Tính năng đặc thù gói Pro chưa bao gồm trong dùng thử:</span>
-              </p>
-              <ul className="list-disc list-inside pl-2 space-y-0.5 text-slate-400">
-                <li><strong>Phân tích kỹ năng nâng cao (Analytics):</strong> Theo dõi biểu đồ tiến bộ dài hạn tích lũy qua nhiều phiên (dành riêng cho thành viên Pro).</li>
-                <li><strong>Số lượt mở phiên:</strong> Gói Pro không giới hạn số lượt mở phiên; tài khoản dùng thử được áp dụng tối đa 02 case miễn phí.</li>
-              </ul>
-            </div>
-          </section>
-        )}
+        <nav className="result-tools" aria-label="Công cụ kết quả">
+          {hasCriteria && canViewDetailedScoring && (
+            <button type="button" onClick={() => { setDetailView(value => !value); setActiveGroup('all'); }}>
+              {detailView ? 'Xem tổng quan phiên' : 'Điểm & nhận xét chi tiết'}
+            </button>
+          )}
+          <button type="button" onClick={() => setPdfExportOpen(true)}>
+            <FileDown size={16} aria-hidden="true" /> Xuất PDF
+          </button>
+        </nav>
 
         {detailView && hasCriteria && canViewDetailedScoring && (
           <nav className="result-group-tabs" aria-label="Lọc nhóm kỹ năng">
@@ -277,11 +169,13 @@ function SessionResult({ sessionId }) {
 
         {/* Khối Nhận xét của Hội đồng & Gợi ý hướng cải thiện */}
         {canViewDetailedScoring && (
-          <section className="result-two-col grid gap-6 md:grid-cols-2" aria-label="Đánh giá và gợi ý cải thiện">
-            <article className="result-card">
-              <h2>Nhận xét của Hội đồng</h2>
-              <p className="whitespace-pre-wrap">{result.feedback || 'Chưa có nhận xét tổng quan được lưu cho phiên này.'}</p>
-            </article>
+          <section className={detailView ? 'result-two-col grid gap-6 md:grid-cols-2' : 'result-two-col'} aria-label="Đánh giá và gợi ý cải thiện">
+            {detailView && (
+              <article className="result-card">
+                <h2>Nhận xét của Hội đồng</h2>
+                <p className="whitespace-pre-wrap">{result.feedback || 'Chưa có nhận xét tổng quan được lưu cho phiên này.'}</p>
+              </article>
+            )}
             <article className="result-card result-improvement">
               <h2>Gợi ý hướng cải thiện</h2>
               <p className="whitespace-pre-wrap">{result.improvement_suggestions || 'Chưa có gợi ý cải thiện được lưu cho phiên này.'}</p>
@@ -296,6 +190,14 @@ function SessionResult({ sessionId }) {
           <LegalCitations citations={result.citations} />
           <LegalResearchResult research={result.legal_research} />
         </section>
+
+        {isFreeTrial && (
+          <details className="result-card result-trial">
+            <summary>Quyền sử dụng trong phiên dùng thử</summary>
+            <p>Hai phiên dùng thử có bảng điểm chi tiết, nhận xét và gợi ý luyện tập, Trợ lý luật, hồ sơ chứng cứ, sổ tay, giọng đọc và xuất PDF.</p>
+            <p>Gói Pro có thêm phân tích tiến bộ dài hạn và không giới hạn số lượt mở phiên.</p>
+          </details>
+        )}
 
         <p className="result-disclaimer">Kết quả chỉ phục vụ học tập, không phải tư vấn hoặc kết luận pháp lý.</p>
       </div>

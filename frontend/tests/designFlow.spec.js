@@ -10,6 +10,19 @@ const session = { _id: 'design-session', case_id: courtCase, user_court_role: 'd
 
 async function noOverflow(page) { expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true); }
 
+async function mockRoomGuide(page, projectName) {
+  await page.setViewportSize(projectName === 'mobile'
+    ? { width: 390, height: 664 }
+    : { width: 1440, height: 900 });
+  await page.route('**/api/**', route => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith('/auth/me')) return route.fulfill({ json: { user: { id: 'guide-user', role: 'user' } } });
+    if (path.endsWith('/records')) return route.fulfill({ json: { data: records } });
+    const id = path.split('/').at(-1);
+    return route.fulfill({ json: { data: { ...session, _id: id, status: id === 'guide-completed' ? 'completed' : 'ongoing' } } });
+  });
+}
+
 test('thư viện công khai lỗi 401 không điều hướng nền sang đăng nhập', async ({ page }) => {
   await page.route('**/api/**', route => route.fulfill({ status: 401, json: {} }));
   await page.goto('/');
@@ -56,7 +69,10 @@ test('thiết lập 5 bước: xác nhận mới gửi API, lỗi giữ lựa ch
     return route.fulfill({ json: { data: courtCase } });
   });
   await page.goto(`/dashboard/setup?case=${caseId}`);
+  const setupActions = page.getByRole('navigation', { name: 'Chuyển bước thiết lập' });
+  const start = page.getByRole('button', { name: 'Bắt đầu phiên tòa', exact: true });
   await expect(page.locator('.setup-option').first()).toHaveAttribute('aria-pressed', 'true');
+  await expect(start).toHaveCount(0);
   await page.getByRole('button', { name: 'Tiếp: Hồ sơ', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Tóm tắt diễn biến' })).toBeVisible();
   await page.getByRole('button', { name: /Tài liệu gốc/ }).click();
@@ -71,20 +87,21 @@ test('thiết lập 5 bước: xác nhận mới gửi API, lỗi giữ lựa ch
   await page.getByRole('button', { name: 'Tiếp: Vai', exact: true }).click();
   await page.locator('.setup-role').first().click();
   await page.getByRole('button', { name: 'Tiếp: Mốc tra cứu', exact: true }).click();
-  await expect(page.getByLabel('3. Mốc tra cứu của bài tập')).toHaveValue('2018-08-07');
-  await expect(page.getByLabel('3. Mốc tra cứu của bài tập')).toHaveAttribute('readonly', '');
+  await expect(page.getByLabel('Ngày dùng để tra cứu luật')).toHaveValue('2018-08-07');
+  await expect(page.getByLabel('Ngày dùng để tra cứu luật')).toHaveAttribute('readonly', '');
   await page.getByRole('button', { name: 'Tiếp: Chuẩn bị', exact: true }).click();
-  await page.locator('.setup-aside').getByRole('button', { name: 'Bắt đầu phiên tòa', exact: true }).click();
+  await expect(start).toHaveCount(1);
+  await setupActions.getByRole('button', { name: 'Bắt đầu phiên tòa', exact: true }).click();
   expect(sent).toHaveLength(0);
   await page.getByRole('button', { name: 'Tiếp tục chuẩn bị' }).click();
   expect(sent).toHaveLength(0);
-  await page.locator('.setup-aside').getByRole('button', { name: 'Bắt đầu phiên tòa', exact: true }).click();
+  await start.click();
   await page.getByRole('button', { name: 'Xác nhận bắt đầu' }).click();
   await expect(page.getByRole('dialog').getByRole('alert')).toContainText('Chưa thể bắt đầu phiên');
   expect(sent).toHaveLength(1);
   expect(sent[0]).toMatchObject({ case_id: caseId, user_court_role: 'defense_lawyer', case_event_date: '2018-08-07', difficulty: 'balanced' });
   await page.reload();
-  await page.locator('.setup-aside').getByRole('button', { name: 'Bắt đầu phiên tòa', exact: true }).click();
+  await start.click();
   await page.getByRole('button', { name: 'Xác nhận bắt đầu' }).click();
   await expect.poll(() => sent.length).toBe(2);
   expect(sent[1].request_id).toBe(sent[0].request_id);
@@ -129,6 +146,7 @@ test('phòng xử án: chuyển lượt, gửi và thử lại với thanh đi�
     return route.fulfill({ json: { data: currentSession } });
   });
   await page.goto('/simulation/design-session');
+  await page.getByRole('button', { name: 'Bỏ qua các lần sau', exact: true }).click();
 
   const toolbar = page.getByRole('navigation', { name: 'Điều khiển phiên tòa' });
   const evidence = toolbar.getByRole('button', { name: 'Hồ sơ chứng cứ', exact: true });
@@ -183,6 +201,7 @@ test('phòng xử án: thông tin phiên và âm thanh mở riêng từ đầu t
     return route.fulfill({ json: { data: session } });
   });
   await page.goto('/simulation/design-session');
+  await page.getByRole('button', { name: 'Bỏ qua các lần sau', exact: true }).click();
 
   const header = page.locator('.room-header');
   const infoButton = header.getByRole('button', { name: 'Thông tin vụ án', exact: true });
@@ -222,6 +241,64 @@ test('phòng xử án: thông tin phiên và âm thanh mở riêng từ đầu t
   await noOverflow(page);
 });
 
+test('phòng xử án: hướng dẫn tự mở từ bước đầu và có thể tắt cho các lần sau', async ({ page }, info) => {
+  await mockRoomGuide(page, info.project.name);
+  const guide = page.getByRole('dialog', { name: 'Xem hồ sơ vụ án', exact: true });
+  await page.goto('/simulation/guide-completed');
+  await expect(page.getByRole('link', { name: 'Xem kết quả', exact: true })).toBeVisible();
+  await expect(guide).toBeHidden();
+  await page.goto('/simulation/guide-history#transcript');
+  await expect(page.locator('.transcript-entry')).toHaveCount(records.length);
+  await expect(guide).toBeHidden();
+
+  await page.goto('/simulation/guide-first');
+  await expect(guide).toBeInViewport({ ratio: 1 });
+  await expect(guide.getByText(/^Bước 1\s*\//)).toBeVisible();
+  const skip = guide.getByRole('button', { name: 'Bỏ qua các lần sau', exact: true });
+  await skip.click();
+  await expect(guide).toBeHidden();
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Hồ sơ chứng cứ', exact: true })).toBeVisible();
+  await expect(guide).toBeHidden();
+
+  await page.goto('/simulation/guide-next');
+  const tools = page.getByRole('button', { name: 'Công cụ khác', exact: true });
+  await expect(tools).toBeVisible();
+  await expect(guide).toBeHidden();
+  await tools.click();
+  await page.getByRole('button', { name: 'Hướng dẫn', exact: true }).click();
+  await expect(guide).toBeVisible();
+  await guide.getByRole('button', { name: 'Đóng hướng dẫn', exact: true }).click();
+  await expect(tools).toBeFocused();
+});
+
+test('phòng xử án: đóng hướng dẫn chỉ tạm thời và hoàn tất được ghi nhớ', async ({ page }, info) => {
+  await mockRoomGuide(page, info.project.name);
+  await page.goto('/simulation/guide-close');
+  const guide = page.getByRole('dialog', { name: 'Xem hồ sơ vụ án', exact: true });
+  await expect(guide).toBeVisible();
+  const close = guide.getByRole('button', { name: 'Đóng hướng dẫn', exact: true });
+  await expect(close).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(guide).toBeHidden();
+  await page.reload();
+  await expect(guide).toBeVisible();
+  await close.click();
+  await expect(guide).toBeHidden();
+  await page.reload();
+  await expect(guide).toBeVisible();
+  await guide.getByRole('button', { name: 'Tiếp theo →', exact: true }).click();
+  const review = page.getByRole('dialog', { name: 'Đọc và xem lại lời thoại', exact: true });
+  await expect(review).toBeVisible();
+  await review.getByRole('button', { name: /^Bước \d+: Kết thúc và chấm điểm$/ }).click();
+  const last = page.getByRole('dialog', { name: 'Kết thúc và chấm điểm', exact: true });
+  await last.getByRole('button', { name: 'Hoàn tất hướng dẫn', exact: true }).click();
+  await expect(last).toBeHidden();
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Hồ sơ chứng cứ', exact: true })).toBeVisible();
+  await expect(guide).toBeHidden();
+});
+
 test('phòng xử án: draft, chèn chứng cứ, trợ lý lỗi giữ câu hỏi, hướng dẫn và hủy kết thúc', async ({ page }) => {
   let completed = 0;
   const browserErrors = [];
@@ -235,6 +312,7 @@ test('phòng xử án: draft, chèn chứng cứ, trợ lý lỗi giữ câu h�
     return route.fulfill({ json: { data: session } });
   });
   await page.goto('/simulation/design-session');
+  await page.getByRole('button', { name: 'Bỏ qua các lần sau', exact: true }).click();
   await page.getByRole('button', { name: 'Xem vai bạn', exact: true }).click();
   await expect(page.getByRole('dialog')).toContainText('Vai trò: Bạn');
   await page.getByRole('button', { name: 'Quay lại phiên tòa →' }).click();

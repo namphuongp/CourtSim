@@ -84,5 +84,6 @@ test('AUD-04 exhausted user can resume the saved creation request after reload',
   // Changing the setup creates a new request; exhausted users must not start a new session.
   await page.getByRole('button', { name: '3 Vai', exact: true }).click();
   await page.getByRole('button', { name: /^Luật sư bảo vệ nguyên đơn/ }).click();
+  await page.getByRole('button', { name: '5 Chuẩn bị', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Bắt đầu phiên tòa', exact: true })).toBeDisabled();
 });

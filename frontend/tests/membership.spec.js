@@ -24,10 +24,12 @@ test('Freemium: trợ lý và phân tích bị khóa, hết 2 lượt không m�
   await page.getByRole('button', { name: '3 Vai', exact: true }).click();
   await page.getByRole('button', { name: 'Luật sư bảo vệ bị đơn', exact: true }).click();
   await page.getByRole('button', { name: '4 Mốc tra cứu', exact: true }).click();
-  await page.getByLabel('3. Ngày sự kiện làm phát sinh tranh chấp').fill('2023-01-01');
+  await page.getByLabel('Ngày dùng để tra cứu luật').fill('2023-01-01');
+  await page.getByRole('button', { name: 'Tiếp: Chuẩn bị', exact: true }).click();
   await page.getByRole('button', { name: 'Bắt đầu phiên tòa', exact: true }).click();
   await page.getByRole('button', { name: 'Xác nhận bắt đầu', exact: true }).click();
   await expect(page).toHaveURL(/simulation\/[a-f0-9]{24}$/);
+  await page.getByRole('button', { name: 'Bỏ qua các lần sau', exact: true }).click();
   const sessionId = page.url().split('/').at(-1);
   const tools = page.getByRole('button', { name: 'Công cụ khác', exact: true });
   await tools.click();
@@ -47,7 +49,8 @@ test('Freemium: trợ lý và phân tích bị khóa, hết 2 lượt không m�
   await page.getByRole('button', { name: '3 Vai', exact: true }).click();
   await page.getByRole('button', { name: 'Luật sư bảo vệ bị đơn', exact: true }).click();
   await page.getByRole('button', { name: '4 Mốc tra cứu', exact: true }).click();
-  await page.getByLabel('3. Ngày sự kiện làm phát sinh tranh chấp').fill('2023-01-01');
+  await page.getByLabel('Ngày dùng để tra cứu luật').fill('2023-01-01');
+  await page.getByRole('button', { name: 'Tiếp: Chuẩn bị', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Bắt đầu phiên tòa', exact: true })).toBeDisabled();
   expect((await page.request.post('http://127.0.0.1:5019/api/v1/sessions', { headers, data: { ...request, request_id: randomUUID(), tier: 'pro' } })).status()).toBe(402);
   expect(harness.calls()).toBe(0);

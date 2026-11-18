@@ -16,13 +16,19 @@ async function api(page, data, failed = false) {
 }
 
 test('dashboard: điểm thật theo API, chart, tiếp tục, bộ lọc và responsive', async ({ page }, info) => {
+  await page.setViewportSize(info.project.name === 'mobile'
+    ? { width: 390, height: 664 }
+    : { width: 1440, height: 900 });
   await api(page, sessions);
   await page.goto('/dashboard');
   await expect(page.getByRole('heading', { name: 'Không gian luyện tập của bạn' })).toBeVisible();
-  await expect(page.locator('.dashboard-metrics')).toContainText('86,6/100');
-  await expect(page.locator('.dashboard-metrics')).toContainText('Tổng lượt tranh tụng9');
+  const metrics = page.locator('.dashboard-metrics');
+  await expect(metrics).toContainText('86,6/100');
+  await expect(metrics).toContainText('Tổng lượt tranh tụng9');
   await expect(page.getByRole('img', { name: /Biểu đồ điểm của 2 phiên/ })).toBeVisible();
-  await expect(page.getByRole('region', { name: 'Tiếp tục luyện tập', exact: true }).getByRole('link', { name: 'Tiếp tục tranh tụng' })).toHaveAttribute('href', '/simulation/resume');
+  const resume = page.getByRole('region', { name: 'Tiếp tục luyện tập', exact: true });
+  await expect(resume.getByRole('link', { name: 'Tiếp tục tranh tụng' })).toHaveAttribute('href', '/simulation/resume');
+  expect((await resume.boundingBox()).y).toBeLessThan((await metrics.boundingBox()).y);
   await expect(page.getByRole('region', { name: 'Gợi ý luyện tập' })).toContainText('phân tích chứng cứ');
   const recent = page.getByRole('region', { name: 'Các phiên gần đây' });
   await page.getByLabel('Trạng thái', { exact: true }).selectOption('completed');
@@ -45,7 +51,8 @@ test('dashboard: không fake chart khi rỗng, báo lỗi và thử lại', asyn
   await page.unroute('**/api/**');
   await api(page, []);
   await page.getByRole('button', { name: 'Thử lại' }).click();
-  await expect(page.getByText('Chưa có điểm', { exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Tạo phiên mới', exact: true })).toHaveAttribute('href', '/dashboard/setup');
+  await expect(page.locator('.dashboard-metrics')).toHaveCount(0);
   await expect(page.getByRole('img', { name: /Biểu đồ điểm/ })).toHaveCount(0);
   await expect(page.getByText(/Bạn chưa có phiên luyện tập/)).toBeVisible();
 });

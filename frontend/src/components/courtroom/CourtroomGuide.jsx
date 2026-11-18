@@ -15,7 +15,7 @@ function guideSteps(completed, maxTurns) {
   ];
 }
 
-export default function CourtroomGuide({ onClose, completed = false, hasDialogue = true, maxTurns = 20 }) {
+export default function CourtroomGuide({ onClose, onDismissPermanently, returnFocusRef, completed = false, hasDialogue = true, maxTurns = 20 }) {
   const [step, setStep] = useState(0);
   const availableSteps = guideSteps(completed, maxTurns).filter(item => hasDialogue || item.target !== '.court-speech');
   const currentStep = Math.min(step, availableSteps.length - 1);
@@ -27,18 +27,24 @@ export default function CourtroomGuide({ onClose, completed = false, hasDialogue
   useEffect(() => { closeAction.current = onClose; }, [onClose]);
   useEffect(() => {
     const previous = document.activeElement;
+    const fallback = returnFocusRef?.current;
     close.current?.focus();
     const keyboard = (event) => {
       if (event.key === 'Escape') { event.preventDefault(); closeAction.current(); }
       if (event.key !== 'Tab') return;
-      const controls = [...card.current.querySelectorAll('button:not(:disabled)')];
-      const first = controls[0], last = controls.at(-1);
+      const controls = card.current?.querySelectorAll('button:not(:disabled)');
+      if (!controls?.length) return;
+      const first = controls[0], last = controls[controls.length - 1];
       if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
     };
     document.addEventListener('keydown', keyboard);
-    return () => { document.removeEventListener('keydown', keyboard); if (previous?.isConnected) previous.focus(); };
-  }, []);
+    return () => {
+      document.removeEventListener('keydown', keyboard);
+      if (previous?.isConnected && previous !== document.body) previous.focus();
+      else if (fallback?.isConnected) fallback.focus();
+    };
+  }, [returnFocusRef]);
   useEffect(() => {
     const target = document.querySelector(current.target);
     // Cuộn tới thao tác thật; không thay đổi nội dung hay trạng thái của phiên.
@@ -63,9 +69,21 @@ export default function CourtroomGuide({ onClose, completed = false, hasDialogue
     {box && <div className="tour-spotlight" style={box} aria-hidden="true" />}
     <section ref={card} role="dialog" aria-modal="true" aria-labelledby="tour-title" aria-describedby="tour-description" className="tour-card court-guide" style={{ left, top, width, maxHeight: `calc(100dvh - ${top + 12}px)` }}>
       <header><span className="guide-progress">Bước {currentStep + 1} / {availableSteps.length}</span><button ref={close} className="tour-close" type="button" onClick={onClose} aria-label="Đóng hướng dẫn"><X size={17} strokeWidth={2.4} aria-hidden="true"/></button></header>
-      <div className="guide-step" aria-live="polite" aria-atomic="true"><h3 id="tour-title">{current.title}</h3><p id="tour-description">{current.text}</p></div>
+      <div className="guide-step" aria-live="polite" aria-atomic="true">
+        <h3 id="tour-title">{current.title}</h3>
+        <p id="tour-description">{current.text}</p>
+        {currentStep === 0 && <p className="guide-reopen-note">Bạn luôn có thể mở lại từ Công cụ khác → Hướng dẫn.</p>}
+      </div>
       <nav aria-label="Các bước hướng dẫn" className="guide-dots">{availableSteps.map((entry, index) => <button type="button" key={entry.title} aria-label={`Bước ${index + 1}: ${entry.title}`} aria-current={index === currentStep ? 'step' : undefined} onClick={() => setStep(index)}>{index + 1}</button>)}</nav>
-      <div className="guide-actions"><button type="button" disabled={currentStep === 0} onClick={() => setStep(currentStep - 1)}>Quay lại</button>{currentStep < availableSteps.length - 1 ? <button type="button" onClick={() => setStep(currentStep + 1)}>Tiếp theo →</button> : <button type="button" onClick={onClose}>{completed ? 'Quay lại phiên' : 'Tiếp tục thực hành'}</button>}</div>
+      <div className="guide-footer">
+        <button className="guide-skip" type="button" onClick={onDismissPermanently}>Bỏ qua các lần sau</button>
+        <div className="guide-actions">
+          <button type="button" disabled={currentStep === 0} onClick={() => setStep(currentStep - 1)}>Quay lại</button>
+          {currentStep < availableSteps.length - 1
+            ? <button type="button" onClick={() => setStep(currentStep + 1)}>Tiếp theo →</button>
+            : <button type="button" onClick={onDismissPermanently}>Hoàn tất hướng dẫn</button>}
+        </div>
+      </div>
     </section>
   </div>;
 }

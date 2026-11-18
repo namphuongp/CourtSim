@@ -22,6 +22,12 @@ test('kết quả cũ 69/73: không hiện điểm quy đổi, chi tiết đóng
   });
   await page.goto('/simulation/test-session/result');
   await expect(page.getByRole('region', { name: 'Kết quả phần đã đánh giá' })).toContainText('69/73');
+  await expect(page.getByRole('link', { name: 'Tạo phiên mới', exact: true })).toHaveAttribute('href', '/dashboard/setup');
+  await page.getByRole('button', { name: 'Xuất PDF', exact: true }).click();
+  const pdf = page.getByRole('dialog', { name: 'Xuất văn bản phiên tòa (PDF)', exact: true });
+  await expect(pdf).toBeVisible();
+  await pdf.getByRole('button', { name: 'Đóng', exact: true }).first().click();
+  await expect(pdf).toBeHidden();
   await expect(page.getByText('Đã đánh giá 73/100 điểm tiêu chí')).toBeVisible();
   await expect(page.getByText(/chưa đủ nguồn|nguồn phù hợp từ vbpl.vn|CourtSim cần xác minh/)).toHaveCount(0);
   await expect(page.getByText(/94[.,]52/)).toHaveCount(0);

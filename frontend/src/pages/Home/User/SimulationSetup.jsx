@@ -6,7 +6,6 @@ import {
   ArrowRight,
   BookOpen,
   CircleHelp,
-  Check,
   CheckCircle2,
   Gavel,
   Upload,
@@ -17,7 +16,6 @@ import {
   Search,
   Filter,
   ShieldCheck,
-  AlertTriangle,
   ChevronLeft,
   ChevronRight,
   RotateCcw,
@@ -35,11 +33,16 @@ import { draftKey, getCurrentUser, readDraft, saveDraft } from '../../../service
 import '../../../components/dashboard/dashboard.css';
 import useMembership from '../../../components/membership/useMembership';
 import MembershipSummary from '../../../components/membership/MembershipSummary';
+import './simulationSetup.css';
 
 const roles = [
   { id: 'defense_lawyer', label: 'Luật sư bảo vệ bị đơn/bị cáo' },
   { id: 'plaintiff_lawyer', label: 'Luật sư bảo vệ nguyên đơn/người bị hại' },
 ];
+
+const steps = ['Vụ án', 'Hồ sơ', 'Vai', 'Mốc tra cứu', 'Chuẩn bị'];
+const stepTitles = ['Chọn vụ án', 'Hồ sơ vụ án', 'Chọn vai của bạn', 'Ngày tra cứu pháp luật', 'Kiểm tra trước khi vào phiên'];
+const reviewStep = steps.length - 1;
 
 const SAMPLE_UPLOAD_TEXT = [
   'BẢN ÁN DÂN SỰ SƠ THẨM SỐ 18/2026/DS-ST NGÀY 10/06/2026',
@@ -63,13 +66,13 @@ function readFileAsDataUrl(file) {
 export default function SimulationSetup() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const [step, setStep] = useState(0);
+  const [stepChoice, setStep] = useState(null);
+  const stepTitleRef = useRef(null);
   const [confirm, setConfirm] = useState(false);
-  const [reviewedCase, setReviewedCase] = useState(null);
   const [cases, setCases] = useState([]);
   const storageKey = draftKey('setup');
+  const [saved] = useState(() => readDraft(storageKey));
   const [form, updateForm] = useState(() => {
-    const saved = readDraft(storageKey);
     // Bản nháp cũ không được âm thầm giữ mức phản biện đã bỏ khỏi giao diện.
     const requestedCase = params.get('case');
     const changesCase = requestedCase && requestedCase !== saved?.case_id;
@@ -376,7 +379,6 @@ export default function SimulationSetup() {
         case_id: created._id,
         case_event_date: created.reference_date || form.case_event_date,
       });
-      setReviewedCase(created._id);
       setUploadOpen(false);
       setUploadPreview(null);
       setUploadedFileName('');
@@ -423,24 +425,50 @@ export default function SimulationSetup() {
   const ready = selectedCase?._id === form.case_id && !detailError;
   const isSelectedCaseApproved = currentUser?.role === 'admin' || !['pending', 'rejected'].includes(selectedCase?.moderation_status);
   const canUploadMoreCases = currentUser?.role === 'admin' || membership.loading || membership.data?.canUploadCase !== false;
-  const valid = ready && isSelectedCaseApproved && Boolean(form.user_court_role && eventDate) && canStart && !membership.loading && !state.submitting;
-  const steps = ['Vụ án', 'Hồ sơ', 'Vai', 'Mốc tra cứu', 'Chuẩn bị'];
-  const completedSteps = [Boolean(form.case_id), reviewedCase === form.case_id, Boolean(form.user_court_role), Boolean(eventDate)];
+  const hasReviewDetails = ready && isSelectedCaseApproved && Boolean(form.user_court_role && eventDate);
+  const valid = hasReviewDetails && canStart && !membership.loading && !state.submitting;
+  const restoresReview = saved?.case_id === form.case_id && saved?.user_court_role && hasReviewDetails;
+  const step = stepChoice ?? (restoresReview ? reviewStep : 0);
+
   function goStep(index) {
-    if (index === 1) setReviewedCase(form.case_id);
     setStep(index);
     window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    requestAnimationFrame(() => stepTitleRef.current?.focus({ preventScroll: true }));
   }
-  const canNext = step === 0 ? ready : step === 1 ? (ready && isSelectedCaseApproved) : step === 2 ? Boolean(form.user_court_role) : step === 3 ? Boolean(eventDate) : false;
-  const summary = <dl className="setup-summary"><div><dt>Vụ án</dt><dd>{ready ? caseIntroduction(selectedCase).title : 'Chưa chọn vụ án'}</dd></div><div><dt>Vai của bạn</dt><dd>{form.user_court_role ? roleLabel(form.user_court_role, selectedCase?.category, selectedCase) : 'Chưa chọn vai'}</dd></div><div><dt>Mốc tra cứu</dt><dd>{eventDate || 'Chưa chọn mốc tra cứu'}</dd></div><div><dt>Giới hạn</dt><dd>20 lượt trao đổi</dd></div></dl>;
+
+  const canNext = [ready, ready && isSelectedCaseApproved, Boolean(form.user_court_role), Boolean(eventDate)][step];
+  const summary = <dl className="setup-summary">
+    <div><dt>Vụ án</dt><dd>{ready ? caseIntroduction(selectedCase).title : 'Chưa chọn vụ án'}</dd></div>
+    <div><dt>Vai của bạn</dt><dd>{form.user_court_role ? roleLabel(form.user_court_role, selectedCase?.category, selectedCase) : 'Chưa chọn vai'}</dd></div>
+    <div><dt>Ngày tra cứu</dt><dd>{eventDate || 'Chưa chọn ngày'}</dd></div>
+    <div><dt>Giới hạn</dt><dd>20 lượt trình bày</dd></div>
+  </dl>;
+
   return <section className="practice-dashboard simulation-setup mx-auto space-y-6">
-    <header className="flex flex-wrap items-start justify-between gap-4"><div><h1 className="text-3xl font-bold text-white">Thiết lập phiên tòa</h1><p className="mt-2 text-slate-400">Đọc hồ sơ, chọn vai và mốc tra cứu — chuẩn bị trước khi vào phòng xử án.</p><nav className="setup-step-tabs" aria-label="Các bước thiết lập">{steps.map((title, index) => <button key={title} type="button" aria-current={step === index ? 'step' : undefined} disabled={state.submitting || (index > 0 && !ready) || (index > 1 && !isSelectedCaseApproved)} onClick={() => goStep(index)}>{index < step && completedSteps[index] ? <Check size={12} className="inline" aria-hidden="true" /> : index + 1} {title}</button>)}</nav></div><Link to="/guide" className="setup-guide-link flex items-center gap-2 px-4 py-2 text-sm"><CircleHelp size={16}/> Xem hướng dẫn</Link></header>
+    <header className="flex flex-wrap items-start justify-between gap-4">
+      <div>
+        <h1 className="text-3xl font-bold text-white">Thiết lập phiên tòa</h1>
+        <p className="mt-2 text-slate-400">Chọn vụ án và vai luật sư, rồi kiểm tra thông tin trước khi vào phòng xử án.</p>
+        <nav className="setup-step-tabs" aria-label="Các bước thiết lập">
+          {steps.map((title, index) => <button
+            key={title}
+            type="button"
+            aria-current={step === index ? 'step' : undefined}
+            disabled={state.submitting || (index > 0 && !ready) || (index > 1 && !isSelectedCaseApproved)}
+            onClick={() => goStep(index)}
+          >
+            {index + 1} {title}
+          </button>)}
+        </nav>
+      </div>
+      <Link to="/guide" className="setup-guide-link flex items-center gap-2 px-4 py-2 text-sm"><CircleHelp size={16} aria-hidden="true" /> Xem hướng dẫn</Link>
+    </header>
     {state.error && <p role="alert" className="dashboard-card dashboard-alert">{state.error} <button className="underline" onClick={() => setReload(n => n + 1)}>Thử lại</button></p>}
     {uploadState.success && <p role="status" className="dashboard-card setup-upload-success p-3.5 text-sm">{uploadState.success}</p>}
     <fieldset disabled={state.submitting} className="setup-grid grid gap-6 lg:grid-cols-3">
       <div className="setup-step-content lg:col-span-2">
         <article className="setup-card p-6">
-          <h2 className="setup-step-title"><span>{step + 1}</span>{['Chọn vụ án', 'Hồ sơ vụ án', 'Chọn vai của bạn', 'Mốc tra cứu pháp luật', 'Chuẩn bị & sẵn sàng'][step]}</h2>
+          <h2 ref={stepTitleRef} tabIndex={-1} className="setup-step-title"><span aria-hidden="true">{step + 1}</span>{stepTitles[step]}</h2>
           {step === 0 && <>
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <p className="setup-step-description !mb-0">Đọc tóm tắt và chọn tình huống bạn muốn thực hành hoặc tải lên bản án của riêng bạn.</p>
@@ -800,76 +828,37 @@ export default function SimulationSetup() {
                     const intro = caseIntroduction(item);
                     const stats = caseCompletenessStats(item);
                     const isMine = Boolean(currentUser?.id && item.created_by && String(item.created_by) === String(currentUser.id));
-                    const canDelete = stats.origin === 'user_upload' && (isMine || currentUser?.role === 'admin');
+                    const uploaded = stats.origin === 'user_upload';
+                    const canDelete = uploaded && (isMine || currentUser?.role === 'admin');
                     const isSelected = form.case_id === item._id;
+                    const titleId = `setup-case-title-${item._id}`;
+                    const statusId = `setup-case-status-${item._id}`;
+                    const moderationStatus = stats.is_pending ? 'Chờ kiểm duyệt' : stats.is_rejected ? 'Từ chối duyệt' : 'Đã kiểm duyệt';
 
                     return (
                       <div key={item._id} className="setup-case-card-wrap">
                         <button
                           type="button"
+                          aria-labelledby={titleId}
+                          aria-describedby={uploaded ? statusId : undefined}
                           aria-pressed={isSelected}
-                          onClick={() => setForm({ ...form, case_id: item._id })}
-                          className={`setup-option setup-case-card w-full border p-4 text-left ${isSelected ? 'is-selected' : ''} ${stats.origin === 'system' ? 'is-origin-system' : 'is-origin-upload'}`}
+                          onClick={() => { if (!isSelected) setForm({ ...form, case_id: item._id }); }}
+                          className={`setup-option setup-case-card w-full border p-4 text-left ${isSelected ? 'is-selected' : ''}`}
                         >
-                          <div className="setup-case-badges">
-                            {stats.origin === 'system' ? (
-                              <span className="setup-badge is-system-badge">
-                                <ShieldCheck size={12} /> Vụ án chuẩn hệ thống
-                              </span>
-                            ) : (
-                              <span className="setup-badge is-upload-badge">
-                                <Upload size={12} /> {isMine ? 'Hồ sơ của bạn tải lên' : 'Hồ sơ người dùng tải lên'}
-                              </span>
-                            )}
-                            <span className="setup-badge is-category-badge">{item.category}</span>
-                            {stats.origin === 'user_upload' && (
-                              stats.is_pending ? (
-                                <span className="setup-badge is-quality-warn" title="Hồ sơ đang chờ Quản trị viên kiểm duyệt chất lượng trước khi mở tranh tụng">
-                                  <Clock size={12} /> Chờ kiểm duyệt
-                                </span>
-                              ) : stats.is_rejected ? (
-                                <span className="setup-badge is-quality-warn" title={item.moderation_note || 'Hồ sơ không đạt yêu cầu kiểm duyệt'}>
-                                  <AlertTriangle size={12} /> Từ chối duyệt
-                                </span>
-                              ) : (
-                                <span className="setup-badge is-quality-ok">
-                                  <ShieldCheck size={12} /> Đã kiểm duyệt
-                                </span>
-                              )
-                            )}
-                            {stats.origin === 'system' ? (
-                              <span className="setup-badge is-quality-ok">
-                                <CheckCircle2 size={12} /> {stats.estimated_pages >= 8 ? `Hồ sơ toàn văn (~${stats.estimated_pages} trang)` : `Hồ sơ chuẩn (~${stats.estimated_pages} trang)`}
-                              </span>
-                            ) : stats.has_full_dossier ? (
-                              <span className="setup-badge is-quality-ok">
-                                <CheckCircle2 size={12} /> Đủ cấu trúc (~{stats.estimated_pages} trang · {stats.evidence_count} chứng cứ)
-                              </span>
-                            ) : (
-                              <span
-                                className="setup-badge is-quality-warn"
-                                title={`Hồ sơ người dùng tải lên còn thiếu: ${stats.missing_fields.join(', ')}`}
-                              >
-                                <AlertTriangle size={12} /> Dữ liệu tóm lược (~{stats.estimated_pages} trang · {stats.evidence_count} chứng cứ)
-                              </span>
-                            )}
+                          <strong id={titleId} className="setup-case-card-title">{intro.title}</strong>
+                          <div className="setup-case-labels">
+                            <span className="setup-case-category">{item.category || 'Chưa phân loại'}</span>
+                            {uploaded && <span>{isMine ? 'Hồ sơ bạn tải lên' : 'Hồ sơ người dùng tải lên'}</span>}
+                            {uploaded && <span
+                              id={statusId}
+                              className={`setup-case-status ${stats.is_pending || stats.is_rejected ? 'is-warning' : ''}`}
+                            >{moderationStatus}</span>}
+                            {isSelected && <span className="setup-case-selected" aria-hidden="true"><CheckCircle2 size={14} /> Đã chọn</span>}
                           </div>
-
-                          <strong className="setup-case-card-title">{intro.title}</strong>
                           <p className="mt-1 text-sm setup-case-card-summary">{intro.summary}</p>
-
                           <div className="setup-case-meta">
-                            <span>{stats.parties_count} bên đương sự</span>
-                            <span>·</span>
-                            <span>{stats.evidence_count} tài liệu chứng cứ</span>
-                            <span>·</span>
-                            <span>{stats.timeline_count} mốc thời gian</span>
-                            {item.reference_date && (
-                              <>
-                                <span>·</span>
-                                <span>Mốc: {item.reference_date}</span>
-                              </>
-                            )}
+                            {stats.evidence_count} chứng cứ · Khoảng {stats.estimated_pages} trang
+                            {uploaded && !stats.has_full_dossier && ' · Hồ sơ tóm lược'}
                           </div>
                         </button>
 
@@ -979,13 +968,60 @@ export default function SimulationSetup() {
             </>
           )}
           {step === 2 && <><p className="setup-step-description">Chọn phía bạn bảo vệ; AI đảm nhiệm Chủ tọa và bên còn lại.</p><div className="grid gap-3 md:grid-cols-2">{roles.map(role => <button key={role.id} aria-label={roleLabel(role.id, selectedCase?.category, selectedCase)} aria-pressed={form.user_court_role === role.id} onClick={() => setForm({ ...form, user_court_role: role.id })} className={`setup-option setup-role border p-5 text-left ${form.user_court_role === role.id ? 'is-selected' : ''}`}><strong>{roleLabel(role.id, selectedCase?.category, selectedCase)}</strong><p>Đọc yêu cầu, liên hệ tình tiết và chứng cứ để bảo vệ quan điểm của thân chủ.</p>{selectedCase?.parties?.filter(party => party.side === (role.id === 'defense_lawyer' ? 'defendant' : 'plaintiff')).map((party, index) => <div className="setup-role-party" key={index}><b>{party.name}</b>{party.claims?.map((claim, i) => <p key={i}>{claim}</p>)}</div>)}<span className="inline-flex items-center gap-1.5">{form.user_court_role === role.id ? <><CheckCircle2 size={13} /> Đã chọn vai</> : 'Chọn vai này'}</span></button>)}</div></>}
-          {step === 3 && <><label htmlFor="case-event-date" className="mb-2 mt-5 block font-bold">{fixedDate ? '3. Mốc tra cứu của bài tập' : '3. Ngày sự kiện làm phát sinh tranh chấp'}</label><p className="mb-4 text-sm">{selectedCase?.practice_context ? 'Dùng ngày xét xử sơ thẩm làm mốc tham khảo khi tra cứu luật. Ngày xét xử phúc thẩm chưa được nêu trong hồ sơ.' : 'Chọn ngày xảy ra sự việc để tra cứu luật. Nếu hồ sơ không nêu rõ, bạn có thể chọn ngày giả định cho bài tập. Cần đối chiếu thời điểm áp dụng của từng quy định.'}</p><input id="case-event-date" type="date" required readOnly={Boolean(fixedDate)} value={eventDate} onChange={event => setForm({ ...form, case_event_date: event.target.value })} className="setup-date w-full rounded-lg border px-4 py-3"/><p className="setup-date-note">{selectedCase?.reference_date_note || 'Mốc tra cứu không tự xác nhận hiệu lực hay điều kiện áp dụng của văn bản pháp luật.'}</p></>}
-          {step === 4 && <><p className="setup-step-description">Kiểm tra các lựa chọn và cách tham gia phiên trước khi bắt đầu.</p>{summary}<div className="setup-preparation"><div><BookOpen size={20}/><h3>Nắm rõ hồ sơ</h3><p>Chỉ sử dụng tình tiết và chứng cứ đã được cung cấp.</p></div><div><Gavel size={20}/><h3>Tranh luận theo lượt</h3><p>Đọc lời thoại rồi bấm Tiếp tục. Gửi lập luận khi đến lượt bạn.</p></div></div></>}
+          {step === 3 && <>
+            <label htmlFor="case-event-date" className="mb-2 mt-5 block font-bold">Ngày dùng để tra cứu luật</label>
+            <p id="setup-date-help" className="mb-4 text-sm">
+              {fixedDate
+                ? 'Hồ sơ đã điền sẵn ngày này để bạn tra cứu quy định tại thời điểm đó.'
+                : 'Nhập ngày xảy ra sự việc. Nếu hồ sơ không ghi rõ, bạn có thể chọn một ngày giả định cho bài tập.'}
+            </p>
+            <input
+              id="case-event-date"
+              type="date"
+              aria-describedby="setup-date-help setup-date-note"
+              required
+              readOnly={Boolean(fixedDate)}
+              value={eventDate}
+              onChange={event => setForm({ ...form, case_event_date: event.target.value })}
+              className="setup-date w-full rounded-lg border px-4 py-3"
+            />
+            <p id="setup-date-note" className="setup-date-note">{selectedCase?.reference_date_note || 'Bạn vẫn cần kiểm tra văn bản nào có hiệu lực và áp dụng vào ngày này.'}</p>
+          </>}
+          {step === reviewStep && <>
+            {summary}
+            {!hasReviewDetails && <p className="setup-step-description">Chọn vụ án, vai và ngày tra cứu để bắt đầu.</p>}
+            {canResume && <p className="setup-step-description">Phiên đang khởi tạo có thể được tiếp tục mà không trừ thêm lượt.</p>}
+            {!canResume && membership.data && !canStart && <p className="setup-step-description">Bạn chưa có lượt để mở phiên mới. Xem lựa chọn trong phần Lượt luyện tập.</p>}
+            <div className="setup-preparation">
+              <div><BookOpen size={20} aria-hidden="true" /><h3>Nắm rõ hồ sơ</h3><p>Chỉ sử dụng tình tiết và chứng cứ đã được cung cấp.</p></div>
+              <div><Gavel size={20} aria-hidden="true" /><h3>Tranh luận theo lượt</h3><p>Đọc lời thoại rồi bấm Tiếp tục. Gửi lập luận khi đến lượt bạn.</p></div>
+            </div>
+          </>}
         </article>
-        <nav className="setup-step-actions" aria-label="Chuyển bước thiết lập"><button type="button" disabled={step === 0} onClick={() => goStep(step - 1)}><ArrowLeft size={14}/> Quay lại</button>{step < 4 ? <button type="button" className="setup-next" disabled={!canNext} onClick={() => goStep(step + 1)}>Tiếp: {steps[step + 1]} <ArrowRight size={14}/></button> : <button type="button" className="setup-next" disabled={!valid} onClick={() => setConfirm(true)}>Bắt đầu phiên tòa <ArrowRight size={14}/></button>}</nav>
+        <nav className="setup-step-actions" aria-label="Chuyển bước thiết lập">
+          {step > 0 && <button type="button" className="setup-back" onClick={() => goStep(step - 1)}>
+            <ArrowLeft size={15} aria-hidden="true" /> Quay lại
+          </button>}
+          {step === reviewStep ? <button type="button" className="setup-next" disabled={!valid} onClick={() => setConfirm(true)}>
+            {state.submitting ? 'Đang khởi tạo…' : canResume ? 'Tiếp tục khởi tạo phiên' : 'Bắt đầu phiên tòa'} <ArrowRight size={15} aria-hidden="true" />
+          </button> : <button type="button" className="setup-next" disabled={!canNext} onClick={() => goStep(step + 1)}>
+            Tiếp: {steps[step + 1]} <ArrowRight size={15} aria-hidden="true" />
+          </button>}
+        </nav>
       </div>
-      <aside className="setup-aside h-fit p-5 lg:sticky lg:top-32"><Gavel className="mb-3"/><h2>Sẵn sàng tranh tụng?</h2>{summary}<ul className="setup-checklist">{['Đã chọn vụ án', 'Đã đọc hồ sơ', 'Đã chọn vai', 'Đã đặt mốc tra cứu'].map((text, index) => <li key={text} className={completedSteps[index] ? 'is-done' : ''}><CheckCircle2 size={14}/>{completedSteps[index] ? text : text.replace('Đã', 'Chưa')}</li>)}</ul><MembershipSummary resource={membership}/>{canResume && <p className="my-4 text-sm">Bạn có thể tiếp tục khởi tạo phiên đã yêu cầu. Hệ thống sẽ không trừ thêm lượt.</p>}<button type="button" onClick={() => setConfirm(true)} disabled={!valid} className="setup-start w-full font-bold">{state.submitting ? 'Đang khởi tạo...' : canResume ? 'Tiếp tục khởi tạo phiên' : 'Bắt đầu phiên tòa'}</button><p className="setup-start-note">Kiểm tra thông tin trước khi xác nhận sử dụng lượt luyện tập.</p></aside>
+      <aside className="setup-aside h-fit p-5 lg:sticky lg:top-32">
+        {step === reviewStep ? <h2>Lượt luyện tập</h2> : <><h2>Thông tin đã chọn</h2>{summary}</>}
+        <MembershipSummary resource={membership} />
+      </aside>
     </fieldset>
-    {confirm && <FeedbackModal title="Bắt đầu phiên luyện tập?" onClose={() => { if (!state.submitting) setConfirm(false); }}><p className="mb-5 text-sm">Kiểm tra vụ án, vai và mốc tra cứu. Lượt chỉ được sử dụng khi hệ thống khởi tạo phiên.</p>{summary}{state.error && <p role="alert" className="my-4 text-rose-600">{state.error}</p>}<div className="setup-confirm-actions"><button disabled={state.submitting} onClick={() => setConfirm(false)}>Tiếp tục chuẩn bị</button><button className="setup-next" disabled={!valid} onClick={startSession}>{state.submitting ? 'Đang khởi tạo...' : 'Xác nhận bắt đầu'}</button></div></FeedbackModal>}
+    {confirm && <FeedbackModal title="Bắt đầu phiên luyện tập?" onClose={() => { if (!state.submitting) setConfirm(false); }}>
+      <p className="mb-5 text-sm">{canResume ? 'Khi tiếp tục khởi tạo phiên này, hệ thống sẽ không trừ thêm lượt.' : 'Lượt chỉ được sử dụng khi hệ thống khởi tạo phiên.'}</p>
+      {summary}
+      {state.error && <p role="alert" className="my-4 text-rose-600">{state.error}</p>}
+      <div className="setup-confirm-actions">
+        <button type="button" disabled={state.submitting} onClick={() => setConfirm(false)}>Tiếp tục chuẩn bị</button>
+        <button type="button" className="setup-next" disabled={!valid} onClick={startSession}>{state.submitting ? 'Đang khởi tạo…' : 'Xác nhận bắt đầu'}</button>
+      </div>
+    </FeedbackModal>}
   </section>;
 }

@@ -14,6 +14,7 @@ test('thẻ công cụ, biên bản có bộ lọc, sổ tay lưu bản nháp v�
     return route.fulfill({ json: { data: session } });
   });
   await page.goto('/simulation/continuation');
+  await page.getByRole('button', { name: 'Bỏ qua các lần sau', exact: true }).click();
   const toolbar = page.getByRole('navigation', { name: 'Điều khiển phiên tòa' });
   const tools = toolbar.getByRole('button', { name: 'Công cụ khác', exact: true });
   await toolbar.getByRole('button', { name: 'Hồ sơ chứng cứ', exact: true }).click();

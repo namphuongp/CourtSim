@@ -38,10 +38,12 @@ test('Case1: chọn vai, hồ sơ, kéo thả, đối đáp, tải lại, chấm
   await page.getByRole('button', { name: '3 Vai', exact: true }).click();
   await page.getByRole('button', { name: label, exact: true }).click();
   await page.getByRole('button', { name: '4 Mốc tra cứu', exact: true }).click();
-  await expect(page.getByLabel('3. Mốc tra cứu của bài tập')).toHaveValue('2018-08-07');
+  await expect(page.getByLabel('Ngày dùng để tra cứu luật')).toHaveValue('2018-08-07');
+  await page.getByRole('button', { name: 'Tiếp: Chuẩn bị', exact: true }).click();
   await page.getByRole('button', { name: 'Bắt đầu phiên tòa', exact: true }).click();
   await page.getByRole('button', { name: 'Xác nhận bắt đầu', exact: true }).click();
   await expect(page).toHaveURL(/simulation\/[a-f0-9]{24}$/);
+  await page.getByRole('button', { name: 'Bỏ qua các lần sau', exact: true }).click();
   const room = page.url();
   const tools = page.getByRole('button', { name: 'Công cụ khác', exact: true });
   await page.getByRole('button', { name: 'Thông tin vụ án', exact: true }).click();

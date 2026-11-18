@@ -1,5 +1,5 @@
-.user-shell { min-height:100dvh; background:#edf2fb; color:#152351; font-size:14px; line-height:1.6; }
-.user-header { position:sticky; top:0; z-index:20; background:#0a1245; color:white; border-bottom:1px solid #263573; }
+.user-shell { min-height:100dvh; background:var(--cs-canvas); color:var(--cs-navy); font-size:14px; line-height:1.6; }
+.user-header { position:sticky; top:0; z-index:20; background:var(--cs-navy); color:white; border-bottom:1px solid var(--cs-navy); }
 .user-header-inner,.user-content { max-width:1240px; margin-inline:auto; padding-inline:32px; }
 .user-header-inner { padding-block:16px 12px; }
 .user-header-top,.user-header-actions { display:flex; align-items:center; justify-content:space-between; gap:20px; min-width:0; }
@@ -10,12 +10,12 @@
 .user-header a:not(.courtsim-brand):hover { color:white; }
 .user-header-actions { justify-content:flex-end; gap:16px; font-size:12px; }
 .user-header-name { max-width:210px; overflow-wrap:anywhere; }
-.user-header button { border:1px solid #d7ff43; border-radius:999px; min-height:32px; padding:5px 14px; background:#d7ff43; color:#1b3159; font-size:11px; font-weight:750; cursor:pointer; }
-.user-header button:hover { background:#e6ff8b; }
+.user-header button { border:1px solid var(--cs-tint); border-radius:var(--cs-button-radius); min-height:32px; padding:5px 14px; background:var(--cs-tint); color:var(--cs-navy); font-size:11px; font-weight:750; cursor:pointer; }
+.user-header button:hover { background:var(--cs-accent-bright); }
 .user-header button:disabled { opacity:.55; }
 .user-navigation { display:flex; gap:8px; margin-top:10px; overflow:auto; }
-.user-navigation a { white-space:nowrap; font-size:12px; padding:5px 12px; border-radius:999px; border:1px solid transparent; }
-.user-navigation a.active { background:#ffffff17; border-color:#6270ab80; color:white; }
+.user-navigation a { white-space:nowrap; font-size:12px; padding:5px 12px; border-radius:var(--cs-button-radius); border:1px solid transparent; }
+.user-navigation a.active { background:#ffffff17; border-color:#9dc1dc80; color:var(--cs-accent-bright); }
 .user-navigation a:hover { background:#ffffff10; }
 .user-header :focus-visible { outline:3px solid #a8ceff; outline-offset:3px; }
 .user-header a.user-header-membership { font-size:10px; border-radius:999px; border:1px solid #8fa6dc60; background:#ffffff0c; color:#d4ff57; padding:4px 10px; }
@@ -30,5 +30,5 @@
 .user-header .account-menu-dropdown a:hover { background:#edf4ff; color:#2365ec; }
 .account-menu-dropdown>.account-menu-user { border-bottom:1px solid #e5ecf8; padding:8px 10px 14px; margin-bottom:6px; font-weight:700; overflow-wrap:anywhere; }
 .user-header .account-menu-dropdown button { width:100%; margin-top:5px; border-radius:7px; background:#edf3ff; color:#285cae; border-color:#dae6ff; text-align:left; }
-@media(max-width:760px) { .user-header { position:relative; }.user-header-inner,.user-content { padding-inline:16px; }.user-header-top { gap:10px; }.user-header .courtsim-brand { font-size:21px; }.user-header-actions { gap:8px; flex-wrap:wrap; }.user-header-actions>a:first-child:not(.user-header-membership) { font-size:11px; }.user-header button.account-menu-trigger { max-width:155px; padding-inline:10px; }.user-navigation { flex-wrap:nowrap; padding-bottom:3px; }.user-content { padding-block:20px 40px; }.user-content h1 { font-size:26px; }.user-content h2 { font-size:19px; } }
+@media(max-width:760px) { .user-header { position:relative; }.user-header-inner,.user-content { padding-inline:16px; }.user-header-top { gap:10px; }.user-header .courtsim-brand { font-size:21px; }.user-header-actions { gap:8px; flex-wrap:wrap; }.user-header-actions>a:first-child:not(.user-header-membership) { font-size:11px; }.user-header button.account-menu-trigger { max-width:155px; padding-inline:10px; }.user-navigation { flex-wrap:wrap; gap:4px; padding-bottom:3px; }.user-navigation a { padding-inline:8px; }.user-content { padding-block:20px 40px; }.user-content h1 { font-size:26px; }.user-content h2 { font-size:19px; } }
 @media(max-width:420px) { .user-header-top { flex-wrap:wrap; }.user-header-actions { margin-left:auto; }.user-header button.account-menu-trigger { max-width:175px; } }

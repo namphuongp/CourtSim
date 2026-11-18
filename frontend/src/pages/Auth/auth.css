@@ -1,14 +1,13 @@
-.auth-page { min-height:100dvh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:30px 20px; color:#172658; background:#edf2fc; }
+.auth-page { min-height:100dvh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:30px 20px; color:var(--cs-navy); background:var(--cs-canvas); }
 .auth-split { display:grid; grid-template-columns:43% 57%; padding:0; align-items:stretch; }
-.auth-story { display:flex; flex-direction:column; position:relative; isolation:isolate; overflow:hidden; padding:32px 40px; color:#fff; background:linear-gradient(180deg,#0b1247c9,#07104de8),url('/courtsim-courtroom-background-v2.png') 50% 30% / cover; }
-.auth-story::before { content:''; position:absolute; z-index:-1; inset:0; background:repeating-linear-gradient(90deg,transparent 0 65px,#4b79dc18 66px 90px,transparent 91px 120px); }
+.auth-story { display:flex; flex-direction:column; position:relative; isolation:isolate; overflow:hidden; padding:32px 40px; color:#fff; background:linear-gradient(0deg,#173652f5,#173652c9),url('/courtsim-landing-courtroom.webp') 50% 30% / cover; }
 .auth-story-brand { display:flex; align-items:center; gap:10px; color:white; font-size:22px; font-weight:800; text-decoration:none; width:fit-content; }
 .auth-story-emblem { position:absolute; width:100px; height:100px; top:14%; left:calc(50% - 50px); padding:20px; color:#a2b7e359; border:2px solid #a2b7e33a; border-radius:50%; }
 .auth-story-copy { margin-block:auto; padding:130px 0; }
-.auth-story-copy h2 { color:white; font-style:italic; font-weight:850; font-size:clamp(28px,3.3vw,47px); line-height:1.2; text-shadow:0 4px 0 #254a9d; }
+.auth-story-copy h2 { color:white; font-weight:700; font-size:clamp(28px,3.3vw,47px); line-height:1.2; }
 .auth-story-copy ul { list-style:none; display:grid; gap:17px; margin-top:28px; font-size:13px; color:#c2cdeb; padding:0; }
 .auth-story-copy li { display:flex; align-items:center; gap:10px; }
-.auth-story-copy svg { color:#d8ff42; width:14px; height:14px; flex-shrink:0; }
+.auth-story-copy svg { color:var(--cs-accent-bright); width:14px; height:14px; flex-shrink:0; }
 .auth-story>small { font-size:11px; color:#8d9bc7; }
 .auth-form-area { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:50px 24px 22px; min-width:0; }
 .auth-card { width:min(100%,420px); padding:30px; border:1px solid #e0e8fa; border-radius:13px; background:#fff; box-shadow:0 12px 25px #102e7b18; }
@@ -28,9 +27,9 @@
 .auth-card p { font-size:13px; line-height:1.65; margin:12px 0; }
 .auth-card [role=alert] { color:#b13e5a; background:#fff0f3; border:1px solid #fbd5df; border-radius:7px; padding:10px 12px; overflow-wrap:anywhere; }
 .auth-card [role=status] { color:#277758; background:#eafaf2; padding:10px 12px; border-radius:7px; }
-.auth-primary,.auth-secondary { width:100%; min-height:42px; display:flex; align-items:center; justify-content:center; gap:10px; padding:10px 15px; border-radius:999px; font-size:13px; font-weight:700; cursor:pointer; }
-.auth-primary { color:#fff; background:#2e79ff; border:1px solid #2e79ff; box-shadow:0 5px 12px #1c65e622; }
-.auth-primary:hover:not(:disabled) { background:#1f60de; }
+.auth-primary,.auth-secondary { width:100%; min-height:42px; display:flex; align-items:center; justify-content:center; gap:10px; padding:10px 15px; border-radius:var(--cs-button-radius); font-size:13px; font-weight:700; cursor:pointer; }
+.auth-primary { color:#fff; background:var(--cs-brand); border:1px solid var(--cs-brand); }
+.auth-primary:hover:not(:disabled) { background:var(--cs-brand-hover); }
 .auth-secondary { color:#33527c; border:1px solid #d4e0f5; background:white; }
 .auth-secondary:hover:not(:disabled) { background:#f1f6ff; border-color:#9abcf3; }
 .auth-card button:disabled { opacity:.55; cursor:not-allowed; }

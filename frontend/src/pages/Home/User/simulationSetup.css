@@ -1,0 +1,178 @@
+.simulation-setup .setup-step-tabs button {
+  min-height: 36px;
+  border-radius: var(--cs-button-radius, 8px);
+  font-size: 0.8125rem;
+}
+
+.simulation-setup .setup-step-tabs button:disabled {
+  opacity: 1;
+  color: #b6c6d6;
+  background: none;
+}
+
+.simulation-setup .setup-step-actions {
+  align-items: stretch;
+  justify-content: flex-end;
+}
+
+.simulation-setup .setup-step-actions button,
+.simulation-setup .setup-confirm-actions button {
+  min-height: 44px;
+  border-color: var(--cs-line, #d5dfe6);
+  border-radius: var(--cs-button-radius, 8px);
+  color: var(--cs-brand, #214778);
+  font-size: 0.875rem;
+  box-shadow: none;
+}
+
+.simulation-setup .setup-step-actions .setup-back {
+  margin-inline-end: auto;
+}
+
+.simulation-setup :is(.setup-step-actions, .setup-confirm-actions) .setup-next {
+  border-color: var(--cs-brand, #214778);
+  color: #fff;
+  background: var(--cs-brand, #214778);
+}
+
+.simulation-setup :is(.setup-step-actions, .setup-confirm-actions) .setup-next:not(:disabled):hover {
+  border-color: var(--cs-navy, #172e49);
+  background: var(--cs-navy, #172e49);
+}
+
+.simulation-setup :is(.setup-step-actions, .setup-confirm-actions) .setup-next:disabled {
+  opacity: 1;
+  border-color: var(--cs-line, #d5dfe6);
+  color: var(--cs-muted, #4c5e71);
+  background: #eef2f5;
+}
+
+.simulation-setup :is(.setup-step-actions, .setup-confirm-actions) svg {
+  flex-shrink: 0;
+}
+
+.simulation-setup .setup-step-title > span {
+  flex-shrink: 0;
+  background: var(--cs-brand, #214778);
+}
+
+.simulation-setup .setup-step-title:focus-visible,
+.simulation-setup .setup-step-actions button:focus-visible,
+.simulation-setup .setup-option:focus-visible {
+  outline: 2px solid var(--cs-brand, #214778);
+  outline-offset: 3px;
+}
+
+.simulation-setup .setup-date-note {
+  color: var(--cs-muted, #4c5e71);
+  background: var(--cs-tint, #edf6f3);
+}
+
+.simulation-setup .setup-summary dt,
+.simulation-setup .setup-preparation p,
+.simulation-setup .setup-step-description {
+  color: var(--cs-muted, #4c5e71);
+}
+
+.simulation-setup .setup-summary dd {
+  color: var(--cs-navy, #172e49);
+}
+
+body .user-shell .simulation-setup .setup-aside {
+  background: var(--cs-surface, #fff) !important;
+}
+
+body .user-shell .simulation-setup .membership-summary {
+  border-color: var(--cs-line, #d5dfe6);
+  background: var(--cs-tint, #edf6f3);
+}
+
+body .user-shell .simulation-setup .setup-option.is-selected {
+  border-color: var(--cs-accent, #265b53) !important;
+  background: var(--cs-tint, #edf6f3) !important;
+  box-shadow: 0 0 0 1px var(--cs-accent, #265b53);
+}
+
+body .user-shell .simulation-setup .setup-case-card .setup-case-card-title {
+  color: var(--cs-navy, #172e49) !important;
+  font-size: 1rem;
+}
+
+body .user-shell .simulation-setup .setup-option p {
+  color: var(--cs-muted, #4c5e71) !important;
+}
+
+body .user-shell .simulation-setup .setup-case-card .setup-case-card-summary {
+  color: var(--cs-muted, #4c5e71) !important;
+  font-size: 0.875rem;
+}
+
+.simulation-setup .setup-case-labels {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.18rem 0.7rem;
+  margin: 0.3rem 0;
+}
+
+body .user-shell .simulation-setup .setup-case-labels span {
+  padding: 0;
+  border-radius: 0;
+  color: var(--cs-muted, #4c5e71) !important;
+  background: none;
+  font-size: 0.75rem;
+}
+
+.simulation-setup .setup-case-category::first-letter {
+  text-transform: uppercase;
+}
+
+body .user-shell .simulation-setup .setup-case-labels :is(.setup-case-status, .setup-case-selected) {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--cs-accent, #265b53) !important;
+  font-weight: 700;
+}
+
+body .user-shell .simulation-setup .setup-case-labels .setup-case-status.is-warning {
+  color: #805311 !important;
+}
+
+.simulation-setup .setup-option .setup-case-meta {
+  border-top-style: solid;
+  border-color: var(--cs-line, #d5dfe6);
+  color: var(--cs-muted, #4c5e71) !important;
+}
+
+@media (max-width: 760px) {
+  .simulation-setup .setup-step-actions {
+    position: sticky;
+    z-index: 2;
+    bottom: 0;
+    gap: 0.5rem;
+    margin-top: 0.65rem;
+    padding: 0.45rem 0.5rem max(0.45rem, env(safe-area-inset-bottom));
+    border: 1px solid var(--cs-line, #d5dfe6);
+    border-radius: 8px;
+    background: var(--cs-surface, #fff);
+    box-shadow: 0 -4px 14px rgb(23 46 73 / 9%);
+  }
+
+  .simulation-setup .setup-step-actions .setup-next {
+    flex: 1;
+  }
+
+  .simulation-setup .setup-card {
+    padding: 1rem;
+  }
+
+  .simulation-setup .setup-card :is(input, select, textarea, button, a) {
+    scroll-margin-bottom: 4.5rem;
+  }
+
+  .simulation-setup .setup-date {
+    min-width: 0;
+    font-size: 1rem;
+  }
+}
