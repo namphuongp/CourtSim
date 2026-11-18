@@ -5,22 +5,43 @@ import { dashboardSummary, formatScore, practiceSuggestion } from '../../../comp
 import ProgressChart from '../../../components/dashboard/ProgressChart';
 import SessionCard from '../../../components/dashboard/SessionCard';
 import RecentSessions from '../../../components/dashboard/RecentSessions';
-import { CheckCircle2, Gavel, ChartNoAxesCombined, MessagesSquare } from 'lucide-react';
+import StepGuide from '../../../components/StepGuide';
+import { CheckCircle2, CircleHelp, Gavel, ChartNoAxesCombined, MessagesSquare } from 'lucide-react';
 import { LoadingState } from '../../../components/WorkspaceStates';
 import { useCurrentUser } from '../../../services/auth';
 import { PRACTICE_CASES_PATH } from '../../../services/simulation';
 import '../../../components/dashboard/dashboard.css';
 
+const guideSteps = [
+  {
+    target: '.dashboard-cases-link',
+    title: 'Chọn vụ án',
+    text: 'Bấm Chọn vụ án để đọc hồ sơ, xem chứng cứ và chọn vai luật sư. Phiên sẽ mở sau khi bạn xác nhận.',
+  },
+  {
+    target: '.user-navigation a[href="/dashboard/sessions"]',
+    title: 'Tiếp tục phiên đang luyện',
+    text: 'Mở Phiên đang học để quay lại một phiên đã bắt đầu. Hướng dẫn trong phòng xử án sẽ chỉ cho bạn cách đọc lời thoại và gửi lập luận.',
+  },
+  {
+    target: '.user-navigation a[href="/dashboard/history"]',
+    title: 'Xem kết quả đã lưu',
+    text: 'Mở Lịch sử để xem lại các phiên đã hoàn thành, điểm và nhận xét về phần trình bày của bạn.',
+  },
+];
+
 function savedGuideDismissal(key) {
-  try { return localStorage.getItem(key) === '1'; } catch { return false; }
+  try { return Boolean(key) && localStorage.getItem(key) === '1'; } catch { return false; }
 }
 
 export default function Dashboard() {
   const user = useCurrentUser();
-  const casesLink = useRef(null);
-  const [dismissedFor, setDismissedFor] = useState(null);
+  const guideButton = useRef(null);
+  const [guideState, setGuideState] = useState(null);
   const guideKey = user?.id ? `courtsim.dashboard-guide.v1:${user.id}` : null;
-  const showGuide = guideKey && dismissedFor !== guideKey && !savedGuideDismissal(guideKey);
+  const currentGuide = guideState?.key === guideKey ? guideState : null;
+  const skipNext = currentGuide?.skipNext ?? savedGuideDismissal(guideKey);
+  const showGuide = guideKey && (currentGuide?.open ?? !skipNext);
   const { sessions, loading, error, retry } = useDashboardSessions();
   const summary = useMemo(() => dashboardSummary(sessions), [sessions]);
   const suggestion = useMemo(() => practiceSuggestion(summary.completed), [summary]);
@@ -32,10 +53,16 @@ export default function Dashboard() {
     ['Tổng lượt tranh tụng', summary.totalTurns, MessagesSquare],
   ];
 
-  function hideGuide() {
-    try { localStorage.setItem(guideKey, '1'); } catch { /* Vẫn đóng hướng dẫn trong lần xem này. */ }
-    setDismissedFor(guideKey);
-    casesLink.current?.focus();
+  function toggleGuide(open) {
+    setGuideState({ key: guideKey, open, skipNext });
+  }
+
+  function updateGuidePreference(checked, open = true) {
+    try {
+      if (checked) localStorage.setItem(guideKey, '1');
+      else localStorage.removeItem(guideKey);
+    } catch { /* Vẫn giữ lựa chọn trong lần xem này. */ }
+    setGuideState({ key: guideKey, open, skipNext: checked });
   }
 
   return <section className="practice-dashboard space-y-6">
@@ -46,20 +73,13 @@ export default function Dashboard() {
           {nextSession ? 'Tiếp tục phiên đang luyện hoặc chọn một vụ án khác.' : 'Chọn một vụ án và vai luật sư. Phiên sẽ mở sau khi bạn xác nhận.'}
         </p>
       </div>
-      <Link ref={casesLink} to={PRACTICE_CASES_PATH} className={nextSession ? 'dashboard-start-secondary' : 'dashboard-primary'}>Chọn vụ án</Link>
-    </header>
-    {showGuide && <section className="dashboard-card dashboard-getting-started" aria-labelledby="first-practice-heading">
-      <div className="dashboard-guide-header">
-        <h2 id="first-practice-heading">Cách bắt đầu luyện tập</h2>
-        <button type="button" onClick={hideGuide}>Ẩn hướng dẫn</button>
+      <div className="dashboard-header-actions">
+        <button ref={guideButton} type="button" className="dashboard-guide-trigger" aria-haspopup="dialog" onClick={() => toggleGuide(true)}>
+          <CircleHelp size={16} aria-hidden="true" /> Hướng dẫn nhanh
+        </button>
+        <Link to={PRACTICE_CASES_PATH} className={`dashboard-cases-link ${nextSession ? 'dashboard-start-secondary' : 'dashboard-primary'}`}>Chọn vụ án</Link>
       </div>
-      <ol className="dashboard-first-steps">
-        <li><strong>Chọn vụ án</strong><p>Đọc tóm tắt và xem chứng cứ trong hồ sơ.</p></li>
-        <li><strong>Chọn vai luật sư</strong><p>Chọn bên bạn muốn bảo vệ rồi xác nhận mở phiên.</p></li>
-        <li><strong>Trình bày và phản biện</strong><p>Làm theo hướng dẫn trong phòng xử án. Xem nhận xét khi kết thúc.</p></li>
-      </ol>
-      <Link to="/guide">Xem hướng dẫn đầy đủ</Link>
-    </section>}
+    </header>
     {loading ? <LoadingState>Đang tải không gian luyện tập...</LoadingState> : error ? (
       <div role="alert" className="dashboard-card dashboard-alert">{error} <button onClick={retry} className="text-blue-400 underline">Thử lại</button></div>
     ) : sessions.length ? <>
@@ -90,6 +110,15 @@ export default function Dashboard() {
         </section>
       </div>
       <RecentSessions sessions={sessions} />
-    </> : !showGuide && <p className="dashboard-card dashboard-empty">Chọn vụ án để bắt đầu phiên luyện tập đầu tiên.</p>}
+    </> : <p className="dashboard-card dashboard-empty">Chọn vụ án để bắt đầu phiên luyện tập đầu tiên.</p>}
+    {showGuide && <StepGuide
+      steps={guideSteps}
+      reopenNote="Bạn có thể mở lại bằng nút Hướng dẫn nhanh."
+      returnFocusRef={guideButton}
+      onClose={() => toggleGuide(false)}
+      onFinish={() => updateGuidePreference(true, false)}
+      skipNext={skipNext}
+      onSkipNextChange={updateGuidePreference}
+    />}
   </section>;
 }

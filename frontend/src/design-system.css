@@ -1,8 +1,11 @@
 /* Shared visual treatment, scoped to CourtSim page roots. Business/data modules are unchanged. */
 :root {
   --cs-navy: #173652;
-  --cs-brand: #155aab;
-  --cs-brand-hover: #114785;
+  --cs-brand: #0d5ac4;
+  --cs-brand-hover: #084aa5;
+  --cs-brand-surface: #1266de;
+  --cs-on-brand: #fff;
+  --cs-on-brand-muted: #edf5ff;
   --cs-accent: #08776b;
   --cs-accent-bright: #8ce8d0;
   --cs-tint: #daf7ee;
@@ -20,7 +23,7 @@
 
 body { background:var(--cs-canvas); }
 body .user-shell .practice-dashboard::before,body .account-page::before { display:none; }
-body .user-shell .practice-dashboard>header,body .account-page .account-hero,body .checkout-shell .checkout-hero { padding:22px 26px; border:1px solid var(--cs-navy); border-radius:var(--cs-panel-radius); background:var(--cs-navy); box-shadow:none; margin-bottom:24px; }
+body .user-shell .practice-dashboard>header,body .account-page .account-hero,body .checkout-shell .checkout-hero { padding:22px 26px; border:1px solid var(--cs-brand-surface); border-radius:var(--cs-panel-radius); background:var(--cs-brand-surface); box-shadow:none; margin-bottom:24px; }
 body .user-shell .practice-dashboard>header::after,body .account-page .account-hero::after,body .checkout-shell .checkout-hero::after { display:none; }
 body .user-shell .practice-dashboard>header h1,body .account-page .account-hero h1 { font-size:28px; font-weight:800; }
 body .user-shell .practice-dashboard>header p,body .account-page .account-subtitle { font-size:13px; }
@@ -33,9 +36,9 @@ body .user-shell .practice-dashboard .dashboard-primary,body .user-shell .simula
 body .user-shell .practice-dashboard>header .dashboard-primary,body .user-shell .simulation-setup .setup-guide-link { background:var(--cs-tint); color:var(--cs-navy)!important; }
 body .user-shell .practice-dashboard .dashboard-resume .dashboard-card { border-color:#a6d8cd!important; }
 body .user-shell .practice-dashboard a:not(.dashboard-primary,.dashboard-start-secondary),body .user-shell .practice-dashboard .dashboard-card .text-blue-400 { color:var(--cs-brand)!important; }
-body .user-shell .practice-dashboard>header p { color:#deebf6!important; }
-body .user-shell .practice-dashboard .dashboard-start-secondary { display:inline-flex; align-items:center; justify-content:center; min-height:40px; padding:8px 16px; color:white; border:1px solid #9db5cd; border-radius:var(--cs-button-radius); font-size:13px; font-weight:650; }
-body .user-shell .practice-dashboard .dashboard-start-secondary:hover { background:#ffffff16; }
+body .user-shell .practice-dashboard>header p,body .account-page .account-subtitle { color:var(--cs-on-brand-muted)!important; }
+body .user-shell .practice-dashboard .dashboard-start-secondary { display:inline-flex; align-items:center; justify-content:center; min-height:40px; padding:8px 16px; color:var(--cs-on-brand); border:1px solid #d6e8ff; border-radius:var(--cs-button-radius); font-size:13px; font-weight:650; }
+body .user-shell .practice-dashboard .dashboard-start-secondary:hover { background:var(--cs-brand-hover); }
 body .user-shell .practice-dashboard .dashboard-primary:hover { background:var(--cs-brand-hover); }
 body .user-shell .practice-dashboard>header .dashboard-primary:hover { background:var(--cs-accent-bright); }
 body .user-shell .practice-dashboard input:focus,body .user-shell .practice-dashboard select:focus,body .account-page input:focus { border-color:#3c83ff; box-shadow:0 0 0 3px #367dff14; }
@@ -121,11 +124,11 @@ body .user-shell .simulation-setup .membership-summary h2 { font-size:13px; }
 body .user-shell .simulation-setup .membership-summary p { font-size:11px; line-height:1.7; }
 body .user-shell .simulation-setup .membership-actions { gap:7px; margin-top:12px; }
 body .user-shell .simulation-setup .membership-actions a { font-size:10px; padding:5px 9px; min-height:30px; }
-body .user-shell .user-header a.user-header-membership { background:#ffffff0c; color:var(--cs-accent-bright); border:1px solid #8fa6dc60; border-radius:var(--cs-button-radius); }
+body .user-shell .user-header a.user-header-membership { background:var(--cs-brand-hover); color:var(--cs-on-brand); border:1px solid #c0dbff; border-radius:var(--cs-button-radius); }
 body .account-page .account-layout { grid-template-columns:180px minmax(0,1fr); gap:24px; }
 body .account-page .account-layout>nav { top:120px; padding:8px; border-radius:10px; background:white; box-shadow:0 5px 12px #1127670c; border-color:#e0e7f8; }
 body .account-page .account-layout>nav a { padding:10px 12px; border-radius:7px; font-size:12px; }
-body .account-page .account-layout>nav a.active { background:#2c78ff; color:white; box-shadow:none; }
+body .account-page .account-layout>nav a.active { background:var(--cs-brand); color:var(--cs-on-brand); box-shadow:none; }
 body .account-page .account-card { padding:25px; }
 body .account-page .account-card h2 { font-size:19px; }
 body .account-page .account-avatar { width:48px; height:48px; font-size:22px; background:#edf4ff; color:#2e73ef; border-color:#d0e1ff; box-shadow:none; }
@@ -134,9 +137,9 @@ body .account-page .account-primary:hover,body .account-proof .account-primary:h
 body .account-page .account-card input { border-radius:7px; border-color:#d5e0f5; }
 body .account-page button { font-size:12px; }
 .membership-account { display:grid; gap:22px; }
-body .account-page .membership-account>.membership-summary { margin:0; padding:28px; color:#cbdcff; border-radius:13px; border:1px solid #3177ed; background:linear-gradient(125deg,#1639bd,#0860ed); box-shadow:0 8px 22px #153eac20; }
+body .account-page .membership-account>.membership-summary { margin:0; padding:28px; color:var(--cs-on-brand-muted); border-radius:var(--cs-panel-radius); border:1px solid var(--cs-brand-surface); background:var(--cs-brand-surface); }
 body .account-page .membership-account>.membership-summary h2 { font-size:30px; font-style:italic; color:white; }
-body .account-page .membership-account>.membership-summary a { color:var(--cs-accent-bright); }
+body .account-page .membership-account>.membership-summary a { color:var(--cs-on-brand); }
 body .account-page .membership-account .membership-actions a { border-radius:999px; color:#2b6ae1; background:white; border-color:white; text-decoration:none; font-size:11px; }
 body .account-page .membership-entitlements { margin:0; }
 .membership-entitlements>div { display:flex; align-items:center; gap:12px; padding:15px 0; border-bottom:1px solid #edf1f9; font-size:12px; }
@@ -177,19 +180,19 @@ body .result-page .score-transcript-link { color:#2b70e4!important; background:w
 body .checkout-shell { background:var(--cs-canvas); }
 body .checkout-shell .checkout-hero { color:white; }
 body .checkout-shell .checkout-hero h1 { color:white; font-size:28px; }
-body .checkout-shell .checkout-hero p { color:#c2d6ff; font-size:13px; }
-body .checkout-shell .checkout-hero aside { background:#ffffff12; border-color:#ffffff20; border-radius:10px; }
-body .checkout-shell .checkout-hero aside strong { color:var(--cs-accent-bright); font-size:30px; }
+body .checkout-shell .checkout-hero p { color:var(--cs-on-brand-muted); font-size:13px; }
+body .checkout-shell .checkout-hero aside,body .checkout-shell .checkout-eyebrow { color:var(--cs-on-brand); background:var(--cs-brand-hover); border-color:#c0dbff; border-radius:10px; }
+body .checkout-shell .checkout-hero aside strong { color:var(--cs-on-brand); font-size:30px; }
 body .checkout-shell .checkout-primary { color:white; border-color:var(--cs-brand); background:var(--cs-brand); box-shadow:none; border-radius:var(--cs-button-radius); min-height:42px; }
 body .checkout-shell .checkout-card { padding:26px; }
 body .checkout-shell .checkout-card h2 { font-size:20px; }
 body .checkout-shell .checkout-method-box { background:#f5f8ff; border-color:#dce7fb; border-radius:10px; }
 body .checkout-shell .checkout-method-box svg { color:#2e7aff; }
-body .checkout-shell .checkout-order-actions a { color:white; border-color:#2d77ff; background:#2d77ff; }
+body .checkout-shell .checkout-order-actions a { color:var(--cs-on-brand); border-color:var(--cs-brand); background:var(--cs-brand); }
 body .checkout-shell .checkout-back { color:#4779cf; font-size:12px; }
 body .user-shell .skill-card { border-radius:12px; background:#fff; box-shadow:0 6px 14px #182e7410; border-color:#dfe7fa; }
 body .guide-page { background:var(--cs-canvas); }
-body .guide-page .guide-hero { background:var(--cs-navy); }
+body .guide-page .guide-hero { background:var(--cs-brand-surface); }
 body .guide-page .guide-card,body .guide-page .guide-notes,body .guide-page .guide-argument { border-radius:13px; box-shadow:0 6px 14px #182e7410; background:white; border-color:#dfe7fa; }
 body .guide-page .guide-icon,body .guide-page .guide-card:nth-child(even) .guide-icon { background:#2878ff; }
 body .guide-page .guide-primary { background:var(--cs-tint); color:var(--cs-navy); border:0; border-radius:var(--cs-button-radius); box-shadow:none; }
@@ -198,11 +201,10 @@ body .guide-page .guide-argument li::before { background:#2e7aff; }
 body .guide-page .guide-notes li::before { background:#3e89ff; box-shadow:0 0 0 4px #edf4ff; }
 body .privacy-page { max-width:860px; }
 body .privacy-card { border-radius:14px; border-color:#dfe7fa; box-shadow:0 6px 14px #182e7410; }
-body .consent-banner { background:var(--cs-navy); color:#d5e4ef; border-color:var(--cs-navy); border-radius:var(--cs-panel-radius); }
+body .consent-banner { background:var(--cs-brand-surface); color:var(--cs-on-brand-muted); border-color:var(--cs-brand-surface); border-radius:var(--cs-panel-radius); }
 body .consent-banner .consent-copy strong { color:white; }
-body .consent-banner .consent-copy a { color:#c3d9ff; }
-body .consent-banner>svg { color:var(--cs-accent-bright); }
-body .consent-banner .consent-actions button { min-height:36px; background:#ffffff12; color:#e0e9ff; border-color:#889ece40; border-radius:999px; font-size:12px; }
+body .consent-banner .consent-copy a,body .consent-banner>svg { color:var(--cs-on-brand); }
+body .consent-banner .consent-actions button { min-height:36px; background:var(--cs-brand-hover); color:var(--cs-on-brand); border-color:#c0dbff; border-radius:var(--cs-button-radius); font-size:12px; }
 body .consent-banner .consent-actions .consent-accept { color:var(--cs-navy); background:var(--cs-tint); border-color:var(--cs-tint); }
 body .privacy-footer { background:var(--cs-canvas); color:var(--cs-muted); }
 body .feedback-modal { border-color:#d6e3ff; border-radius:15px; box-shadow:0 20px 70px #020b4a35; }
@@ -212,11 +214,12 @@ body .feedback-modal .feedback-modal-close:hover { border-color:#8db4ff; color:#
 body .admin-shell { background:var(--cs-canvas); font-family:inherit; --admin-border:var(--cs-line); color:var(--cs-navy); }
 body .admin-shell .admin-header { height:65px; padding-left:245px; border:0; background:var(--cs-canvas); }
 body .admin-shell .admin-header>.courtsim-brand { color:white; }
-body .admin-shell .admin-sidebar { top:0; z-index:30; width:210px; background:var(--cs-navy); color:#d5e4ef; border:0; padding:90px 14px 25px; }
-body .admin-shell .admin-sidebar>p { color:#677fad; font-size:10px; }
-body .admin-shell .admin-sidebar a { padding:11px 13px; font-size:12px; color:#b6c5e9; border-radius:8px; }
-body .admin-shell .admin-sidebar a.active { background:var(--cs-brand); color:white; box-shadow:inset 3px 0 var(--cs-accent-bright); }
-body .admin-shell .admin-sidebar a:hover { background:#1a2e70; text-decoration:none; }
+body .admin-shell .admin-sidebar { top:0; z-index:30; width:210px; background:var(--cs-brand-surface); color:var(--cs-on-brand-muted); border:0; padding:90px 14px 25px; }
+body .admin-shell .admin-sidebar>p { color:var(--cs-on-brand-muted); font-size:10px; }
+body .admin-shell .admin-sidebar a { padding:11px 13px; font-size:12px; color:var(--cs-on-brand-muted); border-radius:8px; }
+body .admin-shell .admin-sidebar a.active { background:var(--cs-brand-hover); color:var(--cs-on-brand); box-shadow:inset 3px 0 #c0dbff; }
+body .admin-shell .admin-sidebar a:hover { background:var(--cs-brand-hover); text-decoration:none; }
+body .admin-shell .admin-sidebar :focus-visible { outline-color:var(--cs-on-brand); }
 body .admin-shell .admin-header .courtsim-brand { position:fixed; z-index:40; top:22px; left:22px; color:white; font-size:22px; }
 body .admin-shell .admin-header .courtsim-brand span { color:white; }
 body .admin-shell .admin-header .courtsim-mark { width:30px; height:30px; }

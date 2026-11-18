@@ -428,9 +428,11 @@
 .guide-page .guide-hero>.guide-container { width:calc(100% - 56px); }
 .guide-page .guide-hero-grid { padding-top:26px; gap:35px; }
 .guide-page .guide-hero h1 { font-size:clamp(28px,3vw,40px); line-height:1.2; }
-.guide-page .guide-hero::before { opacity:.3; filter:grayscale(1); }
-.guide-page .guide-hero::after { background:linear-gradient(100deg,#091646a0,#1551c060); }
+.guide-page .guide-hero::before,.guide-page .guide-hero::after { display:none; }
+.guide-page .guide-hero p,.guide-page .guide-back { color:var(--cs-on-brand-muted); }
 .guide-page .guide-hero p { font-size:12px; }
+.guide-page .guide-hero .guide-eyebrow { color:var(--cs-on-brand); background:var(--cs-brand-hover); border-color:#c0dbff; }
+.guide-page .guide-hero :focus-visible { outline-color:var(--cs-on-brand); }
 .guide-page .guide-body { padding:24px 0 45px; gap:20px; max-width:1176px; }
 .guide-page .guide-card { min-height:0; padding:22px; }
 .guide-page .guide-card::before { display:none; }

@@ -126,48 +126,6 @@ body:has(.courtroom-page) .privacy-footer { display:none !important; }
   .speech-content { max-height:clamp(80px,18dvh,170px); }
   .character-opponent .character-name,.character-learner .character-name { top:72%; }
 }
-.court-guide .guide-progress { color:#64748b; font-size:13px; }
-.guide-step { margin:18px 0; line-height:1.8; }
-.guide-step h3 { font-size:20px; font-weight:700; margin-bottom:12px; }
-.guide-dots,.guide-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:22px; }
-.guide-dots button,.guide-actions button { border:1px solid #9eb6d3; color:#245ca8; background:#eff6ff; border-radius:8px; padding:8px 13px; }
-.guide-dots button[aria-current=step],.guide-actions button:last-child { background:#225fbb; color:white; }
-.guide-actions { justify-content:space-between; }
-.guide-actions button:disabled { opacity:.45; }
-.court-tour { position:fixed; inset:0; z-index:70; }
-.tour-blocker { position:absolute; inset:0; }
-.tour-spotlight { position:fixed; border:3px solid #60a5fa; border-radius:12px; box-shadow:0 0 0 9999px #0f172aa8; pointer-events:none; transition:top 180ms ease,left 180ms ease,width 180ms ease,height 180ms ease; }
-.tour-card { position:fixed; max-height:calc(100dvh - 24px); overflow-y:auto; border:1px solid #b5ccec; border-radius:14px; background:white; color:#183047; padding:16px; box-shadow:0 12px 40px #0f172a40; transition:top 180ms ease,left 180ms ease; }
-.tour-card header { display:flex; justify-content:space-between; align-items:center; }
-.tour-card header .tour-close { width:36px; height:36px; display:grid; place-items:center; flex-shrink:0; padding:0; border:1px solid #b7c9dc; border-radius:10px; background:#fff; color:#24506f; line-height:1; }
-.tour-card header .tour-close:hover { background:#eefbfc; border-color:#20c5cf; color:#087d91; }
-.tour-card header .tour-close svg { display:block; }
-.tour-card .guide-step { margin:12px 0; line-height:1.65; font-size:14px; }
-.tour-card .guide-step h3 { font-size:17px; margin-bottom:8px; }
-.tour-card .guide-dots,.tour-card .guide-actions { margin-top:12px; gap:6px; }
-.tour-card .guide-dots button { padding:5px 10px; }
-
-.tour-card .guide-footer {
-  display: grid;
-  gap: 8px;
-}
-
-.tour-card .guide-skip {
-  justify-self: start;
-  min-height: 36px;
-  padding: 4px 6px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: #405b70;
-  font-size: .8125rem;
-  font-weight: 600;
-  text-align: left;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.tour-card .guide-skip:hover { background: #edf3f6; color: #19385f; }
 /* Cảnh báo và nút tra cứu phải đủ tương phản trên panel nền sáng. */
 .courtroom-page .study-panel .text-amber-400 { color:#85550d; }
 .courtroom-page .study-panel .bg-blue-600 { color:#fff; }
@@ -498,10 +456,6 @@ body .courtroom-page .dossier-tabs button { font-size:12px; border-radius:999px;
 body .courtroom-page .dossier-tabs button[aria-selected=true] { background:#2d77ff; color:white; border-color:#2d77ff; }
 body .courtroom-page dialog { border-color:#d0dfff; border-radius:16px; }
 body .courtroom-page dialog::backdrop { background:#030c3bb8; backdrop-filter:blur(3px); }
-body .courtroom-page .tour-spotlight { border-color:#74d3bb; box-shadow:0 0 0 9999px #111e32b8; }
-body .courtroom-page .guide-progress { color:#3764bd; background:#edf5ff; }
-body .courtroom-page .tour-card { border-radius:12px; border-color:#bdd2ff; box-shadow:0 15px 35px #020a4340; }
-body .courtroom-page .guide-actions button:last-child { border-radius:var(--cs-button-radius); background:var(--cs-brand); color:white; border-color:var(--cs-brand); }
 @media(min-width:851px) {
   body .courtroom-page { height:100vh !important; height:100dvh !important; max-height:100vh !important; max-height:100dvh !important; min-height:0 !important; overflow:hidden !important; }
   body .courtroom-workspace { flex:1 1 0% !important; min-height:0 !important; height:100% !important; } body .court-stage-section { height:100% !important; min-height:0 !important; } body .court-viewport { height:100% !important; min-height:0 !important; } body .court-scene { height:100% !important; min-height:0 !important; aspect-ratio:auto !important; }
@@ -1855,8 +1809,8 @@ body .court-speech.court-dialogue-stream {
 }
 
 .dialogue-stream-header {
-  background: #203951;
-  border-color: #425971;
+  background: var(--cs-brand);
+  border-color: #a5caff;
 }
 
 .dialogue-stream-title {

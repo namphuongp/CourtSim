@@ -221,9 +221,8 @@
 
 .landing-hero {
   padding-block: clamp(2.8rem, 6vw, 5.5rem);
-  color: var(--landing-navy);
-  background: #e4f2ff;
-  border-bottom: 1px solid #cde5fb;
+  color: var(--cs-on-brand);
+  background: var(--cs-brand-surface);
 }
 
 .hero-grid {
@@ -246,7 +245,7 @@
 .hero-subheading {
   max-width: 43ch;
   margin: 1.25rem 0 0;
-  color: #244866;
+  color: var(--cs-on-brand-muted);
   font-size: clamp(1rem, 1.5vw, 1.16rem);
 }
 
@@ -260,23 +259,31 @@
 
 .hero-note {
   margin: .9rem 0 0;
-  color: var(--landing-muted);
+  color: var(--cs-on-brand-muted);
   font-size: .83rem;
 }
 
-.landing-hero .landing-secondary {
-  border-color: #93b8db;
-  background: #f6fbff;
+.landing-hero .landing-cta {
+  color: var(--cs-brand-hover);
+  background: var(--landing-white);
 }
 
-.landing-hero .landing-secondary:hover { background: var(--landing-white); border-color: var(--landing-blue); }
+.landing-hero .landing-cta:hover { background: var(--cs-on-brand-muted); }
+
+.landing-hero .landing-secondary {
+  border-color: #d6e8ff;
+  color: var(--cs-on-brand);
+}
+
+.landing-hero .landing-secondary:hover { background: var(--cs-brand-hover); }
+.landing-hero :focus-visible, .landing-footer :focus-visible { outline-color: var(--cs-on-brand); }
 
 .hero-photo {
   display: block;
   width: 100%;
   height: auto;
   aspect-ratio: 1.42;
-  border: 1px solid #adcbe7;
+  border: 1px solid #a5caff;
   border-radius: 12px;
   object-fit: cover;
 }
@@ -515,8 +522,8 @@
 
 .landing-footer {
   padding: 3rem 0 1.5rem;
-  color: #d1dce7;
-  background: var(--landing-navy);
+  color: var(--cs-on-brand-muted);
+  background: var(--cs-brand);
 }
 
 .landing-footer-grid {

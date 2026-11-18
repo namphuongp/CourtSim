@@ -8,28 +8,28 @@ const sessions = [
   { _id: 'other', status: 'ongoing', created_at: '2026-01-10', case_id: { title: 'Phiên khác' }, turn_count: 0 },
 ];
 
-async function api(page, data, failed = false) {
+async function api(page, data, failed = false, userId = 'test') {
   await page.route('**/api/**', route => {
-    if (new URL(route.request().url()).pathname.endsWith('/auth/me')) return route.fulfill({ json: { user: { id: 'test', full_name: 'Người học', role: 'user' } } });
+    if (new URL(route.request().url()).pathname.endsWith('/auth/me')) return route.fulfill({ json: { user: { id: userId, full_name: 'Người học', role: 'user' } } });
     return route.fulfill(failed ? { status: 503, json: { message: 'Chưa tải được dữ liệu.' } } : { json: { data } });
   });
+}
+
+function seedGuideDismissal(page) {
+  return page.addInitScript(() => localStorage.setItem('courtsim.dashboard-guide.v1:test', '1'));
 }
 
 test('dashboard: điểm thật theo API, chart, tiếp tục, bộ lọc và responsive', async ({ page }, info) => {
   await page.setViewportSize(info.project.name === 'mobile'
     ? { width: 390, height: 664 }
     : { width: 1440, height: 900 });
+  await seedGuideDismissal(page);
   await api(page, sessions);
   await page.goto('/dashboard');
   await expect(page.getByRole('heading', { name: 'Không gian luyện tập của bạn' })).toBeVisible();
-  const guide = page.getByRole('region', { name: 'Cách bắt đầu luyện tập', exact: true });
-  await expect(guide).toBeVisible();
-  await guide.getByRole('button', { name: 'Ẩn hướng dẫn', exact: true }).click();
-  await expect(guide).toHaveCount(0);
-  await page.reload();
   const metrics = page.locator('.dashboard-metrics');
   await expect(metrics).toContainText('86,6/100');
-  await expect(guide).toHaveCount(0);
+  await expect(page.getByRole('dialog', { name: 'Chọn vụ án', exact: true })).toHaveCount(0);
   await expect(metrics).toContainText('Tổng lượt tranh tụng9');
   await expect(page.getByRole('img', { name: /Biểu đồ điểm của 2 phiên/ })).toBeVisible();
   const resume = page.getByRole('region', { name: 'Tiếp tục luyện tập', exact: true });
@@ -51,6 +51,7 @@ test('dashboard: điểm thật theo API, chart, tiếp tục, bộ lọc và re
 });
 
 test('dashboard: không fake chart khi rỗng, báo lỗi và thử lại', async ({ page }) => {
+  await seedGuideDismissal(page);
   await api(page, [], true);
   await page.goto('/dashboard');
   await expect(page.getByRole('alert')).toBeVisible();
@@ -58,21 +59,25 @@ test('dashboard: không fake chart khi rỗng, báo lỗi và thử lại', asyn
   await api(page, []);
   await page.getByRole('button', { name: 'Thử lại' }).click();
   await expect(page.getByRole('link', { name: 'Chọn vụ án', exact: true })).toHaveAttribute('href', '/dashboard/setup?start=cases');
-  await expect(page.getByRole('heading', { name: 'Cách bắt đầu luyện tập', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Hướng dẫn nhanh', exact: true })).toBeVisible();
   await expect(page.locator('.dashboard-metrics')).toHaveCount(0);
   await expect(page.getByRole('img', { name: /Biểu đồ điểm/ })).toHaveCount(0);
 });
 
-test('dashboard: người học mới thấy hướng dẫn ngay khi đăng nhập và mở danh sách vụ án', async ({ page }, info) => {
+test('dashboard: hướng dẫn tự mở lúc đăng nhập, có thể tắt tự mở và vẫn xem lại trước khi chọn vụ án', async ({ page }, info) => {
   await page.setViewportSize(info.project.name === 'mobile'
     ? { width: 390, height: 664 }
     : { width: 1440, height: 900 });
   const user = { id: 'first-learner', full_name: 'Người học mới', role: 'user' };
   const courtCase = { _id: '123456789012345678901234', title: 'Hồ sơ luyện tập đầu tiên', category: 'dân sự', summary: 'Tình huống kiểm thử.' };
+  let authenticated = false;
   await page.route('**/api/**', route => {
     const path = new URL(route.request().url()).pathname;
-    if (path.endsWith('/auth/me')) return route.fulfill({ status: 401, json: {} });
-    if (path.endsWith('/auth/login')) return route.fulfill({ json: { user } });
+    if (path.endsWith('/auth/me')) return route.fulfill(authenticated ? { json: { user } } : { status: 401, json: {} });
+    if (path.endsWith('/auth/login')) {
+      authenticated = true;
+      return route.fulfill({ json: { user } });
+    }
     if (path.endsWith('/cases')) return route.fulfill({ json: { data: [courtCase], pagination: { total: 1 } } });
     return route.fulfill({ json: { data: [] } });
   });
@@ -81,12 +86,78 @@ test('dashboard: người học mới thấy hướng dẫn ngay khi đăng nh�
   await page.getByLabel('Mật khẩu', { exact: true }).fill('Fixture-only-password-123');
   await page.getByRole('button', { name: 'Đăng nhập', exact: true }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
-  const guide = page.getByRole('region', { name: 'Cách bắt đầu luyện tập', exact: true });
+  const guide = page.getByRole('dialog', { name: 'Chọn vụ án', exact: true });
+  const close = guide.getByRole('button', { name: 'Đóng hướng dẫn', exact: true });
+  const next = guide.getByRole('button', { name: 'Tiếp theo →', exact: true });
+  const skipLabel = 'Không hiện lại hướng dẫn này';
+  const skip = guide.getByRole('checkbox', { name: skipLabel, exact: true });
+  await expect(guide).toBeInViewport({ ratio: 1 });
+  await expect(close).toBeFocused();
+  await expect(skip).not.toBeChecked();
+  await page.keyboard.press('Shift+Tab');
+  await expect(next).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(close).toBeFocused();
+  await skip.focus();
+  await page.keyboard.press('Space');
+  await expect(skip).toBeChecked();
   await expect(guide).toBeVisible();
-  await expect(guide.getByRole('listitem')).toHaveCount(3);
-  await expect(guide.getByRole('listitem').first()).toContainText('Chọn vụ án');
-  await expect(guide.getByRole('link', { name: 'Xem hướng dẫn đầy đủ', exact: true })).toHaveAttribute('href', '/guide');
+  await next.click();
+  const resume = page.getByRole('dialog', { name: 'Tiếp tục phiên đang luyện', exact: true });
+  await expect(resume.getByRole('checkbox', { name: skipLabel, exact: true })).toBeChecked();
+  await resume.getByRole('button', { name: 'Tiếp theo →', exact: true }).click();
+  const results = page.getByRole('dialog', { name: 'Xem kết quả đã lưu', exact: true });
+  await expect(results.getByRole('checkbox', { name: skipLabel, exact: true })).toBeChecked();
+  await results.getByRole('button', { name: 'Đóng hướng dẫn', exact: true }).click();
+  await expect(results).toBeHidden();
+  await page.reload();
+
+  const replay = page.getByRole('button', { name: 'Hướng dẫn nhanh', exact: true });
+  await expect(replay).toBeVisible();
+  await expect(guide).toBeHidden();
+  await replay.click();
+  await expect(guide).toBeVisible();
+  await expect(skip).toBeChecked();
+  await skip.uncheck();
+  await expect(guide).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(guide).toBeHidden();
+  await expect(replay).toBeFocused();
+  await page.reload();
+  await close.click();
   await page.getByRole('link', { name: 'Chọn vụ án', exact: true }).click();
   await expect(page).toHaveURL(/\/dashboard\/setup\?start=cases$/);
   await expect(page.locator('.setup-case-card')).toHaveAttribute('aria-pressed', 'false');
+});
+
+test('dashboard: đóng tạm thời, hoàn tất được ghi nhớ riêng theo tài khoản', async ({ page }, info) => {
+  await page.setViewportSize(info.project.name === 'mobile'
+    ? { width: 390, height: 664 }
+    : { width: 1440, height: 900 });
+  await api(page, sessions);
+  await page.goto('/dashboard');
+  const first = page.getByRole('dialog', { name: 'Chọn vụ án', exact: true });
+  await expect(first).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(first).toBeHidden();
+  await page.reload();
+  await first.getByRole('button', { name: 'Đóng hướng dẫn', exact: true }).click();
+  await expect(first).toBeHidden();
+  await page.reload();
+  await expect(first).toBeVisible();
+  await first.getByRole('button', { name: 'Tiếp theo →', exact: true }).click();
+  const resume = page.getByRole('dialog', { name: 'Tiếp tục phiên đang luyện', exact: true });
+  await resume.getByRole('button', { name: 'Tiếp theo →', exact: true }).click();
+  const results = page.getByRole('dialog', { name: 'Xem kết quả đã lưu', exact: true });
+  await expect(results.getByRole('checkbox', { name: 'Không hiện lại hướng dẫn này', exact: true })).not.toBeChecked();
+  await results.getByRole('button', { name: 'Hoàn tất hướng dẫn', exact: true }).click();
+  await expect(results).toBeHidden();
+  await page.reload();
+  await expect(page.locator('.dashboard-metrics')).toBeVisible();
+  await expect(first).toBeHidden();
+
+  await page.unroute('**/api/**');
+  await api(page, sessions, false, 'other-learner');
+  await page.reload();
+  await expect(first).toBeVisible();
 });

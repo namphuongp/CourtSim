@@ -32,6 +32,9 @@ test('trình duyệt → API thật → MongoDB riêng: tài khoản, hồ sơ, 
   await expect(page).toHaveURL(/dashboard$/);
   await harness.grantPlan(email, 'case');
   await page.reload();
+  const dashboardGuide = page.getByRole('dialog', { name: 'Chọn vụ án', exact: true });
+  await dashboardGuide.getByRole('checkbox', { name: 'Không hiện lại hướng dẫn này', exact: true }).check();
+  await dashboardGuide.getByRole('button', { name: 'Đóng hướng dẫn', exact: true }).click();
   await page.getByRole('link', { name: 'Chọn vụ án', exact: true }).click();
   await page.getByRole('button', { name: /Hồ sơ kiểm thử trình duyệt/ }).click();
   const plaintiff = info.project.name === 'mobile';

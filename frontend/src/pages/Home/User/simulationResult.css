@@ -66,8 +66,8 @@
 }
 
 .result-page .result-practice-link:hover {
-  border-color: var(--cs-navy);
-  background: var(--cs-navy);
+  border-color: var(--cs-brand-hover);
+  background: var(--cs-brand-hover);
 }
 
 .result-tools button:hover,

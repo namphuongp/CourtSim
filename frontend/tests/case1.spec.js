@@ -23,6 +23,9 @@ test('Case1: chọn vai, hồ sơ, kéo thả, đối đáp, tải lại, chấm
   await expect(page).toHaveURL(/dashboard$/);
   await harness.grantPlan(email, 'lite');
   await page.reload();
+  const dashboardGuide = page.getByRole('dialog', { name: 'Chọn vụ án', exact: true });
+  await dashboardGuide.getByRole('checkbox', { name: 'Không hiện lại hướng dẫn này', exact: true }).check();
+  await dashboardGuide.getByRole('button', { name: 'Đóng hướng dẫn', exact: true }).click();
   await page.getByRole('link', { name: 'Chọn vụ án', exact: true }).click();
   await page.getByRole('button', { name: new RegExp('Phúc thẩm tranh chấp đất') }).click();
   await page.getByRole('button', { name: 'Tiếp: Hồ sơ' }).click();

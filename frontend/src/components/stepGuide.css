@@ -1,0 +1,175 @@
+.step-tour {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+}
+
+.step-tour .tour-blocker {
+  position: absolute;
+  inset: 0;
+}
+
+.step-tour .tour-blocker.is-unanchored {
+  background: #111e32b8;
+}
+
+.step-tour .tour-spotlight {
+  position: fixed;
+  border: 3px solid #74d3bb;
+  border-radius: var(--cs-panel-radius);
+  box-shadow: 0 0 0 9999px #111e32b8;
+  pointer-events: none;
+  transition: top 180ms ease, left 180ms ease, width 180ms ease, height 180ms ease;
+}
+
+.step-tour .tour-card {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: min(370px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  border: 1px solid #bdd2ff;
+  border-radius: var(--cs-panel-radius);
+  background: var(--cs-surface);
+  color: var(--cs-navy);
+  padding: 16px;
+  box-shadow: 0 15px 35px #020a4340;
+  transform: translate(-50%, -50%);
+  transition: top 180ms ease, left 180ms ease;
+}
+
+.step-tour .tour-card[style] {
+  transform: none;
+}
+
+.step-tour .tour-card header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.step-tour .guide-progress {
+  color: #3764bd;
+  background: #edf5ff;
+  font-size: 13px;
+}
+
+.step-tour .tour-close {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--cs-line);
+  border-radius: 10px;
+  background: var(--cs-surface);
+  color: var(--cs-brand);
+}
+
+.step-tour .tour-close:hover {
+  background: var(--cs-tint);
+  border-color: var(--cs-accent);
+  color: var(--cs-accent);
+}
+
+.step-tour .guide-step {
+  margin: 12px 0;
+  line-height: 1.65;
+  font-size: 14px;
+}
+
+.step-tour .guide-step h3 {
+  margin: 0 0 8px;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.step-tour .guide-dots,
+.step-tour .guide-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.step-tour .guide-actions {
+  justify-content: space-between;
+}
+
+.step-tour :is(.guide-dots, .guide-actions) button {
+  border: 1px solid #9eb6d3;
+  border-radius: var(--cs-button-radius);
+  padding: 8px 13px;
+  color: var(--cs-brand);
+  background: #eff6ff;
+}
+
+.step-tour .guide-dots button {
+  padding: 5px 10px;
+}
+
+.step-tour .guide-dots button[aria-current=step],
+.step-tour .guide-actions button:last-child {
+  color: var(--cs-surface);
+  background: var(--cs-brand);
+  border-color: var(--cs-brand);
+}
+
+.step-tour .guide-actions button:disabled {
+  opacity: .45;
+}
+
+.step-tour .guide-footer {
+  display: grid;
+  gap: 8px;
+}
+
+.step-tour .guide-skip {
+  justify-self: start;
+  min-height: 36px;
+  padding: 4px 6px;
+  border-radius: var(--cs-button-radius);
+  color: var(--cs-muted);
+  font-size: .8125rem;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.step-tour .guide-skip:hover {
+  background: var(--cs-tint);
+  color: var(--cs-navy);
+}
+
+.step-tour .guide-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 36px;
+  margin-top: 4px;
+  color: var(--cs-navy);
+  font-size: .8125rem;
+  cursor: pointer;
+}
+
+.step-tour .guide-checkbox input {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+  accent-color: var(--cs-accent);
+}
+
+.step-tour :is(button, input):focus-visible {
+  outline: 3px solid var(--cs-brand);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .step-tour .tour-spotlight,
+  .step-tour .tour-card {
+    transition: none;
+  }
+}

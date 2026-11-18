@@ -1,7 +1,7 @@
-.pricing-hero { padding:24px 26px; border-radius:var(--cs-panel-radius); margin-bottom:24px; color:white; background:var(--cs-navy); }
+.pricing-hero { padding:24px 26px; border-radius:var(--cs-panel-radius); margin-bottom:24px; color:var(--cs-on-brand); background:var(--cs-brand-surface); }
 .pricing-hero h1 { color:white; font-size:30px; margin:5px 0; }
-.pricing-hero>p:first-child { letter-spacing:.12em; font-size:11px; color:#b7d6ff; }
-.pricing-hero>p:last-child { color:#bbc9eb; margin:10px 0 0; font-size:14px; }
+.pricing-hero>p:first-child { letter-spacing:.12em; font-size:11px; color:var(--cs-on-brand-muted); }
+.pricing-hero>p:last-child { color:var(--cs-on-brand-muted); margin:10px 0 0; font-size:14px; }
 .pricing-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; }
 .pricing-card { display:flex; flex-direction:column; padding:25px 22px; border-radius:14px; background:white; border:1px solid #dbe6fc; box-shadow:0 6px 14px #1329620c; min-width:0; }
 .pricing-plan-name { display:flex; justify-content:space-between; align-items:center; gap:8px; }
@@ -16,7 +16,7 @@
 .pricing-action { display:flex; align-items:center; justify-content:center; gap:7px; padding:10px; min-height:42px; margin-top:auto; font-size:12px; font-weight:700; border:1px solid var(--cs-line); border-radius:var(--cs-button-radius); background:#f3f8ff; color:var(--cs-brand); text-decoration:none; }
 .pricing-card.is-featured { background:var(--cs-brand); color:white; border-color:var(--cs-brand); }
 .pricing-card.is-featured :is(h2,.pricing-price) { color:white; }
-.pricing-card.is-featured :is(p,li),.pricing-card.is-featured>p:not(.pricing-cadence) { color:#ccdefd; }
+.pricing-card.is-featured :is(p,li),.pricing-card.is-featured>p:not(.pricing-cadence) { color:var(--cs-on-brand-muted); }
 .pricing-card.is-featured .pricing-action { color:var(--cs-navy); background:var(--cs-tint); border-color:var(--cs-tint); }
 .pricing-comparison { margin-top:26px; overflow:auto; border:1px solid #dbe6fc; border-radius:14px; background:white; box-shadow:0 6px 14px #1329620c; }
 .pricing-comparison table { width:100%; min-width:640px; border-collapse:collapse; text-align:center; font-size:13px; }

@@ -26,7 +26,7 @@ body .court-speech.court-dialogue-stream {
   padding: 0;
   border: 0;
   background: none;
-  color: #c8d7e5;
+  color: var(--cs-on-brand-muted);
   white-space: nowrap;
 }
 
@@ -36,10 +36,10 @@ body .court-speech.court-dialogue-stream {
   gap: 0.3rem;
   min-height: 2rem;
   padding-inline: 0.45rem;
-  border: 1px solid #6c8298;
+  border: 1px solid #b9d9ff;
   border-radius: 6px;
   color: #fff;
-  background: #2c4864;
+  background: var(--cs-brand-hover);
   font-size: 0.75rem;
   font-weight: 600;
   white-space: nowrap;
@@ -48,7 +48,7 @@ body .court-speech.court-dialogue-stream {
 
 .dialogue-audio-trigger:hover,
 .dialogue-audio-trigger[aria-expanded="true"] {
-  background: #3e5c79;
+  background: #073c8c;
 }
 
 .dialogue-messages-scroll,
@@ -112,9 +112,13 @@ body .court-speech.court-dialogue-stream {
   cursor: pointer;
 }
 
-.dialogue-audio-trigger:focus-visible,
 .dialogue-audio-settings :focus-visible {
   outline: 2px solid #3283c8;
+  outline-offset: 2px;
+}
+
+.dialogue-stream-header :focus-visible {
+  outline: 2px solid var(--cs-on-brand);
   outline-offset: 2px;
 }
 
