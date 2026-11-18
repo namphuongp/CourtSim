@@ -16,6 +16,6 @@ export default function RecentSessions({ sessions }) {
       <div><label htmlFor="dashboard-sort">Sắp xếp</label><select id="dashboard-sort" value={sort} onChange={e => setSort(e.target.value)}><option value="newest">Gần nhất</option><option value="oldest">Cũ nhất</option><option value="high">Điểm cao</option><option value="low">Điểm thấp</option></select></div>
     </div>
     <p className="text-sm text-slate-400" aria-live="polite">Hiển thị {visible.length} phiên.</p>
-    {visible.length ? <div className="grid gap-4 lg:grid-cols-2">{visible.map(s => <SessionCard key={s._id} session={s} />)}</div> : <p className="dashboard-card dashboard-empty">{sessions.length ? 'Không tìm thấy phiên phù hợp với bộ lọc.' : 'Bạn chưa có phiên luyện tập. Chọn Tạo phiên mới để bắt đầu.'}</p>}
+    {visible.length ? <div className="grid gap-4 lg:grid-cols-2">{visible.map(s => <SessionCard key={s._id} session={s} />)}</div> : <p className="dashboard-card dashboard-empty">{sessions.length ? 'Không tìm thấy phiên phù hợp với bộ lọc.' : 'Bạn chưa có phiên luyện tập. Bấm Chọn vụ án để bắt đầu.'}</p>}
   </section>;
 }

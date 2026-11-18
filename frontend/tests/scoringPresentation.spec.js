@@ -22,7 +22,7 @@ test('kết quả cũ 69/73: không hiện điểm quy đổi, chi tiết đóng
   });
   await page.goto('/simulation/test-session/result');
   await expect(page.getByRole('region', { name: 'Kết quả phần đã đánh giá' })).toContainText('69/73');
-  await expect(page.getByRole('link', { name: 'Tạo phiên mới', exact: true })).toHaveAttribute('href', '/dashboard/setup');
+  await expect(page.getByRole('link', { name: 'Chọn vụ án', exact: true })).toHaveAttribute('href', '/dashboard/setup?start=cases');
   await page.getByRole('button', { name: 'Xuất PDF', exact: true }).click();
   const pdf = page.getByRole('dialog', { name: 'Xuất văn bản phiên tòa (PDF)', exact: true });
   await expect(pdf).toBeVisible();

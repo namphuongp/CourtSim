@@ -68,12 +68,13 @@ test('thiết lập 5 bước: xác nhận mới gửi API, lỗi giữ lựa ch
     if (path.endsWith('/sessions') && request.method() === 'POST') { sent.push(request.postDataJSON()); return route.fulfill({ status: 503, json: { error: { message: 'Chưa khởi tạo được phiên.' } } }); }
     return route.fulfill({ json: { data: courtCase } });
   });
-  await page.goto(`/dashboard/setup?case=${caseId}`);
+  await page.goto(`/dashboard/setup?start=cases&case=${caseId}`);
   const setupActions = page.getByRole('navigation', { name: 'Chuyển bước thiết lập' });
   const start = page.getByRole('button', { name: 'Bắt đầu phiên tòa', exact: true });
   await expect(page.locator('.setup-option').first()).toHaveAttribute('aria-pressed', 'true');
   await expect(start).toHaveCount(0);
   await page.getByRole('button', { name: 'Tiếp: Hồ sơ', exact: true }).click();
+  await expect.poll(() => new URL(page.url()).searchParams.get('start')).toBeNull();
   await expect(page.getByRole('heading', { name: 'Tóm tắt diễn biến' })).toBeVisible();
   await page.getByRole('button', { name: /Tài liệu gốc/ }).click();
   await page.locator('[data-evidence-select="EV-case1-nguyen"]').click();
@@ -148,7 +149,7 @@ test('phòng xử án: chuyển lượt, gửi và thử lại với thanh đi�
   await page.goto('/simulation/design-session');
   await page.getByRole('button', { name: 'Bỏ qua các lần sau', exact: true }).click();
 
-  const toolbar = page.getByRole('navigation', { name: 'Điều khiển phiên tòa' });
+  const toolbar = page.getByRole('navigation', { name: 'Công cụ phòng xử án' });
   const evidence = toolbar.getByRole('button', { name: 'Hồ sơ chứng cứ', exact: true });
   const transcript = toolbar.getByRole('button', { name: 'Biên bản', exact: true });
   const send = page.getByRole('button', { name: 'Gửi lập luận', exact: true });
@@ -159,6 +160,8 @@ test('phòng xử án: chuyển lượt, gửi và thử lại với thanh đi�
   await expect(evidence).toBeInViewport({ ratio: 1 });
   await expect(transcript).toBeInViewport({ ratio: 1 });
   await expect(send).toBeInViewport({ ratio: 1 });
+  const stage = page.locator('.courtroom-workspace');
+  expect((await toolbar.boundingBox()).y).toBeLessThan((await stage.boundingBox()).y);
   await evidence.click();
   await expect(page.locator('.dossier-evidence')).toBeVisible();
   await page.keyboard.press('Escape');
@@ -194,11 +197,12 @@ test('phòng xử án: thông tin phiên và âm thanh mở riêng từ đầu t
   await page.setViewportSize(info.project.name === 'mobile'
     ? { width: 390, height: 664 }
     : { width: 1440, height: 900 });
+  const startedAt = new Date(Date.now() - 40_000).toISOString();
   await page.route('**/api/**', route => {
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith('/auth/me')) return route.fulfill({ json: { user: { id: 'design-user', role: 'user' } } });
     if (path.endsWith('/records')) return route.fulfill({ json: { data: records } });
-    return route.fulfill({ json: { data: session } });
+    return route.fulfill({ json: { data: { ...session, created_at: startedAt } } });
   });
   await page.goto('/simulation/design-session');
   await page.getByRole('button', { name: 'Bỏ qua các lần sau', exact: true }).click();
@@ -208,12 +212,18 @@ test('phòng xử án: thông tin phiên và âm thanh mở riêng từ đầu t
   await expect(header.getByRole('heading', { level: 1, name: courtCase.title })).toBeVisible();
   await expect(header).toContainText(/Giai đoạn \d\/4.*1\/20 lượt/);
   await expect(infoButton).toBeInViewport({ ratio: 1 });
-  await expect(page.getByRole('timer', { name: /^Thời lượng phiên tòa/ })).toBeHidden();
-  await expect(page.getByRole('button', { name: 'Kết thúc và chấm điểm', exact: true })).toBeHidden();
+  const timer = header.getByRole('timer', { name: /^Thời lượng phiên tòa/ });
+  const finish = header.getByRole('button', { name: 'Kết thúc phiên tòa', exact: true });
+  await expect(timer).toBeInViewport({ ratio: 1 });
+  await expect(finish).toBeInViewport({ ratio: 1 });
+  const initialTime = await timer.textContent();
+  await expect.poll(() => timer.textContent()).not.toBe(initialTime);
+  await expect(page.getByRole('timer')).toHaveCount(1);
+  await expect(page.getByRole('button', { name: 'Kết thúc phiên tòa', exact: true })).toHaveCount(1);
   await infoButton.click();
   const caseInfo = page.getByRole('dialog', { name: 'Thông tin vụ án' });
   await expect(caseInfo.getByText('2018-08-07', { exact: true })).toBeVisible();
-  await expect(caseInfo.getByRole('timer', { name: /^Thời lượng phiên tòa/ })).toBeVisible();
+  await expect(caseInfo.getByRole('timer')).toHaveCount(0);
   const progress = caseInfo.getByRole('region', { name: 'Tiến trình phiên tòa' });
   await expect(progress.getByRole('listitem')).toHaveCount(4);
   await expect(progress.locator('[aria-current=step]')).toContainText('Xét hỏi');
@@ -246,6 +256,7 @@ test('phòng xử án: hướng dẫn tự mở từ bước đầu và có th�
   const guide = page.getByRole('dialog', { name: 'Xem hồ sơ vụ án', exact: true });
   await page.goto('/simulation/guide-completed');
   await expect(page.getByRole('link', { name: 'Xem kết quả', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Kết thúc phiên tòa', exact: true })).toHaveCount(0);
   await expect(guide).toBeHidden();
   await page.goto('/simulation/guide-history#transcript');
   await expect(page.locator('.transcript-entry')).toHaveCount(records.length);
@@ -290,8 +301,8 @@ test('phòng xử án: đóng hướng dẫn chỉ tạm thời và hoàn tất 
   await guide.getByRole('button', { name: 'Tiếp theo →', exact: true }).click();
   const review = page.getByRole('dialog', { name: 'Đọc và xem lại lời thoại', exact: true });
   await expect(review).toBeVisible();
-  await review.getByRole('button', { name: /^Bước \d+: Kết thúc và chấm điểm$/ }).click();
-  const last = page.getByRole('dialog', { name: 'Kết thúc và chấm điểm', exact: true });
+  await review.getByRole('button', { name: /^Bước \d+: Kết thúc phiên tòa$/ }).click();
+  const last = page.getByRole('dialog', { name: 'Kết thúc phiên tòa', exact: true });
   await last.getByRole('button', { name: 'Hoàn tất hướng dẫn', exact: true }).click();
   await expect(last).toBeHidden();
   await page.reload();
@@ -344,10 +355,12 @@ test('phòng xử án: draft, chèn chứng cứ, trợ lý lỗi giữ câu h�
   await page.getByRole('button', { name: 'Tiếp theo →' }).click();
   await expect(page.getByRole('dialog')).toContainText('Đọc và xem lại lời thoại');
   await page.keyboard.press('Escape');
-  await tools.click();
-  await page.getByRole('button', { name: 'Kết thúc và chấm điểm', exact: true }).click();
-  await expect(page.getByRole('dialog')).toContainText('Bạn còn bản nháp chưa gửi');
-  await page.getByRole('button', { name: 'Tiếp tục tranh luận', exact: true }).click();
+  const finish = page.locator('.room-header').getByRole('button', { name: 'Kết thúc phiên tòa', exact: true });
+  await finish.click();
+  const confirmEnd = page.getByRole('dialog', { name: 'Kết thúc và nhận đánh giá?', exact: true });
+  await expect(confirmEnd).toContainText('Bạn còn bản nháp chưa gửi');
+  expect(completed).toBe(0);
+  await confirmEnd.getByRole('button', { name: 'Tiếp tục tranh luận', exact: true }).click();
   expect(completed).toBe(0);
   await noOverflow(page);
   expect(browserErrors).toEqual([]);

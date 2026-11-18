@@ -8,10 +8,11 @@ import CaseDossier from '../../components/CaseDossier';
 import { LogoutButton } from '../Auth/AccountActions';
 import { useCurrentUser } from '../../services/auth';
 import api, { getApiError } from '../../services/api';
+import { PRACTICE_CASES_PATH } from '../../services/simulation';
 import { caseIntroduction } from '../../../../shared/casePresentation.mjs';
 import './landing.css';
 
-const START_PATH = '/dashboard/setup';
+const SETUP_PATH = '/dashboard/setup';
 const filters = ['Tất cả', 'Đất đai', 'Phúc thẩm', 'Sơ thẩm'];
 
 const workflow = [
@@ -28,8 +29,8 @@ const courtroomTools = [
 
 function StartLink() {
   const user = useCurrentUser();
-  const label = user?.id ? 'Vào phòng luyện tập' : 'Bắt đầu miễn phí';
-  return <Link to={START_PATH} className="landing-cta">{label}<ArrowRight size={17} aria-hidden="true" /></Link>;
+  const label = user?.id ? 'Chọn vụ án' : 'Bắt đầu miễn phí';
+  return <Link to={PRACTICE_CASES_PATH} className="landing-cta">{label}<ArrowRight size={17} aria-hidden="true" /></Link>;
 }
 
 function LandingPublicLinks({ onNavigate }) {
@@ -194,7 +195,7 @@ export default function LandingPage() {
                   </ul>
                   <div className="case-card-actions">
                     <button type="button" className="landing-cta" onClick={() => openDossier(item._id)}>Xem hồ sơ</button>
-                    <Link className="landing-secondary" to={`${START_PATH}?case=${encodeURIComponent(item._id)}`}>Chọn vụ án</Link>
+                    <Link className="landing-secondary" to={`${SETUP_PATH}?case=${encodeURIComponent(item._id)}`}>Chọn vụ án</Link>
                   </div>
                 </article>;
               })}

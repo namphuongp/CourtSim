@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { FileDown } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import api, { getApiError } from '../../../services/api';
+import { PRACTICE_CASES_PATH } from '../../../services/simulation';
 import './simulationResult.css';
 import UpgradeNotice from '../../../components/membership/UpgradeNotice';
 import PdfExportModal from '../../../components/courtroom/PdfExportModal';
@@ -108,7 +109,7 @@ function SessionResult({ sessionId }) {
       <div className="result-container space-y-6">
         <header className="result-heading result-overview-heading">
           <h1 id="result-heading" tabIndex={-1}>{detailView ? 'Điểm & nhận xét chi tiết' : 'Kết quả luyện tập'}</h1>
-          <Link className="result-practice-link" to="/dashboard/setup">Tạo phiên mới</Link>
+          <Link className="result-practice-link" to={PRACTICE_CASES_PATH}>Chọn vụ án</Link>
         </header>
         <nav className="result-tools" aria-label="Công cụ kết quả">
           {hasCriteria && canViewDetailedScoring && (

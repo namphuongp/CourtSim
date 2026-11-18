@@ -54,10 +54,14 @@ test('AUD-05 checkout always uses the saved plan, price and quantity even on a d
   }
 });
 
-test('AUD-04 exhausted user can resume the saved creation request after reload', async ({ page }) => {
+test('AUD-04 new picker preserves the saved request and exhausted user can return after reload', async ({ page }) => {
   const saved = { request_id: 'audit-existing-request-1234', case_id: '123456789012345678901234', user_court_role: 'defense_lawyer', difficulty: 'balanced', case_event_date: '2023-01-01' };
   const courtCase = { _id: saved.case_id, title: 'Hồ sơ phục hồi', category: 'dân sự', summary: 'Tình huống thử nghiệm', full_document: 'Dữ liệu giả lập.' };
-  await page.addInitScript(saved => sessionStorage.setItem('courtsim:draft:audit-user:setup', JSON.stringify(saved)), saved);
+  await page.addInitScript(saved => {
+    if (sessionStorage.getItem('courtsim:audit-setup-fixture')) return;
+    sessionStorage.setItem('courtsim:draft:audit-user:setup', JSON.stringify(saved));
+    sessionStorage.setItem('courtsim:audit-setup-fixture', '1');
+  }, saved);
   const sent = [];
   await page.route('**/api/**', route => {
     const request = route.request(), url = new URL(request.url());
@@ -72,9 +76,23 @@ test('AUD-04 exhausted user can resume the saved creation request after reload',
     }
     return route.fulfill({ json: { data: [] } });
   });
-  await page.goto('/dashboard/setup');
+  await page.goto('/dashboard/setup?start=cases');
+  const caseCard = page.locator('.setup-case-card');
+  const resumeDraft = page.getByRole('link', { name: 'Tiếp tục bản thiết lập trước', exact: true });
+  await expect(caseCard).toHaveAttribute('aria-pressed', 'false');
+  await expect(resumeDraft).toHaveAttribute('href', '/dashboard/setup');
+  await expect(page.getByRole('button', { name: 'Tiếp tục khởi tạo phiên', exact: true })).toHaveCount(0);
+  await caseCard.click();
+  await expect(caseCard).toHaveAttribute('aria-pressed', 'true');
+  expect(await page.evaluate(() => JSON.parse(sessionStorage.getItem('courtsim:draft:audit-user:setup')))).toEqual(saved);
   await page.reload();
+  await expect(caseCard).toHaveAttribute('aria-pressed', 'false');
+  expect(await page.evaluate(() => JSON.parse(sessionStorage.getItem('courtsim:draft:audit-user:setup')))).toEqual(saved);
+  await resumeDraft.click();
+  await expect(page).toHaveURL(/\/dashboard\/setup$/);
   const resume = page.getByRole('button', { name: 'Tiếp tục khởi tạo phiên', exact: true });
+  await expect(resume).toBeEnabled();
+  await page.reload();
   await expect(resume).toBeEnabled();
   await resume.click();
   await page.getByRole('button', { name: 'Xác nhận bắt đầu', exact: true }).click();

@@ -23,7 +23,7 @@ test('Case1: chọn vai, hồ sơ, kéo thả, đối đáp, tải lại, chấm
   await expect(page).toHaveURL(/dashboard$/);
   await harness.grantPlan(email, 'lite');
   await page.reload();
-  await page.getByRole('link', { name: 'Tạo phiên mới', exact: true }).click();
+  await page.getByRole('link', { name: 'Chọn vụ án', exact: true }).click();
   await page.getByRole('button', { name: new RegExp('Phúc thẩm tranh chấp đất') }).click();
   await page.getByRole('button', { name: 'Tiếp: Hồ sơ' }).click();
   await expect(page.getByRole('heading', { name: 'Tóm tắt diễn biến' })).toBeVisible();
@@ -80,8 +80,7 @@ test('Case1: chọn vai, hồ sơ, kéo thả, đối đáp, tải lại, chấm
     await page.getByRole('button', { name: 'Trình bày ý kiến' }).click();
     await expect(page.getByLabel('Lập luận của bạn')).toBeEnabled();
   }
-  await tools.click();
-  await page.getByRole('button', { name: 'Kết thúc và chấm điểm', exact: true }).click();
+  await page.getByRole('button', { name: 'Kết thúc phiên tòa', exact: true }).click();
   await page.getByRole('button', { name: 'Xác nhận kết thúc', exact: true }).click();
   await page.getByRole('button', { name: 'Bỏ qua và xem kết quả', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Kết quả luyện tập' })).toBeVisible();

@@ -1,4 +1,7 @@
 import { caseRoleLabel } from '../../../shared/casePresentation.mjs';
+
+export const PRACTICE_CASES_PATH = '/dashboard/setup?start=cases';
+
 export function roleLabel(role, category = '', courtCase) {
   const specific = caseRoleLabel(role, courtCase);
   if (specific) return specific;

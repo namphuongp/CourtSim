@@ -403,12 +403,60 @@
   color: #19354d;
 }
 
-.practice-dashboard a:not(.dashboard-primary) {
+.practice-dashboard a:not(.dashboard-primary,.dashboard-start-secondary) {
   color: #087d91 !important;
   font-weight: 800;
 }
-.practice-dashboard a:not(.dashboard-primary):hover {
+.practice-dashboard a:not(.dashboard-primary,.dashboard-start-secondary):hover {
   color: #075d70 !important;
+}
+
+.dashboard-getting-started {
+  display: grid;
+  gap: 16px;
+}
+
+.dashboard-getting-started a { justify-self: start; }
+
+.dashboard-guide-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px 12px;
+}
+
+.dashboard-guide-header button {
+  min-height: 36px;
+  padding: 4px 8px;
+  border-radius: var(--cs-button-radius);
+  color: var(--cs-muted);
+  font-size: .8125rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.dashboard-guide-header button:hover { background: var(--cs-canvas); }
+
+.dashboard-first-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px 24px;
+  list-style: decimal inside;
+}
+
+.dashboard-first-steps li::marker {
+  color: var(--cs-accent);
+  font-weight: 700;
+}
+
+.dashboard-first-steps p {
+  margin-top: 4px;
+  color: var(--cs-muted);
+}
+
+@media (max-width: 640px) {
+  .dashboard-first-steps { grid-template-columns: minmax(0, 1fr); }
 }
 
 .practice-dashboard .dashboard-card .text-white { color: #08213a !important; }

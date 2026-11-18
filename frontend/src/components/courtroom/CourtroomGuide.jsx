@@ -1,7 +1,25 @@
 import { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 
-function guideSteps(completed, maxTurns) {
+function guideSteps(completed, concluded, maxTurns) {
+  let closingStep = {
+    target: '.room-header-end',
+    title: 'Kết thúc phiên tòa',
+    text: 'Sau khi gửi ít nhất một lượt lập luận, bấm Kết thúc phiên tòa ở đầu màn hình rồi xác nhận để nhận đánh giá.',
+  };
+  if (completed) {
+    closingStep = {
+      target: '.room-turn-action',
+      title: 'Xem kết quả',
+      text: 'Bấm Xem kết quả để đọc điểm và nhận xét. Bạn có thể xem lại biên bản để đối chiếu với nhận xét.',
+    };
+  } else if (concluded) {
+    closingStep = {
+      target: '.room-turn-action',
+      title: 'Nghị án và chấm điểm',
+      text: 'Chủ tọa đã khép lại phần tranh luận. Chọn Nghị án và chấm điểm để mở kết quả ngay.',
+    };
+  }
   return [
     { target: '.deck-evidence-btn', title: 'Xem hồ sơ vụ án', text: 'Bấm Hồ sơ chứng cứ để xem tài liệu. Chọn Tổng quan để đọc diễn biến, hoặc Các bên & yêu cầu để xem quan điểm của từng phía.' + (completed ? ' Phiên đã kết thúc chỉ cho phép xem lại.' : ' Khi đến lượt bạn, có thể đưa chứng cứ vào ô lập luận rồi bổ sung phần phân tích của mình.') },
     { target: '.court-speech', title: 'Đọc và xem lại lời thoại', text: 'Cuộn trong khung hội thoại để đọc các lượt đã lưu. Chọn nút Phóng to lời thoại để xem toàn văn và căn cứ nếu có.' },
@@ -11,13 +29,13 @@ function guideSteps(completed, maxTurns) {
     ] : []),
     { target: '.room-tools-trigger', title: 'Tra cứu và sử dụng luật', text: 'Trong Công cụ khác, chọn Trợ lý luật, nhập vấn đề hoặc số hiệu, điều khoản rồi bấm Hỏi trợ lý. Đọc trích đoạn, mở nguồn và kiểm tra trạng thái áp dụng theo thời điểm.' + (completed ? ' Phiên này không thể gửi thêm lập luận.' : ' Khi đến lượt bạn, chọn Đưa trích dẫn vào lập luận, nội dung chỉ được gửi khi bạn bấm Gửi lập luận.') },
     { target: '.deck-transcript-btn', title: 'Xem biên bản', text: 'Bấm Biên bản trên thanh điều khiển để xem các lời trao đổi đã lưu. Chọn một lời để xem lại tại phòng xử án.' },
-    { target: completed ? '.room-turn-action' : '.room-finish-button, .room-tools-trigger', title: completed ? 'Xem kết quả' : 'Kết thúc và chấm điểm', text: completed ? 'Bấm Xem kết quả để đọc điểm và nhận xét của phiên đã hoàn tất. Bạn có thể xem lại biên bản để đối chiếu với nhận xét.' : 'Sau ít nhất một lượt gửi, mở Công cụ khác, chọn Kết thúc và chấm điểm rồi xác nhận. Khi đã đủ lượt, nút kết thúc có thể xuất hiện ngay trên thanh điều khiển.' },
+    closingStep,
   ];
 }
 
-export default function CourtroomGuide({ onClose, onDismissPermanently, returnFocusRef, completed = false, hasDialogue = true, maxTurns = 20 }) {
+export default function CourtroomGuide({ onClose, onDismissPermanently, returnFocusRef, completed = false, concluded = false, hasDialogue = true, maxTurns = 20 }) {
   const [step, setStep] = useState(0);
-  const availableSteps = guideSteps(completed, maxTurns).filter(item => hasDialogue || item.target !== '.court-speech');
+  const availableSteps = guideSteps(completed, concluded, maxTurns).filter(item => hasDialogue || item.target !== '.court-speech');
   const currentStep = Math.min(step, availableSteps.length - 1);
   const current = availableSteps[currentStep];
   const [box, setBox] = useState(null);

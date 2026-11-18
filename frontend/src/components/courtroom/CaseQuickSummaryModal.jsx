@@ -1,7 +1,6 @@
 import { BookOpen } from 'lucide-react';
 import FeedbackModal from '../feedback/FeedbackModal';
 import { roleLabel } from '../../services/simulation';
-import SessionTimer from './SessionTimer';
 import TrialPhaseStepper from './TrialPhaseStepper';
 
 export default function CaseQuickSummaryModal({
@@ -31,8 +30,6 @@ export default function CaseQuickSummaryModal({
           <div><dt>Mốc tra cứu</dt><dd>{eventDate}</dd></div>
           {currentIssue && !completed && <div><dt>Trọng tâm</dt><dd>{currentIssue}</dd></div>}
         </dl>
-        <SessionTimer session={session} completed={completed} />
-
         <TrialPhaseStepper currentStageIndex={stageIndex} completed={completed} />
 
         <section className="summary-section">

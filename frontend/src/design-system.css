@@ -1,8 +1,8 @@
 /* Shared visual treatment, scoped to CourtSim page roots. Business/data modules are unchanged. */
 :root {
   --cs-navy: #173652;
-  --cs-brand: #23579a;
-  --cs-brand-hover: #1d477e;
+  --cs-brand: #155aab;
+  --cs-brand-hover: #114785;
   --cs-accent: #08776b;
   --cs-accent-bright: #8ce8d0;
   --cs-tint: #daf7ee;

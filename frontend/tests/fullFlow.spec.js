@@ -32,7 +32,7 @@ test('trình duyệt → API thật → MongoDB riêng: tài khoản, hồ sơ, 
   await expect(page).toHaveURL(/dashboard$/);
   await harness.grantPlan(email, 'case');
   await page.reload();
-  await page.getByRole('link', { name: 'Tạo phiên mới', exact: true }).click();
+  await page.getByRole('link', { name: 'Chọn vụ án', exact: true }).click();
   await page.getByRole('button', { name: /Hồ sơ kiểm thử trình duyệt/ }).click();
   const plaintiff = info.project.name === 'mobile';
   await page.getByRole('button', { name: '3 Vai', exact: true }).click();
@@ -48,7 +48,7 @@ test('trình duyệt → API thật → MongoDB riêng: tài khoản, hồ sơ, 
   const sessionId = room.split('/').at(-1);
   const draft = 'Tôi căn cứ hợp đồng trong hồ sơ để đề nghị kiểm tra chứng cứ thanh toán.';
   const tools = page.getByRole('button', { name: 'Công cụ khác', exact: true });
-  const finish = page.getByRole('button', { name: 'Kết thúc và chấm điểm', exact: true });
+  const finish = page.getByRole('button', { name: 'Kết thúc phiên tòa', exact: true });
   await page.getByLabel('Lập luận của bạn').fill(draft);
   await tools.click();
   await page.getByRole('button', { name: 'Trợ lý luật', exact: true }).click();
@@ -74,9 +74,7 @@ test('trình duyệt → API thật → MongoDB riêng: tài khoản, hồ sơ, 
   // Đóng bảng nổi trước khi thao tác với vùng soạn thảo phía sau.
   await page.getByRole('button', { name: 'Đóng trợ lý luật', exact: true }).click();
   await page.getByRole('button', { name: 'Gửi lập luận', exact: true }).click();
-  await tools.click();
   await expect(finish).toBeEnabled();
-  await page.keyboard.press('Escape');
   await expect.poll(harness.calls).toBe(1);
   const nextRole = plaintiff ? 'Tiếp tục: Chủ tọa' : 'Tiếp tục: Bên đối lập';
   await expect(page.getByRole('button', { name: nextRole })).toBeVisible();
@@ -137,7 +135,6 @@ test('trình duyệt → API thật → MongoDB riêng: tài khoản, hồ sơ, 
   // Vai tiếp theo tùy lời vừa trình bày và trạng thái điều hành, lấy từ backend đã lưu.
   await expect(page.locator(`[data-actor="${preparingActor}"]`)).toHaveAttribute('data-state', 'preparing');
   await expect(page.locator(`[data-actor="${preparingActor}"] .state-listening`)).toHaveCSS('opacity', '1');
-  await tools.click();
   await expect(finish).toBeDisabled();
   await page.reload();
   await expect(page.getByRole('button', { name: /^Tiếp tục:/ })).toBeVisible({ timeout: 20000 });
@@ -147,12 +144,10 @@ test('trình duyệt → API thật → MongoDB riêng: tài khoản, hồ sơ, 
   await expect(page.getByRole('button', { name: 'Thử lại lời thoại' })).toBeVisible();
   await page.getByRole('button', { name: 'Thử lại lời thoại' }).click();
   await expect(page.getByRole('button', { name: 'Trình bày ý kiến' })).toBeVisible();
-  await tools.click();
   await finish.click();
   harness.control.failNext = true; expectedFailures++;
   await page.getByRole('dialog').getByRole('button', { name: 'Xác nhận kết thúc', exact: true }).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
-  await tools.click();
   await expect(finish).toBeEnabled();
   const failedCompletion = await page.request.get(`http://127.0.0.1:5019/api/v1/sessions/${sessionId}`).then(r => r.json());
   expect(failedCompletion.data.status).toBe('ongoing');

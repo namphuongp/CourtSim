@@ -14,7 +14,8 @@ test('trang chủ: liên kết nội bộ, FAQ, thông tin điểm và đăng nh
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.goto('/');
   await page.getByRole('link', { name: 'Bắt đầu miễn phí', exact: true }).first().click();
-  await expect(page).toHaveURL(/login\?returnTo=%2Fdashboard%2Fsetup$/);
+  await expect(page).toHaveURL(/login\?returnTo=/);
+  expect(new URL(page.url()).searchParams.get('returnTo')).toBe('/dashboard/setup?start=cases');
 });
 
 for (const role of ['admin', 'user']) {
@@ -44,8 +45,8 @@ for (const role of ['admin', 'user']) {
     await expect(header.getByText(fullName, { exact: true })).toBeHidden();
     await expect(admin).toBeHidden();
     await expect(header.getByRole('button', { name: 'Đăng xuất', exact: true })).toBeHidden();
-    await expect(header.getByRole('link', { name: /Luyện tập ngay|Vào phòng luyện tập/ })).toHaveCount(0);
-    await expect(page.locator('.landing-hero').getByRole('link', { name: 'Vào phòng luyện tập', exact: true })).toBeVisible();
+    await expect(header.getByRole('link', { name: 'Chọn vụ án', exact: true })).toHaveCount(0);
+    await expect(page.locator('.landing-hero').getByRole('link', { name: 'Chọn vụ án', exact: true })).toHaveAttribute('href', '/dashboard/setup?start=cases');
 
     await account.click();
     await expect(account).toHaveAttribute('aria-expanded', 'true');

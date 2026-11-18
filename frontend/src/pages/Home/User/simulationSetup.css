@@ -68,6 +68,19 @@
   background: var(--cs-tint, #edf6f3);
 }
 
+.simulation-setup .setup-restore-link {
+  margin-bottom: 0.875rem;
+}
+
+.simulation-setup .setup-restore-link a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
 .simulation-setup .setup-summary dt,
 .simulation-setup .setup-preparation p,
 .simulation-setup .setup-step-description {

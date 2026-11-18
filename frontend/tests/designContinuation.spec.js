@@ -15,13 +15,16 @@ test('thẻ công cụ, biên bản có bộ lọc, sổ tay lưu bản nháp v�
   });
   await page.goto('/simulation/continuation');
   await page.getByRole('button', { name: 'Bỏ qua các lần sau', exact: true }).click();
-  const toolbar = page.getByRole('navigation', { name: 'Điều khiển phiên tòa' });
+  const toolbar = page.getByRole('navigation', { name: 'Công cụ phòng xử án' });
   const tools = toolbar.getByRole('button', { name: 'Công cụ khác', exact: true });
   await toolbar.getByRole('button', { name: 'Hồ sơ chứng cứ', exact: true }).click();
   await expect(page.locator('.dossier-evidence')).toBeVisible();
   await page.keyboard.press('Escape');
   await tools.click();
   await expect(tools).toHaveAttribute('aria-expanded', 'true');
+  const panel = page.locator('#courtroom-other-tools');
+  expect((await panel.boundingBox()).y).toBeGreaterThan((await tools.boundingBox()).y);
+  await expect(panel.getByRole('button', { name: /Kết thúc/ })).toHaveCount(0);
   await page.keyboard.press('Escape');
   await expect(tools).toHaveAttribute('aria-expanded', 'false');
   await expect(tools).toBeFocused();

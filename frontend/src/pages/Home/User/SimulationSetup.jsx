@@ -25,7 +25,7 @@ import {
   Clock,
   Lock,
 } from 'lucide-react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import FeedbackModal from '../../../components/feedback/FeedbackModal';
 import api, { getApiError } from '../../../services/api';
 import { roleLabel } from '../../../services/simulation';
@@ -64,8 +64,22 @@ function readFileAsDataUrl(file) {
 }
 
 export default function SimulationSetup() {
-  const navigate = useNavigate();
   const [params] = useSearchParams();
+  const { state } = useLocation();
+  const requestedCase = params.get('case');
+  const startAtCases = params.get('start') === 'cases';
+  const entryKey = `${startAtCases ? 'cases' : 'setup'}:${requestedCase ?? ''}`;
+
+  return <SimulationSetupForm
+    key={state?.setupPickerKey ?? entryKey}
+    entryKey={entryKey}
+    requestedCase={requestedCase}
+    startAtCases={startAtCases}
+  />;
+}
+
+function SimulationSetupForm({ entryKey, requestedCase, startAtCases }) {
+  const navigate = useNavigate();
   const [stepChoice, setStep] = useState(null);
   const stepTitleRef = useRef(null);
   const [confirm, setConfirm] = useState(false);
@@ -74,11 +88,15 @@ export default function SimulationSetup() {
   const [saved] = useState(() => readDraft(storageKey));
   const [form, updateForm] = useState(() => {
     // Bản nháp cũ không được âm thầm giữ mức phản biện đã bỏ khỏi giao diện.
-    const requestedCase = params.get('case');
-    const changesCase = requestedCase && requestedCase !== saved?.case_id;
-    return { case_id: '', user_court_role: '', case_event_date: '', ...saved, ...(requestedCase ? { case_id: requestedCase } : {}), difficulty: 'balanced', request_id: !changesCase && saved?.difficulty === 'balanced' && saved.request_id ? saved.request_id : crypto.randomUUID() };
+    const previous = startAtCases ? null : saved;
+    const changesCase = requestedCase && requestedCase !== previous?.case_id;
+    return { case_id: '', user_court_role: '', case_event_date: '', ...previous, ...(requestedCase ? { case_id: requestedCase } : {}), difficulty: 'balanced', request_id: !changesCase && previous?.difficulty === 'balanced' && previous.request_id ? previous.request_id : crypto.randomUUID() };
   });
-  const setForm = (value) => updateForm({ ...value, request_id: crypto.randomUUID() });
+  function setForm(value) {
+    const next = { ...value, request_id: crypto.randomUUID() };
+    updateForm(next);
+    return next;
+  }
   const membership = useMembership(form.request_id);
   const canResume = membership.data?.resumeRequestId === form.request_id;
   const canStart = membership.data?.canCreateSession || canResume;
@@ -102,7 +120,9 @@ export default function SimulationSetup() {
   const currentUser = getCurrentUser();
   const [uploadAsSystem, setUploadAsSystem] = useState(currentUser?.role === 'admin');
 
-  useEffect(() => { saveDraft(storageKey, form); }, [storageKey, form]);
+  useEffect(() => {
+    if (!startAtCases) saveDraft(storageKey, form);
+  }, [storageKey, form, startAtCases]);
   useEffect(() => {
     let active = true;
     if (form.case_id) api.get(`/v1/cases/${form.case_id}`).then(({ data }) => { if (active) { setSelectedCase(data.data); setDetailError(''); } }).catch((e) => { if (active) setDetailError(getApiError(e)); });
@@ -374,7 +394,7 @@ export default function SimulationSetup() {
       setCases((prev) => [created, ...prev.filter((item) => item._id !== created._id)]);
       setSelectedCase(created);
       setDetailError('');
-      setForm({
+      const newSetup = setForm({
         ...form,
         case_id: created._id,
         case_event_date: created.reference_date || form.case_event_date,
@@ -392,7 +412,7 @@ export default function SimulationSetup() {
           ? `Đã tải lên hồ sơ "${created.title}". Hồ sơ đang chờ Quản trị viên kiểm duyệt chất lượng dữ liệu trước khi mở phiên tranh tụng.`
           : `Đã tạo hồ sơ vụ án "${created.title}" thành công.`,
       });
-      setStep(1);
+      goStep(1, newSetup);
     } catch (error) {
       if (error.response?.status === 402) membership.refresh();
       setUploadState({
@@ -427,10 +447,16 @@ export default function SimulationSetup() {
   const canUploadMoreCases = currentUser?.role === 'admin' || membership.loading || membership.data?.canUploadCase !== false;
   const hasReviewDetails = ready && isSelectedCaseApproved && Boolean(form.user_court_role && eventDate);
   const valid = hasReviewDetails && canStart && !membership.loading && !state.submitting;
-  const restoresReview = saved?.case_id === form.case_id && saved?.user_court_role && hasReviewDetails;
+  const restoresReview = !startAtCases && saved?.case_id === form.case_id && saved?.user_court_role && hasReviewDetails;
   const step = stepChoice ?? (restoresReview ? reviewStep : 0);
 
-  function goStep(index) {
+  function goStep(index, setup = form) {
+    if (!stepTitleRef.current) return;
+    if (startAtCases && index > 0) {
+      saveDraft(storageKey, setup);
+      // Giữ nguyên biểu mẫu đang mở khi bỏ tham số chọn vụ án khỏi địa chỉ.
+      navigate('/dashboard/setup', { replace: true, state: { setupPickerKey: entryKey } });
+    }
     setStep(index);
     window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
     requestAnimationFrame(() => stepTitleRef.current?.focus({ preventScroll: true }));
@@ -470,6 +496,9 @@ export default function SimulationSetup() {
         <article className="setup-card p-6">
           <h2 ref={stepTitleRef} tabIndex={-1} className="setup-step-title"><span aria-hidden="true">{step + 1}</span>{stepTitles[step]}</h2>
           {step === 0 && <>
+            {startAtCases && saved?.case_id && <p className="setup-restore-link">
+              <Link to="/dashboard/setup">Tiếp tục bản thiết lập trước</Link>
+            </p>}
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <p className="setup-step-description !mb-0">Đọc tóm tắt và chọn tình huống bạn muốn thực hành hoặc tải lên bản án của riêng bạn.</p>
               <button

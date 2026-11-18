@@ -221,8 +221,9 @@
 
 .landing-hero {
   padding-block: clamp(2.8rem, 6vw, 5.5rem);
-  color: var(--landing-white);
-  background: var(--landing-navy);
+  color: var(--landing-navy);
+  background: #e4f2ff;
+  border-bottom: 1px solid #cde5fb;
 }
 
 .hero-grid {
@@ -245,7 +246,7 @@
 .hero-subheading {
   max-width: 43ch;
   margin: 1.25rem 0 0;
-  color: #dce6ef;
+  color: #244866;
   font-size: clamp(1rem, 1.5vw, 1.16rem);
 }
 
@@ -259,30 +260,23 @@
 
 .hero-note {
   margin: .9rem 0 0;
-  color: #c0d2e1;
+  color: var(--landing-muted);
   font-size: .83rem;
 }
 
-.landing-hero .landing-cta {
-  color: var(--landing-navy);
-  background: var(--cs-tint);
-}
-
-.landing-hero .landing-cta:hover { background: var(--cs-accent-bright); }
-
 .landing-hero .landing-secondary {
-  border-color: #91a7bf;
-  color: var(--landing-white);
+  border-color: #93b8db;
+  background: #f6fbff;
 }
 
-.landing-hero .landing-secondary:hover { background: #29435f; }
+.landing-hero .landing-secondary:hover { background: var(--landing-white); border-color: var(--landing-blue); }
 
 .hero-photo {
   display: block;
   width: 100%;
   height: auto;
   aspect-ratio: 1.42;
-  border: 1px solid rgb(255 255 255 / .2);
+  border: 1px solid #adcbe7;
   border-radius: 12px;
   object-fit: cover;
 }

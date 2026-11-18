@@ -2,6 +2,7 @@ import { scoreSummary } from '../../../shared/scorePresentation.mjs';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api, { getApiError } from '../services/api';
+import { PRACTICE_CASES_PATH } from '../services/simulation';
 import { LoadingState, EmptyState } from './WorkspaceStates';
 import SessionCard from './dashboard/SessionCard';
 import { sessionTime } from './dashboard/dashboardData.mjs';
@@ -32,7 +33,7 @@ export default function LearningOverview({ view = 'dashboard' }) {
     .filter((s) => `${s.case_id?.title ?? ''}`.toLocaleLowerCase('vi').includes(search.toLocaleLowerCase('vi')))
     .sort((a, b) => (sort === 'oldest' ? 1 : -1) * (new Date(sessionTime(a)) - new Date(sessionTime(b))));
   return <section className="practice-dashboard learning-overview space-y-6">
-    <header className="flex flex-wrap items-center justify-between gap-4"><div><h1 className="text-3xl font-bold text-white">{titles[view]}</h1><p className="mt-2 text-slate-400">Đọc hồ sơ, xây dựng lập luận và nhận góp ý từ phiên thực hành của bạn.</p></div><Link to="/dashboard/setup" className="dashboard-primary">Tạo phiên mới</Link></header>
+    <header className="flex flex-wrap items-center justify-between gap-4"><div><h1 className="text-3xl font-bold text-white">{titles[view]}</h1><p className="mt-2 text-slate-400">Đọc hồ sơ, xây dựng lập luận và nhận góp ý từ phiên thực hành của bạn.</p></div><Link to={PRACTICE_CASES_PATH} className="dashboard-primary">Chọn vụ án</Link></header>
     {loading && <LoadingState>Đang tải danh sách phiên...</LoadingState>}
     {error && <div role="alert" className="dashboard-card dashboard-alert">{error} <button onClick={() => { setLoading(true); setReload((n) => n + 1); }}>Thử lại</button></div>}
     {!loading && !error && <>
@@ -43,7 +44,7 @@ export default function LearningOverview({ view = 'dashboard' }) {
         return <div key={key}><p className="flex justify-between"><span>{label}</span><strong>{score === null ? 'Chưa có' : `${score}/100`}</strong></p>{score !== null && <progress aria-label={label} max="100" value={score} className="mt-2 h-3 w-full accent-blue-600" />}</div>;
       })}</div> : <>
         <div className="session-list-filters"><label className="dashboard-search block text-sm">Tìm phiên theo tên hồ sơ<input type="search" value={search} onChange={(e) => setSearch(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 p-3" placeholder="Nhập tên vụ án" /></label><label>Sắp xếp phiên<select value={sort} onChange={event => setSort(event.target.value)}><option value="newest">Cập nhật gần nhất</option><option value="oldest">Cũ nhất trước</option></select></label><span aria-live="polite">{visible.length} phiên</span></div>
-        {!visible.length && <EmptyState title={search ? 'Không tìm thấy phiên phù hợp' : view === 'history' ? 'Chưa có phiên đã hoàn thành' : 'Chưa có phiên đang luyện tập'}>{search ? 'Hãy thử tên vụ án khác hoặc xóa từ khóa.' : 'Chưa có phiên trong danh sách này. Chọn Tạo phiên mới để bắt đầu.'}</EmptyState>}
+        {!visible.length && <EmptyState title={search ? 'Không tìm thấy phiên phù hợp' : view === 'history' ? 'Chưa có phiên đã hoàn thành' : 'Chưa có phiên đang luyện tập'}>{search ? 'Hãy thử tên vụ án khác hoặc xóa từ khóa.' : 'Bấm Chọn vụ án để bắt đầu luyện tập.'}</EmptyState>}
         <div className="dashboard-session-grid session-list-cards grid gap-4 lg:grid-cols-2">{(view === 'dashboard' ? visible.slice(0, 6) : visible).map((s) => <SessionCard key={s._id} session={s}/>)}</div>
       </>}
     </>}

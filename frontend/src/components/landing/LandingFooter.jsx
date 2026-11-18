@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom';
 import { ArrowUpRight } from 'lucide-react';
 import CourtSimBrand from '../CourtSimBrand';
+import { PRACTICE_CASES_PATH } from '../../services/simulation';
 
 const groups = [
   { title: 'Sản phẩm', links: [
-    { label: 'Chọn vụ án', to: '/dashboard/setup' },
+    { label: 'Chọn vụ án', to: PRACTICE_CASES_PATH },
     { label: 'Cách học', href: '#workflow' },
     { label: 'Kỹ năng luyện tập', href: '#features' },
     { label: 'Cách nhận góp ý', to: '/guide#scoring' },
