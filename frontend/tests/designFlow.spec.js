@@ -17,7 +17,10 @@ test('thư viện công khai lỗi 401 không điều hướng nền sang đăng
   await expect(page).toHaveURL(/\/$/);
 });
 
-test('thư viện thật qua API: bộ lọc, đọc hồ sơ và điều hướng đăng nhập', async ({ page }) => {
+test('thư viện thật qua API: bộ lọc, đọc hồ sơ và điều hướng đăng nhập', async ({ page }, info) => {
+  await page.setViewportSize(info.project.name === 'mobile'
+    ? { width: 390, height: 664 }
+    : { width: 1440, height: 900 });
   await page.route('**/api/**', route => {
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith('/auth/me')) return route.fulfill({ status: 401, json: {} });
@@ -25,6 +28,11 @@ test('thư viện thật qua API: bộ lọc, đọc hồ sơ và điều hướ
   });
   await page.goto('/');
   await expect(page.locator('.landing-case-card')).toHaveCount(1);
+  await expect(page.getByRole('heading', { level: 1, name: 'Luyện tranh tụng qua phiên tòa mô phỏng' })).toBeVisible();
+  const sampleLink = page.getByRole('link', { name: 'Xem hồ sơ mẫu', exact: true });
+  await expect(sampleLink).toBeInViewport({ ratio: 1 });
+  await sampleLink.click();
+  await expect(page).toHaveURL(/\/#cases$/);
   await page.getByRole('button', { name: 'Sơ thẩm', exact: true }).click();
   await expect(page.getByText('Chưa có hồ sơ phù hợp', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Tất cả', exact: true }).click();
@@ -83,6 +91,87 @@ test('thiết lập 5 bước: xác nhận mới gửi API, lỗi giữ lựa ch
   await noOverflow(page);
 });
 
+test('phòng xử án: chuyển lượt, gửi và thử lại với thanh điều khiển luôn trong màn hình', async ({ page }, info) => {
+  await page.setViewportSize(info.project.name === 'mobile'
+    ? { width: 390, height: 664 }
+    : { width: 1440, height: 900 });
+  let currentSession = { ...session };
+  let currentRecords = [...records];
+  const commands = [];
+  const argumentText = 'Tôi đề nghị đối chiếu phạm vi chứng minh của lời khai với các tài liệu trong hồ sơ.';
+  await page.route('**/api/**', async route => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname;
+    if (path.endsWith('/auth/me')) {
+      return route.fulfill({ json: { user: { id: 'design-user', role: 'user' } } });
+    }
+    if (path.endsWith('/records')) return route.fulfill({ json: { data: currentRecords } });
+    if (path.endsWith('/dialogue/seen')) return route.fulfill({ json: {} });
+    if (path.endsWith('/dialogue')) {
+      const command = request.postDataJSON();
+      commands.push(command);
+      if (command.action === 'advance' && currentSession.conversation.next_speaker === 'opponent') {
+        currentSession = { ...currentSession, conversation: { ...currentSession.conversation, status: 'failed' } };
+        return route.fulfill({ status: 502, json: { error: { message: 'Không tạo được lời thoại.' } } });
+      }
+      const conversation = { status: 'learner', revision: currentSession.conversation.revision + 1 };
+      if (command.action === 'submit') {
+        currentRecords = [...currentRecords, { _id: 'r3', sender_type: 'user', content: command.content }];
+        Object.assign(conversation, { status: 'awaiting_continue', next_speaker: 'opponent' });
+      }
+      if (command.action === 'resume') {
+        currentRecords = [...currentRecords, { _id: 'r4', sender_type: 'ai_opponent', content: 'Tôi đề nghị xác minh phạm vi người khai trực tiếp biết.' }];
+        Object.assign(conversation, { status: 'awaiting_continue', next_speaker: 'learner' });
+      }
+      currentSession = { ...currentSession, conversation: { ...conversation, current_record_id: currentRecords.at(-1)._id } };
+      return route.fulfill({ json: { data: { session: currentSession, records: currentRecords } } });
+    }
+    return route.fulfill({ json: { data: currentSession } });
+  });
+  await page.goto('/simulation/design-session');
+
+  const toolbar = page.getByRole('navigation', { name: 'Điều khiển phiên tòa' });
+  const evidence = toolbar.getByRole('button', { name: 'Hồ sơ chứng cứ', exact: true });
+  const transcript = toolbar.getByRole('button', { name: 'Biên bản', exact: true });
+  const send = page.getByRole('button', { name: 'Gửi lập luận', exact: true });
+  const dialogue = page.getByRole('log', { name: 'Danh sách tin nhắn phát biểu trong phiên tòa' });
+  await expect(dialogue).toBeInViewport({ ratio: 0.5 });
+  await expect(dialogue.getByText(records.at(-1).content, { exact: true })).toBeInViewport({ ratio: 0.5 });
+  expect((await dialogue.boundingBox()).height).toBeGreaterThanOrEqual(80);
+  await expect(evidence).toBeInViewport({ ratio: 1 });
+  await expect(transcript).toBeInViewport({ ratio: 1 });
+  await expect(send).toBeInViewport({ ratio: 1 });
+  await evidence.click();
+  await expect(page.locator('.dossier-evidence')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await transcript.click();
+  await expect(page.locator('.transcript-entry')).toHaveCount(records.length);
+  await page.keyboard.press('Escape');
+
+  const argument = page.getByLabel('Lập luận của bạn');
+  await argument.fill(argumentText);
+  await send.click();
+  const advance = page.getByRole('button', { name: 'Tiếp tục: Bên đối lập', exact: true });
+  await expect(advance).toHaveCount(1);
+  await expect(advance).toBeInViewport({ ratio: 1 });
+  await advance.click();
+  const retry = page.getByRole('button', { name: 'Thử lại lời thoại', exact: true });
+  await expect(retry).toHaveCount(1);
+  await expect(retry).toBeInViewport({ ratio: 1 });
+  await retry.click();
+  const speak = page.getByRole('button', { name: 'Trình bày ý kiến', exact: true });
+  await expect(speak).toHaveCount(1);
+  await expect(speak).toBeInViewport({ ratio: 1 });
+  await expect(send).toHaveCount(0);
+  await speak.click();
+  await expect(argument).toBeEnabled();
+  await expect(argument).toHaveValue('');
+  await expect(send).toBeInViewport({ ratio: 1 });
+  expect(commands.map(command => command.action)).toEqual(['submit', 'advance', 'resume', 'advance']);
+  expect(commands[0].content).toBe(argumentText);
+  await noOverflow(page);
+});
+
 test('phòng xử án: draft, chèn chứng cứ, trợ lý lỗi giữ câu hỏi, hướng dẫn và hủy kết thúc', async ({ page }) => {
   let completed = 0;
   const browserErrors = [];
@@ -105,6 +194,8 @@ test('phòng xử án: draft, chèn chứng cứ, trợ lý lỗi giữ câu h�
   await page.getByLabel('Nội dung lập luận').fill('Bản nháp cần giữ lại. Bổ sung trong chế độ mở rộng.');
   await page.getByRole('button', { name: 'Quay lại ô lập luận →' }).click();
   await expect(page.getByLabel('Lập luận của bạn')).toHaveValue(/Bổ sung trong chế độ mở rộng/);
+  const tools = page.getByRole('button', { name: 'Công cụ khác', exact: true });
+  await tools.click();
   await page.getByRole('button', { name: 'Hồ sơ phiên tòa', exact: true }).click();
   await page.getByRole('button', { name: /Tài liệu gốc/ }).click();
   await page.getByRole('button', { name: /^Đưa vào lập luận:/ }).first().click();
@@ -112,12 +203,14 @@ test('phòng xử án: draft, chèn chứng cứ, trợ lý lỗi giữ câu h�
   expect(await page.getByLabel('Lập luận của bạn').inputValue()).toContain('[Chứng cứ:');
   await page.reload();
   await expect(page.getByLabel('Lập luận của bạn')).toHaveValue(/Bản nháp cần giữ lại/);
+  await tools.click();
   await page.getByRole('button', { name: 'Trợ lý luật', exact: true }).click();
   await page.getByLabel('Câu hỏi tra cứu luật').fill('Phạm vi chứng minh của giấy chứng nhận?');
   await page.getByRole('button', { name: 'Hỏi trợ lý' }).click();
   await expect(page.getByRole('alert')).toContainText('Chưa nhận được câu trả lời');
   await expect(page.getByLabel('Câu hỏi tra cứu luật')).toHaveValue('Phạm vi chứng minh của giấy chứng nhận?');
   await page.keyboard.press('Escape');
+  await tools.click();
   await page.getByRole('button', { name: 'Hướng dẫn', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Xem hồ sơ vụ án' })).toBeVisible();
   await page.getByRole('button', { name: 'Tiếp theo →' }).click();

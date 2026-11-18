@@ -25,7 +25,7 @@ import FeedbackModal from '../../../components/feedback/FeedbackModal';
 import TrialPhaseStepper from '../../../components/courtroom/TrialPhaseStepper';
 import CaseQuickSummaryModal from '../../../components/courtroom/CaseQuickSummaryModal';
 import SessionTimer from '../../../components/courtroom/SessionTimer';
-import { ArrowLeft, ArrowRight, Award, BookOpen, CircleHelp, ClipboardList, FileDown, FileText, FolderOpen, Gavel, HelpCircle, Loader2, LogOut, Maximize2, MessageSquareQuote, Plus, Scale, Send, Shield, Tag, User } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Award, BookOpen, ChevronDown, CircleHelp, ClipboardList, FileDown, FileText, FolderOpen, Gavel, HelpCircle, LogOut, Maximize2, MessageSquareQuote, Plus, Scale, Send, Shield, Tag } from 'lucide-react';
 import { LoadingState } from '../../../components/WorkspaceStates';
 
 export default function SimulationRoom() {
@@ -41,6 +41,9 @@ function Room({ sessionId }) {
   const [streamedSpeech, setStreamedSpeech] = useState(null);
   const argumentRef = useRef(null);
   const [panel, setPanel] = useState(null);
+  const [toolsOpen, setToolsOpen] = useState(false);
+  const toolsRef = useRef(null);
+  const toolsTriggerRef = useRef(null);
   const [insertError, setInsertError] = useState('');
   const busy = useRef(false);
   const storageKey = draftKey(sessionId);
@@ -75,6 +78,31 @@ function Room({ sessionId }) {
   const [countdownStopped, setCountdownStopped] = useState(false);
   // Lời thoại người dùng vừa nhấn vào trong khung hội thoại (dùng khi bấm nút bật giọng đọc)
   const [focusedRecordId, setFocusedRecordId] = useState(null);
+
+  useEffect(() => {
+    if (!toolsOpen) return;
+    function closeOnOutsideClick(event) {
+      if (!toolsRef.current?.contains(event.target)) setToolsOpen(false);
+    }
+    function closeOnEscape(event) {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      setToolsOpen(false);
+      toolsTriggerRef.current?.focus();
+    }
+    document.addEventListener('pointerdown', closeOnOutsideClick);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsideClick);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [toolsOpen]);
+
+  function selectTool(action) {
+    toolsTriggerRef.current?.focus();
+    setToolsOpen(false);
+    action();
+  }
 
   // Phát đúng một lời thoại cụ thể và ghi nhận đã đọc để chế độ tự động không đọc lặp lại.
   function speakRecord(record, { manual }) {
@@ -357,9 +385,9 @@ function Room({ sessionId }) {
   }
 
   async function complete(options = {}) {
+    if (busy.current || (!options?.autoFromChat && disabled)) return;
     setCountdownStopped(true);
     setAutoCloseCountdown(null);
-    if (!options?.autoFromChat && (busy.current || disabled)) return;
 
     // Nếu người dùng chọn gửi lời tranh tụng dở dang làm phần kết luận trước khi chấm điểm
     if (options?.sendDraft && draft.content.trim()) {
@@ -518,7 +546,9 @@ function Room({ sessionId }) {
   const plaintiffName = plaintiffParty?.name || 'Nguyên đơn';
   const defendantName = defendantParty?.name || 'Bị đơn';
   const userRoleText = roleLabel(session?.user_court_role, courtCase?.category, courtCase);
-  const ready = !disabled && canLearnerSpeak && userTurns < (session?.max_turns ?? 20);
+  const maxTurns = session?.max_turns ?? 20;
+  const hasLearnerTurn = canLearnerSpeak && userTurns < maxTurns;
+  const ready = !disabled && hasLearnerTurn;
   const reviewing = Boolean(selectedId && selectedId !== (conversation?.current_record_id ?? records.at(-1)?._id));
   const nextSpeaker = conversation?.next_speaker === 'judge' ? 'Chủ tọa' : conversation?.next_speaker === 'opponent' ? 'Bên đối lập' : 'Bạn';
   const lastRecord = records.at(-1);
@@ -538,20 +568,17 @@ function Room({ sessionId }) {
       setAutoCloseCountdown(null);
       return;
     }
-    setAutoCloseCountdown(5);
+    let secondsRemaining = 5;
+    setAutoCloseCountdown(secondsRemaining);
     const interval = setInterval(() => {
-      setAutoCloseCountdown((prev) => {
-        if (prev === null) {
-          clearInterval(interval);
-          return null;
-        }
-        if (prev <= 1) {
-          clearInterval(interval);
-          complete({ autoFromChat: true });
-          return null;
-        }
-        return prev - 1;
-      });
+      secondsRemaining -= 1;
+      if (secondsRemaining > 0) {
+        setAutoCloseCountdown(secondsRemaining);
+        return;
+      }
+      clearInterval(interval);
+      setAutoCloseCountdown(null);
+      complete({ autoFromChat: true });
     }, 1000);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -565,16 +592,55 @@ function Room({ sessionId }) {
         ? 'Kính thưa Hội đồng xét xử, trình bày yêu cầu khởi kiện/phản bác mở đầu và chứng cứ cốt lõi của phía bạn…'
         : 'Đối đáp trực diện luận điểm của bên đối lập, liên hệ bút lục chứng cứ… Hoặc gõ "Đề nghị HĐXX vào nghị án" để kết thúc phiên tòa bằng chat.';
   const status = state.ending ? 'Đang nghị án & chấm điểm' : state.sending ? (conversation ? 'Đang chuẩn bị lượt tiếp theo' : submittedContent ? 'Đang chờ phản hồi' : 'Đang lưu ngày') : session?.processing ? (readDraft(completionKey)?.requested ? 'Đang chấm điểm' : 'Đang xử lý lượt trước') : completed ? 'Phiên đã kết thúc' : userTurns >= (session?.max_turns ?? 20) ? 'Đã đủ số lượt' : isReadyToClose && ready ? 'Giai đoạn tổng kết · Có thể kết thúc phiên' : ready ? 'Đến lượt bạn' : conversation?.status === 'awaiting_continue' ? 'Đọc lời thoại rồi bấm Tiếp tục' : conversation?.status === 'failed' ? 'Có thể thử lại lời thoại' : 'Kiểm tra thông tin phiên';
-  const speechControls = reviewing ? <div className="speech-controls"><button type="button" className="dialogue-next" onClick={returnToCurrent}>Trở về lượt hiện tại</button></div> : conversation && !completed ? <div className="speech-controls">
-      {preparing && <p role="status" aria-live="polite">{streamedSpeech?.content ? 'Đang nhận lời thoại. Bạn có thể đọc phần đã hiện.' : conversation.next_speaker === 'judge' ? 'Chủ tọa đang chuẩn bị câu hỏi…' : conversation.next_speaker === 'opponent' ? 'Bên đối lập đang chuẩn bị lời đáp…' : 'Đang gửi lập luận…'}</p>}
-      {slow && preparing && <p role="status">{waitExpired ? 'Chưa xác nhận được kết quả. Kiểm tra kết nối và tiến trình trước khi thử lại để tránh gửi trùng.' : 'Phản hồi đang lâu hơn thường lệ.'} <button type="button" onClick={() => setReload(n => n + 1)}>Kiểm tra tiến trình</button></p>}
-      {conversation.status === 'awaiting_continue' && <button type="button" className="dialogue-next" disabled={disabled} onClick={() => continueDialogue('advance')}>{nextSpeaker === 'Bạn' ? 'Trình bày ý kiến' : `Tiếp tục: ${nextSpeaker}`} <span aria-hidden="true">→</span></button>}
-      {conversation.status === 'failed' && <button type="button" className="dialogue-next" disabled={disabled} onClick={() => continueDialogue('resume')}>Thử lại lời thoại</button>}
-      {isReadyToClose && !preparing && <button type="button" className="dialogue-complete-btn inline-flex items-center gap-1.5" disabled={disabled} onClick={() => complete({ autoFromChat: true })}><Gavel size={14} aria-hidden="true" /><span>Nghị án & Chấm điểm kết quả</span></button>}
-    </div> : null;
+  const speechControls = conversation && !completed && preparing && !reviewing ? (
+    <div className="speech-controls">
+      <p role="status">{streamedSpeech?.content ? 'Đang nhận lời thoại. Bạn có thể đọc phần đã hiện.' : conversation.next_speaker === 'judge' ? 'Chủ tọa đang chuẩn bị câu hỏi…' : conversation.next_speaker === 'opponent' ? 'Bên đối lập đang chuẩn bị lời đáp…' : 'Đang gửi lập luận…'}</p>
+      {slow && <p role="status">{waitExpired ? 'Chưa xác nhận được kết quả. Kiểm tra kết nối và tiến trình trước khi thử lại để tránh gửi trùng.' : 'Phản hồi đang lâu hơn thường lệ.'} <button type="button" onClick={() => setReload(n => n + 1)}>Kiểm tra tiến trình</button></p>}
+    </div>
+  ) : null;
+  const finishIsPrimary = !reviewing && !completed && !isConcluded &&
+    !preparing && !['awaiting_continue', 'failed'].includes(conversation?.status) &&
+    (userTurns >= maxTurns || (isReadyToClose && !canLearnerSpeak));
+  let turnAction = <p className="room-turn-status" role="status">{status}</p>;
+  if (reviewing) {
+    turnAction = <button type="button" className="room-primary-button" onClick={returnToCurrent}>Trở về lượt hiện tại</button>;
+  } else if (completed) {
+    turnAction = <Link to={`/simulation/${sessionId}/result`} className="room-primary-button"><Award size={16} aria-hidden="true" /> Xem kết quả</Link>;
+  } else if (isConcluded) {
+    turnAction = (
+      <button type="button" className="room-primary-button room-finish-button" disabled={disabled} onClick={() => complete({ autoFromChat: true })}>
+        <Gavel size={16} aria-hidden="true" /> {state.ending ? 'Đang chấm điểm…' : 'Nghị án và chấm điểm'}
+      </button>
+    );
+  } else if (conversation?.status === 'awaiting_continue') {
+    turnAction = (
+      <button type="button" className="room-primary-button" disabled={disabled} onClick={() => continueDialogue('advance')}>
+        {nextSpeaker === 'Bạn' ? 'Trình bày ý kiến' : `Tiếp tục: ${nextSpeaker}`} <ArrowRight size={16} aria-hidden="true" />
+      </button>
+    );
+  } else if (conversation?.status === 'failed') {
+    turnAction = <button type="button" className="room-primary-button" disabled={disabled} onClick={() => continueDialogue('resume')}>Thử lại lời thoại</button>;
+  } else if (finishIsPrimary) {
+    turnAction = (
+      <button type="button" className="room-primary-button room-finish-button" disabled={disabled || !userTurns} onClick={() => setConfirmEnd(true)}>
+        <Gavel size={16} aria-hidden="true" /> Kết thúc và chấm điểm
+      </button>
+    );
+  } else if (hasLearnerTurn) {
+    turnAction = (
+      <button
+        type="submit"
+        form="courtroom-argument-form"
+        className="room-primary-button"
+        disabled={!ready || cooldown || draft.content.trim().length < 3}
+      >
+        {state.sending ? 'Đang gửi…' : cooldown ? 'Chờ giây lát…' : <>Gửi lập luận <Send size={16} aria-hidden="true" /></>}
+      </button>
+    );
+  }
   if (state.loading) return <main className="courtroom-page"><LoadingState>Đang tải phiên tòa...</LoadingState></main>;
   return <main className="courtroom-page">
-    {panel === 'guide' && <CourtroomGuide completed={completed} maxTurns={session?.max_turns ?? 20} hasDialogue={Boolean(view.record)} onClose={() => setPanel(null)} />}
+    {panel === 'guide' && <CourtroomGuide completed={completed} maxTurns={maxTurns} hasDialogue={Boolean(view.record)} onClose={() => setPanel(null)} />}
     <StudyPanel open={Boolean(panel) && panel !== 'guide'} compact={panel === 'speech'} title={panelTitles[panel] ?? 'Hồ sơ vụ án'} onClose={() => setPanel(null)}>
       {insertError && <p role="alert" className="mb-3 text-rose-400">{insertError}</p>}
       {(panel === 'case' || panel === 'history') && <>
@@ -652,23 +718,10 @@ function Room({ sessionId }) {
 
         <nav className="courtroom-controls" aria-label="Công cụ phiên tòa">
           <SessionTimer session={session} completed={completed} />
-          <button className="tool-guide inline-flex items-center gap-1" aria-expanded={panel === 'guide'} onClick={() => setPanel(panel === 'guide' ? null : 'guide')}>
-            <HelpCircle size={13} aria-hidden="true" />
-            <span>Hướng dẫn</span>
-          </button>
-          <button type="button" className="tool-export inline-flex items-center gap-1" onClick={() => setPdfModalOpen(true)} title="Xuất biên bản phiên tòa dạng PDF">
-            <FileDown size={13} aria-hidden="true" />
-            <span>Xuất PDF</span>
-          </button>
-          {completed ? (
-            <Link to={'/simulation/' + sessionId + '/result'} className="result-link-btn inline-flex items-center gap-1">
-              <Award size={13} aria-hidden="true" />
-              <span>Xem kết quả</span>
-            </Link>
-          ) : (
-            <button className="end-session inline-flex items-center gap-1" disabled={disabled || !userTurns} onClick={() => setConfirmEnd(true)}>
+          {!completed && !isConcluded && !finishIsPrimary && (
+            <button type="button" className="end-session inline-flex items-center gap-1" aria-label="Kết thúc và chấm điểm" disabled={disabled || !userTurns} onClick={() => setConfirmEnd(true)}>
               <LogOut size={13} aria-hidden="true" />
-              <span>{state.ending ? 'Đang chấm điểm...' : 'Kết thúc phiên'}</span>
+              <span>Kết thúc<span className="room-end-detail"> và chấm điểm</span></span>
             </button>
           )}
         </nav>
@@ -680,7 +733,7 @@ function Room({ sessionId }) {
           session={session}
           records={records}
           userTurns={userTurns}
-          maxTurns={session?.max_turns ?? 20}
+          maxTurns={maxTurns}
         />
       </div>
     </header>
@@ -699,121 +752,15 @@ function Room({ sessionId }) {
         onFocusRecord={(id) => setFocusedRecordId(id ? String(id) : null)}
         onSelectRecord={selectRecord}
         navigationDisabled={state.sending || state.ending || session?.processing}
-        onHistory={() => setPanel('history')}
         onReadFull={(record) => { setFullRecord(record); setPanel('speech'); }}
         ttsEnabled={ttsEnabled}
         onToggleTts={handleToggleTts}
       />
     </div>
     <div className="courtroom-bottom-console">
-      {/* Thanh công cụ và điều khiển phiên tòa tích hợp cố định trong tầm mắt */}
-      <div className="console-action-deck" aria-label="Thanh công cụ và điều khiển phiên tòa">
-        <div className="deck-group-primary">
-          <button
-            type="button"
-            className={`deck-btn deck-evidence-btn ${panel === 'case' ? 'is-active' : ''}`}
-            onClick={() => { setDossierTab('evidence'); setPanel(panel === 'case' ? null : 'case'); }}
-            title="Mở hồ sơ vụ án và đối chiếu tài liệu chứng cứ"
-          >
-            <FolderOpen size={15} aria-hidden="true" />
-            <strong>Hồ sơ chứng cứ</strong>
-          </button>
-
-          <button
-            type="button"
-            className={`deck-btn deck-law-btn ${panel === 'assistant' ? 'is-active' : ''}`}
-            onClick={() => setPanel(panel === 'assistant' ? null : 'assistant')}
-            title="Mở Trợ lý tra cứu điều luật và căn cứ pháp lý"
-          >
-            <Scale size={15} aria-hidden="true" />
-            <strong>Trợ lý Luật</strong>
-          </button>
-
-          <button
-            type="button"
-            className={`deck-btn deck-notebook-btn ${panel === 'notebook' ? 'is-active' : ''}`}
-            onClick={() => setPanel(panel === 'notebook' ? null : 'notebook')}
-            title="Mở sổ tay ghi chép của luật sư trong phiên"
-          >
-            <BookOpen size={14} aria-hidden="true" />
-            <span>Sổ tay</span>
-          </button>
-
-          <div className="deck-separator" aria-hidden="true" />
-
-          {[[MessageSquareQuote, 'Phản biện', 'Làm rõ ý kiến'], [CircleHelp, 'Đặt câu hỏi', 'Làm sáng tỏ tình tiết'], [FileText, 'Tóm tắt', 'Hệ thống lập luận']].map(([Icon, label, detail]) => (
-            <button
-              key={label}
-              type="button"
-              className="deck-btn deck-quick-btn"
-              disabled={!ready}
-              onClick={() => { setDraftMode(label); setExpandedComposer(true); }}
-              title={`${label}: ${detail}`}
-            >
-              <Icon size={14} aria-hidden="true" />
-              <span>{label}</span>
-            </button>
-          ))}
-        </div>
-
-        <div className="deck-group-controls">
-          {conversation?.status === 'awaiting_continue' && (
-            <button
-              type="button"
-              className="deck-btn deck-continue-btn inline-flex items-center gap-1 animate-pulse"
-              disabled={disabled}
-              onClick={() => continueDialogue('advance')}
-            >
-              <span>{nextSpeaker === 'Bạn' ? 'Trình bày ý kiến' : `Tiếp tục: ${nextSpeaker}`}</span>
-              <ArrowRight size={13} aria-hidden="true" />
-            </button>
-          )}
-
-          {conversation?.status === 'failed' && (
-            <button
-              type="button"
-              className="deck-btn deck-retry-btn"
-              disabled={disabled}
-              onClick={() => continueDialogue('resume')}
-            >
-              <span>Thử lại lời thoại</span>
-            </button>
-          )}
-
-          {completed ? (
-            <Link to={`/simulation/${sessionId}/result`} className="deck-btn deck-result-btn inline-flex items-center gap-1.5">
-              <Award size={14} aria-hidden="true" />
-              <span>Xem kết quả đánh giá</span>
-            </Link>
-          ) : (
-            <button
-              type="button"
-              className={`deck-btn deck-complete-btn inline-flex items-center gap-1.5 ${(isReadyToClose || userTurns >= (session?.max_turns ?? 20)) ? 'is-highlight' : ''}`}
-              disabled={disabled || !userTurns}
-              onClick={() => setConfirmEnd(true)}
-              title="Kết thúc tranh luận và đề nghị Hội đồng xét xử nghị án chấm điểm"
-            >
-              <Gavel size={14} aria-hidden="true" />
-              <span>Nghị án & Chấm điểm</span>
-            </button>
-          )}
-
-          <button
-            type="button"
-            className="deck-btn deck-transcript-btn inline-flex items-center gap-1.5"
-            onClick={() => setPanel(panel === 'history' ? null : 'history')}
-            title="Mở toàn bộ biên bản phát biểu của phiên tòa"
-          >
-            <ClipboardList size={13} aria-hidden="true" />
-            <span>Biên bản ({records.length})</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Form soạn thảo và Voice Controls gắn cố định bên dưới */}
       {completed ? (
         <div className="courtroom-notice text-center py-2">
-          <p className="m-0 text-slate-300">Phiên tòa đã kết thúc. Biên bản ở chế độ chỉ đọc. Bấm nút <strong>Xem kết quả đánh giá</strong> để xem bảng điểm chi tiết.</p>
+          <p className="m-0 text-slate-300">Phiên đã kết thúc. Đây là biên bản chỉ đọc.</p>
         </div>
       ) : isConcluded ? (
         <div className="courtroom-concluded-banner">
@@ -840,39 +787,15 @@ function Room({ sessionId }) {
                 Dừng đếm ngược
               </button>
             )}
-            <button
-              type="button"
-              className="concluded-action-btn inline-flex items-center justify-center gap-1.5"
-              onClick={() => {
-                setCountdownStopped(true);
-                setAutoCloseCountdown(null);
-                complete({ autoFromChat: true });
-              }}
-              disabled={state.ending}
-            >
-              {state.ending ? (
-                <>
-                  <Loader2 size={13} className="animate-spin" />
-                  <span>Đang chấm điểm...</span>
-                </>
-              ) : (
-                <>
-                  <span>Vào nghị án & Nhận kết quả</span>
-                  <ArrowRight size={13} aria-hidden="true" />
-                </>
-              )}
-            </button>
           </div>
         </div>
-      ) : (
-        <form onSubmit={send} className="courtroom-composer-form">
+      ) : hasLearnerTurn && (
+        <form id="courtroom-argument-form" onSubmit={send} className="courtroom-composer-form">
           <div className="composer-row-top">
             <VoiceDebateControls
               disabled={!ready}
               onAppendText={appendVoiceTranscript}
               textareaRef={argumentRef}
-              ttsEnabled={ttsEnabled}
-              onToggleTts={handleToggleTts}
             />
             <div className="composer-status-badge" role="status">
               <span className="status-dot" aria-hidden="true" />
@@ -883,13 +806,14 @@ function Room({ sessionId }) {
               className="expand-argument"
               disabled={!ready}
               onClick={() => { setDraftMode(null); setExpandedComposer(true); }}
-              title="Mở rộng trình bày toàn màn hình"
+              aria-label="Mở rộng trình bày"
             >
               <Maximize2 size={13} /> Mở rộng
             </button>
           </div>
 
           <div className="composer-fields">
+            <label htmlFor="argument" className="sr-only">Lập luận của bạn</label>
             <textarea
               ref={argumentRef}
               onDrop={dropEvidence}
@@ -906,26 +830,6 @@ function Room({ sessionId }) {
               onChange={(e) => setDraft({ content: e.target.value, request_id: crypto.randomUUID() })}
               placeholder={argumentPlaceholder}
             />
-            <button
-              type="submit"
-              className="composer-send inline-flex items-center justify-center gap-1.5"
-              disabled={!ready || state.sending || cooldown || draft.content.trim().length < 3}
-              title={cooldown ? 'Vui lòng chờ ít giây trước khi gửi tiếp' : undefined}
-            >
-              {state.sending ? (
-                <>
-                  <Loader2 size={14} className="animate-spin" />
-                  <span>Đang gửi…</span>
-                </>
-              ) : cooldown ? (
-                <span>Chờ giây lát…</span>
-              ) : (
-                <>
-                  <span>Gửi lập luận</span>
-                  <Send size={13} aria-hidden="true" />
-                </>
-              )}
-            </button>
           </div>
 
           <div className="composer-foot flex flex-wrap items-center justify-between gap-2">
@@ -955,9 +859,75 @@ function Room({ sessionId }) {
               )
             )}
           </div>
-          {userTurns >= (session?.max_turns ?? 20) && <p className="text-amber-300 text-xs mt-1">Đã đủ số lượt quy định. Chọn <strong>Nghị án & Chấm điểm</strong> để xem kết quả.</p>}
         </form>
       )}
+      <nav className="console-action-deck" aria-label="Điều khiển phiên tòa">
+        <div className="room-turn-action">{turnAction}</div>
+        <div className="room-action-tools">
+          <button
+            type="button"
+            className="room-tool-button deck-evidence-btn"
+            aria-expanded={panel === 'case' && dossierTab === 'evidence'}
+            onClick={() => {
+              setDossierTab('evidence');
+              setPanel(panel === 'case' && dossierTab === 'evidence' ? null : 'case');
+            }}
+          >
+            <FolderOpen size={15} aria-hidden="true" />
+            <span>Hồ sơ chứng cứ</span>
+          </button>
+          <button
+            type="button"
+            className="room-tool-button deck-transcript-btn"
+            aria-expanded={panel === 'history'}
+            onClick={() => setPanel(panel === 'history' ? null : 'history')}
+          >
+            <ClipboardList size={15} aria-hidden="true" />
+            <span>Biên bản</span>
+          </button>
+          <div
+            className="room-tools-disclosure"
+            ref={toolsRef}
+            onBlur={event => {
+              if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget)) setToolsOpen(false);
+            }}
+          >
+            <button
+              type="button"
+              ref={toolsTriggerRef}
+              className="room-tool-button room-tools-trigger"
+              aria-expanded={toolsOpen}
+              aria-controls="courtroom-other-tools"
+              onClick={() => setToolsOpen(open => !open)}
+            >
+              <span>Công cụ khác</span>
+              <ChevronDown size={13} aria-hidden="true" />
+            </button>
+            <div className="room-tools-popup" id="courtroom-other-tools" hidden={!toolsOpen}>
+              <button type="button" onClick={() => selectTool(() => { setDossierTab('overview'); setPanel('case'); })}>
+                <FolderOpen size={15} aria-hidden="true" /> Hồ sơ phiên tòa
+              </button>
+              <button type="button" onClick={() => selectTool(() => setPanel('assistant'))}>
+                <Scale size={15} aria-hidden="true" /> Trợ lý luật
+              </button>
+              <button type="button" onClick={() => selectTool(() => setPanel('notebook'))}>
+                <BookOpen size={15} aria-hidden="true" /> Sổ tay
+              </button>
+              <button type="button" onClick={() => selectTool(() => setPanel('guide'))}>
+                <HelpCircle size={15} aria-hidden="true" /> Hướng dẫn
+              </button>
+              <button type="button" onClick={() => selectTool(() => setPdfModalOpen(true))}>
+                <FileDown size={15} aria-hidden="true" /> Xuất PDF
+              </button>
+              {!completed && [[MessageSquareQuote, 'Phản biện'], [CircleHelp, 'Đặt câu hỏi'], [FileText, 'Tóm tắt']].map(([Icon, label]) => (
+                <button key={label} type="button" disabled={!ready} onClick={() => selectTool(() => { setDraftMode(label); setExpandedComposer(true); })}>
+                  <Icon size={15} aria-hidden="true" /> {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </nav>
     </div>
     <PdfExportModal
       open={pdfModalOpen}

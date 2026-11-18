@@ -29,6 +29,8 @@ test('Freemium: trợ lý và phân tích bị khóa, hết 2 lượt không m�
   await page.getByRole('button', { name: 'Xác nhận bắt đầu', exact: true }).click();
   await expect(page).toHaveURL(/simulation\/[a-f0-9]{24}$/);
   const sessionId = page.url().split('/').at(-1);
+  const tools = page.getByRole('button', { name: 'Công cụ khác', exact: true });
+  await tools.click();
   await page.getByRole('button', { name: 'Trợ lý luật', exact: true }).click();
   await expect(page.getByRole('region', { name: 'Quyền lợi thành viên' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Hỏi trợ lý' })).toHaveCount(0);
@@ -54,6 +56,7 @@ test('Freemium: trợ lý và phân tích bị khóa, hết 2 lượt không m�
   await expect(page.getByRole('region', { name: 'Gói và lượt luyện tập' })).toContainText('Gói Lite');
   await expect(page.getByRole('region', { name: 'Gói và lượt luyện tập' })).toContainText('Lượt đã mua còn 5');
   await page.goto(`/simulation/${sessionId}`);
+  await tools.click();
   await page.getByRole('button', { name: 'Trợ lý luật', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Hỏi trợ lý' })).toBeVisible();
   await page.goto('/dashboard/analytics');

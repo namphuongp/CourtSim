@@ -97,7 +97,6 @@ export default function CourtroomStage({
   records = [],
   focusedRecordId = null,
   onFocusRecord,
-  onHistory,
   onReadFull,
   onSelectRecord,
   navigationDisabled = false,
@@ -400,15 +399,9 @@ export default function CourtroomStage({
               aria-label={ttsEnabled ? 'Tắt âm thanh phiên tòa' : 'Bật âm thanh phiên tòa'}
             >
               {ttsEnabled ? (
-                <>
-                  <Volume2 size={13} className="text-emerald-400" />
-                  <span>Âm thanh: Bật</span>
-                </>
+                <><Volume2 size={13} aria-hidden="true" /><span>Âm thanh: Bật</span></>
               ) : (
-                <>
-                  <VolumeX size={13} className="text-slate-400" />
-                  <span>Âm thanh: Tắt</span>
-                </>
+                <><VolumeX size={13} aria-hidden="true" /><span>Âm thanh: Tắt</span></>
               )}
             </button>
           )}
@@ -457,33 +450,6 @@ export default function CourtroomStage({
           {backgroundFailed && (
             <p className="background-error">Chưa tải được nền phòng xử án. Bạn vẫn có thể tiếp tục phiên.</p>
           )}
-          <Scale className="court-emblem" aria-hidden="true" />
-          <span className="court-versus" aria-hidden="true">
-            VS
-          </span>
-
-          <button className="stage-transcript-info" type="button" onClick={onHistory}>
-            <span>BIÊN BẢN PHIÊN</span>
-            <strong>
-              {records.length}
-              <small> phát biểu đã lưu</small>
-            </strong>
-            <span>Mở biên bản →</span>
-          </button>
-
-          <div className="stage-session-info">
-            <span>PHẦN TRÌNH BÀY CỦA BẠN</span>
-            <strong>
-              {records.filter((item) => item.sender_type === 'user').length}
-              <small> / {session?.max_turns ?? 20} lượt</small>
-            </strong>
-            <progress
-              aria-label="Số lượt đã trình bày"
-              value={records.filter((item) => item.sender_type === 'user').length}
-              max={session?.max_turns ?? 20}
-            />
-          </div>
-
           <div className="court-turn-badge" role="status">
             {!session
               ? 'Chưa tải được phiên'
@@ -789,7 +755,6 @@ export default function CourtroomStage({
               </button>
             )}
 
-            {/* Thanh điều khiển tiếp tục lượt thoại nếu có */}
             {speechControls && (
               <div className="dialogue-stream-footer">
                 {speechControls}

@@ -45,7 +45,9 @@ test('trình duyệt → API thật → MongoDB riêng: tài khoản, hồ sơ, 
   const room = page.url();
   const sessionId = room.split('/').at(-1);
   const draft = 'Tôi căn cứ hợp đồng trong hồ sơ để đề nghị kiểm tra chứng cứ thanh toán.';
+  const tools = page.getByRole('button', { name: 'Công cụ khác', exact: true });
   await page.getByLabel('Lập luận của bạn').fill(draft);
+  await tools.click();
   await page.getByRole('button', { name: 'Trợ lý luật', exact: true }).click();
   await page.getByLabel('Câu hỏi tra cứu luật').fill('Luật lao động');
   await page.getByRole('button', { name: 'Hỏi trợ lý', exact: true }).click();
@@ -61,6 +63,7 @@ test('trình duyệt → API thật → MongoDB riêng: tài khoản, hồ sơ, 
   await page.getByRole('button', { name: 'Đưa trích dẫn vào lập luận' }).click();
   await expect(page.getByLabel('Lập luận của bạn')).toHaveValue(/91\/2015\/QH13/);
   await page.reload();
+  await tools.click();
   await page.getByRole('button', { name: 'Trợ lý luật', exact: true }).click();
   await expect(page.getByRole('link', { name: 'Mở tệp nguồn' })).toBeVisible();
   await expect(page.getByLabel('Lập luận của bạn')).toHaveValue(/Tôi căn cứ hợp đồng/);
@@ -91,7 +94,7 @@ test('trình duyệt → API thật → MongoDB riêng: tài khoản, hồ sơ, 
   await expect(page.getByRole('button', { name: nextRole })).toBeVisible();
   expect(harness.calls()).toBe(1);
   await page.screenshot({ path: `../.test-artifacts/dialogue-navigation-${info.project.name}.png`, fullPage: true });
-  await page.getByRole('button', { name: 'Biên bản phiên', exact: true }).click();
+  await page.getByRole('button', { name: 'Biên bản', exact: true }).click();
   await page.getByRole('button', { name: 'Xem tại phiên tòa: 01 · Chủ tọa', exact: true }).click();
   await expect(page.getByRole('button', { name: nextRole })).toHaveCount(0);
   await page.getByRole('button', { name: 'Trở về lượt hiện tại', exact: true }).click();

@@ -44,6 +44,7 @@ test('Case1: chọn vai, hồ sơ, kéo thả, đối đáp, tải lại, chấm
   await expect(page).toHaveURL(/simulation\/[a-f0-9]{24}$/);
   const room = page.url();
   await expect(page.locator('.courtroom-meta')).toContainText(label);
+  await page.getByRole('button', { name: 'Công cụ khác', exact: true }).click();
   await page.getByRole('button', { name: 'Hồ sơ phiên tòa', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Tóm tắt diễn biến' })).toBeVisible();
   await page.getByRole('button', { name: /Tài liệu gốc/ }).click();
